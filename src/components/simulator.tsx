@@ -233,7 +233,7 @@ export function Simulator() {
                 <span className="text-sm text-ink-muted"> / mois</span>
               </p>
               <p className="mt-1 text-xs text-ink-muted">
-                Taux {results.tauxGroupe.toFixed(2)}% sur capital restant dû
+                Taux {results.tauxGroupe.toFixed(2)}% sur capital initial
               </p>
               <p className="mt-3 text-sm text-ink-soft">
                 Coût total : <strong>{formatEuro(results.totalGroupe)}</strong>
