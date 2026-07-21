@@ -35,23 +35,11 @@ export function getRatesForAge(age: number): {
 }
 
 /**
- * Coût total contrat groupe : taux appliqué sur le capital INITIAL chaque année,
- * pendant toute la durée du prêt (non dégressif).
- */
-export function coutTotalGroupe(
-  capitalInitial: number,
-  duree: number,
-  tauxAnnuelPct: number,
-): number {
-  return capitalInitial * (tauxAnnuelPct / 100) * duree;
-}
-
-/**
- * Coût total contrat courtier délégué : taux appliqué sur le CAPITAL RESTANT DÛ
+ * Coût total assurance emprunteur : taux appliqué sur le CAPITAL RESTANT DÛ
  * année par année (dégressif). Amortissement approché linéaire (constant),
  * suffisant pour une estimation avant devis.
  */
-export function coutTotalCourtier(
+function coutTotalSurCapitalRestantDu(
   capitalInitial: number,
   duree: number,
   tauxAnnuelPct: number,
@@ -66,4 +54,26 @@ export function coutTotalCourtier(
     total += restantMoyen * taux;
   }
   return total;
+}
+
+/**
+ * Coût total contrat groupe (banque) : calculé sur le capital restant dû.
+ */
+export function coutTotalGroupe(
+  capitalInitial: number,
+  duree: number,
+  tauxAnnuelPct: number,
+): number {
+  return coutTotalSurCapitalRestantDu(capitalInitial, duree, tauxAnnuelPct);
+}
+
+/**
+ * Coût total contrat délégué (courtier) : calculé sur le capital restant dû.
+ */
+export function coutTotalCourtier(
+  capitalInitial: number,
+  duree: number,
+  tauxAnnuelPct: number,
+): number {
+  return coutTotalSurCapitalRestantDu(capitalInitial, duree, tauxAnnuelPct);
 }
