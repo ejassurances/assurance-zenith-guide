@@ -34,6 +34,8 @@ export function Simulator() {
   const [email, setEmail] = useState("");
   const [telephone, setTelephone] = useState("");
   const [message, setMessage] = useState("");
+  const [acceptContact, setAcceptContact] = useState(false);
+  const [acceptRgpd, setAcceptRgpd] = useState(false);
 
   const results = useMemo(() => {
     const { taux_groupe, taux_courtier } = getRatesForAge(age);
@@ -69,6 +71,11 @@ export function Simulator() {
 
   function handleSendMail(e: React.FormEvent) {
     e.preventDefault();
+    if (!acceptContact || !acceptRgpd) {
+      alert("Veuillez accepter les conditions de recontact et la politique RGPD pour envoyer votre demande.");
+      return;
+    }
+
     const subject = `Demande d'étude assurance emprunteur — ${prenom} ${nom}`;
     const body = [
       `Bonjour,`,
@@ -92,6 +99,10 @@ export function Simulator() {
       `— Téléphone : ${telephone}`,
       ``,
       message ? `Message :\n${message}` : ``,
+      ``,
+      `Consentements :`,
+      `— J'accepte d'être recontacté(e) par ${SITE.shortName} ou l'un de ses partenaires : Oui`,
+      `— J'ai pris connaissance de la politique de confidentialité RGPD : Oui`,
       ``,
       `Cordialement,`,
       `${prenom} ${nom}`,
@@ -282,6 +293,46 @@ export function Simulator() {
                   className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none focus:border-ink"
                 />
               </label>
+
+              <div className="space-y-2 rounded-xl bg-surface p-4 text-sm text-ink-soft ring-1 ring-line">
+                <label className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={acceptContact}
+                    onChange={(e) => setAcceptContact(e.target.checked)}
+                    className="mt-0.5 size-4 rounded border-line accent-ink"
+                  />
+                  <span>
+                    J'accepte d'être recontacté(e) par le cabinet{" "}
+                    {SITE.shortName} ou l'un de ses partenaires pour affiner mon
+                    étude. <span className="text-ink">*</span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={acceptRgpd}
+                    onChange={(e) => setAcceptRgpd(e.target.checked)}
+                    className="mt-0.5 size-4 rounded border-line accent-ink"
+                  />
+                  <span>
+                    J'ai pris connaissance de la{" "}
+                    <a
+                      href="/politique-de-confidentialite"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline hover:text-ink"
+                    >
+                      politique de confidentialité
+                    </a>{" "}
+                    et j'accepte le traitement de mes données personnelles dans
+                    le cadre de ma demande. <span className="text-ink">*</span>
+                  </span>
+                </label>
+              </div>
+
               <div className="flex flex-col gap-2 sm:flex-row">
                 <button
                   type="button"
@@ -298,8 +349,9 @@ export function Simulator() {
                 </button>
               </div>
               <p className="text-[11px] italic text-ink-muted">
-                Vos coordonnées sont transmises uniquement à {SITE.shortName} —
-                jamais cédées à des tiers.
+                Vos coordonnées sont transmises uniquement à {SITE.shortName} et
+                ses partenaires dans le cadre de votre demande — jamais cédées
+                à des tiers à des fins commerciales.
               </p>
             </form>
           </div>

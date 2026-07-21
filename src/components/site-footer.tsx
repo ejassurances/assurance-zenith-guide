@@ -39,8 +39,13 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-line">
-        <div className="container-page py-6 text-xs text-ink-muted">
-          © {new Date().getFullYear()} {SITE.name} — Tous droits réservés. Société de courtage en assurances régie par le Code des Assurances, sous le contrôle de l'ACPR (4 Place de Budapest, 75009 Paris).
+        <div className="container-page flex flex-col justify-between gap-4 py-6 text-xs text-ink-muted sm:flex-row">
+          <p>
+            © {new Date().getFullYear()} {SITE.name} — Tous droits réservés. Société de courtage en assurances régie par le Code des Assurances, sous le contrôle de l'ACPR (4 Place de Budapest, 75009 Paris).
+          </p>
+          <Link to="/politique-de-confidentialite" className="shrink-0 hover:text-ink">
+            Politique de confidentialité
+          </Link>
         </div>
       </div>
     </footer>
