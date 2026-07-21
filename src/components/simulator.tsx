@@ -71,6 +71,11 @@ export function Simulator() {
 
   function handleSendMail(e: React.FormEvent) {
     e.preventDefault();
+    if (!acceptContact || !acceptRgpd) {
+      alert("Veuillez accepter les conditions de recontact et la politique RGPD pour envoyer votre demande.");
+      return;
+    }
+
     const subject = `Demande d'étude assurance emprunteur — ${prenom} ${nom}`;
     const body = [
       `Bonjour,`,
@@ -94,6 +99,10 @@ export function Simulator() {
       `— Téléphone : ${telephone}`,
       ``,
       message ? `Message :\n${message}` : ``,
+      ``,
+      `Consentements :`,
+      `— J'accepte d'être recontacté(e) par ${SITE.shortName} ou l'un de ses partenaires : Oui`,
+      `— J'ai pris connaissance de la politique de confidentialité RGPD : Oui`,
       ``,
       `Cordialement,`,
       `${prenom} ${nom}`,
