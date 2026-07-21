@@ -124,7 +124,7 @@ function HomePage() {
               headline="Couple, 38 ans, 450 000 € restants sur 20 ans."
               beforeLabel="Contrat groupe banque"
               beforeValue="0.38 % / an"
-              afterLabel="Délégation Valorem"
+              afterLabel="Délégation EJ Partners"
               afterValue="0.12 % / an"
               gain="Économie totale : 18 420 € sur la durée restante."
             />
