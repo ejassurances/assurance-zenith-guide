@@ -79,7 +79,19 @@ const orgJsonLd = {
     "Conseil en transmission de patrimoine",
     "Prévoyance pour parents solos",
   ],
-  address: { "@type": "PostalAddress", addressLocality: "Paris", addressCountry: "FR" },
+  telephone: SITE.phone,
+  email: SITE.email,
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "71 Rue du Docteur Roux",
+    postalCode: "95600",
+    addressLocality: "Eaubonne",
+    addressCountry: "FR",
+  },
+  identifier: [
+    { "@type": "PropertyValue", propertyID: "SIRET", value: SITE.siret },
+    { "@type": "PropertyValue", propertyID: "ORIAS", value: "25005811" },
+  ],
 };
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
@@ -99,7 +111,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/logo-ej-partners.png", type: "image/png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {

@@ -7,8 +7,18 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-background/80 backdrop-blur-md">
       <div className="container-page flex h-16 items-center justify-between">
-        <Link to="/" className="font-serif text-xl font-medium tracking-tight text-ink">
-          {SITE.name}
+        <Link to="/" className="flex items-center gap-2.5 text-ink" aria-label={SITE.name}>
+          <img
+            src="/logo-ej-partners.png"
+            alt=""
+            width={36}
+            height={36}
+            className="size-9 rounded-md object-cover"
+          />
+          <span className="font-serif text-lg font-medium tracking-tight leading-none">
+            {SITE.shortName}
+            <span className="ml-1 text-[10px] uppercase tracking-[0.18em] text-ink-muted">Assurances</span>
+          </span>
         </Link>
         <nav className="hidden items-center gap-8 md:flex">
           {NAV_LINKS.map((link) => (
