@@ -60,7 +60,7 @@ function Page() {
                 defaultValue="emprunteur"
               >
                 <option value="emprunteur">Assurance emprunteur</option>
-                <option value="parents-solos">Parents solos / transmission</option>
+                <option value="coparentalite">Coparentalité / transmission</option>
                 <option value="autre">Autre demande</option>
               </select>
             </div>

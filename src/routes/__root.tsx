@@ -77,7 +77,7 @@ const orgJsonLd = {
   serviceType: [
     "Courtage en assurance emprunteur",
     "Conseil en transmission de patrimoine",
-    "Prévoyance pour parents solos",
+    "Prévoyance et transmission pour familles en coparentalité",
   ],
   telephone: SITE.phone,
   email: SITE.email,
