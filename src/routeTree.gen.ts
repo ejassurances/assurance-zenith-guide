@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as PolitiqueDeConfidentialiteRouteImport } from './routes/politique-de-confidentialite'
 import { Route as CoparentaliteRouteImport } from './routes/coparentalite'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AssuranceEmprunteurRouteImport } from './routes/assurance-emprunteur'
@@ -23,6 +24,12 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PolitiqueDeConfidentialiteRoute =
+  PolitiqueDeConfidentialiteRouteImport.update({
+    id: '/politique-de-confidentialite',
+    path: '/politique-de-confidentialite',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const CoparentaliteRoute = CoparentaliteRouteImport.update({
   id: '/coparentalite',
   path: '/coparentalite',
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/assurance-emprunteur': typeof AssuranceEmprunteurRoute
   '/contact': typeof ContactRoute
   '/coparentalite': typeof CoparentaliteRoute
+  '/politique-de-confidentialite': typeof PolitiqueDeConfidentialiteRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
@@ -75,6 +83,7 @@ export interface FileRoutesByTo {
   '/assurance-emprunteur': typeof AssuranceEmprunteurRoute
   '/contact': typeof ContactRoute
   '/coparentalite': typeof CoparentaliteRoute
+  '/politique-de-confidentialite': typeof PolitiqueDeConfidentialiteRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog': typeof BlogIndexRoute
@@ -86,6 +95,7 @@ export interface FileRoutesById {
   '/assurance-emprunteur': typeof AssuranceEmprunteurRoute
   '/contact': typeof ContactRoute
   '/coparentalite': typeof CoparentaliteRoute
+  '/politique-de-confidentialite': typeof PolitiqueDeConfidentialiteRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/assurance-emprunteur'
     | '/contact'
     | '/coparentalite'
+    | '/politique-de-confidentialite'
     | '/sitemap.xml'
     | '/blog/$slug'
     | '/blog/'
@@ -108,6 +119,7 @@ export interface FileRouteTypes {
     | '/assurance-emprunteur'
     | '/contact'
     | '/coparentalite'
+    | '/politique-de-confidentialite'
     | '/sitemap.xml'
     | '/blog/$slug'
     | '/blog'
@@ -118,6 +130,7 @@ export interface FileRouteTypes {
     | '/assurance-emprunteur'
     | '/contact'
     | '/coparentalite'
+    | '/politique-de-confidentialite'
     | '/sitemap.xml'
     | '/blog/$slug'
     | '/blog/'
@@ -129,6 +142,7 @@ export interface RootRouteChildren {
   AssuranceEmprunteurRoute: typeof AssuranceEmprunteurRoute
   ContactRoute: typeof ContactRoute
   CoparentaliteRoute: typeof CoparentaliteRoute
+  PolitiqueDeConfidentialiteRoute: typeof PolitiqueDeConfidentialiteRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   BlogSlugRoute: typeof BlogSlugRoute
   BlogIndexRoute: typeof BlogIndexRoute
@@ -141,6 +155,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/politique-de-confidentialite': {
+      id: '/politique-de-confidentialite'
+      path: '/politique-de-confidentialite'
+      fullPath: '/politique-de-confidentialite'
+      preLoaderRoute: typeof PolitiqueDeConfidentialiteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/coparentalite': {
@@ -201,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   AssuranceEmprunteurRoute: AssuranceEmprunteurRoute,
   ContactRoute: ContactRoute,
   CoparentaliteRoute: CoparentaliteRoute,
+  PolitiqueDeConfidentialiteRoute: PolitiqueDeConfidentialiteRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   BlogSlugRoute: BlogSlugRoute,
   BlogIndexRoute: BlogIndexRoute,
