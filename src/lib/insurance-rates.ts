@@ -11,11 +11,11 @@ export type AgeBracket = {
 };
 
 export const RATE_TABLE: AgeBracket[] = [
-  { minAge: 20, maxAge: 30, taux_groupe: 0.32, taux_courtier: 0.12 },
-  { minAge: 30, maxAge: 40, taux_groupe: 0.42, taux_courtier: 0.18 },
-  { minAge: 40, maxAge: 50, taux_groupe: 0.6, taux_courtier: 0.3 },
-  { minAge: 50, maxAge: 60, taux_groupe: 0.85, taux_courtier: 0.45 },
-  { minAge: 60, maxAge: 70, taux_groupe: 1.1, taux_courtier: 0.7 },
+  { minAge: 20, maxAge: 30, taux_groupe: 0.2, taux_courtier: 0.1 },
+  { minAge: 30, maxAge: 40, taux_groupe: 0.3, taux_courtier: 0.15 },
+  { minAge: 40, maxAge: 50, taux_groupe: 0.4, taux_courtier: 0.2 },
+  { minAge: 50, maxAge: 60, taux_groupe: 0.55, taux_courtier: 0.3 },
+  { minAge: 60, maxAge: 70, taux_groupe: 0.8, taux_courtier: 0.5 },
 ];
 
 // Surprime fumeur appliquée aux deux catégories (points de %).
