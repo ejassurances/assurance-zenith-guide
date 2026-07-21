@@ -210,6 +210,19 @@ export function Simulator() {
             </div>
           </div>
 
+          <div className="rounded-xl bg-surface p-4 text-xs text-ink-soft ring-1 ring-line">
+            <p>
+              <strong className="text-ink">Tarif provisoire.</strong> Cette
+              estimation est fondée sur les taux moyens du marché et sur les
+              informations que vous avez saisies. Le tarif définitif dépend de
+              votre profil (santé, profession, sports pratiqués, etc.) et des
+              garanties retenues. Une <strong>étude complémentaire</strong>{" "}
+              peut vous être demandée par {SITE.shortName} afin d'établir une
+              proposition personnalisée et contractuelle.
+            </p>
+          </div>
+
+
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="rounded-xl bg-white p-5 ring-1 ring-line">
               <p className="text-xs uppercase tracking-widest text-ink-muted">
