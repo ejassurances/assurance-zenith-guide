@@ -3,12 +3,18 @@
 // - taux_groupe : contrat bancaire, appliqué sur le CAPITAL INITIAL (non dégressif)
 // - taux_courtier : contrat délégué, appliqué sur le CAPITAL RESTANT DÛ (dégressif)
 
+export type ModeCalcul = "capital_initial" | "capital_restant_du";
+
 export type AgeBracket = {
   minAge: number; // inclus
   maxAge: number; // exclus
-  taux_groupe: number; // % du capital initial / an
-  taux_courtier: number; // % du capital restant dû / an
+  taux_groupe: number; // % / an
+  taux_courtier: number; // % / an
 };
+
+// Mode de calcul par catégorie (modifiable indépendamment).
+export const MODE_CALCUL_GROUPE: ModeCalcul = "capital_initial";
+export const MODE_CALCUL_COURTIER: ModeCalcul = "capital_restant_du";
 
 export const RATE_TABLE: AgeBracket[] = [
   { minAge: 20, maxAge: 30, taux_groupe: 0.2, taux_courtier: 0.1 },
