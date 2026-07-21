@@ -73,7 +73,7 @@ export const Route = createFileRoute("/blog/$slug")({
 });
 
 function PostPage() {
-  const { post } = Route.useLoaderData();
+  const { post } = Route.useLoaderData() as { post: BlogPost };
   const others = BLOG_POSTS.filter((p) => p.slug !== post.slug).slice(0, 2);
 
   return (
