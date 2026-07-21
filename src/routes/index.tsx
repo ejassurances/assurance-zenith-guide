@@ -32,7 +32,7 @@ function HomePage() {
       <section className="border-b border-line">
         <div className="container-page py-20 md:py-28">
           <p className="mb-6 text-xs font-semibold uppercase tracking-widest text-ink-muted">
-            Cabinet de courtage indépendant · Paris
+            Cabinet de courtage indépendant · Eaubonne (95)
           </p>
           <h1 className="max-w-[18ch] text-balance font-serif text-4xl font-medium leading-[1.05] tracking-tight sm:text-5xl md:text-6xl">
             {SITE.tagline}
@@ -124,7 +124,7 @@ function HomePage() {
               headline="Couple, 38 ans, 450 000 € restants sur 20 ans."
               beforeLabel="Contrat groupe banque"
               beforeValue="0.38 % / an"
-              afterLabel="Délégation Valorem"
+              afterLabel="Délégation EJ Partners"
               afterValue="0.12 % / an"
               gain="Économie totale : 18 420 € sur la durée restante."
             />

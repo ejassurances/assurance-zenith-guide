@@ -32,7 +32,7 @@ function Page() {
             Un cabinet indépendant, deux expertises pointues.
           </h1>
           <p className="mt-6 text-lg text-ink-soft">
-            {SITE.name} est un cabinet de courtage en assurances basé à Paris et intervenant dans toute la France.
+            {SITE.name} est un cabinet de courtage en assurances basé à Eaubonne (95) et intervenant dans toute la France.
             Notre indépendance vis-à-vis des banques et des grands groupes d'assurance garantit un conseil
             aligné sur un seul intérêt : le vôtre.
           </p>

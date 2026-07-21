@@ -41,8 +41,8 @@ export const BLOG_POSTS: BlogPost[] = [
       ] },
       { type: "h2", text: "Combien pouvez-vous économiser ?" },
       { type: "p", text: "Sur un prêt immobilier de 250 000 € contracté sur 20 ans, la différence entre le contrat groupe d'une banque (souvent autour de 0,35 % du capital) et une délégation d'assurance (à partir de 0,08 % pour un profil jeune et non-fumeur) représente en moyenne 10 000 à 15 000 € d'économies sur la durée totale du crédit." },
-      { type: "quote", text: "Sur nos 200 derniers dossiers, l'économie moyenne réalisée grâce à la loi Lemoine s'élève à 11 400 €.", author: "Valorem & Co." },
-      { type: "h2", text: "La méthode Valorem" },
+      { type: "quote", text: "Sur nos 200 derniers dossiers, l'économie moyenne réalisée grâce à la loi Lemoine s'élève à 11 400 €.", author: "EJ Partners Assurances" },
+      { type: "h2", text: "La méthode EJ Partners" },
       { type: "p", text: "Nous analysons votre contrat actuel, vérifions l'équivalence de garanties exigée par votre banque (les 18 critères CCSF), et vous proposons plusieurs alternatives comparées ligne à ligne. Nous nous chargeons ensuite de l'intégralité du dossier : envoi, suivi, avenant." },
     ],
     faq: [
