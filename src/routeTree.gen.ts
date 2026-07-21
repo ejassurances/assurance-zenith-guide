@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as PolitiqueDeConfidentialiteRouteImport } from './routes/politique-de-confidentialite'
+import { Route as MentionsLegalesRouteImport } from './routes/mentions-legales'
 import { Route as CoparentaliteRouteImport } from './routes/coparentalite'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AssuranceEmprunteurRouteImport } from './routes/assurance-emprunteur'
@@ -30,6 +31,11 @@ const PolitiqueDeConfidentialiteRoute =
     path: '/politique-de-confidentialite',
     getParentRoute: () => rootRouteImport,
   } as any)
+const MentionsLegalesRoute = MentionsLegalesRouteImport.update({
+  id: '/mentions-legales',
+  path: '/mentions-legales',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CoparentaliteRoute = CoparentaliteRouteImport.update({
   id: '/coparentalite',
   path: '/coparentalite',
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/assurance-emprunteur': typeof AssuranceEmprunteurRoute
   '/contact': typeof ContactRoute
   '/coparentalite': typeof CoparentaliteRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
   '/politique-de-confidentialite': typeof PolitiqueDeConfidentialiteRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -83,6 +90,7 @@ export interface FileRoutesByTo {
   '/assurance-emprunteur': typeof AssuranceEmprunteurRoute
   '/contact': typeof ContactRoute
   '/coparentalite': typeof CoparentaliteRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
   '/politique-de-confidentialite': typeof PolitiqueDeConfidentialiteRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/assurance-emprunteur': typeof AssuranceEmprunteurRoute
   '/contact': typeof ContactRoute
   '/coparentalite': typeof CoparentaliteRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
   '/politique-de-confidentialite': typeof PolitiqueDeConfidentialiteRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -108,6 +117,7 @@ export interface FileRouteTypes {
     | '/assurance-emprunteur'
     | '/contact'
     | '/coparentalite'
+    | '/mentions-legales'
     | '/politique-de-confidentialite'
     | '/sitemap.xml'
     | '/blog/$slug'
@@ -119,6 +129,7 @@ export interface FileRouteTypes {
     | '/assurance-emprunteur'
     | '/contact'
     | '/coparentalite'
+    | '/mentions-legales'
     | '/politique-de-confidentialite'
     | '/sitemap.xml'
     | '/blog/$slug'
@@ -130,6 +141,7 @@ export interface FileRouteTypes {
     | '/assurance-emprunteur'
     | '/contact'
     | '/coparentalite'
+    | '/mentions-legales'
     | '/politique-de-confidentialite'
     | '/sitemap.xml'
     | '/blog/$slug'
@@ -142,6 +154,7 @@ export interface RootRouteChildren {
   AssuranceEmprunteurRoute: typeof AssuranceEmprunteurRoute
   ContactRoute: typeof ContactRoute
   CoparentaliteRoute: typeof CoparentaliteRoute
+  MentionsLegalesRoute: typeof MentionsLegalesRoute
   PolitiqueDeConfidentialiteRoute: typeof PolitiqueDeConfidentialiteRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   BlogSlugRoute: typeof BlogSlugRoute
@@ -162,6 +175,13 @@ declare module '@tanstack/react-router' {
       path: '/politique-de-confidentialite'
       fullPath: '/politique-de-confidentialite'
       preLoaderRoute: typeof PolitiqueDeConfidentialiteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mentions-legales': {
+      id: '/mentions-legales'
+      path: '/mentions-legales'
+      fullPath: '/mentions-legales'
+      preLoaderRoute: typeof MentionsLegalesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/coparentalite': {
@@ -222,6 +242,7 @@ const rootRouteChildren: RootRouteChildren = {
   AssuranceEmprunteurRoute: AssuranceEmprunteurRoute,
   ContactRoute: ContactRoute,
   CoparentaliteRoute: CoparentaliteRoute,
+  MentionsLegalesRoute: MentionsLegalesRoute,
   PolitiqueDeConfidentialiteRoute: PolitiqueDeConfidentialiteRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   BlogSlugRoute: BlogSlugRoute,
@@ -230,13 +251,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
