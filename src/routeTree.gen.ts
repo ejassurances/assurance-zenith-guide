@@ -10,7 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as ParentsSolosRouteImport } from './routes/parents-solos'
+import { Route as CoparentaliteRouteImport } from './routes/coparentalite'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AssuranceEmprunteurRouteImport } from './routes/assurance-emprunteur'
 import { Route as AProposRouteImport } from './routes/a-propos'
@@ -23,9 +23,9 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ParentsSolosRoute = ParentsSolosRouteImport.update({
-  id: '/parents-solos',
-  path: '/parents-solos',
+const CoparentaliteRoute = CoparentaliteRouteImport.update({
+  id: '/coparentalite',
+  path: '/coparentalite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -64,7 +64,7 @@ export interface FileRoutesByFullPath {
   '/a-propos': typeof AProposRoute
   '/assurance-emprunteur': typeof AssuranceEmprunteurRoute
   '/contact': typeof ContactRoute
-  '/parents-solos': typeof ParentsSolosRoute
+  '/coparentalite': typeof CoparentaliteRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
@@ -74,7 +74,7 @@ export interface FileRoutesByTo {
   '/a-propos': typeof AProposRoute
   '/assurance-emprunteur': typeof AssuranceEmprunteurRoute
   '/contact': typeof ContactRoute
-  '/parents-solos': typeof ParentsSolosRoute
+  '/coparentalite': typeof CoparentaliteRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog': typeof BlogIndexRoute
@@ -85,7 +85,7 @@ export interface FileRoutesById {
   '/a-propos': typeof AProposRoute
   '/assurance-emprunteur': typeof AssuranceEmprunteurRoute
   '/contact': typeof ContactRoute
-  '/parents-solos': typeof ParentsSolosRoute
+  '/coparentalite': typeof CoparentaliteRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
@@ -97,7 +97,7 @@ export interface FileRouteTypes {
     | '/a-propos'
     | '/assurance-emprunteur'
     | '/contact'
-    | '/parents-solos'
+    | '/coparentalite'
     | '/sitemap.xml'
     | '/blog/$slug'
     | '/blog/'
@@ -107,7 +107,7 @@ export interface FileRouteTypes {
     | '/a-propos'
     | '/assurance-emprunteur'
     | '/contact'
-    | '/parents-solos'
+    | '/coparentalite'
     | '/sitemap.xml'
     | '/blog/$slug'
     | '/blog'
@@ -117,7 +117,7 @@ export interface FileRouteTypes {
     | '/a-propos'
     | '/assurance-emprunteur'
     | '/contact'
-    | '/parents-solos'
+    | '/coparentalite'
     | '/sitemap.xml'
     | '/blog/$slug'
     | '/blog/'
@@ -128,7 +128,7 @@ export interface RootRouteChildren {
   AProposRoute: typeof AProposRoute
   AssuranceEmprunteurRoute: typeof AssuranceEmprunteurRoute
   ContactRoute: typeof ContactRoute
-  ParentsSolosRoute: typeof ParentsSolosRoute
+  CoparentaliteRoute: typeof CoparentaliteRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   BlogSlugRoute: typeof BlogSlugRoute
   BlogIndexRoute: typeof BlogIndexRoute
@@ -143,11 +143,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/parents-solos': {
-      id: '/parents-solos'
-      path: '/parents-solos'
-      fullPath: '/parents-solos'
-      preLoaderRoute: typeof ParentsSolosRouteImport
+    '/coparentalite': {
+      id: '/coparentalite'
+      path: '/coparentalite'
+      fullPath: '/coparentalite'
+      preLoaderRoute: typeof CoparentaliteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -200,7 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   AProposRoute: AProposRoute,
   AssuranceEmprunteurRoute: AssuranceEmprunteurRoute,
   ContactRoute: ContactRoute,
-  ParentsSolosRoute: ParentsSolosRoute,
+  CoparentaliteRoute: CoparentaliteRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   BlogSlugRoute: BlogSlugRoute,
   BlogIndexRoute: BlogIndexRoute,
