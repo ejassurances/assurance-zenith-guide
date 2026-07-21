@@ -11,11 +11,11 @@ export type AgeBracket = {
 };
 
 export const RATE_TABLE: AgeBracket[] = [
-  { minAge: 20, maxAge: 30, taux_groupe: 0.32, taux_courtier: 0.12 },
-  { minAge: 30, maxAge: 40, taux_groupe: 0.42, taux_courtier: 0.18 },
-  { minAge: 40, maxAge: 50, taux_groupe: 0.6, taux_courtier: 0.3 },
-  { minAge: 50, maxAge: 60, taux_groupe: 0.85, taux_courtier: 0.45 },
-  { minAge: 60, maxAge: 70, taux_groupe: 1.1, taux_courtier: 0.7 },
+  { minAge: 20, maxAge: 30, taux_groupe: 0.2, taux_courtier: 0.1 },
+  { minAge: 30, maxAge: 40, taux_groupe: 0.3, taux_courtier: 0.15 },
+  { minAge: 40, maxAge: 50, taux_groupe: 0.4, taux_courtier: 0.2 },
+  { minAge: 50, maxAge: 60, taux_groupe: 0.55, taux_courtier: 0.3 },
+  { minAge: 60, maxAge: 70, taux_groupe: 0.8, taux_courtier: 0.5 },
 ];
 
 // Surprime fumeur appliquée aux deux catégories (points de %).
@@ -35,23 +35,11 @@ export function getRatesForAge(age: number): {
 }
 
 /**
- * Coût total contrat groupe : taux appliqué sur le capital INITIAL chaque année,
- * pendant toute la durée du prêt (non dégressif).
- */
-export function coutTotalGroupe(
-  capitalInitial: number,
-  duree: number,
-  tauxAnnuelPct: number,
-): number {
-  return capitalInitial * (tauxAnnuelPct / 100) * duree;
-}
-
-/**
- * Coût total contrat courtier délégué : taux appliqué sur le CAPITAL RESTANT DÛ
+ * Coût total assurance emprunteur : taux appliqué sur le CAPITAL RESTANT DÛ
  * année par année (dégressif). Amortissement approché linéaire (constant),
  * suffisant pour une estimation avant devis.
  */
-export function coutTotalCourtier(
+function coutTotalSurCapitalRestantDu(
   capitalInitial: number,
   duree: number,
   tauxAnnuelPct: number,
@@ -66,4 +54,26 @@ export function coutTotalCourtier(
     total += restantMoyen * taux;
   }
   return total;
+}
+
+/**
+ * Coût total contrat groupe (banque) : calculé sur le capital restant dû.
+ */
+export function coutTotalGroupe(
+  capitalInitial: number,
+  duree: number,
+  tauxAnnuelPct: number,
+): number {
+  return coutTotalSurCapitalRestantDu(capitalInitial, duree, tauxAnnuelPct);
+}
+
+/**
+ * Coût total contrat délégué (courtier) : calculé sur le capital restant dû.
+ */
+export function coutTotalCourtier(
+  capitalInitial: number,
+  duree: number,
+  tauxAnnuelPct: number,
+): number {
+  return coutTotalSurCapitalRestantDu(capitalInitial, duree, tauxAnnuelPct);
 }
