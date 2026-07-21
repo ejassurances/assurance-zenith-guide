@@ -1,25 +1,15 @@
 import { useMemo, useState } from "react";
 import { SITE } from "@/lib/site";
+import {
+  getRatesForAge,
+  coutTotalGroupe,
+  coutTotalCourtier,
+  SURPRIME_FUMEUR,
+} from "@/lib/insurance-rates";
 
 type Step = "inputs" | "results" | "sent";
 
 const CONTACT_EMAIL = "contact@ej-assurances.fr";
-
-// Estimation du taux annuel d'une assurance déléguée (loi Lemoine)
-// exprimé en % du capital initial, selon profil.
-function estimateDelegatedRate(age: number, smoker: boolean): number {
-  let rate: number;
-  if (age < 30) rate = 0.07;
-  else if (age < 35) rate = 0.09;
-  else if (age < 40) rate = 0.11;
-  else if (age < 45) rate = 0.14;
-  else if (age < 50) rate = 0.18;
-  else if (age < 55) rate = 0.24;
-  else if (age < 60) rate = 0.32;
-  else rate = 0.42;
-  if (smoker) rate *= 1.65;
-  return rate; // en pourcentage
-}
 
 function formatEuro(v: number): string {
   return new Intl.NumberFormat("fr-FR", {
@@ -35,7 +25,6 @@ export function Simulator() {
   // Inputs
   const [capital, setCapital] = useState<number>(200000);
   const [duree, setDuree] = useState<number>(20);
-  const [cotisationActuelle, setCotisationActuelle] = useState<number>(75);
   const [age, setAge] = useState<number>(38);
   const [smoker, setSmoker] = useState<boolean>(false);
 
@@ -47,17 +36,31 @@ export function Simulator() {
   const [message, setMessage] = useState("");
 
   const results = useMemo(() => {
-    const rate = estimateDelegatedRate(age, smoker);
-    const newMonthly = (capital * (rate / 100)) / 12;
-    const monthlySaving = Math.max(0, cotisationActuelle - newMonthly);
-    const totalSaving = monthlySaving * 12 * duree;
+    const { taux_groupe, taux_courtier } = getRatesForAge(age);
+    const surprime = smoker ? SURPRIME_FUMEUR : 0;
+    const tauxGroupe = taux_groupe + surprime;
+    const tauxCourtier = taux_courtier + surprime;
+
+    const totalGroupe = coutTotalGroupe(capital, duree, tauxGroupe);
+    const totalCourtier = coutTotalCourtier(capital, duree, tauxCourtier);
+
+    const mensGroupe = totalGroupe / (duree * 12);
+    const mensCourtier = totalCourtier / (duree * 12);
+
+    const totalSaving = Math.max(0, totalGroupe - totalCourtier);
+    const monthlySaving = Math.max(0, mensGroupe - mensCourtier);
+
     return {
-      rate,
-      newMonthly,
-      monthlySaving,
+      tauxGroupe,
+      tauxCourtier,
+      totalGroupe,
+      totalCourtier,
+      mensGroupe,
+      mensCourtier,
       totalSaving,
+      monthlySaving,
     };
-  }, [capital, duree, cotisationActuelle, age, smoker]);
+  }, [capital, duree, age, smoker]);
 
   function handleCalculate(e: React.FormEvent) {
     e.preventDefault();
@@ -72,14 +75,14 @@ export function Simulator() {
       ``,
       `Je souhaite recevoir une étude personnalisée suite à ma simulation :`,
       ``,
-      `— Capital restant dû : ${formatEuro(capital)}`,
-      `— Durée restante : ${duree} ans`,
-      `— Cotisation actuelle : ${formatEuro(cotisationActuelle)} / mois`,
+      `— Capital emprunté : ${formatEuro(capital)}`,
+      `— Durée du prêt : ${duree} ans`,
       `— Âge : ${age} ans`,
       `— Fumeur : ${smoker ? "Oui" : "Non"}`,
       ``,
       `Estimation calculée :`,
-      `— Nouvelle cotisation estimée : ${formatEuro(results.newMonthly)} / mois`,
+      `— Contrat groupe (banque) : ${formatEuro(results.mensGroupe)} / mois — total ${formatEuro(results.totalGroupe)}`,
+      `— Contrat délégué (courtier) : ${formatEuro(results.mensCourtier)} / mois — total ${formatEuro(results.totalCourtier)}`,
       `— Économie mensuelle : ${formatEuro(results.monthlySaving)}`,
       `— Économie totale estimée : ${formatEuro(results.totalSaving)}`,
       ``,
@@ -119,7 +122,7 @@ export function Simulator() {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field
-              label="Capital restant dû"
+              label="Capital emprunté"
               suffix="€"
               type="number"
               value={capital}
@@ -128,7 +131,7 @@ export function Simulator() {
               onChange={setCapital}
             />
             <Field
-              label="Durée restante"
+              label="Durée du prêt"
               suffix="ans"
               type="number"
               value={duree}
@@ -138,21 +141,12 @@ export function Simulator() {
               onChange={setDuree}
             />
             <Field
-              label="Cotisation actuelle"
-              suffix="€/mois"
-              type="number"
-              value={cotisationActuelle}
-              min={0}
-              step={1}
-              onChange={setCotisationActuelle}
-            />
-            <Field
               label="Votre âge"
               suffix="ans"
               type="number"
               value={age}
-              min={18}
-              max={75}
+              min={20}
+              max={70}
               step={1}
               onChange={setAge}
             />
@@ -175,8 +169,9 @@ export function Simulator() {
             Calculer mes économies
           </button>
           <p className="text-[11px] italic text-ink-muted">
-            Simulation indicative fondée sur les taux moyens du marché
-            (contrats délégués). Devis personnalisé après étude de votre profil.
+            Simulation indicative fondée sur les taux moyens du marché. Contrat
+            groupe calculé sur capital initial ; contrat délégué calculé sur
+            capital restant dû. Devis personnalisé après étude de votre profil.
           </p>
         </form>
       )}
@@ -185,24 +180,56 @@ export function Simulator() {
         <div className="space-y-6">
           <div className="rounded-xl bg-ink p-6 text-white">
             <p className="text-xs uppercase tracking-widest text-white/60">
-              Économie estimée sur la durée restante
+              Économie estimée sur la durée du prêt
             </p>
             <p className="mt-2 font-serif text-4xl md:text-5xl">
               {formatEuro(results.totalSaving)}
             </p>
             <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-white/60">Cotisation estimée</p>
-                <p className="font-medium">
-                  {formatEuro(results.newMonthly)} / mois
-                </p>
-              </div>
-              <div>
                 <p className="text-white/60">Économie mensuelle</p>
                 <p className="font-medium">
                   {formatEuro(results.monthlySaving)}
                 </p>
               </div>
+              <div>
+                <p className="text-white/60">Durée</p>
+                <p className="font-medium">{duree} ans</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="rounded-xl bg-white p-5 ring-1 ring-line">
+              <p className="text-xs uppercase tracking-widest text-ink-muted">
+                Contrat groupe (banque)
+              </p>
+              <p className="mt-2 font-serif text-2xl text-ink">
+                {formatEuro(results.mensGroupe)}
+                <span className="text-sm text-ink-muted"> / mois</span>
+              </p>
+              <p className="mt-1 text-xs text-ink-muted">
+                Taux {results.tauxGroupe.toFixed(2)}% sur capital initial
+              </p>
+              <p className="mt-3 text-sm text-ink-soft">
+                Coût total : <strong>{formatEuro(results.totalGroupe)}</strong>
+              </p>
+            </div>
+            <div className="rounded-xl bg-white p-5 ring-1 ring-line">
+              <p className="text-xs uppercase tracking-widest text-ink-muted">
+                Contrat délégué (courtier)
+              </p>
+              <p className="mt-2 font-serif text-2xl text-ink">
+                {formatEuro(results.mensCourtier)}
+                <span className="text-sm text-ink-muted"> / mois</span>
+              </p>
+              <p className="mt-1 text-xs text-ink-muted">
+                Taux {results.tauxCourtier.toFixed(2)}% sur capital restant dû
+              </p>
+              <p className="mt-3 text-sm text-ink-soft">
+                Coût total :{" "}
+                <strong>{formatEuro(results.totalCourtier)}</strong>
+              </p>
             </div>
           </div>
 
