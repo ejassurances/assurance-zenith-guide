@@ -53,7 +53,6 @@ function coutTotalSurCapitalRestantDu(
   const taux = tauxAnnuelPct / 100;
   let total = 0;
   for (let annee = 0; annee < duree; annee++) {
-    // capital restant dû moyen sur l'année (amortissement linéaire)
     const restantDebut = capitalInitial * (1 - annee / duree);
     const restantFin = capitalInitial * (1 - (annee + 1) / duree);
     const restantMoyen = (restantDebut + restantFin) / 2;
@@ -62,24 +61,36 @@ function coutTotalSurCapitalRestantDu(
   return total;
 }
 
+function coutTotalSurCapitalInitial(
+  capitalInitial: number,
+  duree: number,
+  tauxAnnuelPct: number,
+): number {
+  return capitalInitial * (tauxAnnuelPct / 100) * duree;
+}
+
 /**
- * Coût total contrat groupe (banque) : calculé sur le capital restant dû.
+ * Coût total contrat groupe (banque) : appliqué sur le CAPITAL INITIAL, non dégressif.
  */
 export function coutTotalGroupe(
   capitalInitial: number,
   duree: number,
   tauxAnnuelPct: number,
 ): number {
-  return coutTotalSurCapitalRestantDu(capitalInitial, duree, tauxAnnuelPct);
+  return MODE_CALCUL_GROUPE === "capital_initial"
+    ? coutTotalSurCapitalInitial(capitalInitial, duree, tauxAnnuelPct)
+    : coutTotalSurCapitalRestantDu(capitalInitial, duree, tauxAnnuelPct);
 }
 
 /**
- * Coût total contrat délégué (courtier) : calculé sur le capital restant dû.
+ * Coût total contrat délégué (courtier) : appliqué sur le CAPITAL RESTANT DÛ (dégressif).
  */
 export function coutTotalCourtier(
   capitalInitial: number,
   duree: number,
   tauxAnnuelPct: number,
 ): number {
-  return coutTotalSurCapitalRestantDu(capitalInitial, duree, tauxAnnuelPct);
+  return MODE_CALCUL_COURTIER === "capital_initial"
+    ? coutTotalSurCapitalInitial(capitalInitial, duree, tauxAnnuelPct)
+    : coutTotalSurCapitalRestantDu(capitalInitial, duree, tauxAnnuelPct);
 }
