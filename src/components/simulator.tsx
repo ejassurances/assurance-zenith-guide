@@ -34,6 +34,8 @@ export function Simulator() {
   const [email, setEmail] = useState("");
   const [telephone, setTelephone] = useState("");
   const [message, setMessage] = useState("");
+  const [acceptContact, setAcceptContact] = useState(false);
+  const [acceptRgpd, setAcceptRgpd] = useState(false);
 
   const results = useMemo(() => {
     const { taux_groupe, taux_courtier } = getRatesForAge(age);
