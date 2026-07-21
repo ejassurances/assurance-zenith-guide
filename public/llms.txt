@@ -1,0 +1,29 @@
+# Valorem & Co.
+
+> Cabinet de courtage en assurances indépendant, spécialisé en assurance emprunteur (loi Lemoine) et accompagnement des parents solos dans la transmission de patrimoine.
+
+Valorem & Co. est un cabinet de courtage français immatriculé à l'ORIAS et placé sous le contrôle de l'ACPR. Le cabinet accompagne deux profils :
+
+- Les emprunteurs immobiliers qui souhaitent réduire le coût de leur assurance de prêt grâce à la loi Lemoine (résiliation à tout moment, sans frais, depuis le 1er septembre 2022).
+- Les parents solos (familles monoparentales) qui préparent la transmission de leur patrimoine à leur(s) enfant(s) : assurance-vie, clause bénéficiaire, prévoyance, mandat de protection future.
+
+## Expertises
+
+- [Assurance emprunteur](/assurance-emprunteur) : méthode de renégociation en 4 étapes, économies moyennes, loi Lemoine, équivalence de garanties CCSF, FAQ.
+- [Parents solos & transmission](/parents-solos) : outils d'ingénierie patrimoniale pour familles monoparentales, clause bénéficiaire démembrée, mandat de protection future.
+
+## Ressources
+
+- [Blog — Notes & analyses](/blog) : articles de fond sur l'assurance emprunteur, la transmission et le marché.
+- [Loi Lemoine : ce qui change vraiment](/blog/loi-lemoine-changer-assurance-emprunteur)
+- [Parents solos : protéger l'avenir de son enfant sans conjoint](/blog/parents-solos-transmission-patrimoine)
+- [Taux d'usure et assurance emprunteur](/blog/taux-usure-assurance-emprunteur-2025)
+
+## Cabinet
+
+- [À propos](/a-propos) : positionnement, méthode, cadre réglementaire.
+- [Contact & prise de rendez-vous](/contact) : formulaire, email, téléphone.
+
+## Optional
+
+- [Sitemap XML](/sitemap.xml)
