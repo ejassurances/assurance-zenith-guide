@@ -10,7 +10,7 @@ export function SiteFooter() {
             {SITE.name}
           </Link>
           <p className="mt-4 max-w-[36ch] text-sm text-ink-muted">
-            Courtier indépendant en assurances. Conseil en gestion de patrimoine spécialisé pour les emprunteurs et les parents solos.
+            Courtier indépendant en assurances. Conseil en gestion de patrimoine pour les emprunteurs et les familles en coparentalité (parents biologiques et parents sociaux).
           </p>
           <div className="mt-8 inline-flex flex-col rounded-md border border-line bg-surface-elevated px-3 py-2">
             <span className="text-[10px] font-bold uppercase leading-none text-ink-muted">Agrément</span>
@@ -23,7 +23,7 @@ export function SiteFooter() {
             <ul className="space-y-2 text-sm text-ink-muted">
               <li><Link to="/a-propos" className="hover:text-ink">À propos</Link></li>
               <li><Link to="/assurance-emprunteur" className="hover:text-ink">Assurance emprunteur</Link></li>
-              <li><Link to="/parents-solos" className="hover:text-ink">Parents solos</Link></li>
+              <li><Link to="/coparentalite" className="hover:text-ink">Coparentalité</Link></li>
               <li><Link to="/blog" className="hover:text-ink">Blog</Link></li>
               <li><Link to="/contact" className="hover:text-ink">Contact</Link></li>
             </ul>

@@ -45,7 +45,7 @@ function Page() {
             <h2 className="font-serif text-2xl font-medium text-ink">Notre positionnement</h2>
             <p className="mt-3">
               Nous avons fait le choix de la spécialisation. Deux expertises, travaillées en profondeur, plutôt
-              qu'un catalogue superficiel : l'<strong>assurance emprunteur</strong> et l'<strong>accompagnement des parents solos</strong> dans
+              qu'un catalogue superficiel : l'<strong>assurance emprunteur</strong> et l'<strong>accompagnement des familles en coparentalité</strong> (parents biologiques et parents sociaux) dans
               la transmission de leur patrimoine.
             </p>
           </div>

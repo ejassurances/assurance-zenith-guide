@@ -1,11 +1,11 @@
 # EJ Partners Assurances
 
-> Cabinet de courtage en assurances indépendant, spécialisé en assurance emprunteur (loi Lemoine) et accompagnement des parents solos dans la transmission de patrimoine.
+> Cabinet de courtage en assurances indépendant, spécialisé en assurance emprunteur (loi Lemoine) et accompagnement des familles en coparentalité (parents biologiques et parents sociaux) dans la transmission de patrimoine.
 
 EJ Partners Assurances est un cabinet de courtage français (SIRET 500 256 904) immatriculé à l'ORIAS sous le n° 25005811 et placé sous le contrôle de l'ACPR. Le cabinet est basé au 71 Rue du Docteur Roux, 95600 Eaubonne, et accompagne deux profils :
 
 - Les emprunteurs immobiliers qui souhaitent réduire le coût de leur assurance de prêt grâce à la loi Lemoine (résiliation à tout moment, sans frais, depuis le 1er septembre 2022).
-- Les parents solos (familles monoparentales) qui préparent la transmission de leur patrimoine à leur(s) enfant(s) : assurance-vie, clause bénéficiaire, prévoyance, mandat de protection future.
+- Les familles en coparentalité — un ou deux parents biologiques accompagnés d'un ou deux parents sociaux (souvent leurs conjoint(e)s), configuration notamment choisie par les couples homosexuels pour fonder une famille — qui préparent la transmission de leur patrimoine et la protection de l'enfant : assurance-vie, clause bénéficiaire dédiée au parent social, prévoyance croisée, mandat de protection future.
 
 ## Contact
 
@@ -15,13 +15,13 @@ EJ Partners Assurances est un cabinet de courtage français (SIRET 500 256 904) 
 ## Expertises
 
 - [Assurance emprunteur](/assurance-emprunteur) : méthode de renégociation en 4 étapes, économies moyennes, loi Lemoine, équivalence de garanties CCSF, FAQ.
-- [Parents solos & transmission](/parents-solos) : outils d'ingénierie patrimoniale pour familles monoparentales, clause bénéficiaire démembrée, mandat de protection future.
+- [Coparentalité & transmission](/coparentalite) : outils d'ingénierie patrimoniale pour les familles en coparentalité (parents biologiques et parents sociaux), clause bénéficiaire pour parent social, prévoyance croisée, mandat de protection future.
 
 ## Ressources
 
 - [Blog — Notes & analyses](/blog) : articles de fond sur l'assurance emprunteur, la transmission et le marché.
 - [Loi Lemoine : ce qui change vraiment](/blog/loi-lemoine-changer-assurance-emprunteur)
-- [Parents solos : protéger l'avenir de son enfant sans conjoint](/blog/parents-solos-transmission-patrimoine)
+- [Coparentalité : protéger l'enfant et le parent social](/blog/coparentalite-transmission-patrimoine)
 - [Taux d'usure et assurance emprunteur](/blog/taux-usure-assurance-emprunteur-2025)
 
 ## Cabinet

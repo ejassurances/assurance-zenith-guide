@@ -5,7 +5,7 @@ import { BLOG_POSTS } from "@/lib/blog-posts";
 
 const TITLE = "Blog — Analyses assurance emprunteur & transmission";
 const DESC =
-  "Analyses, guides et cas concrets sur la loi Lemoine, l'assurance emprunteur et la transmission de patrimoine pour les parents solos.";
+  "Analyses, guides et cas concrets sur la loi Lemoine, l'assurance emprunteur et la transmission de patrimoine pour les familles en coparentalité.";
 
 export const Route = createFileRoute("/blog/")({
   head: () => ({

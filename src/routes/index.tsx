@@ -39,7 +39,8 @@ function HomePage() {
           </h1>
           <p className="mt-6 max-w-[58ch] text-pretty text-base text-ink-soft md:text-lg">
             Nous accompagnons deux profils avec la même exigence : les emprunteurs qui veulent réduire le coût
-            de leur crédit immobilier, et les parents solos qui préparent la transmission de leur patrimoine.
+            de leur crédit immobilier, et les familles en <strong>coparentalité</strong> — parents biologiques
+            et parents sociaux — qui préparent la transmission de leur patrimoine.
           </p>
           <div className="mt-10 flex flex-col gap-3 sm:flex-row">
             <Link
@@ -49,10 +50,10 @@ function HomePage() {
               Optimiser mon assurance emprunteur
             </Link>
             <Link
-              to="/parents-solos"
+              to="/coparentalite"
               className="inline-flex h-12 items-center justify-center rounded-md border border-line bg-surface-elevated px-6 text-sm font-medium text-ink"
             >
-              Transmission & Parents solos
+              Coparentalité & transmission
             </Link>
           </div>
         </div>
@@ -97,13 +98,13 @@ function HomePage() {
 
           <ExpertiseRow
             reverse
-            eyebrow="Accompagnement parents solos"
-            title="Patrimoine, transmission & prévoyance"
-            body="Parce que protéger son enfant seul(e) demande une ingénierie spécifique, nous structurons vos placements, votre prévoyance et vos clauses bénéficiaires pour garantir son avenir — quels que soient les aléas de la vie."
-            to="/parents-solos"
+            eyebrow="Accompagnement coparentalité"
+            title="Familles homoparentales & parents sociaux"
+            body="Parents biologiques + parents sociaux : la coparentalité multiplie les liens affectifs et complexifie la transmission. Nous structurons assurance-vie, prévoyance croisée, clause bénéficiaire et mandat de protection future pour que chaque adulte protège l'enfant — quel que soit son statut légal."
+            to="/coparentalite"
             cta="Découvrir l'accompagnement"
             image={expertiseParentsImg}
-            imageAlt="Bureau chaleureux avec un cadre photo de famille"
+            imageAlt="Deux couples et un enfant, moment familial serein"
           />
         </div>
       </section>
@@ -129,14 +130,14 @@ function HomePage() {
               gain="Économie totale : 18 420 € sur la durée restante."
             />
             <CaseCard
-              tag="Cas #02 — Parent solo"
+              tag="Cas #02 — Coparentalité"
               date="Structuré Févr. 2025"
-              headline="Mère célibataire, un enfant de 6 ans, 320 000 € d'épargne."
+              headline="Couple homoparental + parent social, un enfant de 6 ans, 320 000 € d'épargne."
               beforeLabel="Avant"
-              beforeValue="Aucune clause bénéficiaire adaptée"
+              beforeValue="Parent social non protégé, fiscalité de tiers"
               afterLabel="Après"
-              afterValue="Clause démembrée + mandat de protection future"
-              gain="Fiscalité optimisée de 45 % sur la transmission, gestion sécurisée jusqu'aux 25 ans de l'enfant."
+              afterValue="Clauses bénéficiaires croisées + prévoyance miroir + mandat de protection future"
+              gain="Parent social bénéficiaire à taux réduit, gestion sécurisée jusqu'aux 25 ans de l'enfant."
             />
           </div>
         </div>
