@@ -28,6 +28,8 @@ EJ Partners Assurances est un cabinet de courtage français (SIRET 500 256 904) 
 
 - [À propos](/a-propos) : positionnement, méthode, cadre réglementaire.
 - [Contact & prise de rendez-vous](/contact) : formulaire, email, téléphone.
+- [Mentions légales](/mentions-legales) : éditeur, ORIAS, SIRET, assurance RCPro Lloyd's Insurance Company SA (contrat n° BZIA0001756), hébergement.
+- [Politique de confidentialité](/politique-de-confidentialite) : RGPD, droits des utilisateurs, conservation des données.
 
 ## Optional
 

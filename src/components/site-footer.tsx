@@ -43,9 +43,14 @@ export function SiteFooter() {
           <p>
             © {new Date().getFullYear()} {SITE.name} — Tous droits réservés. Société de courtage en assurances régie par le Code des Assurances, sous le contrôle de l'ACPR (4 Place de Budapest, 75009 Paris).
           </p>
-          <Link to="/politique-de-confidentialite" className="shrink-0 hover:text-ink">
-            Politique de confidentialité
-          </Link>
+          <div className="flex shrink-0 gap-4">
+            <Link to="/mentions-legales" className="hover:text-ink">
+              Mentions légales
+            </Link>
+            <Link to="/politique-de-confidentialite" className="hover:text-ink">
+              Politique de confidentialité
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
