@@ -6,11 +6,9 @@ export const SITE = {
     "EJ Partners Assurances — Cabinet de courtage en assurances indépendant. Expertise en assurance emprunteur (loi Lemoine) et accompagnement des familles en coparentalité (parents biologiques et parents sociaux) dans la transmission de leur patrimoine.",
   orias: "ORIAS n° 25005811",
   siret: "500 256 904",
-  email: "contact@ejpartners-assurances.fr",
+  email: "contact@ej-assurances.fr",
   phone: "01 89 31 40 29",
   address: "71 Rue du Docteur Roux, 95600 Eaubonne",
-  simulatorUrl:
-    "https://www.magnolia.fr/comparer-assurance-pret-immobilier?utm_source=33594&whiteLabel=true&platform=direct",
 } as const;
 
 export const NAV_LINKS = [
