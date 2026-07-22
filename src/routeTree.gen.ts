@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PolitiqueDeConfidentialiteRouteImport } from './routes/politique-de-confidentialite'
 import { Route as MentionsLegalesRouteImport } from './routes/mentions-legales'
 import { Route as CoparentaliteRouteImport } from './routes/coparentalite'
@@ -40,6 +41,11 @@ import { Route as AuthenticatedEspaceClientsIdRouteImport } from './routes/_auth
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PolitiqueDeConfidentialiteRoute =
@@ -194,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/coparentalite': typeof CoparentaliteRoute
   '/mentions-legales': typeof MentionsLegalesRoute
   '/politique-de-confidentialite': typeof PolitiqueDeConfidentialiteRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/espace': typeof AuthenticatedEspaceRouteWithChildren
   '/blog/$slug': typeof BlogSlugRoute
@@ -222,6 +229,7 @@ export interface FileRoutesByTo {
   '/coparentalite': typeof CoparentaliteRoute
   '/mentions-legales': typeof MentionsLegalesRoute
   '/politique-de-confidentialite': typeof PolitiqueDeConfidentialiteRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog': typeof BlogIndexRoute
@@ -251,6 +259,7 @@ export interface FileRoutesById {
   '/coparentalite': typeof CoparentaliteRoute
   '/mentions-legales': typeof MentionsLegalesRoute
   '/politique-de-confidentialite': typeof PolitiqueDeConfidentialiteRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/espace': typeof AuthenticatedEspaceRouteWithChildren
   '/blog/$slug': typeof BlogSlugRoute
@@ -281,6 +290,7 @@ export interface FileRouteTypes {
     | '/coparentalite'
     | '/mentions-legales'
     | '/politique-de-confidentialite'
+    | '/reset-password'
     | '/sitemap.xml'
     | '/espace'
     | '/blog/$slug'
@@ -309,6 +319,7 @@ export interface FileRouteTypes {
     | '/coparentalite'
     | '/mentions-legales'
     | '/politique-de-confidentialite'
+    | '/reset-password'
     | '/sitemap.xml'
     | '/blog/$slug'
     | '/blog'
@@ -337,6 +348,7 @@ export interface FileRouteTypes {
     | '/coparentalite'
     | '/mentions-legales'
     | '/politique-de-confidentialite'
+    | '/reset-password'
     | '/sitemap.xml'
     | '/_authenticated/espace'
     | '/blog/$slug'
@@ -367,6 +379,7 @@ export interface RootRouteChildren {
   CoparentaliteRoute: typeof CoparentaliteRoute
   MentionsLegalesRoute: typeof MentionsLegalesRoute
   PolitiqueDeConfidentialiteRoute: typeof PolitiqueDeConfidentialiteRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   BlogSlugRoute: typeof BlogSlugRoute
   BlogIndexRoute: typeof BlogIndexRoute
@@ -381,6 +394,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/politique-de-confidentialite': {
@@ -623,6 +643,7 @@ const rootRouteChildren: RootRouteChildren = {
   CoparentaliteRoute: CoparentaliteRoute,
   MentionsLegalesRoute: MentionsLegalesRoute,
   PolitiqueDeConfidentialiteRoute: PolitiqueDeConfidentialiteRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   BlogSlugRoute: BlogSlugRoute,
   BlogIndexRoute: BlogIndexRoute,
