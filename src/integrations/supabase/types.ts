@@ -217,7 +217,7 @@ export type Database = {
         Row: {
           client_id: string | null
           created_at: string
-          dossier_id: string
+          dossier_id: string | null
           file_name: string
           file_size: number | null
           id: string
@@ -228,7 +228,7 @@ export type Database = {
         Insert: {
           client_id?: string | null
           created_at?: string
-          dossier_id: string
+          dossier_id?: string | null
           file_name: string
           file_size?: number | null
           id?: string
@@ -239,7 +239,7 @@ export type Database = {
         Update: {
           client_id?: string | null
           created_at?: string
-          dossier_id?: string
+          dossier_id?: string | null
           file_name?: string
           file_size?: number | null
           id?: string
