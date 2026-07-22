@@ -446,7 +446,7 @@ function ProduitEditor({
         code_produit: p.code_produit,
         description: p.description,
         statut: p.statut,
-        caracteristiques: p.caracteristiques,
+        caracteristiques: p.caracteristiques as never,
         points_forts: p.points_forts,
         points_vigilance: p.points_vigilance,
         cible: p.cible,
