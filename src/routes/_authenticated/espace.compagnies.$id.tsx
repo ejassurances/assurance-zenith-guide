@@ -107,7 +107,7 @@ function CompagnieDetail() {
   async function saveInfos(patch: Partial<Compagnie>) {
     if (!c) return;
     setSaving(true);
-    const { error } = await supabase.from("compagnies").update(patch).eq("id", c.id);
+    const { error } = await supabase.from("compagnies").update(patch as never).eq("id", c.id);
     setSaving(false);
     if (error) setError(error.message);
     else setC({ ...c, ...patch });
