@@ -148,6 +148,7 @@ function ClientDetail() {
             ["historique", "Historique"],
             ["documents", "Documents"],
             ["dossiers", "Dossiers"],
+            ["der", "DER"],
           ] as [Tab, string][]
         ).map(([key, label]) => (
           <button
