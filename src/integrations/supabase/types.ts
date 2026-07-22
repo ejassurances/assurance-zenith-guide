@@ -548,6 +548,59 @@ export type Database = {
           },
         ]
       }
+      compagnie_documents: {
+        Row: {
+          compagnie_id: string
+          created_at: string
+          date_fin: string | null
+          date_signature: string | null
+          id: string
+          nom: string
+          notes: string | null
+          reference: string | null
+          storage_path: string
+          type: Database["public"]["Enums"]["compagnie_doc_type"]
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          compagnie_id: string
+          created_at?: string
+          date_fin?: string | null
+          date_signature?: string | null
+          id?: string
+          nom: string
+          notes?: string | null
+          reference?: string | null
+          storage_path: string
+          type?: Database["public"]["Enums"]["compagnie_doc_type"]
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          compagnie_id?: string
+          created_at?: string
+          date_fin?: string | null
+          date_signature?: string | null
+          id?: string
+          nom?: string
+          notes?: string | null
+          reference?: string | null
+          storage_path?: string
+          type?: Database["public"]["Enums"]["compagnie_doc_type"]
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compagnie_documents_compagnie_id_fkey"
+            columns: ["compagnie_id"]
+            isOneToOne: false
+            referencedRelation: "compagnies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       compagnies: {
         Row: {
           api_active: boolean
@@ -611,6 +664,51 @@ export type Database = {
           slug?: string
           statut?: Database["public"]["Enums"]["compagnie_statut"]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      conformite_documents: {
+        Row: {
+          created_at: string
+          date_emission: string | null
+          date_expiration: string | null
+          id: string
+          nom: string
+          notes: string | null
+          statut: string
+          storage_path: string
+          type: Database["public"]["Enums"]["conformite_doc_type"]
+          updated_at: string
+          uploaded_by: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_emission?: string | null
+          date_expiration?: string | null
+          id?: string
+          nom: string
+          notes?: string | null
+          statut?: string
+          storage_path: string
+          type: Database["public"]["Enums"]["conformite_doc_type"]
+          updated_at?: string
+          uploaded_by?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_emission?: string | null
+          date_expiration?: string | null
+          id?: string
+          nom?: string
+          notes?: string | null
+          statut?: string
+          storage_path?: string
+          type?: Database["public"]["Enums"]["conformite_doc_type"]
+          updated_at?: string
+          uploaded_by?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1481,7 +1579,21 @@ export type Database = {
         | "autre"
       client_statut: "prospect" | "actif" | "inactif" | "perdu" | "ancien"
       commission_statut: "prevue" | "versee" | "annulee"
+      compagnie_doc_type:
+        | "contrat_partenariat"
+        | "avenant"
+        | "protocole_commissions"
+        | "conditions_apporteur"
+        | "autre"
       compagnie_statut: "actif" | "prospect" | "inactif"
+      conformite_doc_type:
+        | "cni"
+        | "justificatif_domicile"
+        | "orias"
+        | "association_pro"
+        | "rcpro"
+        | "der"
+        | "autre"
       dossier_statut: "nouveau" | "en_cours" | "signe" | "perdu"
       produit_document_type:
         | "conditions_generales"
@@ -1632,7 +1744,23 @@ export const Constants = {
       ],
       client_statut: ["prospect", "actif", "inactif", "perdu", "ancien"],
       commission_statut: ["prevue", "versee", "annulee"],
+      compagnie_doc_type: [
+        "contrat_partenariat",
+        "avenant",
+        "protocole_commissions",
+        "conditions_apporteur",
+        "autre",
+      ],
       compagnie_statut: ["actif", "prospect", "inactif"],
+      conformite_doc_type: [
+        "cni",
+        "justificatif_domicile",
+        "orias",
+        "association_pro",
+        "rcpro",
+        "der",
+        "autre",
+      ],
       dossier_statut: ["nouveau", "en_cours", "signe", "perdu"],
       produit_document_type: [
         "conditions_generales",
