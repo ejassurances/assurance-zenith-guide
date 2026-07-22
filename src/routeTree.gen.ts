@@ -14,11 +14,19 @@ import { Route as PolitiqueDeConfidentialiteRouteImport } from './routes/politiq
 import { Route as MentionsLegalesRouteImport } from './routes/mentions-legales'
 import { Route as CoparentaliteRouteImport } from './routes/coparentalite'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AssuranceEmprunteurRouteImport } from './routes/assurance-emprunteur'
 import { Route as AProposRouteImport } from './routes/a-propos'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
+import { Route as AuthenticatedEspaceRouteImport } from './routes/_authenticated/espace'
+import { Route as AuthenticatedEspaceIndexRouteImport } from './routes/_authenticated/espace.index'
+import { Route as AuthenticatedEspaceUtilisateursRouteImport } from './routes/_authenticated/espace.utilisateurs'
+import { Route as AuthenticatedEspaceCommissionsRouteImport } from './routes/_authenticated/espace.commissions'
+import { Route as AuthenticatedEspaceDossiersIndexRouteImport } from './routes/_authenticated/espace.dossiers.index'
+import { Route as AuthenticatedEspaceDossiersIdRouteImport } from './routes/_authenticated/espace.dossiers.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -46,6 +54,11 @@ const ContactRoute = ContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AssuranceEmprunteurRoute = AssuranceEmprunteurRouteImport.update({
   id: '/assurance-emprunteur',
   path: '/assurance-emprunteur',
@@ -54,6 +67,10 @@ const AssuranceEmprunteurRoute = AssuranceEmprunteurRouteImport.update({
 const AProposRoute = AProposRouteImport.update({
   id: '/a-propos',
   path: '/a-propos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -71,23 +88,66 @@ const BlogSlugRoute = BlogSlugRouteImport.update({
   path: '/blog/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedEspaceRoute = AuthenticatedEspaceRouteImport.update({
+  id: '/espace',
+  path: '/espace',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedEspaceIndexRoute =
+  AuthenticatedEspaceIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
+const AuthenticatedEspaceUtilisateursRoute =
+  AuthenticatedEspaceUtilisateursRouteImport.update({
+    id: '/utilisateurs',
+    path: '/utilisateurs',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
+const AuthenticatedEspaceCommissionsRoute =
+  AuthenticatedEspaceCommissionsRouteImport.update({
+    id: '/commissions',
+    path: '/commissions',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
+const AuthenticatedEspaceDossiersIndexRoute =
+  AuthenticatedEspaceDossiersIndexRouteImport.update({
+    id: '/dossiers/',
+    path: '/dossiers/',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
+const AuthenticatedEspaceDossiersIdRoute =
+  AuthenticatedEspaceDossiersIdRouteImport.update({
+    id: '/dossiers/$id',
+    path: '/dossiers/$id',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/a-propos': typeof AProposRoute
   '/assurance-emprunteur': typeof AssuranceEmprunteurRoute
+  '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/coparentalite': typeof CoparentaliteRoute
   '/mentions-legales': typeof MentionsLegalesRoute
   '/politique-de-confidentialite': typeof PolitiqueDeConfidentialiteRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/espace': typeof AuthenticatedEspaceRouteWithChildren
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
+  '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
+  '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
+  '/espace/': typeof AuthenticatedEspaceIndexRoute
+  '/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
+  '/espace/dossiers/': typeof AuthenticatedEspaceDossiersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/a-propos': typeof AProposRoute
   '/assurance-emprunteur': typeof AssuranceEmprunteurRoute
+  '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/coparentalite': typeof CoparentaliteRoute
   '/mentions-legales': typeof MentionsLegalesRoute
@@ -95,19 +155,32 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog': typeof BlogIndexRoute
+  '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
+  '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
+  '/espace': typeof AuthenticatedEspaceIndexRoute
+  '/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
+  '/espace/dossiers': typeof AuthenticatedEspaceDossiersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/a-propos': typeof AProposRoute
   '/assurance-emprunteur': typeof AssuranceEmprunteurRoute
+  '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/coparentalite': typeof CoparentaliteRoute
   '/mentions-legales': typeof MentionsLegalesRoute
   '/politique-de-confidentialite': typeof PolitiqueDeConfidentialiteRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/_authenticated/espace': typeof AuthenticatedEspaceRouteWithChildren
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
+  '/_authenticated/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
+  '/_authenticated/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
+  '/_authenticated/espace/': typeof AuthenticatedEspaceIndexRoute
+  '/_authenticated/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
+  '/_authenticated/espace/dossiers/': typeof AuthenticatedEspaceDossiersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -115,18 +188,26 @@ export interface FileRouteTypes {
     | '/'
     | '/a-propos'
     | '/assurance-emprunteur'
+    | '/auth'
     | '/contact'
     | '/coparentalite'
     | '/mentions-legales'
     | '/politique-de-confidentialite'
     | '/sitemap.xml'
+    | '/espace'
     | '/blog/$slug'
     | '/blog/'
+    | '/espace/commissions'
+    | '/espace/utilisateurs'
+    | '/espace/'
+    | '/espace/dossiers/$id'
+    | '/espace/dossiers/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/a-propos'
     | '/assurance-emprunteur'
+    | '/auth'
     | '/contact'
     | '/coparentalite'
     | '/mentions-legales'
@@ -134,24 +215,39 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/blog/$slug'
     | '/blog'
+    | '/espace/commissions'
+    | '/espace/utilisateurs'
+    | '/espace'
+    | '/espace/dossiers/$id'
+    | '/espace/dossiers'
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
     | '/a-propos'
     | '/assurance-emprunteur'
+    | '/auth'
     | '/contact'
     | '/coparentalite'
     | '/mentions-legales'
     | '/politique-de-confidentialite'
     | '/sitemap.xml'
+    | '/_authenticated/espace'
     | '/blog/$slug'
     | '/blog/'
+    | '/_authenticated/espace/commissions'
+    | '/_authenticated/espace/utilisateurs'
+    | '/_authenticated/espace/'
+    | '/_authenticated/espace/dossiers/$id'
+    | '/_authenticated/espace/dossiers/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AProposRoute: typeof AProposRoute
   AssuranceEmprunteurRoute: typeof AssuranceEmprunteurRoute
+  AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
   CoparentaliteRoute: typeof CoparentaliteRoute
   MentionsLegalesRoute: typeof MentionsLegalesRoute
@@ -198,6 +294,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/assurance-emprunteur': {
       id: '/assurance-emprunteur'
       path: '/assurance-emprunteur'
@@ -210,6 +313,13 @@ declare module '@tanstack/react-router' {
       path: '/a-propos'
       fullPath: '/a-propos'
       preLoaderRoute: typeof AProposRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -233,13 +343,87 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/espace': {
+      id: '/_authenticated/espace'
+      path: '/espace'
+      fullPath: '/espace'
+      preLoaderRoute: typeof AuthenticatedEspaceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/espace/': {
+      id: '/_authenticated/espace/'
+      path: '/'
+      fullPath: '/espace/'
+      preLoaderRoute: typeof AuthenticatedEspaceIndexRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
+    '/_authenticated/espace/utilisateurs': {
+      id: '/_authenticated/espace/utilisateurs'
+      path: '/utilisateurs'
+      fullPath: '/espace/utilisateurs'
+      preLoaderRoute: typeof AuthenticatedEspaceUtilisateursRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
+    '/_authenticated/espace/commissions': {
+      id: '/_authenticated/espace/commissions'
+      path: '/commissions'
+      fullPath: '/espace/commissions'
+      preLoaderRoute: typeof AuthenticatedEspaceCommissionsRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
+    '/_authenticated/espace/dossiers/': {
+      id: '/_authenticated/espace/dossiers/'
+      path: '/dossiers'
+      fullPath: '/espace/dossiers/'
+      preLoaderRoute: typeof AuthenticatedEspaceDossiersIndexRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
+    '/_authenticated/espace/dossiers/$id': {
+      id: '/_authenticated/espace/dossiers/$id'
+      path: '/dossiers/$id'
+      fullPath: '/espace/dossiers/$id'
+      preLoaderRoute: typeof AuthenticatedEspaceDossiersIdRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
   }
 }
 
+interface AuthenticatedEspaceRouteChildren {
+  AuthenticatedEspaceCommissionsRoute: typeof AuthenticatedEspaceCommissionsRoute
+  AuthenticatedEspaceUtilisateursRoute: typeof AuthenticatedEspaceUtilisateursRoute
+  AuthenticatedEspaceIndexRoute: typeof AuthenticatedEspaceIndexRoute
+  AuthenticatedEspaceDossiersIdRoute: typeof AuthenticatedEspaceDossiersIdRoute
+  AuthenticatedEspaceDossiersIndexRoute: typeof AuthenticatedEspaceDossiersIndexRoute
+}
+
+const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
+  AuthenticatedEspaceCommissionsRoute: AuthenticatedEspaceCommissionsRoute,
+  AuthenticatedEspaceUtilisateursRoute: AuthenticatedEspaceUtilisateursRoute,
+  AuthenticatedEspaceIndexRoute: AuthenticatedEspaceIndexRoute,
+  AuthenticatedEspaceDossiersIdRoute: AuthenticatedEspaceDossiersIdRoute,
+  AuthenticatedEspaceDossiersIndexRoute: AuthenticatedEspaceDossiersIndexRoute,
+}
+
+const AuthenticatedEspaceRouteWithChildren =
+  AuthenticatedEspaceRoute._addFileChildren(AuthenticatedEspaceRouteChildren)
+
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedEspaceRoute: typeof AuthenticatedEspaceRouteWithChildren
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedEspaceRoute: AuthenticatedEspaceRouteWithChildren,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AProposRoute: AProposRoute,
   AssuranceEmprunteurRoute: AssuranceEmprunteurRoute,
+  AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,
   CoparentaliteRoute: CoparentaliteRoute,
   MentionsLegalesRoute: MentionsLegalesRoute,
@@ -251,13 +435,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
