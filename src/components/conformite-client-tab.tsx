@@ -56,7 +56,15 @@ const NIVEAU_COLOR: Record<string, string> = {
   rouge: "bg-red-100 text-red-900 border-red-300",
 };
 
-export function ConformiteClientTab({ clientId, clientEmail, canEdit }: { clientId: string; clientEmail: string | null; canEdit: boolean }) {
+export function ConformiteClientTab({
+  clientId,
+  clientEmail,
+  canEdit,
+}: {
+  clientId: string;
+  clientEmail: string | null;
+  canEdit: boolean;
+}) {
   const [client, setClient] = useState<ClientMini | null>(null);
   const [docs, setDocs] = useState<KycDoc[]>([]);
   const [verifs, setVerifs] = useState<LCBVerif[]>([]);
@@ -69,9 +77,24 @@ export function ConformiteClientTab({ clientId, clientEmail, canEdit }: { client
 
   const load = async () => {
     const [c, d, v] = await Promise.all([
-      supabase.from("clients").select("id,nom,prenom,date_naissance,conformite_score,conformite_niveau,conformite_derniere_verif,conformite_prochaine_verif").eq("id", clientId).maybeSingle(),
-      supabase.from("client_kyc_documents").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
-      supabase.from("client_lcb_verifications").select("*").eq("client_id", clientId).order("verifie_le", { ascending: false }).limit(10),
+      supabase
+        .from("clients")
+        .select(
+          "id,nom,prenom,date_naissance,conformite_score,conformite_niveau,conformite_derniere_verif,conformite_prochaine_verif",
+        )
+        .eq("id", clientId)
+        .maybeSingle(),
+      supabase
+        .from("client_kyc_documents")
+        .select("*")
+        .eq("client_id", clientId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("client_lcb_verifications")
+        .select("*")
+        .eq("client_id", clientId)
+        .order("verifie_le", { ascending: false })
+        .limit(10),
     ]);
     setClient((c.data as ClientMini | null) ?? null);
     setDocs((d.data ?? []) as KycDoc[]);
@@ -142,7 +165,8 @@ export function ConformiteClientTab({ clientId, clientEmail, canEdit }: { client
   };
 
   const statuer = async (id: string, statut: "clair" | "faux_positif" | "confirme") => {
-    const notes = statut === "confirme" || statut === "faux_positif" ? prompt("Note (optionnel)") ?? undefined : undefined;
+    const notes =
+      statut === "confirme" || statut === "faux_positif" ? (prompt("Note (optionnel)") ?? undefined) : undefined;
     await marquer({ data: { verification_id: id, statut, notes } });
     setSearchResult(null);
     await load();
@@ -180,8 +204,8 @@ export function ConformiteClientTab({ clientId, clientEmail, canEdit }: { client
           </div>
         </div>
         <p className="mt-3 text-xs opacity-80">
-          Barème : CNI valide (30 pts) · Justificatif de domicile &lt; 3 mois (20 pts) · RIB (15 pts) · Vérification LCB-FT (35 pts).
-          Revérification 18 mois si vert · 12 mois si orange · 6 mois si rouge.
+          Barème : CNI valide (30 pts) · Justificatif de domicile &lt; 3 mois (20 pts) · RIB (15 pts) · Vérification
+          LCB-FT (35 pts). Revérification 18 mois si vert · 12 mois si orange · 6 mois si rouge.
         </p>
       </div>
 
@@ -221,12 +245,17 @@ export function ConformiteClientTab({ clientId, clientEmail, canEdit }: { client
                 {documents.length > 0 && (
                   <div className="mt-3 space-y-2">
                     {documents.map((doc) => (
-                      <div key={doc.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-line bg-surface px-3 py-2 text-sm">
+                      <div
+                        key={doc.id}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-line bg-surface px-3 py-2 text-sm"
+                      >
                         <div className="min-w-0 flex-1">
                           <p className="truncate font-medium">{doc.nom}</p>
                           <p className="text-xs text-ink-muted">
                             Ajouté le {new Date(doc.created_at).toLocaleDateString("fr-FR")}
-                            {doc.date_emission ? ` · Émis le ${new Date(doc.date_emission).toLocaleDateString("fr-FR")}` : ""}
+                            {doc.date_emission
+                              ? ` · Émis le ${new Date(doc.date_emission).toLocaleDateString("fr-FR")}`
+                              : ""}
                           </p>
                         </div>
                         <span
@@ -235,8 +264,8 @@ export function ConformiteClientTab({ clientId, clientEmail, canEdit }: { client
                             (doc.statut === "valide"
                               ? "bg-emerald-100 text-emerald-900"
                               : doc.statut === "refuse"
-                              ? "bg-red-100 text-red-900"
-                              : "bg-amber-100 text-amber-900")
+                                ? "bg-red-100 text-red-900"
+                                : "bg-amber-100 text-amber-900")
                           }
                         >
                           {doc.statut}
@@ -246,12 +275,18 @@ export function ConformiteClientTab({ clientId, clientEmail, canEdit }: { client
                             Voir
                           </button>
                           {canEdit && doc.statut !== "valide" && (
-                            <button onClick={() => valider(doc.id, "valide")} className="text-xs text-emerald-800 underline">
+                            <button
+                              onClick={() => valider(doc.id, "valide")}
+                              className="text-xs text-emerald-800 underline"
+                            >
                               Valider
                             </button>
                           )}
                           {canEdit && doc.statut !== "refuse" && (
-                            <button onClick={() => valider(doc.id, "refuse")} className="text-xs text-red-800 underline">
+                            <button
+                              onClick={() => valider(doc.id, "refuse")}
+                              className="text-xs text-red-800 underline"
+                            >
                               Refuser
                             </button>
                           )}
@@ -306,10 +341,14 @@ export function ConformiteClientTab({ clientId, clientEmail, canEdit }: { client
               <>
                 <div className="mb-3 flex flex-wrap gap-2 text-xs">
                   {searchResult.has_sanction && (
-                    <span className="rounded-full bg-red-100 px-2 py-0.5 font-medium text-red-900">Sanction potentielle</span>
+                    <span className="rounded-full bg-red-100 px-2 py-0.5 font-medium text-red-900">
+                      Sanction potentielle
+                    </span>
                   )}
                   {searchResult.has_ppe && (
-                    <span className="rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-900">PPE potentiel</span>
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-900">
+                      PPE potentiel
+                    </span>
                   )}
                   <span className="rounded-full border border-line px-2 py-0.5">
                     Score : {(searchResult.best_score * 100).toFixed(0)}%
@@ -371,7 +410,9 @@ export function ConformiteClientTab({ clientId, clientEmail, canEdit }: { client
                     <tr key={v.id} className="border-b border-line last:border-0">
                       <td className="px-2 py-2 text-xs">{new Date(v.verifie_le).toLocaleString("fr-FR")}</td>
                       <td className="px-2 py-2">{v.nb_correspondances}</td>
-                      <td className="px-2 py-2">{v.score_correspondance ? `${(Number(v.score_correspondance) * 100).toFixed(0)}%` : "—"}</td>
+                      <td className="px-2 py-2">
+                        {v.score_correspondance ? `${(Number(v.score_correspondance) * 100).toFixed(0)}%` : "—"}
+                      </td>
                       <td className="px-2 py-2">
                         <span
                           className={
@@ -379,8 +420,8 @@ export function ConformiteClientTab({ clientId, clientEmail, canEdit }: { client
                             (v.statut === "clair" || v.statut === "faux_positif"
                               ? "bg-emerald-100 text-emerald-900"
                               : v.statut === "a_verifier"
-                              ? "bg-amber-100 text-amber-900"
-                              : "bg-red-100 text-red-900")
+                                ? "bg-amber-100 text-amber-900"
+                                : "bg-red-100 text-red-900")
                           }
                         >
                           {v.statut}
