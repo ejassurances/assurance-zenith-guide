@@ -227,7 +227,7 @@ function CompagnieDetail() {
         />
       )}
       {tab === "partenariats" && <PartenariatsTab compagnieId={c.id} compagnieNom={c.nom} isAdmin={isAdmin} />}
-      {tab === "api" && <ApiTab c={c} isAdmin={isAdmin} saving={saving} onSave={saveInfos} />}
+      {tab === "api" && <ApiTab compagnieId={c.id} apiActive={c.api_active} isAdmin={isAdmin} onApiActiveChange={(v) => saveInfos({ api_active: v })} />}
     </div>
   );
 }
