@@ -63,6 +63,10 @@ type Compagnie = {
   statut: "actif" | "prospect" | "inactif";
   notes: string | null;
   api_active: boolean;
+};
+
+type CompagnieApiConfig = {
+  compagnie_id: string;
   api_base_url: string | null;
   api_auth_type: ApiAuthType;
   api_secret_name: string | null;
