@@ -1,79 +1,102 @@
-# Espaces authentifiés EJ Partners
+# Plan — Espace Comptabilité & moteur de commissions
 
-Objectif : scaffolder 4 espaces (admin courtier, mandataire, client, prescripteur) avec authentification email/mot de passe et les 4 fonctionnalités demandées.
+Objectif : donner à l'admin **et** à chaque mandataire un vrai espace comptable, alimenté automatiquement par les contrats. Focus particulier sur l'assurance emprunteur où primes et commissions se calculent année par année pendant toute la durée du prêt.
 
-## 1. Infrastructure (Lovable Cloud)
+## 1. Modèle de commissions (règles paramétrables)
 
-Activer Lovable Cloud pour bénéficier d'une base de données PostgreSQL, de l'authentification et du stockage de fichiers intégrés — sans compte externe à créer.
+Nouvelle table `commission_regles` :
+- portée : `mandataire` (rétrocession du cabinet vers un mandataire) ou `prescripteur` (apport d'affaires).
+- cible : global, par produit, par famille de produits, ou par compagnie.
+- assiette : `commission_cabinet` (% de ce que touche le cabinet) ou `prime_ht` (% de la prime).
+- taux (%) et éventuellement palier (paliers de CA annuel).
+- date d'effet / fin.
 
-Authentification : email + mot de passe uniquement. Pas d'inscription publique côté mandataires/prescripteurs (créés par l'admin) ; les clients pourront s'auto-inscrire depuis un lien envoyé.
+Effet : chaque contrat rattaché à un mandataire ou prescripteur applique la règle la plus spécifique en vigueur.
 
-## 2. Modèle de données
+## 2. Enrichissement du modèle contrats
 
-- `profiles` — informations utilisateur (nom, tél, société)
-- `user_roles` (table séparée, énumération `app_role`) — `admin | mandataire | client | prescripteur`
-- `dossiers` — dossier client : statut, capital, durée, économie estimée, propriétaire, apporteur
-- `commissions` — par dossier : montant, statut (prévu/versé), bénéficiaire (mandataire ou prescripteur)
-- `messages` — messagerie interne (dossier ↔ participants)
-- `documents` — métadonnées + fichiers dans un bucket privé Storage
+Ajouts sur `contrats` :
+- `mandataire_id`, `prescripteur_id` (nullable).
+- `mode_commissionnement` : `precompte` (payé une fois à la signature), `lineaire` (chaque année), `degressif` (typique emprunteur).
+- `duree_mois`, `date_debut`, `date_fin`.
+- Champs emprunteur : `capital_initial`, `duree_pret_mois`, `taux_pret`, `type_taux` (fixe / mixte), `assiette` (`capital_initial` / `capital_restant_du`), `taux_assurance_annuel` (%), `part_assuree` (%), `co_emprunteur` (jsonb).
+- `commission_cabinet_taux` (% payé par la compagnie au cabinet) et `commission_cabinet_annuelle` calculée.
 
-Sécurité : Row Level Security activée partout. Un rôle est vérifié via une fonction `has_role()` SECURITY DEFINER (jamais via une colonne sur profiles — sinon faille d'escalade).
+Nouvelle table `contrat_echeances` (une ligne par période — année ou mois selon le contrat) :
+- `contrat_id`, `annee`, `date_debut_periode`, `date_fin_periode`.
+- `capital_restant_du_debut`, `prime_periode`.
+- `commission_cabinet_periode`, `commission_mandataire_periode`, `commission_prescripteur_periode`.
+- `statut` : `previsionnel`, `emise`, `payee`, `annulee`.
+- `bordereau_id` (nullable).
 
-Règles d'accès :
-- Admin : tout voir/modifier
-- Mandataire : voir/gérer ses dossiers (ceux qu'il a apportés)
-- Prescripteur : voir uniquement ses apports et commissions
-- Client : voir uniquement son propre dossier, ses documents, ses messages
+Générées automatiquement à la création/modification d'un contrat par une fonction serveur `recalculerEcheances(contrat_id)` :
 
-## 3. Routes
-
-Espace public (inchangé) :
-```
-/, /assurance-emprunteur, /coparentalite, /blog, /contact, /a-propos, ...
-```
-
-Nouvelles routes :
-```
-/auth                          → connexion / mot de passe oublié
-/_authenticated/               → layout protégé (redirige vers /auth)
-  espace/                      → hub qui redirige selon le rôle
-  admin/                       → tableau de bord courtier
-    dossiers, dossiers/$id, commissions, utilisateurs, messages
-  mandataire/                  → tableau de bord mandataire
-    dossiers, dossiers/$id, commissions, messages
-  client/                      → espace client
-    mon-dossier, documents, messages
-  prescripteur/                → espace prescripteur
-    apports, commissions
+Pour un contrat emprunteur :
+```text
+Chaque année n de 1 à durée :
+  CRD_n = amortissement linéaire du capital (approx.) ou table exacte si fournie
+  base_n = capital_initial si assiette = capital_initial
+         = CRD_n si assiette = capital_restant_du
+  prime_n = base_n * taux_assurance_annuel * part_assuree
+  commission_cabinet_n = prime_n * commission_cabinet_taux
+  commission_mandataire_n = commission_cabinet_n * taux_regle_mandataire
+  commission_prescripteur_n = commission_cabinet_n * taux_regle_prescripteur
 ```
 
-L'accès par rôle est vérifié dans un `beforeLoad` de chaque sous-layout.
+Les échéances sont recalculées à chaque changement de contrat ou de règle applicable (via trigger + bouton "Recalculer" côté UI).
 
-## 4. Fonctionnalités
+## 3. Encaissements & réconciliation
 
-**Gestion de dossiers** — liste + fiche détail avec statut (Nouveau, En cours, Signé, Perdu), capital, taux, économie, apporteur lié.
+Nouvelle table `encaissements_compagnie` : bordereaux reçus des compagnies (compagnie, période, montant, fichier importé). Une entrée d'échéance peut être pointée à un encaissement pour passer `previsionnel → emise → payee`.
 
-**Commissions** — table filtrée par utilisateur, totaux prévus/versés, historique.
+Nouvelle table `paiements_partenaires` : versements réels aux mandataires / prescripteurs (période, montant, moyen, référence).
 
-**Messagerie interne** — fil de discussion par dossier, participants selon rôle. Envoi via serverFn (RLS).
+## 4. Espace Comptabilité — Admin
 
-**Documents** — upload dans bucket privé `dossier-documents`, listés dans la fiche dossier. URL signée à la demande.
+Route `/espace/comptabilite` avec onglets :
+- **Vue d'ensemble** : chiffres du mois / trimestre / année (commissions cabinet encaissées, à recevoir, prévisionnel N+1..N+5, top compagnies, top mandataires, MRR emprunteur).
+- **Prévisionnel** : liste des échéances futures filtrable (compagnie, produit, mandataire, année). Export CSV.
+- **Encaissements compagnies** : import de bordereaux, saisie manuelle, rapprochement (matching automatique par contrat + période, correction manuelle possible).
+- **Rétrocessions** : par mandataire — solde dû, historique versements, génération de bordereau mensuel (PDF).
+- **Prescripteurs** : mêmes fonctions que rétrocessions.
+- **Règles de commissionnement** : CRUD sur `commission_regles`.
 
-## 5. Header & navigation
+## 5. Espace Comptabilité — Mandataire
 
-- Ajout d'un lien « Espace » dans le header public : renvoie vers `/auth` si non connecté, vers `/espace` sinon.
-- Bouton de déconnexion dans le layout authentifié.
+Route `/espace/comptabilite` visible pour le rôle mandataire (mêmes URL, contenu filtré par `mandataire_id = auth.uid()` via RLS) :
+- Ses clients rattachés.
+- Ses commissions : émises, encaissées, prévisionnelles (par année).
+- Ses bordereaux reçus (PDF téléchargeables).
+- Détail par contrat : prime annuelle, commission cabinet, sa part.
+- Export CSV pour sa propre comptabilité.
+- Aucun accès aux données des autres mandataires ni aux marges cabinet globales.
 
-## 6. Livraison en une passe
+## 6. Intégration côté fiche client
 
-Je scaffolde tout en parallèle avec des vues fonctionnelles mais volontairement épurées (listes + fiches CRUD basiques + upload). Le style suit l'existant (typographie Newsreader / Inter, palette zinc).
+Sur la fiche `clients/$id` :
+- Nouvel onglet **Contrats emprunteur** : création d'un contrat avec les champs prêt (capital, durée, taux, assurance), sélection de la compagnie/produit, rattachement au mandataire, aperçu immédiat du tableau d'échéances (année, CRD, prime, commissions) avec totaux.
+- Une action « Recalculer » disponible si les paramètres du prêt ou la règle de commission changent.
+- Le rattachement d'un client à un mandataire (`commercial_id` déjà présent) déclenche automatiquement le calcul de sa commission sur tous ses contrats.
+
+## 7. Sécurité (RLS)
+
+- `commission_regles` : lecture admin uniquement, écriture admin.
+- `contrat_echeances` : admin voit tout ; mandataire voit uniquement les échéances où `mandataire_id = auth.uid()` (ou contrats de ses clients) ; prescripteur idem sur ses lignes ; client voit ses primes mais pas les commissions.
+- `encaissements_compagnie` et `paiements_partenaires` : admin uniquement (le mandataire voit seulement les paiements le concernant).
+- Toutes les fonctions de recalcul et rapprochement passent par des server functions `requireSupabaseAuth` avec vérification `has_role`.
 
 ## Détails techniques
 
-- Base : Lovable Cloud (Supabase managé). Auth email/pw activée.
-- Rôles via table `user_roles` séparée + fonction `has_role()` (pattern sécurité obligatoire).
-- Fichiers via Storage bucket privé + URLs signées.
-- Server functions `createServerFn` avec `requireSupabaseAuth` pour toutes les écritures.
-- Le seed du 1er compte admin sera fait après activation (je créerai votre compte avec votre email).
+- Recalcul des échéances via une fonction SQL `public.recalculer_echeances_contrat(uuid)` idempotente (DELETE puis INSERT), appelée depuis un server fn admin ou un trigger `AFTER INSERT/UPDATE` sur `contrats`.
+- Amortissement : formule d'amortissement classique quand `taux_pret` fourni, sinon amortissement linéaire. Support co-emprunteur (2 assurés, quotités).
+- Rôles : ajouter `prescripteur` à `app_role` s'il n'est pas déjà utilisé pour ces règles.
+- Imports bordereaux : upload CSV/XLSX + parseur côté serveur (pas d'IA nécessaire au départ, mapping manuel des colonnes sauvegardable par compagnie).
+- Génération PDF des bordereaux mandataires : rendu React → HTML → PDF via `@react-pdf/renderer` côté serveur (déjà compatible Cloudflare Workers).
 
-Quand vous validez, j'active Lovable Cloud, je crée le schéma, puis je scaffolde les 4 espaces d'un coup.
+## Découpage de livraison recommandé
+
+1. **Étape A — Fondations** : tables `commission_regles`, extension `contrats`, `contrat_echeances`, fonction de recalcul, UI de saisie contrat emprunteur + aperçu échéances sur la fiche client.
+2. **Étape B — Espace comptabilité admin** : dashboard, prévisionnel, encaissements, règles.
+3. **Étape C — Espace mandataire + prescripteur** : vue filtrée, bordereaux PDF, exports.
+
+Confirmez-moi si vous voulez que je démarre directement par l'**étape A**, ou si un point du modèle (mode d'amortissement, assiette, mode de commissionnement) doit être ajusté avant.
