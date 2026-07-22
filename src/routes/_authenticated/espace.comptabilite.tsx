@@ -725,14 +725,59 @@ function PartnerView({ role }: { role: "mandataire" | "prescripteur" }) {
 
   if (loading) return <p className="mt-6 text-sm text-ink-muted">Chargement…</p>;
 
+  const kpis = (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Card label="Prévisionnel" value={fmt(stats.previsionnel)} />
+      <Card label="Émis" value={fmt(stats.emis)} />
+      <Card label="Encaissé cabinet" value={fmt(stats.encaisse)} />
+      <Card label="Reçu" value={fmt(stats.verse)} hint={`Solde à recevoir : ${fmt(stats.solde)}`} />
+    </div>
+  );
+
+  if (role === "mandataire") {
+    return (
+      <Tabs defaultValue="commissions" className="mt-6">
+        <TabsList className="flex flex-wrap gap-1 bg-surface-elevated">
+          <TabsTrigger value="commissions">Mes commissions</TabsTrigger>
+          <TabsTrigger value="ndf">Notes de frais</TabsTrigger>
+          <TabsTrigger value="resultat">Mon résultat</TabsTrigger>
+          <TabsTrigger value="grand-livre">Grand livre</TabsTrigger>
+          <TabsTrigger value="pcg">Plan comptable</TabsTrigger>
+        </TabsList>
+        <TabsContent value="commissions" className="mt-6 space-y-6">
+          {kpis}
+          <PartnerCommissionsTables ech={ech} paiements={paiements} regles={regles} commField={commField} />
+        </TabsContent>
+        <TabsContent value="ndf" className="mt-6"><NotesDeFraisTab /></TabsContent>
+        <TabsContent value="resultat" className="mt-6"><ResultatTab mandataireOnly /></TabsContent>
+        <TabsContent value="grand-livre" className="mt-6"><GrandLivreTab mandataireOnly /></TabsContent>
+        <TabsContent value="pcg" className="mt-6"><PlanComptableTab /></TabsContent>
+      </Tabs>
+    );
+  }
+
   return (
     <div className="mt-6 space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card label="Prévisionnel" value={fmt(stats.previsionnel)} />
-        <Card label="Émis" value={fmt(stats.emis)} />
-        <Card label="Encaissé cabinet" value={fmt(stats.encaisse)} />
-        <Card label="Reçu" value={fmt(stats.verse)} hint={`Solde à recevoir : ${fmt(stats.solde)}`} />
-      </div>
+      {kpis}
+      <PartnerCommissionsTables ech={ech} paiements={paiements} regles={regles} commField={commField} />
+    </div>
+  );
+}
+
+function PartnerCommissionsTables({
+  ech,
+  paiements,
+  regles,
+  commField,
+}: {
+  ech: any[];
+  paiements: Paiement[];
+  regles: Regle[];
+  commField: string;
+}) {
+  return (
+    <>
+
 
       <div>
         <h3 className="mb-2 font-serif text-lg font-medium">Mes commissions par contrat</h3>
