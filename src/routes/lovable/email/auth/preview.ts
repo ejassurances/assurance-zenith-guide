@@ -18,7 +18,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "assurance-zenith-guide"
+const SITE_NAME = "EJ Partners Assurances
 const ROOT_DOMAIN = "ej-assurances.fr"
 
 // Sample data for preview mode ONLY (not used in actual email sending).
