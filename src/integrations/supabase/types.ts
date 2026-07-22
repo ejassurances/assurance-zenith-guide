@@ -14,16 +14,256 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      commissions: {
+        Row: {
+          beneficiaire_id: string
+          created_at: string
+          date_versement: string | null
+          dossier_id: string
+          id: string
+          montant: number
+          notes: string | null
+          statut: Database["public"]["Enums"]["commission_statut"]
+          updated_at: string
+        }
+        Insert: {
+          beneficiaire_id: string
+          created_at?: string
+          date_versement?: string | null
+          dossier_id: string
+          id?: string
+          montant: number
+          notes?: string | null
+          statut?: Database["public"]["Enums"]["commission_statut"]
+          updated_at?: string
+        }
+        Update: {
+          beneficiaire_id?: string
+          created_at?: string
+          date_versement?: string | null
+          dossier_id?: string
+          id?: string
+          montant?: number
+          notes?: string | null
+          statut?: Database["public"]["Enums"]["commission_statut"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commissions_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          created_at: string
+          dossier_id: string
+          file_name: string
+          file_size: number | null
+          id: string
+          mime_type: string | null
+          storage_path: string
+          uploader_id: string
+        }
+        Insert: {
+          created_at?: string
+          dossier_id: string
+          file_name: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          storage_path: string
+          uploader_id: string
+        }
+        Update: {
+          created_at?: string
+          dossier_id?: string
+          file_name?: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          storage_path?: string
+          uploader_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dossiers: {
+        Row: {
+          age: number | null
+          apporteur_id: string | null
+          capital: number | null
+          client_email: string | null
+          client_id: string | null
+          client_nom: string
+          client_phone: string | null
+          created_at: string
+          created_by: string | null
+          duree_mois: number | null
+          economie_estimee: number | null
+          fumeur: boolean | null
+          id: string
+          notes: string | null
+          reference: string
+          statut: Database["public"]["Enums"]["dossier_statut"]
+          updated_at: string
+        }
+        Insert: {
+          age?: number | null
+          apporteur_id?: string | null
+          capital?: number | null
+          client_email?: string | null
+          client_id?: string | null
+          client_nom: string
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          duree_mois?: number | null
+          economie_estimee?: number | null
+          fumeur?: boolean | null
+          id?: string
+          notes?: string | null
+          reference?: string
+          statut?: Database["public"]["Enums"]["dossier_statut"]
+          updated_at?: string
+        }
+        Update: {
+          age?: number | null
+          apporteur_id?: string | null
+          capital?: number | null
+          client_email?: string | null
+          client_id?: string | null
+          client_nom?: string
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          duree_mois?: number | null
+          economie_estimee?: number | null
+          fumeur?: boolean | null
+          id?: string
+          notes?: string | null
+          reference?: string
+          statut?: Database["public"]["Enums"]["dossier_statut"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          auteur_id: string
+          contenu: string
+          created_at: string
+          dossier_id: string
+          id: string
+        }
+        Insert: {
+          auteur_id: string
+          contenu: string
+          created_at?: string
+          dossier_id: string
+          id?: string
+        }
+        Update: {
+          auteur_id?: string
+          contenu?: string
+          created_at?: string
+          dossier_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          company: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_access_dossier: { Args: { _dossier_id: string }; Returns: boolean }
+      current_user_role: {
+        Args: never
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "mandataire" | "client" | "prescripteur"
+      commission_statut: "prevue" | "versee" | "annulee"
+      dossier_statut: "nouveau" | "en_cours" | "signe" | "perdu"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +390,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "mandataire", "client", "prescripteur"],
+      commission_statut: ["prevue", "versee", "annulee"],
+      dossier_statut: ["nouveau", "en_cours", "signe", "perdu"],
+    },
   },
 } as const
