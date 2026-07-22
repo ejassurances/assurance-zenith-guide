@@ -1,102 +1,68 @@
-# Plan — Espace Comptabilité & moteur de commissions
+# Module comptabilité — partie double + PCG
 
-Objectif : donner à l'admin **et** à chaque mandataire un vrai espace comptable, alimenté automatiquement par les contrats. Focus particulier sur l'assurance emprunteur où primes et commissions se calculent année par année pendant toute la durée du prêt.
+Livré en 4 lots séquentiels. Chaque lot est utilisable indépendamment.
 
-## 1. Modèle de commissions (règles paramétrables)
+## Lot 1 — Fondations comptables (PCG + écritures)
 
-Nouvelle table `commission_regles` :
-- portée : `mandataire` (rétrocession du cabinet vers un mandataire) ou `prescripteur` (apport d'affaires).
-- cible : global, par produit, par famille de produits, ou par compagnie.
-- assiette : `commission_cabinet` (% de ce que touche le cabinet) ou `prime_ht` (% de la prime).
-- taux (%) et éventuellement palier (paliers de CA annuel).
-- date d'effet / fin.
+**Base de données** (migration Supabase) :
 
-Effet : chaque contrat rattaché à un mandataire ou prescripteur applique la règle la plus spécifique en vigueur.
+- `plan_comptable` : comptes PCG (numero, libelle, classe 1-7, type, parent_id, actif). Pré-rempli avec ~40 comptes utiles au courtage (411 clients, 401 fournisseurs, 512 banque, 530 caisse, 606x achats, 613 locations, 622x commissions/honoraires, 626 postes, 641 salaires, 645 charges sociales, 706 prestations, 708 produits annexes, 44566/44571 TVA, etc.).
+- `journaux` : AC (achats), VE (ventes), BQ (banque), OD (opérations diverses), NDF (notes de frais).
+- `ecritures` : entête (date, journal, numero_piece, libelle, mandataire_id nullable, statut brouillon/validé, exercice).
+- `ecritures_lignes` : ligne (compte_numero, debit, credit, libelle, tiers_id nullable, mandataire_id nullable). Contrainte : somme débits = somme crédits par écriture.
+- `exercices` : période comptable (date_debut, date_fin, cloturé).
+- `tiers` : fournisseurs et clients tiers (nom, siret, adresse, compte_auxiliaire).
 
-## 2. Enrichissement du modèle contrats
+**RLS** :
+- Admin : CRUD complet.
+- Mandataire : lecture seule des écritures où `mandataire_id = auth.uid()`, création sur journal NDF pour ses propres charges.
 
-Ajouts sur `contrats` :
-- `mandataire_id`, `prescripteur_id` (nullable).
-- `mode_commissionnement` : `precompte` (payé une fois à la signature), `lineaire` (chaque année), `degressif` (typique emprunteur).
-- `duree_mois`, `date_debut`, `date_fin`.
-- Champs emprunteur : `capital_initial`, `duree_pret_mois`, `taux_pret`, `type_taux` (fixe / mixte), `assiette` (`capital_initial` / `capital_restant_du`), `taux_assurance_annuel` (%), `part_assuree` (%), `co_emprunteur` (jsonb).
-- `commission_cabinet_taux` (% payé par la compagnie au cabinet) et `commission_cabinet_annuelle` calculée.
+**UI** `/espace/comptabilite/journaux` : saisie d'écriture (admin), vue grand livre par compte, balance, journal centralisateur.
 
-Nouvelle table `contrat_echeances` (une ligne par période — année ou mois selon le contrat) :
-- `contrat_id`, `annee`, `date_debut_periode`, `date_fin_periode`.
-- `capital_restant_du_debut`, `prime_periode`.
-- `commission_cabinet_periode`, `commission_mandataire_periode`, `commission_prescripteur_periode`.
-- `statut` : `previsionnel`, `emise`, `payee`, `annulee`.
-- `bordereau_id` (nullable).
+## Lot 2 — Factures d'achat + OCR
 
-Générées automatiquement à la création/modification d'un contrat par une fonction serveur `recalculerEcheances(contrat_id)` :
+- Table `factures_achat` : fournisseur, date, numero, montant_ht, tva, ttc, compte_charge, pdf_url, statut, ecriture_id, mandataire_id nullable.
+- Bucket privé `factures-achat` (RLS : admin tout, mandataire ses fichiers).
+- Composant upload PDF → server function `parseFactureAchat` qui appelle Lovable AI (`google/gemini-3.6-flash`) avec le PDF en `input_file` et un schéma Zod (fournisseur, siret, date, HT, TVA, TTC, catégorie suggérée). L'utilisateur valide/corrige avant enregistrement.
+- À la validation : création automatique de l'écriture (débit 6xx + 44566 TVA / crédit 401 fournisseur) et pièce jointe stockée.
+- Vue liste : filtres période/fournisseur/statut, export CSV.
 
-Pour un contrat emprunteur :
-```text
-Chaque année n de 1 à durée :
-  CRD_n = amortissement linéaire du capital (approx.) ou table exacte si fournie
-  base_n = capital_initial si assiette = capital_initial
-         = CRD_n si assiette = capital_restant_du
-  prime_n = base_n * taux_assurance_annuel * part_assuree
-  commission_cabinet_n = prime_n * commission_cabinet_taux
-  commission_mandataire_n = commission_cabinet_n * taux_regle_mandataire
-  commission_prescripteur_n = commission_cabinet_n * taux_regle_prescripteur
-```
+## Lot 3 — Bulletins de commission
 
-Les échéances sont recalculées à chaque changement de contrat ou de règle applicable (via trigger + bouton "Recalculer" côté UI).
+**Bordereaux compagnies (entrants)** :
+- Table `bordereaux_commissions` étendue : upload PDF du bordereau reçu, rapprochement manuel avec les `contrat_echeances` (statut « encaissé »).
+- Écriture auto générée : débit 512 banque / crédit 706 commissions cabinet.
 
-## 3. Encaissements & réconciliation
+**Bulletins mandataires (sortants)** :
+- Table `bulletins_commission` : mandataire_id, periode, lignes (rétrocessions dues), total_ht, tva (si mandataire assujetti), total_ttc, statut, pdf_url.
+- Génération PDF via `pdf-lib` côté serveur : en-tête cabinet, tableau des commissions (contrat, période, base, taux, montant), pied avec totaux et mentions légales.
+- Envoi email au mandataire via Lovable AI Gateway (SMTP à définir) + stockage bucket privé `bulletins-mandataires`.
+- Écriture auto : débit 622x rétrocessions / crédit 401 mandataire, puis débit 401 / crédit 512 au paiement.
 
-Nouvelle table `encaissements_compagnie` : bordereaux reçus des compagnies (compagnie, période, montant, fichier importé). Une entrée d'échéance peut être pointée à un encaissement pour passer `previsionnel → emise → payee`.
+## Lot 4 — États financiers + comptes mandataires
 
-Nouvelle table `paiements_partenaires` : versements réels aux mandataires / prescripteurs (période, montant, moyen, référence).
+**Compte de résultat cabinet** `/espace/comptabilite/resultat` :
+- Produits (classe 7) : commissions perçues, autres produits.
+- Charges (classe 6) : achats, services extérieurs, rétrocessions mandataires, charges de personnel, impôts.
+- Résultat net avec comparaison N-1, filtre par période, export PDF.
 
-## 4. Espace Comptabilité — Admin
-
-Route `/espace/comptabilite` avec onglets :
-- **Vue d'ensemble** : chiffres du mois / trimestre / année (commissions cabinet encaissées, à recevoir, prévisionnel N+1..N+5, top compagnies, top mandataires, MRR emprunteur).
-- **Prévisionnel** : liste des échéances futures filtrable (compagnie, produit, mandataire, année). Export CSV.
-- **Encaissements compagnies** : import de bordereaux, saisie manuelle, rapprochement (matching automatique par contrat + période, correction manuelle possible).
-- **Rétrocessions** : par mandataire — solde dû, historique versements, génération de bordereau mensuel (PDF).
-- **Prescripteurs** : mêmes fonctions que rétrocessions.
-- **Règles de commissionnement** : CRUD sur `commission_regles`.
-
-## 5. Espace Comptabilité — Mandataire
-
-Route `/espace/comptabilite` visible pour le rôle mandataire (mêmes URL, contenu filtré par `mandataire_id = auth.uid()` via RLS) :
-- Ses clients rattachés.
-- Ses commissions : émises, encaissées, prévisionnelles (par année).
-- Ses bordereaux reçus (PDF téléchargeables).
-- Détail par contrat : prime annuelle, commission cabinet, sa part.
-- Export CSV pour sa propre comptabilité.
-- Aucun accès aux données des autres mandataires ni aux marges cabinet globales.
-
-## 6. Intégration côté fiche client
-
-Sur la fiche `clients/$id` :
-- Nouvel onglet **Contrats emprunteur** : création d'un contrat avec les champs prêt (capital, durée, taux, assurance), sélection de la compagnie/produit, rattachement au mandataire, aperçu immédiat du tableau d'échéances (année, CRD, prime, commissions) avec totaux.
-- Une action « Recalculer » disponible si les paramètres du prêt ou la règle de commission changent.
-- Le rattachement d'un client à un mandataire (`commercial_id` déjà présent) déclenche automatiquement le calcul de sa commission sur tous ses contrats.
-
-## 7. Sécurité (RLS)
-
-- `commission_regles` : lecture admin uniquement, écriture admin.
-- `contrat_echeances` : admin voit tout ; mandataire voit uniquement les échéances où `mandataire_id = auth.uid()` (ou contrats de ses clients) ; prescripteur idem sur ses lignes ; client voit ses primes mais pas les commissions.
-- `encaissements_compagnie` et `paiements_partenaires` : admin uniquement (le mandataire voit seulement les paiements le concernant).
-- Toutes les fonctions de recalcul et rapprochement passent par des server functions `requireSupabaseAuth` avec vérification `has_role`.
+**Mini compte de résultat mandataire** `/espace/comptabilite` (vue mandataire) :
+- Produits : ses commissions encaissées (via `paiements_partenaires`).
+- Charges : ses saisies de notes de frais (journal NDF) — URSSAF, frais pro, abonnements, formation, etc.
+- Résultat perso, export PDF mensuel/annuel.
+- Rôle mandataire peut créer/modifier/supprimer ses propres écritures NDF uniquement.
 
 ## Détails techniques
 
-- Recalcul des échéances via une fonction SQL `public.recalculer_echeances_contrat(uuid)` idempotente (DELETE puis INSERT), appelée depuis un server fn admin ou un trigger `AFTER INSERT/UPDATE` sur `contrats`.
-- Amortissement : formule d'amortissement classique quand `taux_pret` fourni, sinon amortissement linéaire. Support co-emprunteur (2 assurés, quotités).
-- Rôles : ajouter `prescripteur` à `app_role` s'il n'est pas déjà utilisé pour ces règles.
-- Imports bordereaux : upload CSV/XLSX + parseur côté serveur (pas d'IA nécessaire au départ, mapping manuel des colonnes sauvegardable par compagnie).
-- Génération PDF des bordereaux mandataires : rendu React → HTML → PDF via `@react-pdf/renderer` côté serveur (déjà compatible Cloudflare Workers).
+- Toutes les fonctions SQL (validation équilibre débit/crédit, clôture exercice, calcul soldes) en `SECURITY DEFINER` avec `search_path = public` et `REVOKE` sur `PUBLIC`/`anon`.
+- Séparation stricte des rôles via RLS et fonctions helper existantes (`has_role`, `current_user_role`).
+- OCR via `document--parse_document` équivalent côté runtime : appel `fetch` gateway `google/gemini-3.6-flash` avec `input_file` + schéma structuré.
+- PDF bulletins : `pdf-lib` (compatible Workers), template avec logo EJ Partners.
+- Pas de FEC export dans ce chantier — ajouté ensuite si besoin.
+- Pas de vraie compta multi-devises, TVA simplifiée (taux fixes 20/10/5.5/0).
 
-## Découpage de livraison recommandé
+## Ordre d'exécution
 
-1. **Étape A — Fondations** : tables `commission_regles`, extension `contrats`, `contrat_echeances`, fonction de recalcul, UI de saisie contrat emprunteur + aperçu échéances sur la fiche client.
-2. **Étape B — Espace comptabilité admin** : dashboard, prévisionnel, encaissements, règles.
-3. **Étape C — Espace mandataire + prescripteur** : vue filtrée, bordereaux PDF, exports.
+Je propose de démarrer par le **Lot 1** (fondations) car tous les autres en dépendent. Une fois validé, j'enchaîne Lot 2 (factures+OCR), puis Lot 3 (bulletins), puis Lot 4 (états).
 
-Confirmez-moi si vous voulez que je démarre directement par l'**étape A**, ou si un point du modèle (mode d'amortissement, assiette, mode de commissionnement) doit être ajusté avant.
+Confirmez-vous cet ordre, ou souhaitez-vous prioriser autrement (par ex. Lot 3 bulletins avant OCR) ?
