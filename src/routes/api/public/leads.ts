@@ -113,8 +113,71 @@ export const Route = createFileRoute("/api/public/leads")({
           contenu: parts.join("\n"),
         });
 
-        return Response.json({ ok: true, client_id: clientId }, { headers: corsHeaders() });
+        // Création automatique du compte client + invitation email + tâche admin
+        let inviteSent = false;
+        if (d.email) {
+          try {
+            // Vérifier si un utilisateur existe déjà avec cet email
+            const { data: existingUser } = await supabaseAdmin
+              .from("profiles")
+              .select("id")
+              .eq("email", d.email)
+              .maybeSingle();
+
+            let userId: string | null = existingUser?.id ?? null;
+
+            if (!userId) {
+              const origin = new URL(request.url).origin;
+              const { data: invited, error: inviteErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+                d.email,
+                {
+                  data: { full_name: `${d.prenom || ""} ${d.nom}`.trim() },
+                  redirectTo: `${origin}/reset-password`,
+                },
+              );
+              if (!inviteErr && invited.user) {
+                userId = invited.user.id;
+                inviteSent = true;
+              }
+            }
+
+            if (userId) {
+              await supabaseAdmin
+                .from("clients")
+                .update({ user_id: userId })
+                .eq("id", clientId)
+                .is("user_id", null);
+            }
+          } catch {
+            // On n'échoue pas la requête si l'invitation échoue — le lead est capturé.
+          }
+        }
+
+        // Tâche automatique pour l'admin : rappeler le prospect
+        const { data: admins } = await supabaseAdmin
+          .from("user_roles")
+          .select("user_id")
+          .eq("role", "admin")
+          .limit(1);
+        const adminId = admins?.[0]?.user_id ?? null;
+        const echeance = new Date();
+        echeance.setDate(echeance.getDate() + 2);
+        await supabaseAdmin.from("taches").insert({
+          client_id: clientId,
+          titre: `Rappeler ${d.prenom || ""} ${d.nom}`.trim() + (d.source === "simulateur" ? " (simulateur)" : " (contact)"),
+          description: parts.join("\n"),
+          echeance: echeance.toISOString().slice(0, 10),
+          priorite: "haute",
+          statut: "a_faire",
+          assignee_id: adminId,
+        });
+
+        return Response.json(
+          { ok: true, client_id: clientId, invite_sent: inviteSent },
+          { headers: corsHeaders() },
+        );
       },
     },
   },
 });
+
