@@ -24,8 +24,10 @@ import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AuthenticatedEspaceRouteImport } from './routes/_authenticated/espace'
 import { Route as AuthenticatedEspaceIndexRouteImport } from './routes/_authenticated/espace.index'
 import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
+import { Route as ApiPublicBootstrapAdminRouteImport } from './routes/api/public/bootstrap-admin'
 import { Route as AuthenticatedEspaceUtilisateursRouteImport } from './routes/_authenticated/espace.utilisateurs'
 import { Route as AuthenticatedEspaceTachesRouteImport } from './routes/_authenticated/espace.taches'
+import { Route as AuthenticatedEspaceParametresRouteImport } from './routes/_authenticated/espace.parametres'
 import { Route as AuthenticatedEspaceCommissionsRouteImport } from './routes/_authenticated/espace.commissions'
 import { Route as AuthenticatedEspaceDossiersIndexRouteImport } from './routes/_authenticated/espace.dossiers.index'
 import { Route as AuthenticatedEspaceCompagniesIndexRouteImport } from './routes/_authenticated/espace.compagnies.index'
@@ -111,6 +113,11 @@ const ApiPublicLeadsRoute = ApiPublicLeadsRouteImport.update({
   path: '/api/public/leads',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicBootstrapAdminRoute = ApiPublicBootstrapAdminRouteImport.update({
+  id: '/api/public/bootstrap-admin',
+  path: '/api/public/bootstrap-admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedEspaceUtilisateursRoute =
   AuthenticatedEspaceUtilisateursRouteImport.update({
     id: '/utilisateurs',
@@ -121,6 +128,12 @@ const AuthenticatedEspaceTachesRoute =
   AuthenticatedEspaceTachesRouteImport.update({
     id: '/taches',
     path: '/taches',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
+const AuthenticatedEspaceParametresRoute =
+  AuthenticatedEspaceParametresRouteImport.update({
+    id: '/parametres',
+    path: '/parametres',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
 const AuthenticatedEspaceCommissionsRoute =
@@ -186,8 +199,10 @@ export interface FileRoutesByFullPath {
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
+  '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
+  '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/espace/': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
@@ -211,8 +226,10 @@ export interface FileRoutesByTo {
   '/blog/$slug': typeof BlogSlugRoute
   '/blog': typeof BlogIndexRoute
   '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
+  '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
+  '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/espace': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
@@ -239,8 +256,10 @@ export interface FileRoutesById {
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/_authenticated/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
+  '/_authenticated/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/_authenticated/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/_authenticated/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
+  '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/_authenticated/espace/': typeof AuthenticatedEspaceIndexRoute
   '/_authenticated/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
@@ -267,8 +286,10 @@ export interface FileRouteTypes {
     | '/blog/$slug'
     | '/blog/'
     | '/espace/commissions'
+    | '/espace/parametres'
     | '/espace/taches'
     | '/espace/utilisateurs'
+    | '/api/public/bootstrap-admin'
     | '/api/public/leads'
     | '/espace/'
     | '/espace/clients/$id'
@@ -292,8 +313,10 @@ export interface FileRouteTypes {
     | '/blog/$slug'
     | '/blog'
     | '/espace/commissions'
+    | '/espace/parametres'
     | '/espace/taches'
     | '/espace/utilisateurs'
+    | '/api/public/bootstrap-admin'
     | '/api/public/leads'
     | '/espace'
     | '/espace/clients/$id'
@@ -319,8 +342,10 @@ export interface FileRouteTypes {
     | '/blog/$slug'
     | '/blog/'
     | '/_authenticated/espace/commissions'
+    | '/_authenticated/espace/parametres'
     | '/_authenticated/espace/taches'
     | '/_authenticated/espace/utilisateurs'
+    | '/api/public/bootstrap-admin'
     | '/api/public/leads'
     | '/_authenticated/espace/'
     | '/_authenticated/espace/clients/$id'
@@ -345,6 +370,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   BlogSlugRoute: typeof BlogSlugRoute
   BlogIndexRoute: typeof BlogIndexRoute
+  ApiPublicBootstrapAdminRoute: typeof ApiPublicBootstrapAdminRoute
   ApiPublicLeadsRoute: typeof ApiPublicLeadsRoute
 }
 
@@ -455,6 +481,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicLeadsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/bootstrap-admin': {
+      id: '/api/public/bootstrap-admin'
+      path: '/api/public/bootstrap-admin'
+      fullPath: '/api/public/bootstrap-admin'
+      preLoaderRoute: typeof ApiPublicBootstrapAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/espace/utilisateurs': {
       id: '/_authenticated/espace/utilisateurs'
       path: '/utilisateurs'
@@ -467,6 +500,13 @@ declare module '@tanstack/react-router' {
       path: '/taches'
       fullPath: '/espace/taches'
       preLoaderRoute: typeof AuthenticatedEspaceTachesRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
+    '/_authenticated/espace/parametres': {
+      id: '/_authenticated/espace/parametres'
+      path: '/parametres'
+      fullPath: '/espace/parametres'
+      preLoaderRoute: typeof AuthenticatedEspaceParametresRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
     '/_authenticated/espace/commissions': {
@@ -530,6 +570,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceCommissionsRoute: typeof AuthenticatedEspaceCommissionsRoute
+  AuthenticatedEspaceParametresRoute: typeof AuthenticatedEspaceParametresRoute
   AuthenticatedEspaceTachesRoute: typeof AuthenticatedEspaceTachesRoute
   AuthenticatedEspaceUtilisateursRoute: typeof AuthenticatedEspaceUtilisateursRoute
   AuthenticatedEspaceIndexRoute: typeof AuthenticatedEspaceIndexRoute
@@ -544,6 +585,7 @@ interface AuthenticatedEspaceRouteChildren {
 
 const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
   AuthenticatedEspaceCommissionsRoute: AuthenticatedEspaceCommissionsRoute,
+  AuthenticatedEspaceParametresRoute: AuthenticatedEspaceParametresRoute,
   AuthenticatedEspaceTachesRoute: AuthenticatedEspaceTachesRoute,
   AuthenticatedEspaceUtilisateursRoute: AuthenticatedEspaceUtilisateursRoute,
   AuthenticatedEspaceIndexRoute: AuthenticatedEspaceIndexRoute,
@@ -584,6 +626,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   BlogSlugRoute: BlogSlugRoute,
   BlogIndexRoute: BlogIndexRoute,
+  ApiPublicBootstrapAdminRoute: ApiPublicBootstrapAdminRoute,
   ApiPublicLeadsRoute: ApiPublicLeadsRoute,
 }
 export const routeTree = rootRouteImport
