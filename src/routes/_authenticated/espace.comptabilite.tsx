@@ -107,26 +107,24 @@ function AdminView() {
         <TabsTrigger value="retrocessions">Rétrocessions</TabsTrigger>
         <TabsTrigger value="prescripteurs">Prescripteurs</TabsTrigger>
         <TabsTrigger value="regles">Règles</TabsTrigger>
+        <TabsTrigger value="ecritures">Écritures</TabsTrigger>
+        <TabsTrigger value="grand-livre">Grand livre</TabsTrigger>
+        <TabsTrigger value="balance">Balance</TabsTrigger>
+        <TabsTrigger value="resultat">Résultat</TabsTrigger>
+        <TabsTrigger value="pcg">Plan comptable</TabsTrigger>
       </TabsList>
 
-      <TabsContent value="overview" className="mt-6">
-        <Overview />
-      </TabsContent>
-      <TabsContent value="previsionnel" className="mt-6">
-        <Previsionnel />
-      </TabsContent>
-      <TabsContent value="encaissements" className="mt-6">
-        <Encaissements />
-      </TabsContent>
-      <TabsContent value="retrocessions" className="mt-6">
-        <Retrocessions portee="mandataire" />
-      </TabsContent>
-      <TabsContent value="prescripteurs" className="mt-6">
-        <Retrocessions portee="prescripteur" />
-      </TabsContent>
-      <TabsContent value="regles" className="mt-6">
-        <ReglesCommission />
-      </TabsContent>
+      <TabsContent value="overview" className="mt-6"><Overview /></TabsContent>
+      <TabsContent value="previsionnel" className="mt-6"><Previsionnel /></TabsContent>
+      <TabsContent value="encaissements" className="mt-6"><Encaissements /></TabsContent>
+      <TabsContent value="retrocessions" className="mt-6"><Retrocessions portee="mandataire" /></TabsContent>
+      <TabsContent value="prescripteurs" className="mt-6"><Retrocessions portee="prescripteur" /></TabsContent>
+      <TabsContent value="regles" className="mt-6"><ReglesCommission /></TabsContent>
+      <TabsContent value="ecritures" className="mt-6"><EcrituresTab /></TabsContent>
+      <TabsContent value="grand-livre" className="mt-6"><GrandLivreTab /></TabsContent>
+      <TabsContent value="balance" className="mt-6"><BalanceTab /></TabsContent>
+      <TabsContent value="resultat" className="mt-6"><ResultatTab /></TabsContent>
+      <TabsContent value="pcg" className="mt-6"><PlanComptableTab /></TabsContent>
     </Tabs>
   );
 }
