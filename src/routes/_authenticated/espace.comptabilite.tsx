@@ -7,6 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  EcrituresTab,
+  GrandLivreTab,
+  BalanceTab,
+  ResultatTab,
+  PlanComptableTab,
+  NotesDeFraisTab,
+} from "@/components/comptabilite-ecritures";
 
 export const Route = createFileRoute("/_authenticated/espace/comptabilite")({
   component: ComptabilitePage,
