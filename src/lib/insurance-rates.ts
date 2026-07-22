@@ -94,3 +94,28 @@ export function coutTotalCourtier(
     ? coutTotalSurCapitalInitial(capitalInitial, duree, tauxAnnuelPct)
     : coutTotalSurCapitalRestantDu(capitalInitial, duree, tauxAnnuelPct);
 }
+
+/**
+ * Estimation rapide des économies (loi Lemoine).
+ * Retourne coût groupe/courtier/annuel et économie totale.
+ */
+export function estimerEconomie(input: {
+  capital: number;
+  dureeMois: number;
+  age: number;
+  fumeur: boolean;
+}): {
+  coutGroupe: number;
+  coutCourtier: number;
+  economieTotale: number;
+  economieMensuelle: number;
+} {
+  const dureeAnnees = input.dureeMois / 12;
+  const rates = getRatesForAge(input.age);
+  const surprime = input.fumeur ? SURPRIME_FUMEUR : 0;
+  const coutGroupe = coutTotalGroupe(input.capital, dureeAnnees, rates.taux_groupe + surprime);
+  const coutCourtier = coutTotalCourtier(input.capital, dureeAnnees, rates.taux_courtier + surprime);
+  const economieTotale = Math.max(0, coutGroupe - coutCourtier);
+  const economieMensuelle = economieTotale / input.dureeMois;
+  return { coutGroupe, coutCourtier, economieTotale, economieMensuelle };
+}
