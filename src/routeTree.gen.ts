@@ -24,6 +24,7 @@ import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AuthenticatedEspaceRouteImport } from './routes/_authenticated/espace'
 import { Route as AuthenticatedEspaceIndexRouteImport } from './routes/_authenticated/espace.index'
 import { Route as AuthenticatedEspaceUtilisateursRouteImport } from './routes/_authenticated/espace.utilisateurs'
+import { Route as AuthenticatedEspaceTachesRouteImport } from './routes/_authenticated/espace.taches'
 import { Route as AuthenticatedEspaceCommissionsRouteImport } from './routes/_authenticated/espace.commissions'
 import { Route as AuthenticatedEspaceDossiersIndexRouteImport } from './routes/_authenticated/espace.dossiers.index'
 import { Route as AuthenticatedEspaceClientsIndexRouteImport } from './routes/_authenticated/espace.clients.index'
@@ -107,6 +108,12 @@ const AuthenticatedEspaceUtilisateursRoute =
     path: '/utilisateurs',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const AuthenticatedEspaceTachesRoute =
+  AuthenticatedEspaceTachesRouteImport.update({
+    id: '/taches',
+    path: '/taches',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
 const AuthenticatedEspaceCommissionsRoute =
   AuthenticatedEspaceCommissionsRouteImport.update({
     id: '/commissions',
@@ -152,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
+  '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/espace/': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
@@ -172,6 +180,7 @@ export interface FileRoutesByTo {
   '/blog/$slug': typeof BlogSlugRoute
   '/blog': typeof BlogIndexRoute
   '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
+  '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/espace': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
@@ -195,6 +204,7 @@ export interface FileRoutesById {
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/_authenticated/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
+  '/_authenticated/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/_authenticated/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/_authenticated/espace/': typeof AuthenticatedEspaceIndexRoute
   '/_authenticated/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
@@ -218,6 +228,7 @@ export interface FileRouteTypes {
     | '/blog/$slug'
     | '/blog/'
     | '/espace/commissions'
+    | '/espace/taches'
     | '/espace/utilisateurs'
     | '/espace/'
     | '/espace/clients/$id'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/blog/$slug'
     | '/blog'
     | '/espace/commissions'
+    | '/espace/taches'
     | '/espace/utilisateurs'
     | '/espace'
     | '/espace/clients/$id'
@@ -260,6 +272,7 @@ export interface FileRouteTypes {
     | '/blog/$slug'
     | '/blog/'
     | '/_authenticated/espace/commissions'
+    | '/_authenticated/espace/taches'
     | '/_authenticated/espace/utilisateurs'
     | '/_authenticated/espace/'
     | '/_authenticated/espace/clients/$id'
@@ -390,6 +403,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceUtilisateursRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/taches': {
+      id: '/_authenticated/espace/taches'
+      path: '/taches'
+      fullPath: '/espace/taches'
+      preLoaderRoute: typeof AuthenticatedEspaceTachesRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
     '/_authenticated/espace/commissions': {
       id: '/_authenticated/espace/commissions'
       path: '/commissions'
@@ -430,6 +450,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceCommissionsRoute: typeof AuthenticatedEspaceCommissionsRoute
+  AuthenticatedEspaceTachesRoute: typeof AuthenticatedEspaceTachesRoute
   AuthenticatedEspaceUtilisateursRoute: typeof AuthenticatedEspaceUtilisateursRoute
   AuthenticatedEspaceIndexRoute: typeof AuthenticatedEspaceIndexRoute
   AuthenticatedEspaceClientsIdRoute: typeof AuthenticatedEspaceClientsIdRoute
@@ -440,6 +461,7 @@ interface AuthenticatedEspaceRouteChildren {
 
 const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
   AuthenticatedEspaceCommissionsRoute: AuthenticatedEspaceCommissionsRoute,
+  AuthenticatedEspaceTachesRoute: AuthenticatedEspaceTachesRoute,
   AuthenticatedEspaceUtilisateursRoute: AuthenticatedEspaceUtilisateursRoute,
   AuthenticatedEspaceIndexRoute: AuthenticatedEspaceIndexRoute,
   AuthenticatedEspaceClientsIdRoute: AuthenticatedEspaceClientsIdRoute,
