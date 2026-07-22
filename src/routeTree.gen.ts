@@ -31,6 +31,7 @@ import { Route as AuthenticatedEspaceDossiersIndexRouteImport } from './routes/_
 import { Route as AuthenticatedEspaceCompagniesIndexRouteImport } from './routes/_authenticated/espace.compagnies.index'
 import { Route as AuthenticatedEspaceClientsIndexRouteImport } from './routes/_authenticated/espace.clients.index'
 import { Route as AuthenticatedEspaceDossiersIdRouteImport } from './routes/_authenticated/espace.dossiers.$id'
+import { Route as AuthenticatedEspaceContratsIdRouteImport } from './routes/_authenticated/espace.contrats.$id'
 import { Route as AuthenticatedEspaceCompagniesIdRouteImport } from './routes/_authenticated/espace.compagnies.$id'
 import { Route as AuthenticatedEspaceClientsIdRouteImport } from './routes/_authenticated/espace.clients.$id'
 
@@ -152,6 +153,12 @@ const AuthenticatedEspaceDossiersIdRoute =
     path: '/dossiers/$id',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const AuthenticatedEspaceContratsIdRoute =
+  AuthenticatedEspaceContratsIdRouteImport.update({
+    id: '/contrats/$id',
+    path: '/contrats/$id',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
 const AuthenticatedEspaceCompagniesIdRoute =
   AuthenticatedEspaceCompagniesIdRouteImport.update({
     id: '/compagnies/$id',
@@ -185,6 +192,7 @@ export interface FileRoutesByFullPath {
   '/espace/': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
+  '/espace/contrats/$id': typeof AuthenticatedEspaceContratsIdRoute
   '/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
   '/espace/clients/': typeof AuthenticatedEspaceClientsIndexRoute
   '/espace/compagnies/': typeof AuthenticatedEspaceCompagniesIndexRoute
@@ -209,6 +217,7 @@ export interface FileRoutesByTo {
   '/espace': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
+  '/espace/contrats/$id': typeof AuthenticatedEspaceContratsIdRoute
   '/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
   '/espace/clients': typeof AuthenticatedEspaceClientsIndexRoute
   '/espace/compagnies': typeof AuthenticatedEspaceCompagniesIndexRoute
@@ -236,6 +245,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/': typeof AuthenticatedEspaceIndexRoute
   '/_authenticated/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/_authenticated/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
+  '/_authenticated/espace/contrats/$id': typeof AuthenticatedEspaceContratsIdRoute
   '/_authenticated/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
   '/_authenticated/espace/clients/': typeof AuthenticatedEspaceClientsIndexRoute
   '/_authenticated/espace/compagnies/': typeof AuthenticatedEspaceCompagniesIndexRoute
@@ -263,6 +273,7 @@ export interface FileRouteTypes {
     | '/espace/'
     | '/espace/clients/$id'
     | '/espace/compagnies/$id'
+    | '/espace/contrats/$id'
     | '/espace/dossiers/$id'
     | '/espace/clients/'
     | '/espace/compagnies/'
@@ -287,6 +298,7 @@ export interface FileRouteTypes {
     | '/espace'
     | '/espace/clients/$id'
     | '/espace/compagnies/$id'
+    | '/espace/contrats/$id'
     | '/espace/dossiers/$id'
     | '/espace/clients'
     | '/espace/compagnies'
@@ -313,6 +325,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/'
     | '/_authenticated/espace/clients/$id'
     | '/_authenticated/espace/compagnies/$id'
+    | '/_authenticated/espace/contrats/$id'
     | '/_authenticated/espace/dossiers/$id'
     | '/_authenticated/espace/clients/'
     | '/_authenticated/espace/compagnies/'
@@ -491,6 +504,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceDossiersIdRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/contrats/$id': {
+      id: '/_authenticated/espace/contrats/$id'
+      path: '/contrats/$id'
+      fullPath: '/espace/contrats/$id'
+      preLoaderRoute: typeof AuthenticatedEspaceContratsIdRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
     '/_authenticated/espace/compagnies/$id': {
       id: '/_authenticated/espace/compagnies/$id'
       path: '/compagnies/$id'
@@ -515,6 +535,7 @@ interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceIndexRoute: typeof AuthenticatedEspaceIndexRoute
   AuthenticatedEspaceClientsIdRoute: typeof AuthenticatedEspaceClientsIdRoute
   AuthenticatedEspaceCompagniesIdRoute: typeof AuthenticatedEspaceCompagniesIdRoute
+  AuthenticatedEspaceContratsIdRoute: typeof AuthenticatedEspaceContratsIdRoute
   AuthenticatedEspaceDossiersIdRoute: typeof AuthenticatedEspaceDossiersIdRoute
   AuthenticatedEspaceClientsIndexRoute: typeof AuthenticatedEspaceClientsIndexRoute
   AuthenticatedEspaceCompagniesIndexRoute: typeof AuthenticatedEspaceCompagniesIndexRoute
@@ -528,6 +549,7 @@ const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
   AuthenticatedEspaceIndexRoute: AuthenticatedEspaceIndexRoute,
   AuthenticatedEspaceClientsIdRoute: AuthenticatedEspaceClientsIdRoute,
   AuthenticatedEspaceCompagniesIdRoute: AuthenticatedEspaceCompagniesIdRoute,
+  AuthenticatedEspaceContratsIdRoute: AuthenticatedEspaceContratsIdRoute,
   AuthenticatedEspaceDossiersIdRoute: AuthenticatedEspaceDossiersIdRoute,
   AuthenticatedEspaceClientsIndexRoute: AuthenticatedEspaceClientsIndexRoute,
   AuthenticatedEspaceCompagniesIndexRoute:

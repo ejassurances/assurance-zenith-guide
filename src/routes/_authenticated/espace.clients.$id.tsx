@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { FamilleTab, EntrepriseTab, EquipementsTab } from "@/components/client-360-tabs";
+import { ContratsTab } from "@/components/contrats-tab";
 
 export const Route = createFileRoute("/_authenticated/espace/clients/$id")({
   component: ClientDetail,
