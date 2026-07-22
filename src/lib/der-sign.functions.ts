@@ -86,14 +86,12 @@ export const envoyerDerEmail = createServerFn({ method: "POST" })
       .eq("actif", true)
       .maybeSingle();
     if (modErr || !modele) throw new Error("Aucun DER actif - l'admin doit d'abord activer un modele.");
-    const { data: signed, error: urlErr } = await supabase.storage
-      .from("conformite-documents")
-      .createSignedUrl(modele.storage_path, 60 * 60 * 24 * 7);
-    if (urlErr || !signed?.signedUrl) throw new Error("Impossible de generer le lien du DER");
+    const origin = new URL(getRequest().url).origin;
+    const link = `${origin}/espace/signer-der`;
     const clientAny = client as any;
     const clientName = [clientAny.prenom, clientAny.nom].filter(Boolean).join(" ");
     const result = await sendTemplateEmail("der-envoi", data.email, {
-      templateData: { clientName: clientName, cabinetName: SITE.shortName, link: signed.signedUrl },
+      templateData: { clientName: clientName, cabinetName: SITE.shortName, link: link },
       replyTo: SITE.email,
     });
     if (!result.sent) throw new Error("Adresse en liste de suppression - envoi refuse");
