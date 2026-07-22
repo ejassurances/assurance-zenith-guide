@@ -414,6 +414,76 @@ export type Database = {
         }
         Relationships: []
       }
+      commission_regles: {
+        Row: {
+          assiette: string
+          beneficiaire_id: string | null
+          compagnie_id: string | null
+          created_at: string
+          date_effet: string
+          date_fin: string | null
+          famille_id: string | null
+          id: string
+          notes: string | null
+          portee: string
+          produit_id: string | null
+          taux: number
+          updated_at: string
+        }
+        Insert: {
+          assiette?: string
+          beneficiaire_id?: string | null
+          compagnie_id?: string | null
+          created_at?: string
+          date_effet?: string
+          date_fin?: string | null
+          famille_id?: string | null
+          id?: string
+          notes?: string | null
+          portee: string
+          produit_id?: string | null
+          taux: number
+          updated_at?: string
+        }
+        Update: {
+          assiette?: string
+          beneficiaire_id?: string | null
+          compagnie_id?: string | null
+          created_at?: string
+          date_effet?: string
+          date_fin?: string | null
+          famille_id?: string | null
+          id?: string
+          notes?: string | null
+          portee?: string
+          produit_id?: string | null
+          taux?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_regles_compagnie_id_fkey"
+            columns: ["compagnie_id"]
+            isOneToOne: false
+            referencedRelation: "compagnies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_regles_famille_id_fkey"
+            columns: ["famille_id"]
+            isOneToOne: false
+            referencedRelation: "produit_familles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_regles_produit_id_fkey"
+            columns: ["produit_id"]
+            isOneToOne: false
+            referencedRelation: "produits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commissions: {
         Row: {
           beneficiaire_id: string
@@ -544,6 +614,78 @@ export type Database = {
         }
         Relationships: []
       }
+      contrat_echeances: {
+        Row: {
+          annee: number
+          bordereau_id: string | null
+          capital_restant_du_debut: number | null
+          commission_cabinet_periode: number
+          commission_mandataire_periode: number
+          commission_prescripteur_periode: number
+          contrat_id: string
+          created_at: string
+          date_debut_periode: string
+          date_fin_periode: string
+          id: string
+          mandataire_id: string | null
+          prescripteur_id: string | null
+          prime_periode: number
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          annee: number
+          bordereau_id?: string | null
+          capital_restant_du_debut?: number | null
+          commission_cabinet_periode?: number
+          commission_mandataire_periode?: number
+          commission_prescripteur_periode?: number
+          contrat_id: string
+          created_at?: string
+          date_debut_periode: string
+          date_fin_periode: string
+          id?: string
+          mandataire_id?: string | null
+          prescripteur_id?: string | null
+          prime_periode?: number
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          annee?: number
+          bordereau_id?: string | null
+          capital_restant_du_debut?: number | null
+          commission_cabinet_periode?: number
+          commission_mandataire_periode?: number
+          commission_prescripteur_periode?: number
+          contrat_id?: string
+          created_at?: string
+          date_debut_periode?: string
+          date_fin_periode?: string
+          id?: string
+          mandataire_id?: string | null
+          prescripteur_id?: string | null
+          prime_periode?: number
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contrat_echeances_bordereau_id_fkey"
+            columns: ["bordereau_id"]
+            isOneToOne: false
+            referencedRelation: "bordereaux_commissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contrat_echeances_contrat_id_fkey"
+            columns: ["contrat_id"]
+            isOneToOne: false
+            referencedRelation: "contrats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contrat_garanties: {
         Row: {
           contrat_id: string
@@ -590,57 +732,99 @@ export type Database = {
       }
       contrats: {
         Row: {
+          assiette: string | null
           assureur: string
+          capital_initial: number | null
           client_id: string
+          co_emprunteur: Json | null
+          commission_cabinet_taux: number | null
+          compagnie_id: string | null
           created_at: string
           created_by: string | null
           date_echeance: string | null
           date_effet: string | null
           dossier_id: string | null
+          duree_mois: number | null
           fractionnement: string
           id: string
+          is_emprunteur: boolean
+          mandataire_id: string | null
+          mode_commissionnement: string
           notes: string | null
           numero: string | null
+          prescripteur_id: string | null
           prime_annuelle: number | null
           produit: string
+          produit_id: string | null
           projet_id: string | null
+          quotite: number | null
           statut: string
+          taux_assurance_annuel: number | null
+          taux_pret: number | null
           updated_at: string
         }
         Insert: {
+          assiette?: string | null
           assureur: string
+          capital_initial?: number | null
           client_id: string
+          co_emprunteur?: Json | null
+          commission_cabinet_taux?: number | null
+          compagnie_id?: string | null
           created_at?: string
           created_by?: string | null
           date_echeance?: string | null
           date_effet?: string | null
           dossier_id?: string | null
+          duree_mois?: number | null
           fractionnement?: string
           id?: string
+          is_emprunteur?: boolean
+          mandataire_id?: string | null
+          mode_commissionnement?: string
           notes?: string | null
           numero?: string | null
+          prescripteur_id?: string | null
           prime_annuelle?: number | null
           produit: string
+          produit_id?: string | null
           projet_id?: string | null
+          quotite?: number | null
           statut?: string
+          taux_assurance_annuel?: number | null
+          taux_pret?: number | null
           updated_at?: string
         }
         Update: {
+          assiette?: string | null
           assureur?: string
+          capital_initial?: number | null
           client_id?: string
+          co_emprunteur?: Json | null
+          commission_cabinet_taux?: number | null
+          compagnie_id?: string | null
           created_at?: string
           created_by?: string | null
           date_echeance?: string | null
           date_effet?: string | null
           dossier_id?: string | null
+          duree_mois?: number | null
           fractionnement?: string
           id?: string
+          is_emprunteur?: boolean
+          mandataire_id?: string | null
+          mode_commissionnement?: string
           notes?: string | null
           numero?: string | null
+          prescripteur_id?: string | null
           prime_annuelle?: number | null
           produit?: string
+          produit_id?: string | null
           projet_id?: string | null
+          quotite?: number | null
           statut?: string
+          taux_assurance_annuel?: number | null
+          taux_pret?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -652,10 +836,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "contrats_compagnie_id_fkey"
+            columns: ["compagnie_id"]
+            isOneToOne: false
+            referencedRelation: "compagnies"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "contrats_dossier_id_fkey"
             columns: ["dossier_id"]
             isOneToOne: false
             referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contrats_produit_id_fkey"
+            columns: ["produit_id"]
+            isOneToOne: false
+            referencedRelation: "produits"
             referencedColumns: ["id"]
           },
           {
@@ -1205,6 +1403,24 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      recalculer_echeances_contrat: {
+        Args: { _contrat_id: string }
+        Returns: undefined
+      }
+      trouver_taux_regle: {
+        Args: {
+          _beneficiaire_id: string
+          _compagnie_id: string
+          _date: string
+          _famille_id: string
+          _portee: string
+          _produit_id: string
+        }
+        Returns: {
+          assiette: string
+          taux: number
+        }[]
       }
     }
     Enums: {

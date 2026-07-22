@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { FamilleTab, EntrepriseTab, EquipementsTab } from "@/components/client-360-tabs";
+import { ContratsTab } from "@/components/contrats-tab";
 
 export const Route = createFileRoute("/_authenticated/espace/clients/$id")({
   component: ClientDetail,
@@ -83,7 +84,7 @@ type Doc = {
   created_at: string;
 };
 
-type Tab = "identite" | "famille" | "entreprise" | "equipements" | "taches" | "historique" | "documents" | "dossiers";
+type Tab = "identite" | "famille" | "entreprise" | "equipements" | "contrats" | "taches" | "historique" | "documents" | "dossiers";
 
 function ClientDetail() {
   const { id } = Route.useParams();
@@ -141,6 +142,7 @@ function ClientDetail() {
             ["famille", "Famille"],
             ["entreprise", "Entreprise"],
             ["equipements", "Équipements"],
+            ["contrats", "Contrats"],
             ["taches", "Tâches"],
             ["historique", "Historique"],
             ["documents", "Documents"],
@@ -165,6 +167,7 @@ function ClientDetail() {
         {tab === "famille" && <FamilleTab clientId={client.id} canEdit={canEdit} />}
         {tab === "entreprise" && <EntrepriseTab clientId={client.id} canEdit={canEdit} />}
         {tab === "equipements" && <EquipementsTab clientId={client.id} canEdit={canEdit} />}
+        {tab === "contrats" && <ContratsTab clientId={client.id} canEdit={canEdit} />}
         {tab === "taches" && <TachesTab clientId={client.id} canEdit={canEdit} />}
         {tab === "historique" && <HistoriqueTab clientId={client.id} />}
         {tab === "documents" && <DocumentsTab clientId={client.id} canEdit={canEdit} />}
