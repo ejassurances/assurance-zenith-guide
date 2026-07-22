@@ -107,7 +107,7 @@ export function ConformiteClientTab({
   }, [clientId]);
 
   const upload = async (type: KycDoc["type"], file: File) => {
-    const path = `kyc/${clientId}/${type}-${Date.now()}-${file.name}`;
+    const path = `${clientId}/kyc/${type}-${Date.now()}-${file.name}`;
     const { error: upErr } = await supabase.storage.from("dossier-documents").upload(path, file);
     if (upErr) {
       alert("Upload : " + upErr.message);
