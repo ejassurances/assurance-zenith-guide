@@ -33,6 +33,7 @@ function EspaceLayout() {
     { to: "/espace/clients", label: "Clients", hide: role === "client" },
     { to: "/espace/dossiers", label: "Dossiers" },
     { to: "/espace/taches", label: "Tâches", hide: role === "client" },
+    { to: "/espace/compagnies", label: "Compagnies", hide: role !== "admin" && role !== "mandataire" },
     { to: "/espace/commissions", label: "Commissions", hide: role === "client" },
     { to: "/espace/utilisateurs", label: "Utilisateurs", hide: role !== "admin" },
   ].filter((n) => !n.hide);
