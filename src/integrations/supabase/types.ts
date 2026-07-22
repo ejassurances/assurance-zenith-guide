@@ -14,6 +14,161 @@ export type Database = {
   }
   public: {
     Tables: {
+      activites: {
+        Row: {
+          client_id: string
+          contenu: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          titre: string | null
+          type: Database["public"]["Enums"]["activite_type"]
+        }
+        Insert: {
+          client_id: string
+          contenu?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          titre?: string | null
+          type?: Database["public"]["Enums"]["activite_type"]
+        }
+        Update: {
+          client_id?: string
+          contenu?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          titre?: string | null
+          type?: Database["public"]["Enums"]["activite_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activites_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          adresse: string | null
+          apporteur_id: string | null
+          civilite: string | null
+          code_postal: string | null
+          commercial_id: string | null
+          complement_adresse: string | null
+          created_at: string
+          created_by: string | null
+          csp: string | null
+          date_naissance: string | null
+          email: string | null
+          email2: string | null
+          etiquettes: string[] | null
+          fumeur: boolean | null
+          id: string
+          metier: string | null
+          mobile: string | null
+          mobile2: string | null
+          nationalite: string | null
+          nom: string
+          nom_naissance: string | null
+          numero_secu: string | null
+          origine: Database["public"]["Enums"]["client_origine"] | null
+          pays: string | null
+          pays_naissance: string | null
+          preference_contact: string | null
+          prenom: string | null
+          reference: string
+          remarque: string | null
+          situation_familiale: string | null
+          statut: Database["public"]["Enums"]["client_statut"]
+          telephone: string | null
+          telephone2: string | null
+          updated_at: string
+          ville: string | null
+          ville_naissance: string | null
+        }
+        Insert: {
+          adresse?: string | null
+          apporteur_id?: string | null
+          civilite?: string | null
+          code_postal?: string | null
+          commercial_id?: string | null
+          complement_adresse?: string | null
+          created_at?: string
+          created_by?: string | null
+          csp?: string | null
+          date_naissance?: string | null
+          email?: string | null
+          email2?: string | null
+          etiquettes?: string[] | null
+          fumeur?: boolean | null
+          id?: string
+          metier?: string | null
+          mobile?: string | null
+          mobile2?: string | null
+          nationalite?: string | null
+          nom: string
+          nom_naissance?: string | null
+          numero_secu?: string | null
+          origine?: Database["public"]["Enums"]["client_origine"] | null
+          pays?: string | null
+          pays_naissance?: string | null
+          preference_contact?: string | null
+          prenom?: string | null
+          reference?: string
+          remarque?: string | null
+          situation_familiale?: string | null
+          statut?: Database["public"]["Enums"]["client_statut"]
+          telephone?: string | null
+          telephone2?: string | null
+          updated_at?: string
+          ville?: string | null
+          ville_naissance?: string | null
+        }
+        Update: {
+          adresse?: string | null
+          apporteur_id?: string | null
+          civilite?: string | null
+          code_postal?: string | null
+          commercial_id?: string | null
+          complement_adresse?: string | null
+          created_at?: string
+          created_by?: string | null
+          csp?: string | null
+          date_naissance?: string | null
+          email?: string | null
+          email2?: string | null
+          etiquettes?: string[] | null
+          fumeur?: boolean | null
+          id?: string
+          metier?: string | null
+          mobile?: string | null
+          mobile2?: string | null
+          nationalite?: string | null
+          nom?: string
+          nom_naissance?: string | null
+          numero_secu?: string | null
+          origine?: Database["public"]["Enums"]["client_origine"] | null
+          pays?: string | null
+          pays_naissance?: string | null
+          preference_contact?: string | null
+          prenom?: string | null
+          reference?: string
+          remarque?: string | null
+          situation_familiale?: string | null
+          statut?: Database["public"]["Enums"]["client_statut"]
+          telephone?: string | null
+          telephone2?: string | null
+          updated_at?: string
+          ville?: string | null
+          ville_naissance?: string | null
+        }
+        Relationships: []
+      }
       commissions: {
         Row: {
           beneficiaire_id: string
@@ -60,6 +215,7 @@ export type Database = {
       }
       documents: {
         Row: {
+          client_id: string | null
           created_at: string
           dossier_id: string
           file_name: string
@@ -70,6 +226,7 @@ export type Database = {
           uploader_id: string
         }
         Insert: {
+          client_id?: string | null
           created_at?: string
           dossier_id: string
           file_name: string
@@ -80,6 +237,7 @@ export type Database = {
           uploader_id: string
         }
         Update: {
+          client_id?: string | null
           created_at?: string
           dossier_id?: string
           file_name?: string
@@ -90,6 +248,13 @@ export type Database = {
           uploader_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "documents_dossier_id_fkey"
             columns: ["dossier_id"]
@@ -221,6 +386,56 @@ export type Database = {
         }
         Relationships: []
       }
+      taches: {
+        Row: {
+          assignee_id: string | null
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          echeance: string | null
+          id: string
+          priorite: Database["public"]["Enums"]["tache_priorite"]
+          statut: Database["public"]["Enums"]["tache_statut"]
+          titre: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          echeance?: string | null
+          id?: string
+          priorite?: Database["public"]["Enums"]["tache_priorite"]
+          statut?: Database["public"]["Enums"]["tache_statut"]
+          titre: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          echeance?: string | null
+          id?: string
+          priorite?: Database["public"]["Enums"]["tache_priorite"]
+          statut?: Database["public"]["Enums"]["tache_statut"]
+          titre?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "taches_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -247,6 +462,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_client: { Args: { _client_id: string }; Returns: boolean }
       can_access_dossier: { Args: { _dossier_id: string }; Returns: boolean }
       current_user_role: {
         Args: never
@@ -261,9 +477,20 @@ export type Database = {
       }
     }
     Enums: {
+      activite_type: "note" | "appel" | "email" | "sms" | "systeme" | "rdv"
       app_role: "admin" | "mandataire" | "client" | "prescripteur"
+      client_origine:
+        | "internet"
+        | "assurlead"
+        | "telephone"
+        | "apporteur"
+        | "reseau"
+        | "autre"
+      client_statut: "prospect" | "actif" | "inactif" | "perdu" | "ancien"
       commission_statut: "prevue" | "versee" | "annulee"
       dossier_statut: "nouveau" | "en_cours" | "signe" | "perdu"
+      tache_priorite: "basse" | "normale" | "haute" | "urgente"
+      tache_statut: "a_faire" | "en_cours" | "terminee" | "annulee"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -391,9 +618,21 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      activite_type: ["note", "appel", "email", "sms", "systeme", "rdv"],
       app_role: ["admin", "mandataire", "client", "prescripteur"],
+      client_origine: [
+        "internet",
+        "assurlead",
+        "telephone",
+        "apporteur",
+        "reseau",
+        "autre",
+      ],
+      client_statut: ["prospect", "actif", "inactif", "perdu", "ancien"],
       commission_statut: ["prevue", "versee", "annulee"],
       dossier_statut: ["nouveau", "en_cours", "signe", "perdu"],
+      tache_priorite: ["basse", "normale", "haute", "urgente"],
+      tache_statut: ["a_faire", "en_cours", "terminee", "annulee"],
     },
   },
 } as const
