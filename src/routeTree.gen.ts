@@ -23,6 +23,7 @@ import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AuthenticatedEspaceRouteImport } from './routes/_authenticated/espace'
 import { Route as AuthenticatedEspaceIndexRouteImport } from './routes/_authenticated/espace.index'
+import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
 import { Route as AuthenticatedEspaceUtilisateursRouteImport } from './routes/_authenticated/espace.utilisateurs'
 import { Route as AuthenticatedEspaceTachesRouteImport } from './routes/_authenticated/espace.taches'
 import { Route as AuthenticatedEspaceCommissionsRouteImport } from './routes/_authenticated/espace.commissions'
@@ -102,6 +103,11 @@ const AuthenticatedEspaceIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const ApiPublicLeadsRoute = ApiPublicLeadsRouteImport.update({
+  id: '/api/public/leads',
+  path: '/api/public/leads',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedEspaceUtilisateursRoute =
   AuthenticatedEspaceUtilisateursRouteImport.update({
     id: '/utilisateurs',
@@ -161,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
+  '/api/public/leads': typeof ApiPublicLeadsRoute
   '/espace/': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
@@ -182,6 +189,7 @@ export interface FileRoutesByTo {
   '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
+  '/api/public/leads': typeof ApiPublicLeadsRoute
   '/espace': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
@@ -206,6 +214,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
   '/_authenticated/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/_authenticated/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
+  '/api/public/leads': typeof ApiPublicLeadsRoute
   '/_authenticated/espace/': typeof AuthenticatedEspaceIndexRoute
   '/_authenticated/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/_authenticated/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
@@ -230,6 +239,7 @@ export interface FileRouteTypes {
     | '/espace/commissions'
     | '/espace/taches'
     | '/espace/utilisateurs'
+    | '/api/public/leads'
     | '/espace/'
     | '/espace/clients/$id'
     | '/espace/dossiers/$id'
@@ -251,6 +261,7 @@ export interface FileRouteTypes {
     | '/espace/commissions'
     | '/espace/taches'
     | '/espace/utilisateurs'
+    | '/api/public/leads'
     | '/espace'
     | '/espace/clients/$id'
     | '/espace/dossiers/$id'
@@ -274,6 +285,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/commissions'
     | '/_authenticated/espace/taches'
     | '/_authenticated/espace/utilisateurs'
+    | '/api/public/leads'
     | '/_authenticated/espace/'
     | '/_authenticated/espace/clients/$id'
     | '/_authenticated/espace/dossiers/$id'
@@ -294,6 +306,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   BlogSlugRoute: typeof BlogSlugRoute
   BlogIndexRoute: typeof BlogIndexRoute
+  ApiPublicLeadsRoute: typeof ApiPublicLeadsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -396,6 +409,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceIndexRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/api/public/leads': {
+      id: '/api/public/leads'
+      path: '/api/public/leads'
+      fullPath: '/api/public/leads'
+      preLoaderRoute: typeof ApiPublicLeadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/espace/utilisateurs': {
       id: '/_authenticated/espace/utilisateurs'
       path: '/utilisateurs'
@@ -497,6 +517,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   BlogSlugRoute: BlogSlugRoute,
   BlogIndexRoute: BlogIndexRoute,
+  ApiPublicLeadsRoute: ApiPublicLeadsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
