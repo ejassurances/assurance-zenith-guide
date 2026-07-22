@@ -15,12 +15,12 @@ function DerEnvoiEmail(props: { clientName?: string; cabinetName?: string; link?
     "<p>Bonjour " +
     (props.clientName || "") +
     ",</p>" +
-    "<p>Conformement a la reglementation, veuillez trouver ci-dessous (lien valable 7 jours) le Document d'Entree en Relation (DER) du cabinet " +
+    "<p>Conformement a la reglementation, veuillez trouver ci-dessous le Document d'Entree en Relation (DER) du cabinet " +
     nom +
     ".</p>" +
     "<p><a href='" +
     (props.link || "") +
-    "'>Telecharger le DER</a></p>" +
+    "'>Consulter et signer le DER</a></p>" +
     "<p>Ce document precise le statut de votre courtier, les compagnies partenaires et les modalites de remuneration.</p>" +
     "<p>Cordialement,<br/>L'equipe " +
     nom +
