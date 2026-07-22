@@ -913,27 +913,54 @@ function DocumentsBlock({
 
 // ============ Onglet API ============
 function ApiTab({
-  c,
+  compagnieId,
+  apiActive,
   isAdmin,
-  saving,
-  onSave,
+  onApiActiveChange,
 }: {
-  c: Compagnie;
+  compagnieId: string;
+  apiActive: boolean;
   isAdmin: boolean;
-  saving: boolean;
-  onSave: (p: Partial<Compagnie>) => void;
+  onApiActiveChange: (v: boolean) => void;
 }) {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [notAllowed, setNotAllowed] = useState(false);
   const [form, setForm] = useState({
-    api_active: c.api_active,
-    api_base_url: c.api_base_url ?? "",
-    api_auth_type: c.api_auth_type,
-    api_secret_name: c.api_secret_name ?? "",
-    api_config: JSON.stringify(c.api_config ?? {}, null, 2),
+    api_base_url: "",
+    api_auth_type: "none" as ApiAuthType,
+    api_secret_name: "",
+    api_config: "{}",
   });
   const [jsonErr, setJsonErr] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const readOnly = !isAdmin;
 
-  function submit(e: React.FormEvent) {
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("compagnies_api_config")
+        .select("*")
+        .eq("compagnie_id", compagnieId)
+        .maybeSingle();
+      if (error) {
+        // RLS: non-admins get no rows / no access — hide the form
+        setNotAllowed(true);
+      } else if (data) {
+        const cfg = data as CompagnieApiConfig;
+        setForm({
+          api_base_url: cfg.api_base_url ?? "",
+          api_auth_type: cfg.api_auth_type,
+          api_secret_name: cfg.api_secret_name ?? "",
+          api_config: JSON.stringify(cfg.api_config ?? {}, null, 2),
+        });
+      }
+      setLoading(false);
+    })();
+  }, [compagnieId]);
+
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     let parsed: Record<string, unknown> = {};
     try {
@@ -943,13 +970,25 @@ function ApiTab({
       return;
     }
     setJsonErr(null);
-    onSave({
-      api_active: form.api_active,
+    setSaving(true);
+    const { error } = await supabase.from("compagnies_api_config").upsert({
+      compagnie_id: compagnieId,
       api_base_url: form.api_base_url || null,
       api_auth_type: form.api_auth_type,
       api_secret_name: form.api_secret_name || null,
       api_config: parsed,
-    });
+    } as never);
+    setSaving(false);
+    if (error) setError(error.message);
+  }
+
+  if (loading) return <p className="text-sm text-ink-muted">Chargement…</p>;
+  if (notAllowed || !isAdmin) {
+    return (
+      <div className="rounded-lg border border-line bg-surface p-6 text-sm text-ink-muted">
+        La configuration API est réservée aux administrateurs.
+      </div>
+    );
   }
 
   return (
@@ -964,8 +1003,8 @@ function ApiTab({
       <label className="flex items-center gap-2 text-sm">
         <input
           type="checkbox"
-          checked={form.api_active}
-          onChange={(e) => setForm({ ...form, api_active: e.target.checked })}
+          checked={apiActive}
+          onChange={(e) => onApiActiveChange(e.target.checked)}
           disabled={readOnly}
         />
         <span>Activer l'API pour cette compagnie</span>
@@ -1014,6 +1053,8 @@ function ApiTab({
         />
         {jsonErr && <p className="mt-1 text-xs text-red-700">JSON invalide : {jsonErr}</p>}
       </div>
+
+      {error && <p className="rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</p>}
 
       {isAdmin && (
         <button
