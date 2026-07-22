@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { FamilleTab, EntrepriseTab, EquipementsTab } from "@/components/client-360-tabs";
 
 export const Route = createFileRoute("/_authenticated/espace/clients/$id")({
   component: ClientDetail,
