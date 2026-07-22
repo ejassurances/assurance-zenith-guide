@@ -9,7 +9,7 @@ import { EmailChangeEmail } from '@/lib/email-templates/email-change'
 import { ReauthenticationEmail } from '@/lib/email-templates/reauthentication'
 
 // Configuration
-const SITE_NAME = "assurance-zenith-guide"
+const SITE_NAME = "EJ Partners Assurances
 const SENDER_DOMAIN = "notify.ej-assurances.fr"
 const ROOT_DOMAIN = "ej-assurances.fr"
 const FROM_DOMAIN = "ej-assurances.fr"
