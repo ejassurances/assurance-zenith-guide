@@ -37,6 +37,8 @@ function EspaceLayout() {
     { to: "/espace/commissions", label: "Commissions", hide: role === "client" },
     { to: "/espace/comptabilite", label: "Comptabilité", hide: role === "client" },
     { to: "/espace/conformite", label: "Conformité", hide: role === "client" || role === "prescripteur" },
+    { to: "/espace/der-modele", label: "DER (modèle)", hide: role === "client" },
+    { to: "/espace/audit-logs", label: "Audit", hide: role !== "admin" },
     { to: "/espace/utilisateurs", label: "Utilisateurs", hide: role !== "admin" },
     { to: "/espace/parametres", label: "Paramètres" },
   ].filter((n) => !n.hide);
