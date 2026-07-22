@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { FamilleTab, EntrepriseTab, EquipementsTab } from "@/components/client-360-tabs";
 
 export const Route = createFileRoute("/_authenticated/espace/clients/$id")({
   component: ClientDetail,
@@ -39,6 +40,11 @@ type Client = {
   numero_secu: string | null;
   remarque: string | null;
   etiquettes: string[] | null;
+  nb_enfants: number | null;
+  revenus_annuels: number | null;
+  ppe: boolean | null;
+  ppe_fonction: string | null;
+  ppe_pays: string | null;
   created_at: string;
 };
 
@@ -77,7 +83,7 @@ type Doc = {
   created_at: string;
 };
 
-type Tab = "identite" | "taches" | "historique" | "documents" | "dossiers";
+type Tab = "identite" | "famille" | "entreprise" | "equipements" | "taches" | "historique" | "documents" | "dossiers";
 
 function ClientDetail() {
   const { id } = Route.useParams();
@@ -132,6 +138,9 @@ function ClientDetail() {
         {(
           [
             ["identite", "Identité"],
+            ["famille", "Famille"],
+            ["entreprise", "Entreprise"],
+            ["equipements", "Équipements"],
             ["taches", "Tâches"],
             ["historique", "Historique"],
             ["documents", "Documents"],
@@ -153,6 +162,9 @@ function ClientDetail() {
 
       <div className="mt-6">
         {tab === "identite" && <IdentiteTab client={client} canEdit={canEdit} onSaved={load} />}
+        {tab === "famille" && <FamilleTab clientId={client.id} canEdit={canEdit} />}
+        {tab === "entreprise" && <EntrepriseTab clientId={client.id} canEdit={canEdit} />}
+        {tab === "equipements" && <EquipementsTab clientId={client.id} canEdit={canEdit} />}
         {tab === "taches" && <TachesTab clientId={client.id} canEdit={canEdit} />}
         {tab === "historique" && <HistoriqueTab clientId={client.id} />}
         {tab === "documents" && <DocumentsTab clientId={client.id} canEdit={canEdit} />}
@@ -231,6 +243,21 @@ function IdentiteTab({ client, canEdit, onSaved }: { client: Client; canEdit: bo
             <Row label="Métier" value={client.metier} />
             <Row label="Fumeur" value={client.fumeur ? "Oui" : "Non"} />
             <Row label="N° Sécu" value={client.numero_secu} />
+            <Row label="Nb enfants" value={client.nb_enfants} />
+            <Row
+              label="Revenus annuels"
+              value={client.revenus_annuels ? Number(client.revenus_annuels).toLocaleString("fr-FR") + " €" : null}
+            />
+          </Section>
+
+          <Section title="Personne politiquement exposée (PPE)">
+            <Row label="PPE" value={client.ppe ? "Oui" : "Non"} />
+            {client.ppe && (
+              <>
+                <Row label="Fonction" value={client.ppe_fonction} />
+                <Row label="Pays" value={client.ppe_pays} />
+              </>
+            )}
           </Section>
 
           {client.remarque && (
@@ -363,6 +390,41 @@ function IdentiteTab({ client, canEdit, onSaved }: { client: Client; canEdit: bo
           Fumeur
         </label>
         {F("N° Sécu", "numero_secu")}
+        <label className="block">
+          <span className="text-xs uppercase tracking-wide text-ink-muted">Nb enfants</span>
+          <input
+            type="number"
+            value={form.nb_enfants ?? ""}
+            onChange={(e) => setForm({ ...form, nb_enfants: e.target.value ? Number(e.target.value) : null })}
+            className="mt-1 w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+          />
+        </label>
+        <label className="block">
+          <span className="text-xs uppercase tracking-wide text-ink-muted">Revenus annuels (€)</span>
+          <input
+            type="number"
+            value={form.revenus_annuels ?? ""}
+            onChange={(e) => setForm({ ...form, revenus_annuels: e.target.value ? Number(e.target.value) : null })}
+            className="mt-1 w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+          />
+        </label>
+      </Section>
+
+      <Section title="PPE (personne politiquement exposée)">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={!!form.ppe}
+            onChange={(e) => setForm({ ...form, ppe: e.target.checked })}
+          />
+          Personne politiquement exposée
+        </label>
+        {form.ppe && (
+          <>
+            {F("Fonction", "ppe_fonction")}
+            {F("Pays", "ppe_pays")}
+          </>
+        )}
       </Section>
 
       <Section title="Remarque" className="md:col-span-2">
