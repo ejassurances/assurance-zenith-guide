@@ -174,3 +174,36 @@ function Card({ label, value, sub }: { label: string; value: number | string; su
     </div>
   );
 }
+
+function ClientDerBanner() {
+  const [pending, setPending] = useState(false);
+  useEffect(() => {
+    (async () => {
+      const { count } = await supabase
+        .from("client_der_envois")
+        .select("id", { count: "exact", head: true })
+        .neq("statut", "signe");
+      setPending((count ?? 0) > 0);
+    })();
+  }, []);
+  if (!pending) return null;
+  return (
+    <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4">
+      <div>
+        <p className="font-medium text-amber-900">Document d'Entrée en Relation à signer</p>
+        <p className="text-sm text-amber-800">
+          Merci de signer votre DER pour finaliser votre entrée en relation avec le cabinet.
+        </p>
+      </div>
+      <Link
+        to="/espace/signer-der"
+        className="rounded-full bg-amber-900 px-4 py-2 text-sm font-medium text-white"
+      >
+        Signer maintenant
+      </Link>
+    </div>
+  );
+}
+
+  );
+}
