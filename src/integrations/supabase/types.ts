@@ -604,10 +604,6 @@ export type Database = {
       compagnies: {
         Row: {
           api_active: boolean
-          api_auth_type: Database["public"]["Enums"]["api_auth_type"]
-          api_base_url: string | null
-          api_config: Json
-          api_secret_name: string | null
           contact_email: string | null
           contact_nom: string | null
           contact_telephone: string | null
@@ -625,10 +621,6 @@ export type Database = {
         }
         Insert: {
           api_active?: boolean
-          api_auth_type?: Database["public"]["Enums"]["api_auth_type"]
-          api_base_url?: string | null
-          api_config?: Json
-          api_secret_name?: string | null
           contact_email?: string | null
           contact_nom?: string | null
           contact_telephone?: string | null
@@ -646,10 +638,6 @@ export type Database = {
         }
         Update: {
           api_active?: boolean
-          api_auth_type?: Database["public"]["Enums"]["api_auth_type"]
-          api_base_url?: string | null
-          api_config?: Json
-          api_secret_name?: string | null
           contact_email?: string | null
           contact_nom?: string | null
           contact_telephone?: string | null
@@ -666,6 +654,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      compagnies_api_config: {
+        Row: {
+          api_auth_type: Database["public"]["Enums"]["api_auth_type"]
+          api_base_url: string | null
+          api_config: Json
+          api_secret_name: string | null
+          compagnie_id: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          api_auth_type?: Database["public"]["Enums"]["api_auth_type"]
+          api_base_url?: string | null
+          api_config?: Json
+          api_secret_name?: string | null
+          compagnie_id: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          api_auth_type?: Database["public"]["Enums"]["api_auth_type"]
+          api_base_url?: string | null
+          api_config?: Json
+          api_secret_name?: string | null
+          compagnie_id?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compagnies_api_config_compagnie_id_fkey"
+            columns: ["compagnie_id"]
+            isOneToOne: true
+            referencedRelation: "compagnies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       conformite_documents: {
         Row: {
