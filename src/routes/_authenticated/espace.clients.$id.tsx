@@ -174,6 +174,7 @@ function ClientDetail() {
         {tab === "historique" && <HistoriqueTab clientId={client.id} />}
         {tab === "documents" && <DocumentsTab clientId={client.id} canEdit={canEdit} />}
         {tab === "dossiers" && <DossiersTab client={client} />}
+        {tab === "der" && <DerTab clientId={client.id} clientEmail={client.email} />}
       </div>
     </div>
   );
