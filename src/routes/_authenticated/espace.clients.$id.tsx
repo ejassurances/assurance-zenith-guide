@@ -138,6 +138,9 @@ function ClientDetail() {
         {(
           [
             ["identite", "Identité"],
+            ["famille", "Famille"],
+            ["entreprise", "Entreprise"],
+            ["equipements", "Équipements"],
             ["taches", "Tâches"],
             ["historique", "Historique"],
             ["documents", "Documents"],
@@ -159,6 +162,9 @@ function ClientDetail() {
 
       <div className="mt-6">
         {tab === "identite" && <IdentiteTab client={client} canEdit={canEdit} onSaved={load} />}
+        {tab === "famille" && <FamilleTab clientId={client.id} canEdit={canEdit} />}
+        {tab === "entreprise" && <EntrepriseTab clientId={client.id} canEdit={canEdit} />}
+        {tab === "equipements" && <EquipementsTab clientId={client.id} canEdit={canEdit} />}
         {tab === "taches" && <TachesTab clientId={client.id} canEdit={canEdit} />}
         {tab === "historique" && <HistoriqueTab clientId={client.id} />}
         {tab === "documents" && <DocumentsTab clientId={client.id} canEdit={canEdit} />}
