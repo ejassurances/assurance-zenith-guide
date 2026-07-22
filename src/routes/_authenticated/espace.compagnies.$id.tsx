@@ -2,6 +2,48 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { CompagnieDocsTable, UploadCompagnieDocForm } from "./espace.conformite";
+
+type CompagnieDocRow = {
+  id: string;
+  compagnie_id: string;
+  type: "contrat_partenariat" | "avenant" | "protocole_commissions" | "conditions_apporteur" | "autre";
+  nom: string;
+  storage_path: string;
+  date_signature: string | null;
+  date_fin: string | null;
+  reference: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
+function PartenariatsTab({ compagnieId, compagnieNom, isAdmin }: { compagnieId: string; compagnieNom: string; isAdmin: boolean }) {
+  const [docs, setDocs] = useState<CompagnieDocRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("compagnie_documents")
+      .select("*")
+      .eq("compagnie_id", compagnieId)
+      .order("created_at", { ascending: false });
+    setDocs((data as CompagnieDocRow[]) ?? []);
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, [compagnieId]);
+  return (
+    <div className="space-y-4">
+      {isAdmin && (
+        <UploadCompagnieDocForm
+          compagnies={[{ id: compagnieId, nom: compagnieNom }]}
+          defaultCompagnieId={compagnieId}
+          onUploaded={load}
+        />
+      )}
+      <CompagnieDocsTable docs={docs} loading={loading} onChanged={load} canManage={isAdmin} />
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/_authenticated/espace/compagnies/$id")({
   component: CompagnieDetail,
