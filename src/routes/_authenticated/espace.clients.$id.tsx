@@ -558,7 +558,7 @@ function HistoriqueTab({ clientId }: { clientId: string }) {
     if (!form.contenu.trim()) return;
     await supabase.from("activites").insert({
       client_id: clientId,
-      type: form.type,
+      type: form.type as "note" | "appel" | "email" | "sms" | "rdv" | "systeme",
       titre: form.titre || null,
       contenu: form.contenu,
     });
