@@ -622,13 +622,14 @@ function HistoriqueTab({ clientId }: { clientId: string }) {
 /* -------------------- DOCUMENTS -------------------- */
 
 function DocumentsTab({ clientId, canEdit }: { clientId: string; canEdit: boolean }) {
+  const { user } = useAuth();
   const [items, setItems] = useState<Doc[]>([]);
   const [uploading, setUploading] = useState(false);
 
   const load = async () => {
     const { data } = await supabase
       .from("documents")
-      .select("id,nom_fichier,chemin,taille,created_at")
+      .select("id,file_name,storage_path,file_size,created_at")
       .eq("client_id", clientId)
       .order("created_at", { ascending: false });
     setItems((data ?? []) as Doc[]);
@@ -639,16 +640,17 @@ function DocumentsTab({ clientId, canEdit }: { clientId: string; canEdit: boolea
 
   const upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !user) return;
     setUploading(true);
     const path = `clients/${clientId}/${Date.now()}-${file.name}`;
     const { error: upErr } = await supabase.storage.from("dossier-documents").upload(path, file);
     if (!upErr) {
       await supabase.from("documents").insert({
         client_id: clientId,
-        nom_fichier: file.name,
-        chemin: path,
-        taille: file.size,
+        uploader_id: user.id,
+        file_name: file.name,
+        storage_path: path,
+        file_size: file.size,
       });
       load();
     }
@@ -657,7 +659,7 @@ function DocumentsTab({ clientId, canEdit }: { clientId: string; canEdit: boolea
   };
 
   const download = async (d: Doc) => {
-    const { data } = await supabase.storage.from("dossier-documents").createSignedUrl(d.chemin, 60);
+    const { data } = await supabase.storage.from("dossier-documents").createSignedUrl(d.storage_path, 60);
     if (data?.signedUrl) window.open(data.signedUrl, "_blank");
   };
 
@@ -680,10 +682,10 @@ function DocumentsTab({ clientId, canEdit }: { clientId: string; canEdit: boolea
               className="flex w-full items-center justify-between rounded-xl border border-line bg-surface-elevated p-4 text-left hover:bg-background/50"
             >
               <div>
-                <p className="text-sm font-medium text-ink">{d.nom_fichier}</p>
+                <p className="text-sm font-medium text-ink">{d.file_name}</p>
                 <p className="text-xs text-ink-muted">
                   {new Date(d.created_at).toLocaleDateString("fr-FR")}
-                  {d.taille ? ` · ${(d.taille / 1024).toFixed(0)} Ko` : ""}
+                  {d.file_size ? ` · ${(d.file_size / 1024).toFixed(0)} Ko` : ""}
                 </p>
               </div>
               <span className="text-xs text-ink-muted">Télécharger →</span>
