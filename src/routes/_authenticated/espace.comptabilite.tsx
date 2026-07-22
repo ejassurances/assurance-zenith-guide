@@ -871,6 +871,7 @@ function PartnerCommissionsTables({
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
+
