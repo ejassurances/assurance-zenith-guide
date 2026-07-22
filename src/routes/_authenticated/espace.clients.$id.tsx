@@ -243,6 +243,21 @@ function IdentiteTab({ client, canEdit, onSaved }: { client: Client; canEdit: bo
             <Row label="Métier" value={client.metier} />
             <Row label="Fumeur" value={client.fumeur ? "Oui" : "Non"} />
             <Row label="N° Sécu" value={client.numero_secu} />
+            <Row label="Nb enfants" value={client.nb_enfants} />
+            <Row
+              label="Revenus annuels"
+              value={client.revenus_annuels ? Number(client.revenus_annuels).toLocaleString("fr-FR") + " €" : null}
+            />
+          </Section>
+
+          <Section title="Personne politiquement exposée (PPE)">
+            <Row label="PPE" value={client.ppe ? "Oui" : "Non"} />
+            {client.ppe && (
+              <>
+                <Row label="Fonction" value={client.ppe_fonction} />
+                <Row label="Pays" value={client.ppe_pays} />
+              </>
+            )}
           </Section>
 
           {client.remarque && (
