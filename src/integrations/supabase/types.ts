@@ -478,6 +478,72 @@ export type Database = {
           },
         ]
       }
+      compagnies: {
+        Row: {
+          api_active: boolean
+          api_auth_type: Database["public"]["Enums"]["api_auth_type"]
+          api_base_url: string | null
+          api_config: Json
+          api_secret_name: string | null
+          contact_email: string | null
+          contact_nom: string | null
+          contact_telephone: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          logo_url: string | null
+          nom: string
+          notes: string | null
+          site_web: string | null
+          slug: string
+          statut: Database["public"]["Enums"]["compagnie_statut"]
+          updated_at: string
+        }
+        Insert: {
+          api_active?: boolean
+          api_auth_type?: Database["public"]["Enums"]["api_auth_type"]
+          api_base_url?: string | null
+          api_config?: Json
+          api_secret_name?: string | null
+          contact_email?: string | null
+          contact_nom?: string | null
+          contact_telephone?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          nom: string
+          notes?: string | null
+          site_web?: string | null
+          slug: string
+          statut?: Database["public"]["Enums"]["compagnie_statut"]
+          updated_at?: string
+        }
+        Update: {
+          api_active?: boolean
+          api_auth_type?: Database["public"]["Enums"]["api_auth_type"]
+          api_base_url?: string | null
+          api_config?: Json
+          api_secret_name?: string | null
+          contact_email?: string | null
+          contact_nom?: string | null
+          contact_telephone?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          nom?: string
+          notes?: string | null
+          site_web?: string | null
+          slug?: string
+          statut?: Database["public"]["Enums"]["compagnie_statut"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contrat_garanties: {
         Row: {
           contrat_id: string
@@ -744,6 +810,164 @@ export type Database = {
           },
         ]
       }
+      produit_documents: {
+        Row: {
+          created_at: string
+          date_effet: string | null
+          id: string
+          interne: boolean
+          mime_type: string | null
+          nom: string
+          produit_id: string
+          storage_path: string
+          taille_bytes: number | null
+          type: Database["public"]["Enums"]["produit_document_type"]
+          updated_at: string
+          uploaded_by: string | null
+          version: string | null
+        }
+        Insert: {
+          created_at?: string
+          date_effet?: string | null
+          id?: string
+          interne?: boolean
+          mime_type?: string | null
+          nom: string
+          produit_id: string
+          storage_path: string
+          taille_bytes?: number | null
+          type: Database["public"]["Enums"]["produit_document_type"]
+          updated_at?: string
+          uploaded_by?: string | null
+          version?: string | null
+        }
+        Update: {
+          created_at?: string
+          date_effet?: string | null
+          id?: string
+          interne?: boolean
+          mime_type?: string | null
+          nom?: string
+          produit_id?: string
+          storage_path?: string
+          taille_bytes?: number | null
+          type?: Database["public"]["Enums"]["produit_document_type"]
+          updated_at?: string
+          uploaded_by?: string | null
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produit_documents_produit_id_fkey"
+            columns: ["produit_id"]
+            isOneToOne: false
+            referencedRelation: "produits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produit_familles: {
+        Row: {
+          champs_standards: Json
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          nom: string
+          ordre: number
+          updated_at: string
+        }
+        Insert: {
+          champs_standards?: Json
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom: string
+          ordre?: number
+          updated_at?: string
+        }
+        Update: {
+          champs_standards?: Json
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom?: string
+          ordre?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      produits: {
+        Row: {
+          caracteristiques: Json
+          cible: string | null
+          code_produit: string | null
+          commission_taux: number | null
+          compagnie_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          famille_id: string
+          id: string
+          nom: string
+          points_forts: string | null
+          points_vigilance: string | null
+          statut: Database["public"]["Enums"]["produit_statut"]
+          updated_at: string
+        }
+        Insert: {
+          caracteristiques?: Json
+          cible?: string | null
+          code_produit?: string | null
+          commission_taux?: number | null
+          compagnie_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          famille_id: string
+          id?: string
+          nom: string
+          points_forts?: string | null
+          points_vigilance?: string | null
+          statut?: Database["public"]["Enums"]["produit_statut"]
+          updated_at?: string
+        }
+        Update: {
+          caracteristiques?: Json
+          cible?: string | null
+          code_produit?: string | null
+          commission_taux?: number | null
+          compagnie_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          famille_id?: string
+          id?: string
+          nom?: string
+          points_forts?: string | null
+          points_vigilance?: string | null
+          statut?: Database["public"]["Enums"]["produit_statut"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produits_compagnie_id_fkey"
+            columns: ["compagnie_id"]
+            isOneToOne: false
+            referencedRelation: "compagnies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produits_famille_id_fkey"
+            columns: ["famille_id"]
+            isOneToOne: false
+            referencedRelation: "produit_familles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           company: string | null
@@ -985,6 +1209,7 @@ export type Database = {
     }
     Enums: {
       activite_type: "note" | "appel" | "email" | "sms" | "systeme" | "rdv"
+      api_auth_type: "none" | "api_key" | "bearer" | "oauth2" | "basic"
       app_role: "admin" | "mandataire" | "client" | "prescripteur"
       client_origine:
         | "internet"
@@ -995,7 +1220,15 @@ export type Database = {
         | "autre"
       client_statut: "prospect" | "actif" | "inactif" | "perdu" | "ancien"
       commission_statut: "prevue" | "versee" | "annulee"
+      compagnie_statut: "actif" | "prospect" | "inactif"
       dossier_statut: "nouveau" | "en_cours" | "signe" | "perdu"
+      produit_document_type:
+        | "conditions_generales"
+        | "ipid"
+        | "fiche_produit"
+        | "tarifs"
+        | "autre"
+      produit_statut: "actif" | "en_test" | "retire"
       tache_priorite: "basse" | "normale" | "haute" | "urgente"
       tache_statut: "a_faire" | "en_cours" | "terminee" | "annulee"
     }
@@ -1126,6 +1359,7 @@ export const Constants = {
   public: {
     Enums: {
       activite_type: ["note", "appel", "email", "sms", "systeme", "rdv"],
+      api_auth_type: ["none", "api_key", "bearer", "oauth2", "basic"],
       app_role: ["admin", "mandataire", "client", "prescripteur"],
       client_origine: [
         "internet",
@@ -1137,7 +1371,16 @@ export const Constants = {
       ],
       client_statut: ["prospect", "actif", "inactif", "perdu", "ancien"],
       commission_statut: ["prevue", "versee", "annulee"],
+      compagnie_statut: ["actif", "prospect", "inactif"],
       dossier_statut: ["nouveau", "en_cours", "signe", "perdu"],
+      produit_document_type: [
+        "conditions_generales",
+        "ipid",
+        "fiche_produit",
+        "tarifs",
+        "autre",
+      ],
+      produit_statut: ["actif", "en_test", "retire"],
       tache_priorite: ["basse", "normale", "haute", "urgente"],
       tache_statut: ["a_faire", "en_cours", "terminee", "annulee"],
     },
