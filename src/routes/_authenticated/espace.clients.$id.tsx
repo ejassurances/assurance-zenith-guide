@@ -175,7 +175,7 @@ function IdentiteTab({ client, canEdit, onSaved }: { client: Client; canEdit: bo
     setSaving(true);
     const { id, reference, created_at, ...rest } = form;
     void id; void reference; void created_at;
-    const { error } = await supabase.from("clients").update(rest).eq("id", client.id);
+    const { error } = await supabase.from("clients").update(rest as never).eq("id", client.id);
     setSaving(false);
     if (!error) {
       setEditing(false);
