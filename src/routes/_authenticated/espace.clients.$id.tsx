@@ -85,7 +85,7 @@ type Doc = {
   created_at: string;
 };
 
-type Tab = "identite" | "famille" | "entreprise" | "equipements" | "contrats" | "taches" | "historique" | "documents" | "dossiers";
+type Tab = "identite" | "famille" | "entreprise" | "equipements" | "contrats" | "taches" | "historique" | "documents" | "dossiers" | "der";
 
 function ClientDetail() {
   const { id } = Route.useParams();
