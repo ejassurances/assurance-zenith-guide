@@ -1008,6 +1008,51 @@ export type Database = {
           },
         ]
       }
+      paiements_partenaires: {
+        Row: {
+          beneficiaire_id: string
+          created_at: string
+          created_by: string | null
+          date_paiement: string | null
+          id: string
+          montant: number
+          moyen_paiement: string | null
+          notes: string | null
+          periode: string
+          portee: string
+          reference: string | null
+          updated_at: string
+        }
+        Insert: {
+          beneficiaire_id: string
+          created_at?: string
+          created_by?: string | null
+          date_paiement?: string | null
+          id?: string
+          montant?: number
+          moyen_paiement?: string | null
+          notes?: string | null
+          periode: string
+          portee: string
+          reference?: string | null
+          updated_at?: string
+        }
+        Update: {
+          beneficiaire_id?: string
+          created_at?: string
+          created_by?: string | null
+          date_paiement?: string | null
+          id?: string
+          montant?: number
+          moyen_paiement?: string | null
+          notes?: string | null
+          periode?: string
+          portee?: string
+          reference?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       produit_documents: {
         Row: {
           created_at: string
