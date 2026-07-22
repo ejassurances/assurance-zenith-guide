@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { SITE } from "@/lib/site";
+import { useServerFn } from "@tanstack/react-start";
+import { envoyerDerEmail } from "@/lib/der-sign.functions";
 
 /* Carte statut DER — affichée dans l'onglet Conformité client */
 
@@ -39,6 +41,7 @@ export function DerStatusCard({
   canEdit: boolean;
 }) {
   const { user } = useAuth();
+  const envoyerDerEmailFn = useServerFn(envoyerDerEmail);
   const [envoi, setEnvoi] = useState<Envoi | null>(null);
   const [modele, setModele] = useState<Modele | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,46 +71,13 @@ export function DerStatusCard({
   const envoyer = async () => {
     const dest = email.trim();
     if (!dest) return alert("Renseignez l'email destinataire.");
-    if (!modele) return alert("Aucun DER actif — l'admin doit d'abord activer un modèle.");
+    if (!modele) return alert("Aucun DER actif - l'admin doit d'abord activer un modele.");
     setSending(true);
     try {
-      const { data: urlData } = await supabase.storage
-        .from("conformite-documents")
-        .createSignedUrl(modele.storage_path, 60 * 60 * 24 * 7);
-      const link = urlData?.signedUrl ?? "";
-      const subject = encodeURIComponent(`${SITE.shortName} — Document d'Entrée en Relation (DER)`);
-      const body = encodeURIComponent(
-        `Bonjour,\n\nConformément à la réglementation, veuillez trouver ci-joint (lien de téléchargement valable 7 jours) le Document d'Entrée en Relation (DER) du cabinet ${SITE.shortName}.\n\n${link}\n\nCe document précise le statut de votre courtier, les compagnies partenaires et les modalités de rémunération.\n\nCordialement,\nL'équipe ${SITE.shortName}`,
-      );
-      window.open(`mailto:${dest}?subject=${subject}&body=${body}`, "_blank");
-
-      let targetId = envoi?.id ?? null;
-      if (!targetId || envoi?.statut === "signe") {
-        const { data: created } = await supabase
-          .from("client_der_envois")
-          .insert({
-            client_id: clientId,
-            der_modele_id: modele.id,
-            email_destinataire: dest,
-            statut: "envoye",
-            envoye_le: new Date().toISOString(),
-            envoye_par: user?.id,
-          })
-          .select("id")
-          .single();
-        targetId = created?.id ?? null;
-      } else {
-        await supabase
-          .from("client_der_envois")
-          .update({
-            statut: "envoye",
-            envoye_le: new Date().toISOString(),
-            envoye_par: user?.id,
-            email_destinataire: dest,
-          })
-          .eq("id", targetId);
-      }
+      await envoyerDerEmailFn({ data: { client_id: clientId, email: dest } });
       await load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Echec de l'envoi du DER.");
     } finally {
       setSending(false);
     }
@@ -143,9 +113,7 @@ export function DerStatusCard({
               </span>
             )}
             {envoi?.signed_at && (
-              <span className="text-ink-muted">
-                · Signé le {new Date(envoi.signed_at).toLocaleDateString("fr-FR")}
-              </span>
+              <span className="text-ink-muted">· Signé le {new Date(envoi.signed_at).toLocaleDateString("fr-FR")}</span>
             )}
           </div>
         </div>
