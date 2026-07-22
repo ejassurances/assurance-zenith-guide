@@ -346,6 +346,11 @@ export function Simulator() {
                 </label>
               </div>
 
+              {submitError && (
+                <p className="rounded-lg bg-red-50 p-3 text-xs text-red-800 ring-1 ring-red-200">
+                  Impossible d'envoyer votre demande : {submitError}
+                </p>
+              )}
               <div className="flex flex-col gap-2 sm:flex-row">
                 <button
                   type="button"
@@ -356,9 +361,10 @@ export function Simulator() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-xl bg-ink px-5 py-3 text-sm font-medium text-white transition hover:bg-ink/90"
+                  disabled={submitting}
+                  className="flex-1 rounded-xl bg-ink px-5 py-3 text-sm font-medium text-white transition hover:bg-ink/90 disabled:opacity-60"
                 >
-                  Envoyer ma demande
+                  {submitting ? "Envoi…" : "Envoyer ma demande"}
                 </button>
               </div>
               <p className="text-[11px] italic text-ink-muted">
