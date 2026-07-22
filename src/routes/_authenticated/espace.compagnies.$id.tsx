@@ -955,6 +955,13 @@ function ApiTab({
           api_secret_name: cfg.api_secret_name ?? "",
           api_config: JSON.stringify(cfg.api_config ?? {}, null, 2),
         });
+        // Audit: log admin SELECT on sensitive API config
+        await supabase.rpc("log_audit", {
+          _action: "SELECT",
+          _target_type: "table:compagnies_api_config",
+          _target_id: compagnieId,
+          _metadata: null,
+        });
       }
       setLoading(false);
     })();

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { FamilleTab, EntrepriseTab, EquipementsTab } from "@/components/client-360-tabs";
 import { ContratsTab } from "@/components/contrats-tab";
+import { DerTab } from "@/components/der-tab";
 
 export const Route = createFileRoute("/_authenticated/espace/clients/$id")({
   component: ClientDetail,
@@ -84,7 +85,7 @@ type Doc = {
   created_at: string;
 };
 
-type Tab = "identite" | "famille" | "entreprise" | "equipements" | "contrats" | "taches" | "historique" | "documents" | "dossiers";
+type Tab = "identite" | "famille" | "entreprise" | "equipements" | "contrats" | "taches" | "historique" | "documents" | "dossiers" | "der";
 
 function ClientDetail() {
   const { id } = Route.useParams();
@@ -147,6 +148,7 @@ function ClientDetail() {
             ["historique", "Historique"],
             ["documents", "Documents"],
             ["dossiers", "Dossiers"],
+            ["der", "DER"],
           ] as [Tab, string][]
         ).map(([key, label]) => (
           <button
@@ -172,6 +174,7 @@ function ClientDetail() {
         {tab === "historique" && <HistoriqueTab clientId={client.id} />}
         {tab === "documents" && <DocumentsTab clientId={client.id} canEdit={canEdit} />}
         {tab === "dossiers" && <DossiersTab client={client} />}
+        {tab === "der" && <DerTab clientId={client.id} clientEmail={client.email} />}
       </div>
     </div>
   );

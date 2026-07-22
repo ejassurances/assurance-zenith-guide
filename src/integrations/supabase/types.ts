@@ -52,6 +52,48 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          actor_role: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          new_data: Json | null
+          old_data: Json | null
+          target_id: string | null
+          target_type: string
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          new_data?: Json | null
+          old_data?: Json | null
+          target_id?: string | null
+          target_type: string
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          new_data?: Json | null
+          old_data?: Json | null
+          target_id?: string | null
+          target_type?: string
+        }
+        Relationships: []
+      }
       bordereaux_commissions: {
         Row: {
           assureur: string
@@ -137,6 +179,60 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: true
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_der_envois: {
+        Row: {
+          client_id: string
+          created_at: string
+          der_modele_id: string | null
+          email_destinataire: string | null
+          envoye_le: string | null
+          envoye_par: string | null
+          id: string
+          notes: string | null
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          der_modele_id?: string | null
+          email_destinataire?: string | null
+          envoye_le?: string | null
+          envoye_par?: string | null
+          id?: string
+          notes?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          der_modele_id?: string | null
+          email_destinataire?: string | null
+          envoye_le?: string | null
+          envoye_par?: string | null
+          id?: string
+          notes?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_der_envois_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_der_envois_der_modele_id_fkey"
+            columns: ["der_modele_id"]
+            isOneToOne: false
+            referencedRelation: "der_modele"
             referencedColumns: ["id"]
           },
         ]
@@ -988,6 +1084,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      der_modele: {
+        Row: {
+          actif: boolean
+          created_at: string
+          id: string
+          nom: string
+          notes: string | null
+          storage_path: string
+          updated_at: string
+          updated_by: string | null
+          version: string
+        }
+        Insert: {
+          actif?: boolean
+          created_at?: string
+          id?: string
+          nom: string
+          notes?: string | null
+          storage_path: string
+          updated_at?: string
+          updated_by?: string | null
+          version: string
+        }
+        Update: {
+          actif?: boolean
+          created_at?: string
+          id?: string
+          nom?: string
+          notes?: string | null
+          storage_path?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: string
+        }
+        Relationships: []
       }
       documents: {
         Row: {
@@ -1868,6 +2000,15 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      log_audit: {
+        Args: {
+          _action: string
+          _metadata?: Json
+          _target_id?: string
+          _target_type: string
+        }
+        Returns: undefined
       }
       recalculer_echeances_contrat: {
         Args: { _contrat_id: string }

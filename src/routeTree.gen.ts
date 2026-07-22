@@ -29,9 +29,11 @@ import { Route as ApiPublicBootstrapAdminRouteImport } from './routes/api/public
 import { Route as AuthenticatedEspaceUtilisateursRouteImport } from './routes/_authenticated/espace.utilisateurs'
 import { Route as AuthenticatedEspaceTachesRouteImport } from './routes/_authenticated/espace.taches'
 import { Route as AuthenticatedEspaceParametresRouteImport } from './routes/_authenticated/espace.parametres'
+import { Route as AuthenticatedEspaceDerModeleRouteImport } from './routes/_authenticated/espace.der-modele'
 import { Route as AuthenticatedEspaceConformiteRouteImport } from './routes/_authenticated/espace.conformite'
 import { Route as AuthenticatedEspaceComptabiliteRouteImport } from './routes/_authenticated/espace.comptabilite'
 import { Route as AuthenticatedEspaceCommissionsRouteImport } from './routes/_authenticated/espace.commissions'
+import { Route as AuthenticatedEspaceAuditLogsRouteImport } from './routes/_authenticated/espace.audit-logs'
 import { Route as AuthenticatedEspaceDossiersIndexRouteImport } from './routes/_authenticated/espace.dossiers.index'
 import { Route as AuthenticatedEspaceCompagniesIndexRouteImport } from './routes/_authenticated/espace.compagnies.index'
 import { Route as AuthenticatedEspaceClientsIndexRouteImport } from './routes/_authenticated/espace.clients.index'
@@ -144,6 +146,12 @@ const AuthenticatedEspaceParametresRoute =
     path: '/parametres',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const AuthenticatedEspaceDerModeleRoute =
+  AuthenticatedEspaceDerModeleRouteImport.update({
+    id: '/der-modele',
+    path: '/der-modele',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
 const AuthenticatedEspaceConformiteRoute =
   AuthenticatedEspaceConformiteRouteImport.update({
     id: '/conformite',
@@ -160,6 +168,12 @@ const AuthenticatedEspaceCommissionsRoute =
   AuthenticatedEspaceCommissionsRouteImport.update({
     id: '/commissions',
     path: '/commissions',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
+const AuthenticatedEspaceAuditLogsRoute =
+  AuthenticatedEspaceAuditLogsRouteImport.update({
+    id: '/audit-logs',
+    path: '/audit-logs',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
 const AuthenticatedEspaceDossiersIndexRoute =
@@ -219,9 +233,11 @@ export interface FileRoutesByFullPath {
   '/espace': typeof AuthenticatedEspaceRouteWithChildren
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
+  '/espace/audit-logs': typeof AuthenticatedEspaceAuditLogsRoute
   '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
   '/espace/comptabilite': typeof AuthenticatedEspaceComptabiliteRoute
   '/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
+  '/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
@@ -249,9 +265,11 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog': typeof BlogIndexRoute
+  '/espace/audit-logs': typeof AuthenticatedEspaceAuditLogsRoute
   '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
   '/espace/comptabilite': typeof AuthenticatedEspaceComptabiliteRoute
   '/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
+  '/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
@@ -282,9 +300,11 @@ export interface FileRoutesById {
   '/_authenticated/espace': typeof AuthenticatedEspaceRouteWithChildren
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
+  '/_authenticated/espace/audit-logs': typeof AuthenticatedEspaceAuditLogsRoute
   '/_authenticated/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
   '/_authenticated/espace/comptabilite': typeof AuthenticatedEspaceComptabiliteRoute
   '/_authenticated/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
+  '/_authenticated/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
   '/_authenticated/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/_authenticated/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/_authenticated/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
@@ -315,9 +335,11 @@ export interface FileRouteTypes {
     | '/espace'
     | '/blog/$slug'
     | '/blog/'
+    | '/espace/audit-logs'
     | '/espace/commissions'
     | '/espace/comptabilite'
     | '/espace/conformite'
+    | '/espace/der-modele'
     | '/espace/parametres'
     | '/espace/taches'
     | '/espace/utilisateurs'
@@ -345,9 +367,11 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/blog/$slug'
     | '/blog'
+    | '/espace/audit-logs'
     | '/espace/commissions'
     | '/espace/comptabilite'
     | '/espace/conformite'
+    | '/espace/der-modele'
     | '/espace/parametres'
     | '/espace/taches'
     | '/espace/utilisateurs'
@@ -377,9 +401,11 @@ export interface FileRouteTypes {
     | '/_authenticated/espace'
     | '/blog/$slug'
     | '/blog/'
+    | '/_authenticated/espace/audit-logs'
     | '/_authenticated/espace/commissions'
     | '/_authenticated/espace/comptabilite'
     | '/_authenticated/espace/conformite'
+    | '/_authenticated/espace/der-modele'
     | '/_authenticated/espace/parametres'
     | '/_authenticated/espace/taches'
     | '/_authenticated/espace/utilisateurs'
@@ -555,6 +581,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceParametresRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/der-modele': {
+      id: '/_authenticated/espace/der-modele'
+      path: '/der-modele'
+      fullPath: '/espace/der-modele'
+      preLoaderRoute: typeof AuthenticatedEspaceDerModeleRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
     '/_authenticated/espace/conformite': {
       id: '/_authenticated/espace/conformite'
       path: '/conformite'
@@ -574,6 +607,13 @@ declare module '@tanstack/react-router' {
       path: '/commissions'
       fullPath: '/espace/commissions'
       preLoaderRoute: typeof AuthenticatedEspaceCommissionsRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
+    '/_authenticated/espace/audit-logs': {
+      id: '/_authenticated/espace/audit-logs'
+      path: '/audit-logs'
+      fullPath: '/espace/audit-logs'
+      preLoaderRoute: typeof AuthenticatedEspaceAuditLogsRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
     '/_authenticated/espace/dossiers/': {
@@ -629,9 +669,11 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedEspaceRouteChildren {
+  AuthenticatedEspaceAuditLogsRoute: typeof AuthenticatedEspaceAuditLogsRoute
   AuthenticatedEspaceCommissionsRoute: typeof AuthenticatedEspaceCommissionsRoute
   AuthenticatedEspaceComptabiliteRoute: typeof AuthenticatedEspaceComptabiliteRoute
   AuthenticatedEspaceConformiteRoute: typeof AuthenticatedEspaceConformiteRoute
+  AuthenticatedEspaceDerModeleRoute: typeof AuthenticatedEspaceDerModeleRoute
   AuthenticatedEspaceParametresRoute: typeof AuthenticatedEspaceParametresRoute
   AuthenticatedEspaceTachesRoute: typeof AuthenticatedEspaceTachesRoute
   AuthenticatedEspaceUtilisateursRoute: typeof AuthenticatedEspaceUtilisateursRoute
@@ -646,9 +688,11 @@ interface AuthenticatedEspaceRouteChildren {
 }
 
 const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
+  AuthenticatedEspaceAuditLogsRoute: AuthenticatedEspaceAuditLogsRoute,
   AuthenticatedEspaceCommissionsRoute: AuthenticatedEspaceCommissionsRoute,
   AuthenticatedEspaceComptabiliteRoute: AuthenticatedEspaceComptabiliteRoute,
   AuthenticatedEspaceConformiteRoute: AuthenticatedEspaceConformiteRoute,
+  AuthenticatedEspaceDerModeleRoute: AuthenticatedEspaceDerModeleRoute,
   AuthenticatedEspaceParametresRoute: AuthenticatedEspaceParametresRoute,
   AuthenticatedEspaceTachesRoute: AuthenticatedEspaceTachesRoute,
   AuthenticatedEspaceUtilisateursRoute: AuthenticatedEspaceUtilisateursRoute,
