@@ -440,7 +440,7 @@ function TachesTab({ clientId, canEdit }: { clientId: string; canEdit: boolean }
       titre: form.titre,
       description: form.description || null,
       echeance: form.echeance || null,
-      priorite: form.priorite,
+      priorite: form.priorite as "basse" | "normale" | "haute" | "urgente",
     });
     setForm({ titre: "", description: "", echeance: "", priorite: "normale" });
     setShowForm(false);
