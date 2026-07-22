@@ -56,7 +56,7 @@ const NIVEAU_COLOR: Record<string, string> = {
   rouge: "bg-red-100 text-red-900 border-red-300",
 };
 
-export function ConformiteClientTab({ clientId, canEdit }: { clientId: string; canEdit: boolean }) {
+export function ConformiteClientTab({ clientId, clientEmail, canEdit }: { clientId: string; clientEmail: string | null; canEdit: boolean }) {
   const [client, setClient] = useState<ClientMini | null>(null);
   const [docs, setDocs] = useState<KycDoc[]>([]);
   const [verifs, setVerifs] = useState<LCBVerif[]>([]);
@@ -184,6 +184,8 @@ export function ConformiteClientTab({ clientId, canEdit }: { clientId: string; c
           Revérification 18 mois si vert · 12 mois si orange · 6 mois si rouge.
         </p>
       </div>
+
+      <DerStatusCard clientId={clientId} clientEmail={clientEmail} canEdit={canEdit} />
 
       {/* Documents KYC */}
       <div className="rounded-2xl border border-line bg-surface-elevated p-6">
