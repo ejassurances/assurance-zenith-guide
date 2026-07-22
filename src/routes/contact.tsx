@@ -23,6 +23,39 @@ export const Route = createFileRoute("/contact")({
 
 function Page() {
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    const fd = new FormData(e.currentTarget);
+    const payload = {
+      source: "contact" as const,
+      prenom: String(fd.get("firstname") ?? ""),
+      nom: String(fd.get("lastname") ?? ""),
+      email: String(fd.get("email") ?? ""),
+      telephone: String(fd.get("phone") ?? "") || null,
+      sujet: String(fd.get("subject") ?? "") || null,
+      message: String(fd.get("message") ?? "") || null,
+      consent_contact: true,
+      consent_rgpd: true,
+    };
+    try {
+      const res = await fetch("/api/public/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? "Erreur");
+      setSent(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur inattendue");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background text-ink">
@@ -42,10 +75,7 @@ function Page() {
 
       <section className="py-16 md:py-20">
         <div className="container-page grid max-w-5xl gap-12 md:grid-cols-[1fr_20rem]">
-          <form
-            className="space-y-5"
-            onSubmit={(e) => { e.preventDefault(); setSent(true); }}
-          >
+          <form className="space-y-5" onSubmit={onSubmit}>
             <div className="grid gap-5 sm:grid-cols-2">
               <Input label="Prénom" name="firstname" required />
               <Input label="Nom" name="lastname" required />
@@ -76,13 +106,17 @@ function Page() {
             </div>
             <button
               type="submit"
-              className="inline-flex h-12 items-center justify-center rounded-md bg-ink px-8 text-sm font-medium text-primary-foreground"
+              disabled={submitting || sent}
+              className="inline-flex h-12 items-center justify-center rounded-md bg-ink px-8 text-sm font-medium text-primary-foreground disabled:opacity-60"
             >
-              Envoyer ma demande
+              {submitting ? "Envoi…" : sent ? "Demande envoyée" : "Envoyer ma demande"}
             </button>
+            {error && (
+              <p className="rounded-md bg-red-50 p-4 text-sm text-red-800">Une erreur est survenue : {error}</p>
+            )}
             {sent && (
               <p className="rounded-md bg-surface p-4 text-sm text-ink-soft">
-                Merci, votre demande a été enregistrée. Nous vous recontactons sous 24h ouvrées.
+                Merci, votre demande a été enregistrée. Nous vous recontactons sous 24 h ouvrées.
               </p>
             )}
           </form>

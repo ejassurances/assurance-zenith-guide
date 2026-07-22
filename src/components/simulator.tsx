@@ -69,50 +69,50 @@ export function Simulator() {
     setStep("results");
   }
 
-  function handleSendMail(e: React.FormEvent) {
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  async function handleSendMail(e: React.FormEvent) {
     e.preventDefault();
     if (!acceptContact || !acceptRgpd) {
       alert("Veuillez accepter les conditions de recontact et la politique RGPD pour envoyer votre demande.");
       return;
     }
-
-    const subject = `Demande d'étude assurance emprunteur — ${prenom} ${nom}`;
-    const body = [
-      `Bonjour,`,
-      ``,
-      `Je souhaite recevoir une étude personnalisée suite à ma simulation :`,
-      ``,
-      `— Capital emprunté : ${formatEuro(capital)}`,
-      `— Durée du prêt : ${duree} ans`,
-      `— Âge : ${age} ans`,
-      `— Fumeur : ${smoker ? "Oui" : "Non"}`,
-      ``,
-      `Estimation calculée :`,
-      `— Contrat groupe (banque) : ${formatEuro(results.mensGroupe)} / mois — total ${formatEuro(results.totalGroupe)}`,
-      `— Contrat délégué (courtier) : ${formatEuro(results.mensCourtier)} / mois — total ${formatEuro(results.totalCourtier)}`,
-      `— Économie mensuelle : ${formatEuro(results.monthlySaving)}`,
-      `— Économie totale estimée : ${formatEuro(results.totalSaving)}`,
-      ``,
-      `Mes coordonnées :`,
-      `— Nom : ${prenom} ${nom}`,
-      `— Email : ${email}`,
-      `— Téléphone : ${telephone}`,
-      ``,
-      message ? `Message :\n${message}` : ``,
-      ``,
-      `Consentements :`,
-      `— J'accepte d'être recontacté(e) par ${SITE.shortName} ou l'un de ses partenaires : Oui`,
-      `— J'ai pris connaissance de la politique de confidentialité RGPD : Oui`,
-      ``,
-      `Cordialement,`,
-      `${prenom} ${nom}`,
-    ].join("\n");
-
-    const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-      subject
-    )}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
-    setStep("sent");
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const res = await fetch("/api/public/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source: "simulateur",
+          prenom,
+          nom,
+          email,
+          telephone,
+          message: message || null,
+          simulation: {
+            capital,
+            duree_ans: duree,
+            age,
+            fumeur: smoker,
+            economie_totale: results.totalSaving,
+            economie_mensuelle: results.monthlySaving,
+          },
+          consent_contact: acceptContact,
+          consent_rgpd: acceptRgpd,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `Erreur ${res.status}`);
+      }
+      setStep("sent");
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Erreur inattendue");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -346,6 +346,11 @@ export function Simulator() {
                 </label>
               </div>
 
+              {submitError && (
+                <p className="rounded-lg bg-red-50 p-3 text-xs text-red-800 ring-1 ring-red-200">
+                  Impossible d'envoyer votre demande : {submitError}
+                </p>
+              )}
               <div className="flex flex-col gap-2 sm:flex-row">
                 <button
                   type="button"
@@ -356,9 +361,10 @@ export function Simulator() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-xl bg-ink px-5 py-3 text-sm font-medium text-white transition hover:bg-ink/90"
+                  disabled={submitting}
+                  className="flex-1 rounded-xl bg-ink px-5 py-3 text-sm font-medium text-white transition hover:bg-ink/90 disabled:opacity-60"
                 >
-                  Envoyer ma demande
+                  {submitting ? "Envoi…" : "Envoyer ma demande"}
                 </button>
               </div>
               <p className="text-[11px] italic text-ink-muted">
@@ -376,13 +382,13 @@ export function Simulator() {
           <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-ink text-white">
             ✓
           </div>
-          <h3 className="font-serif text-2xl text-ink">Demande transmise</h3>
+          <h3 className="font-serif text-2xl text-ink">Demande enregistrée</h3>
           <p className="mx-auto max-w-md text-sm text-ink-soft">
-            Votre message a été préparé à destination de{" "}
-            <a href={`mailto:${CONTACT_EMAIL}`} className="underline">
-              {CONTACT_EMAIL}
-            </a>
-            . Un conseiller {SITE.shortName} vous recontacte sous 24 h ouvrées.
+            Votre demande a bien été transmise à {SITE.shortName}
+            <span className="hidden">
+              {" "}(<a href={`mailto:${CONTACT_EMAIL}`} className="underline">{CONTACT_EMAIL}</a>)
+            </span>
+            . Un conseiller vous recontacte sous 24 h ouvrées.
           </p>
           <button
             type="button"
