@@ -30,7 +30,9 @@ function EspaceLayout() {
 
   const nav = [
     { to: "/espace", label: "Tableau de bord", exact: true },
+    { to: "/espace/clients", label: "Clients", hide: role === "client" },
     { to: "/espace/dossiers", label: "Dossiers" },
+    { to: "/espace/taches", label: "Tâches", hide: role === "client" },
     { to: "/espace/commissions", label: "Commissions", hide: role === "client" },
     { to: "/espace/utilisateurs", label: "Utilisateurs", hide: role !== "admin" },
   ].filter((n) => !n.hide);

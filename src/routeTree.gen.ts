@@ -24,9 +24,12 @@ import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AuthenticatedEspaceRouteImport } from './routes/_authenticated/espace'
 import { Route as AuthenticatedEspaceIndexRouteImport } from './routes/_authenticated/espace.index'
 import { Route as AuthenticatedEspaceUtilisateursRouteImport } from './routes/_authenticated/espace.utilisateurs'
+import { Route as AuthenticatedEspaceTachesRouteImport } from './routes/_authenticated/espace.taches'
 import { Route as AuthenticatedEspaceCommissionsRouteImport } from './routes/_authenticated/espace.commissions'
 import { Route as AuthenticatedEspaceDossiersIndexRouteImport } from './routes/_authenticated/espace.dossiers.index'
+import { Route as AuthenticatedEspaceClientsIndexRouteImport } from './routes/_authenticated/espace.clients.index'
 import { Route as AuthenticatedEspaceDossiersIdRouteImport } from './routes/_authenticated/espace.dossiers.$id'
+import { Route as AuthenticatedEspaceClientsIdRouteImport } from './routes/_authenticated/espace.clients.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -105,6 +108,12 @@ const AuthenticatedEspaceUtilisateursRoute =
     path: '/utilisateurs',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const AuthenticatedEspaceTachesRoute =
+  AuthenticatedEspaceTachesRouteImport.update({
+    id: '/taches',
+    path: '/taches',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
 const AuthenticatedEspaceCommissionsRoute =
   AuthenticatedEspaceCommissionsRouteImport.update({
     id: '/commissions',
@@ -117,10 +126,22 @@ const AuthenticatedEspaceDossiersIndexRoute =
     path: '/dossiers/',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const AuthenticatedEspaceClientsIndexRoute =
+  AuthenticatedEspaceClientsIndexRouteImport.update({
+    id: '/clients/',
+    path: '/clients/',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
 const AuthenticatedEspaceDossiersIdRoute =
   AuthenticatedEspaceDossiersIdRouteImport.update({
     id: '/dossiers/$id',
     path: '/dossiers/$id',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
+const AuthenticatedEspaceClientsIdRoute =
+  AuthenticatedEspaceClientsIdRouteImport.update({
+    id: '/clients/$id',
+    path: '/clients/$id',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
 
@@ -138,9 +159,12 @@ export interface FileRoutesByFullPath {
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
+  '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/espace/': typeof AuthenticatedEspaceIndexRoute
+  '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
+  '/espace/clients/': typeof AuthenticatedEspaceClientsIndexRoute
   '/espace/dossiers/': typeof AuthenticatedEspaceDossiersIndexRoute
 }
 export interface FileRoutesByTo {
@@ -156,9 +180,12 @@ export interface FileRoutesByTo {
   '/blog/$slug': typeof BlogSlugRoute
   '/blog': typeof BlogIndexRoute
   '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
+  '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/espace': typeof AuthenticatedEspaceIndexRoute
+  '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
+  '/espace/clients': typeof AuthenticatedEspaceClientsIndexRoute
   '/espace/dossiers': typeof AuthenticatedEspaceDossiersIndexRoute
 }
 export interface FileRoutesById {
@@ -177,9 +204,12 @@ export interface FileRoutesById {
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/_authenticated/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
+  '/_authenticated/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/_authenticated/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/_authenticated/espace/': typeof AuthenticatedEspaceIndexRoute
+  '/_authenticated/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/_authenticated/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
+  '/_authenticated/espace/clients/': typeof AuthenticatedEspaceClientsIndexRoute
   '/_authenticated/espace/dossiers/': typeof AuthenticatedEspaceDossiersIndexRoute
 }
 export interface FileRouteTypes {
@@ -198,9 +228,12 @@ export interface FileRouteTypes {
     | '/blog/$slug'
     | '/blog/'
     | '/espace/commissions'
+    | '/espace/taches'
     | '/espace/utilisateurs'
     | '/espace/'
+    | '/espace/clients/$id'
     | '/espace/dossiers/$id'
+    | '/espace/clients/'
     | '/espace/dossiers/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -216,9 +249,12 @@ export interface FileRouteTypes {
     | '/blog/$slug'
     | '/blog'
     | '/espace/commissions'
+    | '/espace/taches'
     | '/espace/utilisateurs'
     | '/espace'
+    | '/espace/clients/$id'
     | '/espace/dossiers/$id'
+    | '/espace/clients'
     | '/espace/dossiers'
   id:
     | '__root__'
@@ -236,9 +272,12 @@ export interface FileRouteTypes {
     | '/blog/$slug'
     | '/blog/'
     | '/_authenticated/espace/commissions'
+    | '/_authenticated/espace/taches'
     | '/_authenticated/espace/utilisateurs'
     | '/_authenticated/espace/'
+    | '/_authenticated/espace/clients/$id'
     | '/_authenticated/espace/dossiers/$id'
+    | '/_authenticated/espace/clients/'
     | '/_authenticated/espace/dossiers/'
   fileRoutesById: FileRoutesById
 }
@@ -364,6 +403,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceUtilisateursRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/taches': {
+      id: '/_authenticated/espace/taches'
+      path: '/taches'
+      fullPath: '/espace/taches'
+      preLoaderRoute: typeof AuthenticatedEspaceTachesRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
     '/_authenticated/espace/commissions': {
       id: '/_authenticated/espace/commissions'
       path: '/commissions'
@@ -378,6 +424,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceDossiersIndexRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/clients/': {
+      id: '/_authenticated/espace/clients/'
+      path: '/clients'
+      fullPath: '/espace/clients/'
+      preLoaderRoute: typeof AuthenticatedEspaceClientsIndexRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
     '/_authenticated/espace/dossiers/$id': {
       id: '/_authenticated/espace/dossiers/$id'
       path: '/dossiers/$id'
@@ -385,22 +438,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceDossiersIdRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/clients/$id': {
+      id: '/_authenticated/espace/clients/$id'
+      path: '/clients/$id'
+      fullPath: '/espace/clients/$id'
+      preLoaderRoute: typeof AuthenticatedEspaceClientsIdRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
   }
 }
 
 interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceCommissionsRoute: typeof AuthenticatedEspaceCommissionsRoute
+  AuthenticatedEspaceTachesRoute: typeof AuthenticatedEspaceTachesRoute
   AuthenticatedEspaceUtilisateursRoute: typeof AuthenticatedEspaceUtilisateursRoute
   AuthenticatedEspaceIndexRoute: typeof AuthenticatedEspaceIndexRoute
+  AuthenticatedEspaceClientsIdRoute: typeof AuthenticatedEspaceClientsIdRoute
   AuthenticatedEspaceDossiersIdRoute: typeof AuthenticatedEspaceDossiersIdRoute
+  AuthenticatedEspaceClientsIndexRoute: typeof AuthenticatedEspaceClientsIndexRoute
   AuthenticatedEspaceDossiersIndexRoute: typeof AuthenticatedEspaceDossiersIndexRoute
 }
 
 const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
   AuthenticatedEspaceCommissionsRoute: AuthenticatedEspaceCommissionsRoute,
+  AuthenticatedEspaceTachesRoute: AuthenticatedEspaceTachesRoute,
   AuthenticatedEspaceUtilisateursRoute: AuthenticatedEspaceUtilisateursRoute,
   AuthenticatedEspaceIndexRoute: AuthenticatedEspaceIndexRoute,
+  AuthenticatedEspaceClientsIdRoute: AuthenticatedEspaceClientsIdRoute,
   AuthenticatedEspaceDossiersIdRoute: AuthenticatedEspaceDossiersIdRoute,
+  AuthenticatedEspaceClientsIndexRoute: AuthenticatedEspaceClientsIndexRoute,
   AuthenticatedEspaceDossiersIndexRoute: AuthenticatedEspaceDossiersIndexRoute,
 }
 
