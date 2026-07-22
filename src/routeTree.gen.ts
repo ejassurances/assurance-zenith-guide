@@ -29,6 +29,7 @@ import { Route as ApiPublicBootstrapAdminRouteImport } from './routes/api/public
 import { Route as AuthenticatedEspaceUtilisateursRouteImport } from './routes/_authenticated/espace.utilisateurs'
 import { Route as AuthenticatedEspaceTachesRouteImport } from './routes/_authenticated/espace.taches'
 import { Route as AuthenticatedEspaceParametresRouteImport } from './routes/_authenticated/espace.parametres'
+import { Route as AuthenticatedEspaceConformiteRouteImport } from './routes/_authenticated/espace.conformite'
 import { Route as AuthenticatedEspaceComptabiliteRouteImport } from './routes/_authenticated/espace.comptabilite'
 import { Route as AuthenticatedEspaceCommissionsRouteImport } from './routes/_authenticated/espace.commissions'
 import { Route as AuthenticatedEspaceDossiersIndexRouteImport } from './routes/_authenticated/espace.dossiers.index'
@@ -143,6 +144,12 @@ const AuthenticatedEspaceParametresRoute =
     path: '/parametres',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const AuthenticatedEspaceConformiteRoute =
+  AuthenticatedEspaceConformiteRouteImport.update({
+    id: '/conformite',
+    path: '/conformite',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
 const AuthenticatedEspaceComptabiliteRoute =
   AuthenticatedEspaceComptabiliteRouteImport.update({
     id: '/comptabilite',
@@ -214,6 +221,7 @@ export interface FileRoutesByFullPath {
   '/blog/': typeof BlogIndexRoute
   '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
   '/espace/comptabilite': typeof AuthenticatedEspaceComptabiliteRoute
+  '/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
@@ -243,6 +251,7 @@ export interface FileRoutesByTo {
   '/blog': typeof BlogIndexRoute
   '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
   '/espace/comptabilite': typeof AuthenticatedEspaceComptabiliteRoute
+  '/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
@@ -275,6 +284,7 @@ export interface FileRoutesById {
   '/blog/': typeof BlogIndexRoute
   '/_authenticated/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
   '/_authenticated/espace/comptabilite': typeof AuthenticatedEspaceComptabiliteRoute
+  '/_authenticated/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/_authenticated/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/_authenticated/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/_authenticated/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
@@ -307,6 +317,7 @@ export interface FileRouteTypes {
     | '/blog/'
     | '/espace/commissions'
     | '/espace/comptabilite'
+    | '/espace/conformite'
     | '/espace/parametres'
     | '/espace/taches'
     | '/espace/utilisateurs'
@@ -336,6 +347,7 @@ export interface FileRouteTypes {
     | '/blog'
     | '/espace/commissions'
     | '/espace/comptabilite'
+    | '/espace/conformite'
     | '/espace/parametres'
     | '/espace/taches'
     | '/espace/utilisateurs'
@@ -367,6 +379,7 @@ export interface FileRouteTypes {
     | '/blog/'
     | '/_authenticated/espace/commissions'
     | '/_authenticated/espace/comptabilite'
+    | '/_authenticated/espace/conformite'
     | '/_authenticated/espace/parametres'
     | '/_authenticated/espace/taches'
     | '/_authenticated/espace/utilisateurs'
@@ -542,6 +555,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceParametresRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/conformite': {
+      id: '/_authenticated/espace/conformite'
+      path: '/conformite'
+      fullPath: '/espace/conformite'
+      preLoaderRoute: typeof AuthenticatedEspaceConformiteRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
     '/_authenticated/espace/comptabilite': {
       id: '/_authenticated/espace/comptabilite'
       path: '/comptabilite'
@@ -611,6 +631,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceCommissionsRoute: typeof AuthenticatedEspaceCommissionsRoute
   AuthenticatedEspaceComptabiliteRoute: typeof AuthenticatedEspaceComptabiliteRoute
+  AuthenticatedEspaceConformiteRoute: typeof AuthenticatedEspaceConformiteRoute
   AuthenticatedEspaceParametresRoute: typeof AuthenticatedEspaceParametresRoute
   AuthenticatedEspaceTachesRoute: typeof AuthenticatedEspaceTachesRoute
   AuthenticatedEspaceUtilisateursRoute: typeof AuthenticatedEspaceUtilisateursRoute
@@ -627,6 +648,7 @@ interface AuthenticatedEspaceRouteChildren {
 const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
   AuthenticatedEspaceCommissionsRoute: AuthenticatedEspaceCommissionsRoute,
   AuthenticatedEspaceComptabiliteRoute: AuthenticatedEspaceComptabiliteRoute,
+  AuthenticatedEspaceConformiteRoute: AuthenticatedEspaceConformiteRoute,
   AuthenticatedEspaceParametresRoute: AuthenticatedEspaceParametresRoute,
   AuthenticatedEspaceTachesRoute: AuthenticatedEspaceTachesRoute,
   AuthenticatedEspaceUtilisateursRoute: AuthenticatedEspaceUtilisateursRoute,
