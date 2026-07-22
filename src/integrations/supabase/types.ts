@@ -1100,6 +1100,204 @@ export type Database = {
         }
         Relationships: []
       }
+      ecritures: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          date_ecriture: string
+          exercice_id: string
+          id: string
+          journal_code: string
+          libelle: string
+          mandataire_id: string | null
+          numero_piece: string | null
+          reference_externe: string | null
+          source: string | null
+          source_id: string | null
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          date_ecriture: string
+          exercice_id: string
+          id?: string
+          journal_code: string
+          libelle: string
+          mandataire_id?: string | null
+          numero_piece?: string | null
+          reference_externe?: string | null
+          source?: string | null
+          source_id?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          date_ecriture?: string
+          exercice_id?: string
+          id?: string
+          journal_code?: string
+          libelle?: string
+          mandataire_id?: string | null
+          numero_piece?: string | null
+          reference_externe?: string | null
+          source?: string | null
+          source_id?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ecritures_exercice_id_fkey"
+            columns: ["exercice_id"]
+            isOneToOne: false
+            referencedRelation: "exercices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ecritures_journal_code_fkey"
+            columns: ["journal_code"]
+            isOneToOne: false
+            referencedRelation: "journaux"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      ecritures_lignes: {
+        Row: {
+          compte_numero: string
+          created_at: string
+          credit: number
+          debit: number
+          ecriture_id: string
+          id: string
+          libelle: string | null
+          mandataire_id: string | null
+          numero_ligne: number
+          tiers_id: string | null
+        }
+        Insert: {
+          compte_numero: string
+          created_at?: string
+          credit?: number
+          debit?: number
+          ecriture_id: string
+          id?: string
+          libelle?: string | null
+          mandataire_id?: string | null
+          numero_ligne: number
+          tiers_id?: string | null
+        }
+        Update: {
+          compte_numero?: string
+          created_at?: string
+          credit?: number
+          debit?: number
+          ecriture_id?: string
+          id?: string
+          libelle?: string | null
+          mandataire_id?: string | null
+          numero_ligne?: number
+          tiers_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ecritures_lignes_compte_numero_fkey"
+            columns: ["compte_numero"]
+            isOneToOne: false
+            referencedRelation: "plan_comptable"
+            referencedColumns: ["numero"]
+          },
+          {
+            foreignKeyName: "ecritures_lignes_ecriture_id_fkey"
+            columns: ["ecriture_id"]
+            isOneToOne: false
+            referencedRelation: "ecritures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ecritures_lignes_tiers_id_fkey"
+            columns: ["tiers_id"]
+            isOneToOne: false
+            referencedRelation: "tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exercices: {
+        Row: {
+          cloture: boolean
+          cloture_le: string | null
+          cloture_par: string | null
+          created_at: string
+          date_debut: string
+          date_fin: string
+          id: string
+          libelle: string
+          updated_at: string
+        }
+        Insert: {
+          cloture?: boolean
+          cloture_le?: string | null
+          cloture_par?: string | null
+          created_at?: string
+          date_debut: string
+          date_fin: string
+          id?: string
+          libelle: string
+          updated_at?: string
+        }
+        Update: {
+          cloture?: boolean
+          cloture_le?: string | null
+          cloture_par?: string | null
+          created_at?: string
+          date_debut?: string
+          date_fin?: string
+          id?: string
+          libelle?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      journaux: {
+        Row: {
+          actif: boolean
+          code: string
+          compte_contrepartie: string | null
+          created_at: string
+          libelle: string
+          type: string
+        }
+        Insert: {
+          actif?: boolean
+          code: string
+          compte_contrepartie?: string | null
+          created_at?: string
+          libelle: string
+          type: string
+        }
+        Update: {
+          actif?: boolean
+          code?: string
+          compte_contrepartie?: string | null
+          created_at?: string
+          libelle?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journaux_compte_contrepartie_fkey"
+            columns: ["compte_contrepartie"]
+            isOneToOne: false
+            referencedRelation: "plan_comptable"
+            referencedColumns: ["numero"]
+          },
+        ]
+      }
       messages: {
         Row: {
           auteur_id: string
@@ -1176,6 +1374,50 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      plan_comptable: {
+        Row: {
+          actif: boolean
+          classe: number
+          created_at: string
+          description: string | null
+          libelle: string
+          numero: string
+          parent_numero: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          classe: number
+          created_at?: string
+          description?: string | null
+          libelle: string
+          numero: string
+          parent_numero?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          classe?: number
+          created_at?: string
+          description?: string | null
+          libelle?: string
+          numero?: string
+          parent_numero?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_comptable_parent_numero_fkey"
+            columns: ["parent_numero"]
+            isOneToOne: false
+            referencedRelation: "plan_comptable"
+            referencedColumns: ["numero"]
+          },
+        ]
       }
       produit_documents: {
         Row: {
@@ -1534,6 +1776,60 @@ export type Database = {
           },
         ]
       }
+      tiers: {
+        Row: {
+          actif: boolean
+          adresse: string | null
+          code_postal: string | null
+          compte_auxiliaire: string | null
+          created_at: string
+          email: string | null
+          iban: string | null
+          id: string
+          nom: string
+          numero_tva: string | null
+          siret: string | null
+          telephone: string | null
+          type: string
+          updated_at: string
+          ville: string | null
+        }
+        Insert: {
+          actif?: boolean
+          adresse?: string | null
+          code_postal?: string | null
+          compte_auxiliaire?: string | null
+          created_at?: string
+          email?: string | null
+          iban?: string | null
+          id?: string
+          nom: string
+          numero_tva?: string | null
+          siret?: string | null
+          telephone?: string | null
+          type: string
+          updated_at?: string
+          ville?: string | null
+        }
+        Update: {
+          actif?: boolean
+          adresse?: string | null
+          code_postal?: string | null
+          compte_auxiliaire?: string | null
+          created_at?: string
+          email?: string | null
+          iban?: string | null
+          id?: string
+          nom?: string
+          numero_tva?: string | null
+          siret?: string | null
+          telephone?: string | null
+          type?: string
+          updated_at?: string
+          ville?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1577,6 +1873,14 @@ export type Database = {
         Args: { _contrat_id: string }
         Returns: undefined
       }
+      solde_compte: {
+        Args: { _compte: string; _date_debut: string; _date_fin: string }
+        Returns: {
+          solde: number
+          total_credit: number
+          total_debit: number
+        }[]
+      }
       trouver_taux_regle: {
         Args: {
           _beneficiaire_id: string
@@ -1590,6 +1894,10 @@ export type Database = {
           assiette: string
           taux: number
         }[]
+      }
+      verifier_equilibre_ecriture: {
+        Args: { _ecriture_id: string }
+        Returns: boolean
       }
     }
     Enums: {
