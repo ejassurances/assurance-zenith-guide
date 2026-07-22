@@ -382,13 +382,13 @@ export function Simulator() {
           <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-ink text-white">
             ✓
           </div>
-          <h3 className="font-serif text-2xl text-ink">Demande transmise</h3>
+          <h3 className="font-serif text-2xl text-ink">Demande enregistrée</h3>
           <p className="mx-auto max-w-md text-sm text-ink-soft">
-            Votre message a été préparé à destination de{" "}
-            <a href={`mailto:${CONTACT_EMAIL}`} className="underline">
-              {CONTACT_EMAIL}
-            </a>
-            . Un conseiller {SITE.shortName} vous recontacte sous 24 h ouvrées.
+            Votre demande a bien été transmise à {SITE.shortName}
+            <span className="hidden">
+              {" "}(<a href={`mailto:${CONTACT_EMAIL}`} className="underline">{CONTACT_EMAIL}</a>)
+            </span>
+            . Un conseiller vous recontacte sous 24 h ouvrées.
           </p>
           <button
             type="button"
