@@ -71,9 +71,9 @@ type Dossier = {
 
 type Doc = {
   id: string;
-  nom_fichier: string;
-  chemin: string;
-  taille: number | null;
+  file_name: string;
+  storage_path: string;
+  file_size: number | null;
   created_at: string;
 };
 
