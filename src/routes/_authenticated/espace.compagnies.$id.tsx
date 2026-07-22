@@ -1,0 +1,976 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth-context";
+
+export const Route = createFileRoute("/_authenticated/espace/compagnies/$id")({
+  component: CompagnieDetail,
+});
+
+type ApiAuthType = "none" | "api_key" | "bearer" | "oauth2" | "basic";
+type Compagnie = {
+  id: string;
+  nom: string;
+  slug: string;
+  logo_url: string | null;
+  description: string | null;
+  site_web: string | null;
+  contact_nom: string | null;
+  contact_email: string | null;
+  contact_telephone: string | null;
+  statut: "actif" | "prospect" | "inactif";
+  notes: string | null;
+  api_active: boolean;
+  api_base_url: string | null;
+  api_auth_type: ApiAuthType;
+  api_secret_name: string | null;
+  api_config: Record<string, unknown>;
+};
+
+type ChampStandard = {
+  code: string;
+  label: string;
+  type: "text" | "textarea" | "number" | "boolean" | "select" | "multiselect";
+  unit?: string;
+  options?: string[];
+};
+type Famille = { id: string; code: string; nom: string; champs_standards: ChampStandard[] };
+type Produit = {
+  id: string;
+  compagnie_id: string;
+  famille_id: string;
+  nom: string;
+  code_produit: string | null;
+  description: string | null;
+  statut: "actif" | "en_test" | "retire";
+  caracteristiques: Record<string, unknown>;
+  points_forts: string | null;
+  points_vigilance: string | null;
+  cible: string | null;
+  commission_taux: number | null;
+};
+type ProduitDoc = {
+  id: string;
+  produit_id: string;
+  type: "conditions_generales" | "ipid" | "fiche_produit" | "tarifs" | "autre";
+  nom: string;
+  version: string | null;
+  date_effet: string | null;
+  storage_path: string;
+  interne: boolean;
+  created_at: string;
+};
+
+const DOC_TYPE_LABEL: Record<ProduitDoc["type"], string> = {
+  conditions_generales: "Conditions générales",
+  ipid: "IPID",
+  fiche_produit: "Fiche produit (interne)",
+  tarifs: "Grille tarifaire",
+  autre: "Autre",
+};
+
+type Tab = "infos" | "produits" | "api";
+
+function CompagnieDetail() {
+  const { id } = Route.useParams();
+  const navigate = useNavigate();
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
+
+  const [tab, setTab] = useState<Tab>("infos");
+  const [c, setC] = useState<Compagnie | null>(null);
+  const [familles, setFamilles] = useState<Famille[]>([]);
+  const [produits, setProduits] = useState<Produit[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [selectedProduit, setSelectedProduit] = useState<string | null>(null);
+
+  async function load() {
+    setLoading(true);
+    const [comp, fam, prod] = await Promise.all([
+      supabase.from("compagnies").select("*").eq("id", id).maybeSingle(),
+      supabase.from("produit_familles").select("id,code,nom,champs_standards").order("ordre"),
+      supabase.from("produits").select("*").eq("compagnie_id", id).order("nom"),
+    ]);
+    if (comp.error) setError(comp.error.message);
+    setC((comp.data as Compagnie | null) ?? null);
+    setFamilles((fam.data as Famille[]) ?? []);
+    setProduits((prod.data as Produit[]) ?? []);
+    setLoading(false);
+  }
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  async function saveInfos(patch: Partial<Compagnie>) {
+    if (!c) return;
+    setSaving(true);
+    const { error } = await supabase.from("compagnies").update(patch).eq("id", c.id);
+    setSaving(false);
+    if (error) setError(error.message);
+    else setC({ ...c, ...patch });
+  }
+
+  async function del() {
+    if (!c) return;
+    if (!confirm(`Supprimer définitivement ${c.nom} et tous ses produits ?`)) return;
+    const { error } = await supabase.from("compagnies").delete().eq("id", c.id);
+    if (error) setError(error.message);
+    else navigate({ to: "/espace/compagnies" });
+  }
+
+  if (loading) return <p className="text-sm text-ink-muted">Chargement…</p>;
+  if (!c) return <p className="text-sm text-ink-muted">Compagnie introuvable.</p>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <Link to="/espace/compagnies" className="text-xs text-ink-muted underline underline-offset-4">
+            ← Toutes les compagnies
+          </Link>
+          <h1 className="mt-2 font-serif text-3xl">{c.nom}</h1>
+          <p className="mt-1 text-sm text-ink-muted">
+            {produits.length} produit{produits.length > 1 ? "s" : ""} référencé{produits.length > 1 ? "s" : ""}
+          </p>
+        </div>
+        {isAdmin && (
+          <button onClick={del} className="text-xs text-red-700 underline underline-offset-4">
+            Supprimer
+          </button>
+        )}
+      </div>
+
+      <div className="flex gap-1 border-b border-line">
+        {(["infos", "produits", "api"] as Tab[]).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={
+              "border-b-2 px-4 py-2 text-sm " +
+              (tab === t ? "border-ink font-medium text-ink" : "border-transparent text-ink-muted hover:text-ink")
+            }
+          >
+            {t === "infos" ? "Identité" : t === "produits" ? "Produits" : "API compagnie"}
+          </button>
+        ))}
+      </div>
+
+      {error && <p className="rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+
+      {tab === "infos" && (
+        <InfosTab c={c} isAdmin={isAdmin} saving={saving} onSave={saveInfos} />
+      )}
+      {tab === "produits" && (
+        <ProduitsTab
+          compagnieId={c.id}
+          produits={produits}
+          familles={familles}
+          isAdmin={isAdmin}
+          selected={selectedProduit}
+          onSelect={setSelectedProduit}
+          onChange={load}
+        />
+      )}
+      {tab === "api" && <ApiTab c={c} isAdmin={isAdmin} saving={saving} onSave={saveInfos} />}
+    </div>
+  );
+}
+
+// ============ Onglet Identité ============
+function InfosTab({
+  c,
+  isAdmin,
+  saving,
+  onSave,
+}: {
+  c: Compagnie;
+  isAdmin: boolean;
+  saving: boolean;
+  onSave: (p: Partial<Compagnie>) => void;
+}) {
+  const [form, setForm] = useState(c);
+  useEffect(() => setForm(c), [c]);
+  const readOnly = !isAdmin;
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave(form);
+      }}
+      className="grid gap-4 rounded-lg border border-line bg-surface p-6 md:grid-cols-2"
+    >
+      <Field label="Nom" value={form.nom} onChange={(v) => setForm({ ...form, nom: v })} readOnly={readOnly} />
+      <Field label="Site web" value={form.site_web ?? ""} onChange={(v) => setForm({ ...form, site_web: v })} readOnly={readOnly} />
+      <Field label="Logo (URL)" value={form.logo_url ?? ""} onChange={(v) => setForm({ ...form, logo_url: v })} readOnly={readOnly} />
+      <div>
+        <label className="mb-1 block text-xs font-medium text-ink-muted">Statut</label>
+        <select
+          value={form.statut}
+          onChange={(e) => setForm({ ...form, statut: e.target.value as Compagnie["statut"] })}
+          disabled={readOnly}
+          className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+        >
+          <option value="actif">Actif</option>
+          <option value="prospect">En cours</option>
+          <option value="inactif">Inactif</option>
+        </select>
+      </div>
+      <Field label="Contact — Nom" value={form.contact_nom ?? ""} onChange={(v) => setForm({ ...form, contact_nom: v })} readOnly={readOnly} />
+      <Field label="Contact — Email" value={form.contact_email ?? ""} onChange={(v) => setForm({ ...form, contact_email: v })} readOnly={readOnly} />
+      <Field label="Contact — Téléphone" value={form.contact_telephone ?? ""} onChange={(v) => setForm({ ...form, contact_telephone: v })} readOnly={readOnly} />
+      <div className="md:col-span-2">
+        <label className="mb-1 block text-xs font-medium text-ink-muted">Description</label>
+        <textarea
+          value={form.description ?? ""}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          readOnly={readOnly}
+          rows={3}
+          className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+        />
+      </div>
+      <div className="md:col-span-2">
+        <label className="mb-1 block text-xs font-medium text-ink-muted">Notes internes</label>
+        <textarea
+          value={form.notes ?? ""}
+          onChange={(e) => setForm({ ...form, notes: e.target.value })}
+          readOnly={readOnly}
+          rows={3}
+          className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+        />
+      </div>
+      {isAdmin && (
+        <div className="md:col-span-2">
+          <button
+            type="submit"
+            disabled={saving}
+            className="rounded-md bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+          >
+            {saving ? "Enregistrement…" : "Enregistrer"}
+          </button>
+        </div>
+      )}
+    </form>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  readOnly,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  readOnly?: boolean;
+  type?: string;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-medium text-ink-muted">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        readOnly={readOnly}
+        className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+      />
+    </div>
+  );
+}
+
+// ============ Onglet Produits ============
+function ProduitsTab({
+  compagnieId,
+  produits,
+  familles,
+  isAdmin,
+  selected,
+  onSelect,
+  onChange,
+}: {
+  compagnieId: string;
+  produits: Produit[];
+  familles: Famille[];
+  isAdmin: boolean;
+  selected: string | null;
+  onSelect: (id: string | null) => void;
+  onChange: () => void;
+}) {
+  const [nom, setNom] = useState("");
+  const [familleId, setFamilleId] = useState(familles[0]?.id ?? "");
+  const [creating, setCreating] = useState(false);
+  useEffect(() => {
+    if (!familleId && familles[0]) setFamilleId(familles[0].id);
+  }, [familles, familleId]);
+
+  const active = useMemo(() => produits.find((p) => p.id === selected), [produits, selected]);
+
+  async function create(e: React.FormEvent) {
+    e.preventDefault();
+    if (!nom.trim() || !familleId) return;
+    setCreating(true);
+    const { data, error } = await supabase
+      .from("produits")
+      .insert({ compagnie_id: compagnieId, famille_id: familleId, nom: nom.trim() })
+      .select("id")
+      .single();
+    setCreating(false);
+    if (error) return alert(error.message);
+    setNom("");
+    onChange();
+    if (data) onSelect(data.id);
+  }
+
+  return (
+    <div className="grid gap-6 md:grid-cols-[280px_1fr]">
+      <aside className="space-y-3">
+        {isAdmin && (
+          <form onSubmit={create} className="space-y-2 rounded-lg border border-line bg-surface p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Nouveau produit</p>
+            <input
+              value={nom}
+              onChange={(e) => setNom(e.target.value)}
+              placeholder="Nom du produit"
+              className="w-full rounded-md border border-line bg-background px-2 py-1.5 text-sm"
+              required
+            />
+            <select
+              value={familleId}
+              onChange={(e) => setFamilleId(e.target.value)}
+              className="w-full rounded-md border border-line bg-background px-2 py-1.5 text-sm"
+            >
+              {familles.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.nom}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              disabled={creating}
+              className="w-full rounded-md bg-ink py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-60"
+            >
+              {creating ? "…" : "Ajouter"}
+            </button>
+          </form>
+        )}
+
+        <div className="space-y-1">
+          {produits.length === 0 && <p className="text-sm text-ink-muted">Aucun produit.</p>}
+          {produits.map((p) => {
+            const f = familles.find((x) => x.id === p.famille_id);
+            const isActive = p.id === selected;
+            return (
+              <button
+                key={p.id}
+                onClick={() => onSelect(p.id)}
+                className={
+                  "w-full rounded-md px-3 py-2 text-left text-sm transition-colors " +
+                  (isActive ? "bg-ink text-primary-foreground" : "hover:bg-surface")
+                }
+              >
+                <div className="font-medium">{p.nom}</div>
+                <div className={"text-xs " + (isActive ? "text-primary-foreground/70" : "text-ink-muted")}>
+                  {f?.nom ?? "—"} · {p.statut}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </aside>
+
+      <div>
+        {active ? (
+          <ProduitEditor
+            key={active.id}
+            produit={active}
+            famille={familles.find((f) => f.id === active.famille_id)}
+            isAdmin={isAdmin}
+            onChange={onChange}
+            onDelete={() => onSelect(null)}
+          />
+        ) : (
+          <p className="rounded-lg border border-dashed border-line p-8 text-center text-sm text-ink-muted">
+            Sélectionnez un produit à gauche pour éditer ses caractéristiques et ses documents.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ProduitEditor({
+  produit,
+  famille,
+  isAdmin,
+  onChange,
+  onDelete,
+}: {
+  produit: Produit;
+  famille: Famille | undefined;
+  isAdmin: boolean;
+  onChange: () => void;
+  onDelete: () => void;
+}) {
+  const [p, setP] = useState<Produit>(produit);
+  const [saving, setSaving] = useState(false);
+  const [docs, setDocs] = useState<ProduitDoc[]>([]);
+  useEffect(() => setP(produit), [produit]);
+
+  const readOnly = !isAdmin;
+
+  async function loadDocs() {
+    const { data } = await supabase
+      .from("produit_documents")
+      .select("*")
+      .eq("produit_id", produit.id)
+      .order("created_at", { ascending: false });
+    setDocs((data as ProduitDoc[]) ?? []);
+  }
+  useEffect(() => {
+    loadDocs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [produit.id]);
+
+  async function save() {
+    setSaving(true);
+    const { error } = await supabase
+      .from("produits")
+      .update({
+        nom: p.nom,
+        code_produit: p.code_produit,
+        description: p.description,
+        statut: p.statut,
+        caracteristiques: p.caracteristiques,
+        points_forts: p.points_forts,
+        points_vigilance: p.points_vigilance,
+        cible: p.cible,
+        commission_taux: p.commission_taux,
+        famille_id: p.famille_id,
+      })
+      .eq("id", p.id);
+    setSaving(false);
+    if (error) return alert(error.message);
+    onChange();
+  }
+
+  async function del() {
+    if (!confirm(`Supprimer le produit ${p.nom} ?`)) return;
+    const { error } = await supabase.from("produits").delete().eq("id", p.id);
+    if (error) return alert(error.message);
+    onDelete();
+    onChange();
+  }
+
+  function setCarac(code: string, value: unknown) {
+    setP({ ...p, caracteristiques: { ...p.caracteristiques, [code]: value } });
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 rounded-lg border border-line bg-surface p-5 md:grid-cols-2">
+        <Field label="Nom du produit" value={p.nom} onChange={(v) => setP({ ...p, nom: v })} readOnly={readOnly} />
+        <Field
+          label="Référence interne compagnie"
+          value={p.code_produit ?? ""}
+          onChange={(v) => setP({ ...p, code_produit: v })}
+          readOnly={readOnly}
+        />
+        <div>
+          <label className="mb-1 block text-xs font-medium text-ink-muted">Statut</label>
+          <select
+            value={p.statut}
+            onChange={(e) => setP({ ...p, statut: e.target.value as Produit["statut"] })}
+            disabled={readOnly}
+            className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+          >
+            <option value="actif">Actif</option>
+            <option value="en_test">En test</option>
+            <option value="retire">Retiré</option>
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-ink-muted">Commission (%)</label>
+          <input
+            type="number"
+            step="0.01"
+            value={p.commission_taux ?? ""}
+            onChange={(e) => setP({ ...p, commission_taux: e.target.value === "" ? null : Number(e.target.value) })}
+            readOnly={readOnly}
+            className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+          />
+        </div>
+        <div className="md:col-span-2">
+          <label className="mb-1 block text-xs font-medium text-ink-muted">Description</label>
+          <textarea
+            value={p.description ?? ""}
+            onChange={(e) => setP({ ...p, description: e.target.value })}
+            readOnly={readOnly}
+            rows={2}
+            className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+          />
+        </div>
+      </div>
+
+      {/* Caractéristiques standardisées */}
+      {famille && famille.champs_standards?.length > 0 && (
+        <section className="space-y-3 rounded-lg border border-line bg-surface p-5">
+          <div>
+            <h3 className="font-serif text-lg">Caractéristiques — {famille.nom}</h3>
+            <p className="text-xs text-ink-muted">
+              Champs standardisés pour comparer les produits de la même famille.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {famille.champs_standards.map((ch) => (
+              <ChampInput
+                key={ch.code}
+                champ={ch}
+                value={p.caracteristiques?.[ch.code]}
+                onChange={(v) => setCarac(ch.code, v)}
+                readOnly={readOnly}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Devoir de conseil */}
+      <section className="grid gap-4 rounded-lg border border-line bg-surface p-5 md:grid-cols-2">
+        <div className="md:col-span-2">
+          <h3 className="font-serif text-lg">Devoir de conseil</h3>
+          <p className="text-xs text-ink-muted">
+            Utilisé pour les devis, comparatifs et documents de conseil.
+          </p>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-ink-muted">Cible / profils</label>
+          <textarea
+            value={p.cible ?? ""}
+            onChange={(e) => setP({ ...p, cible: e.target.value })}
+            readOnly={readOnly}
+            rows={3}
+            className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-ink-muted">Points forts</label>
+          <textarea
+            value={p.points_forts ?? ""}
+            onChange={(e) => setP({ ...p, points_forts: e.target.value })}
+            readOnly={readOnly}
+            rows={3}
+            className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+          />
+        </div>
+        <div className="md:col-span-2">
+          <label className="mb-1 block text-xs font-medium text-ink-muted">Points de vigilance</label>
+          <textarea
+            value={p.points_vigilance ?? ""}
+            onChange={(e) => setP({ ...p, points_vigilance: e.target.value })}
+            readOnly={readOnly}
+            rows={3}
+            className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+          />
+        </div>
+      </section>
+
+      {isAdmin && (
+        <div className="flex justify-between">
+          <button onClick={del} className="text-xs text-red-700 underline underline-offset-4">
+            Supprimer ce produit
+          </button>
+          <button
+            onClick={save}
+            disabled={saving}
+            className="rounded-md bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+          >
+            {saving ? "Enregistrement…" : "Enregistrer le produit"}
+          </button>
+        </div>
+      )}
+
+      <DocumentsBlock produitId={p.id} docs={docs} isAdmin={isAdmin} onChange={loadDocs} />
+    </div>
+  );
+}
+
+function ChampInput({
+  champ,
+  value,
+  onChange,
+  readOnly,
+}: {
+  champ: ChampStandard;
+  value: unknown;
+  onChange: (v: unknown) => void;
+  readOnly: boolean;
+}) {
+  const label = champ.label + (champ.unit ? ` (${champ.unit})` : "");
+  const base = "w-full rounded-md border border-line bg-background px-3 py-2 text-sm";
+  if (champ.type === "boolean") {
+    return (
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={Boolean(value)}
+          onChange={(e) => onChange(e.target.checked)}
+          disabled={readOnly}
+        />
+        <span>{label}</span>
+      </label>
+    );
+  }
+  if (champ.type === "select") {
+    return (
+      <div>
+        <label className="mb-1 block text-xs font-medium text-ink-muted">{label}</label>
+        <select
+          value={String(value ?? "")}
+          onChange={(e) => onChange(e.target.value || null)}
+          disabled={readOnly}
+          className={base}
+        >
+          <option value="">—</option>
+          {champ.options?.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  }
+  if (champ.type === "multiselect") {
+    const arr = Array.isArray(value) ? (value as string[]) : [];
+    return (
+      <div>
+        <label className="mb-1 block text-xs font-medium text-ink-muted">{label}</label>
+        <div className="flex flex-wrap gap-2">
+          {champ.options?.map((o) => {
+            const on = arr.includes(o);
+            return (
+              <button
+                key={o}
+                type="button"
+                disabled={readOnly}
+                onClick={() => onChange(on ? arr.filter((x) => x !== o) : [...arr, o])}
+                className={
+                  "rounded-full border px-3 py-1 text-xs " +
+                  (on ? "border-ink bg-ink text-primary-foreground" : "border-line bg-background text-ink-soft")
+                }
+              >
+                {o}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+  if (champ.type === "textarea") {
+    return (
+      <div className="md:col-span-2">
+        <label className="mb-1 block text-xs font-medium text-ink-muted">{label}</label>
+        <textarea
+          value={String(value ?? "")}
+          onChange={(e) => onChange(e.target.value || null)}
+          readOnly={readOnly}
+          rows={2}
+          className={base}
+        />
+      </div>
+    );
+  }
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-medium text-ink-muted">{label}</label>
+      <input
+        type={champ.type === "number" ? "number" : "text"}
+        value={value === null || value === undefined ? "" : String(value)}
+        onChange={(e) => {
+          const v = e.target.value;
+          if (v === "") return onChange(null);
+          onChange(champ.type === "number" ? Number(v) : v);
+        }}
+        readOnly={readOnly}
+        className={base}
+      />
+    </div>
+  );
+}
+
+// ============ Documents ============
+function DocumentsBlock({
+  produitId,
+  docs,
+  isAdmin,
+  onChange,
+}: {
+  produitId: string;
+  docs: ProduitDoc[];
+  isAdmin: boolean;
+  onChange: () => void;
+}) {
+  const [type, setType] = useState<ProduitDoc["type"]>("conditions_generales");
+  const [version, setVersion] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function upload(e: React.FormEvent) {
+    e.preventDefault();
+    if (!file) return;
+    setUploading(true);
+    const ext = file.name.split(".").pop() ?? "bin";
+    const path = `${produitId}/${type}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("produits-documents").upload(path, file, {
+      contentType: file.type || undefined,
+      upsert: false,
+    });
+    if (upErr) {
+      setUploading(false);
+      return alert(upErr.message);
+    }
+    const { error: insErr } = await supabase.from("produit_documents").insert({
+      produit_id: produitId,
+      type,
+      nom: file.name,
+      version: version || null,
+      storage_path: path,
+      taille_bytes: file.size,
+      mime_type: file.type,
+      interne: type === "fiche_produit",
+    });
+    setUploading(false);
+    if (insErr) return alert(insErr.message);
+    setFile(null);
+    setVersion("");
+    onChange();
+  }
+
+  async function download(d: ProduitDoc) {
+    const { data, error } = await supabase.storage.from("produits-documents").createSignedUrl(d.storage_path, 60);
+    if (error || !data) return alert(error?.message ?? "Erreur");
+    window.open(data.signedUrl, "_blank");
+  }
+
+  async function del(d: ProduitDoc) {
+    if (!confirm(`Supprimer ${d.nom} ?`)) return;
+    await supabase.storage.from("produits-documents").remove([d.storage_path]);
+    await supabase.from("produit_documents").delete().eq("id", d.id);
+    onChange();
+  }
+
+  return (
+    <section className="space-y-3 rounded-lg border border-line bg-surface p-5">
+      <div>
+        <h3 className="font-serif text-lg">Documents du produit</h3>
+        <p className="text-xs text-ink-muted">
+          Conditions générales, IPID, fiche produit interne, grille tarifaire. Les fiches produit sont marquées internes.
+        </p>
+      </div>
+
+      {isAdmin && (
+        <form onSubmit={upload} className="flex flex-wrap items-end gap-2 rounded-md bg-background p-3">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-ink-muted">Type</label>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value as ProduitDoc["type"])}
+              className="rounded-md border border-line bg-background px-2 py-1.5 text-sm"
+            >
+              {(Object.keys(DOC_TYPE_LABEL) as ProduitDoc["type"][]).map((k) => (
+                <option key={k} value={k}>
+                  {DOC_TYPE_LABEL[k]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-ink-muted">Version</label>
+            <input
+              value={version}
+              onChange={(e) => setVersion(e.target.value)}
+              placeholder="ex : 2025-01"
+              className="rounded-md border border-line bg-background px-2 py-1.5 text-sm"
+            />
+          </div>
+          <div className="flex-1 min-w-[180px]">
+            <label className="mb-1 block text-xs font-medium text-ink-muted">Fichier</label>
+            <input
+              type="file"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              className="w-full text-sm"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={uploading || !file}
+            className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+          >
+            {uploading ? "Upload…" : "Ajouter"}
+          </button>
+        </form>
+      )}
+
+      {docs.length === 0 ? (
+        <p className="text-sm text-ink-muted">Aucun document.</p>
+      ) : (
+        <ul className="divide-y divide-line rounded-md border border-line bg-background">
+          {docs.map((d) => (
+            <li key={d.id} className="flex items-center justify-between gap-3 px-4 py-2 text-sm">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="rounded bg-surface px-2 py-0.5 text-xs uppercase tracking-wide text-ink-muted">
+                    {DOC_TYPE_LABEL[d.type]}
+                  </span>
+                  {d.interne && (
+                    <span className="rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-900">Interne</span>
+                  )}
+                  <span className="truncate font-medium">{d.nom}</span>
+                </div>
+                <div className="text-xs text-ink-muted">
+                  {d.version ? `v${d.version} · ` : ""}
+                  {new Date(d.created_at).toLocaleDateString("fr-FR")}
+                </div>
+              </div>
+              <div className="flex gap-3 text-xs">
+                <button onClick={() => download(d)} className="text-ink underline underline-offset-4">
+                  Ouvrir
+                </button>
+                {isAdmin && (
+                  <button onClick={() => del(d)} className="text-red-700 underline underline-offset-4">
+                    Supprimer
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+// ============ Onglet API ============
+function ApiTab({
+  c,
+  isAdmin,
+  saving,
+  onSave,
+}: {
+  c: Compagnie;
+  isAdmin: boolean;
+  saving: boolean;
+  onSave: (p: Partial<Compagnie>) => void;
+}) {
+  const [form, setForm] = useState({
+    api_active: c.api_active,
+    api_base_url: c.api_base_url ?? "",
+    api_auth_type: c.api_auth_type,
+    api_secret_name: c.api_secret_name ?? "",
+    api_config: JSON.stringify(c.api_config ?? {}, null, 2),
+  });
+  const [jsonErr, setJsonErr] = useState<string | null>(null);
+  const readOnly = !isAdmin;
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    let parsed: Record<string, unknown> = {};
+    try {
+      parsed = form.api_config.trim() ? JSON.parse(form.api_config) : {};
+    } catch (err) {
+      setJsonErr(err instanceof Error ? err.message : "JSON invalide");
+      return;
+    }
+    setJsonErr(null);
+    onSave({
+      api_active: form.api_active,
+      api_base_url: form.api_base_url || null,
+      api_auth_type: form.api_auth_type,
+      api_secret_name: form.api_secret_name || null,
+      api_config: parsed,
+    });
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-5 rounded-lg border border-line bg-surface p-6">
+      <div className="rounded-md bg-amber-50 p-3 text-xs text-amber-900">
+        Les identifiants API (clé, mot de passe, secret OAuth) ne sont jamais stockés en clair dans cette fiche. Créez-les
+        dans les secrets du backend, puis renseignez ci-dessous le <strong>nom du secret</strong> (par exemple
+        <code className="mx-1 rounded bg-amber-100 px-1">APRIL_API_KEY</code>). Le code serveur lit alors la valeur depuis
+        l'environnement lors des appels.
+      </div>
+
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={form.api_active}
+          onChange={(e) => setForm({ ...form, api_active: e.target.checked })}
+          disabled={readOnly}
+        />
+        <span>Activer l'API pour cette compagnie</span>
+      </label>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field
+          label="URL de base"
+          value={form.api_base_url}
+          onChange={(v) => setForm({ ...form, api_base_url: v })}
+          readOnly={readOnly}
+        />
+        <div>
+          <label className="mb-1 block text-xs font-medium text-ink-muted">Type d'authentification</label>
+          <select
+            value={form.api_auth_type}
+            onChange={(e) => setForm({ ...form, api_auth_type: e.target.value as ApiAuthType })}
+            disabled={readOnly}
+            className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+          >
+            <option value="none">Aucune</option>
+            <option value="api_key">Clé API (header)</option>
+            <option value="bearer">Bearer token</option>
+            <option value="oauth2">OAuth 2.0</option>
+            <option value="basic">Basic (user:pass)</option>
+          </select>
+        </div>
+        <Field
+          label="Nom du secret backend"
+          value={form.api_secret_name}
+          onChange={(v) => setForm({ ...form, api_secret_name: v })}
+          readOnly={readOnly}
+        />
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-medium text-ink-muted">
+          Configuration JSON (endpoints, headers, mapping produits…)
+        </label>
+        <textarea
+          value={form.api_config}
+          onChange={(e) => setForm({ ...form, api_config: e.target.value })}
+          readOnly={readOnly}
+          rows={10}
+          className="w-full rounded-md border border-line bg-background px-3 py-2 font-mono text-xs"
+        />
+        {jsonErr && <p className="mt-1 text-xs text-red-700">JSON invalide : {jsonErr}</p>}
+      </div>
+
+      {isAdmin && (
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded-md bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+        >
+          {saving ? "Enregistrement…" : "Enregistrer l'API"}
+        </button>
+      )}
+    </form>
+  );
+}
