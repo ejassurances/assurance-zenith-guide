@@ -52,6 +52,233 @@ export type Database = {
           },
         ]
       }
+      bordereaux_commissions: {
+        Row: {
+          assureur: string
+          created_at: string
+          created_by: string | null
+          fichier_source: string | null
+          id: string
+          montant_total: number
+          nb_lignes: number
+          notes: string | null
+          periode: string
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          assureur: string
+          created_at?: string
+          created_by?: string | null
+          fichier_source?: string | null
+          id?: string
+          montant_total?: number
+          nb_lignes?: number
+          notes?: string | null
+          periode: string
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          assureur?: string
+          created_at?: string
+          created_by?: string | null
+          fichier_source?: string | null
+          id?: string
+          montant_total?: number
+          nb_lignes?: number
+          notes?: string | null
+          periode?: string
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      client_conjoint: {
+        Row: {
+          client_id: string
+          created_at: string
+          date_naissance: string | null
+          fumeur: boolean
+          id: string
+          nom: string | null
+          notes: string | null
+          prenom: string | null
+          profession: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          date_naissance?: string | null
+          fumeur?: boolean
+          id?: string
+          nom?: string | null
+          notes?: string | null
+          prenom?: string | null
+          profession?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          date_naissance?: string | null
+          fumeur?: boolean
+          id?: string
+          nom?: string | null
+          notes?: string | null
+          prenom?: string | null
+          profession?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_conjoint_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_enfants: {
+        Row: {
+          a_charge: boolean
+          client_id: string
+          created_at: string
+          date_naissance: string | null
+          id: string
+          notes: string | null
+          prenom: string
+          updated_at: string
+        }
+        Insert: {
+          a_charge?: boolean
+          client_id: string
+          created_at?: string
+          date_naissance?: string | null
+          id?: string
+          notes?: string | null
+          prenom: string
+          updated_at?: string
+        }
+        Update: {
+          a_charge?: boolean
+          client_id?: string
+          created_at?: string
+          date_naissance?: string | null
+          id?: string
+          notes?: string | null
+          prenom?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_enfants_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_entreprise: {
+        Row: {
+          chiffre_affaires: number | null
+          client_id: string
+          code_ape: string | null
+          created_at: string
+          date_creation: string | null
+          effectif: number | null
+          forme_juridique: string | null
+          id: string
+          notes: string | null
+          raison_sociale: string | null
+          siret: string | null
+          updated_at: string
+        }
+        Insert: {
+          chiffre_affaires?: number | null
+          client_id: string
+          code_ape?: string | null
+          created_at?: string
+          date_creation?: string | null
+          effectif?: number | null
+          forme_juridique?: string | null
+          id?: string
+          notes?: string | null
+          raison_sociale?: string | null
+          siret?: string | null
+          updated_at?: string
+        }
+        Update: {
+          chiffre_affaires?: number | null
+          client_id?: string
+          code_ape?: string | null
+          created_at?: string
+          date_creation?: string | null
+          effectif?: number | null
+          forme_juridique?: string | null
+          id?: string
+          notes?: string | null
+          raison_sociale?: string | null
+          siret?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_entreprise_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_equipements: {
+        Row: {
+          client_id: string
+          created_at: string
+          date_acquisition: string | null
+          id: string
+          libelle: string
+          notes: string | null
+          type: string
+          updated_at: string
+          valeur: number | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          date_acquisition?: string | null
+          id?: string
+          libelle: string
+          notes?: string | null
+          type: string
+          updated_at?: string
+          valeur?: number | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          date_acquisition?: string | null
+          id?: string
+          libelle?: string
+          notes?: string | null
+          type?: string
+          updated_at?: string
+          valeur?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_equipements_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           adresse: string | null
@@ -69,20 +296,26 @@ export type Database = {
           etiquettes: string[] | null
           fumeur: boolean | null
           id: string
+          lieu_naissance: string | null
           metier: string | null
           mobile: string | null
           mobile2: string | null
           nationalite: string | null
+          nb_enfants: number | null
           nom: string
           nom_naissance: string | null
           numero_secu: string | null
           origine: Database["public"]["Enums"]["client_origine"] | null
           pays: string | null
           pays_naissance: string | null
+          ppe: boolean
+          ppe_fonction: string | null
+          ppe_pays: string | null
           preference_contact: string | null
           prenom: string | null
           reference: string
           remarque: string | null
+          revenus_annuels: number | null
           situation_familiale: string | null
           statut: Database["public"]["Enums"]["client_statut"]
           telephone: string | null
@@ -107,20 +340,26 @@ export type Database = {
           etiquettes?: string[] | null
           fumeur?: boolean | null
           id?: string
+          lieu_naissance?: string | null
           metier?: string | null
           mobile?: string | null
           mobile2?: string | null
           nationalite?: string | null
+          nb_enfants?: number | null
           nom: string
           nom_naissance?: string | null
           numero_secu?: string | null
           origine?: Database["public"]["Enums"]["client_origine"] | null
           pays?: string | null
           pays_naissance?: string | null
+          ppe?: boolean
+          ppe_fonction?: string | null
+          ppe_pays?: string | null
           preference_contact?: string | null
           prenom?: string | null
           reference?: string
           remarque?: string | null
+          revenus_annuels?: number | null
           situation_familiale?: string | null
           statut?: Database["public"]["Enums"]["client_statut"]
           telephone?: string | null
@@ -145,20 +384,26 @@ export type Database = {
           etiquettes?: string[] | null
           fumeur?: boolean | null
           id?: string
+          lieu_naissance?: string | null
           metier?: string | null
           mobile?: string | null
           mobile2?: string | null
           nationalite?: string | null
+          nb_enfants?: number | null
           nom?: string
           nom_naissance?: string | null
           numero_secu?: string | null
           origine?: Database["public"]["Enums"]["client_origine"] | null
           pays?: string | null
           pays_naissance?: string | null
+          ppe?: boolean
+          ppe_fonction?: string | null
+          ppe_pays?: string | null
           preference_contact?: string | null
           prenom?: string | null
           reference?: string
           remarque?: string | null
+          revenus_annuels?: number | null
           situation_familiale?: string | null
           statut?: Database["public"]["Enums"]["client_statut"]
           telephone?: string | null
@@ -172,6 +417,8 @@ export type Database = {
       commissions: {
         Row: {
           beneficiaire_id: string
+          bordereau_id: string | null
+          contrat_id: string | null
           created_at: string
           date_versement: string | null
           dossier_id: string
@@ -183,6 +430,8 @@ export type Database = {
         }
         Insert: {
           beneficiaire_id: string
+          bordereau_id?: string | null
+          contrat_id?: string | null
           created_at?: string
           date_versement?: string | null
           dossier_id: string
@@ -194,6 +443,8 @@ export type Database = {
         }
         Update: {
           beneficiaire_id?: string
+          bordereau_id?: string | null
+          contrat_id?: string | null
           created_at?: string
           date_versement?: string | null
           dossier_id?: string
@@ -205,10 +456,147 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "commissions_bordereau_id_fkey"
+            columns: ["bordereau_id"]
+            isOneToOne: false
+            referencedRelation: "bordereaux_commissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commissions_contrat_id_fkey"
+            columns: ["contrat_id"]
+            isOneToOne: false
+            referencedRelation: "contrats"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "commissions_dossier_id_fkey"
             columns: ["dossier_id"]
             isOneToOne: false
             referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contrat_garanties: {
+        Row: {
+          contrat_id: string
+          created_at: string
+          franchise: string | null
+          id: string
+          montant: number | null
+          notes: string | null
+          quotite: number | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          contrat_id: string
+          created_at?: string
+          franchise?: string | null
+          id?: string
+          montant?: number | null
+          notes?: string | null
+          quotite?: number | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          contrat_id?: string
+          created_at?: string
+          franchise?: string | null
+          id?: string
+          montant?: number | null
+          notes?: string | null
+          quotite?: number | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contrat_garanties_contrat_id_fkey"
+            columns: ["contrat_id"]
+            isOneToOne: false
+            referencedRelation: "contrats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contrats: {
+        Row: {
+          assureur: string
+          client_id: string
+          created_at: string
+          created_by: string | null
+          date_echeance: string | null
+          date_effet: string | null
+          dossier_id: string | null
+          fractionnement: string
+          id: string
+          notes: string | null
+          numero: string | null
+          prime_annuelle: number | null
+          produit: string
+          projet_id: string | null
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          assureur: string
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          date_echeance?: string | null
+          date_effet?: string | null
+          dossier_id?: string | null
+          fractionnement?: string
+          id?: string
+          notes?: string | null
+          numero?: string | null
+          prime_annuelle?: number | null
+          produit: string
+          projet_id?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          assureur?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          date_echeance?: string | null
+          date_effet?: string | null
+          dossier_id?: string | null
+          fractionnement?: string
+          id?: string
+          notes?: string | null
+          numero?: string | null
+          prime_annuelle?: number | null
+          produit?: string
+          projet_id?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contrats_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contrats_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contrats_projet_id_fkey"
+            columns: ["projet_id"]
+            isOneToOne: false
+            referencedRelation: "projets"
             referencedColumns: ["id"]
           },
         ]
@@ -385,6 +773,125 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      projets: {
+        Row: {
+          assigne_a: string | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          date_cloture_prevue: string | null
+          etape: string
+          id: string
+          montant_estime: number | null
+          notes: string | null
+          probabilite: number
+          produit: string | null
+          titre: string
+          updated_at: string
+        }
+        Insert: {
+          assigne_a?: string | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          date_cloture_prevue?: string | null
+          etape?: string
+          id?: string
+          montant_estime?: number | null
+          notes?: string | null
+          probabilite?: number
+          produit?: string | null
+          titre: string
+          updated_at?: string
+        }
+        Update: {
+          assigne_a?: string | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          date_cloture_prevue?: string | null
+          etape?: string
+          id?: string
+          montant_estime?: number | null
+          notes?: string | null
+          probabilite?: number
+          produit?: string | null
+          titre?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sinistres: {
+        Row: {
+          client_id: string
+          contrat_id: string
+          created_at: string
+          created_by: string | null
+          date_survenance: string | null
+          description: string | null
+          gestionnaire: string | null
+          id: string
+          montant: number | null
+          reference: string | null
+          statut: string
+          type: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          contrat_id: string
+          created_at?: string
+          created_by?: string | null
+          date_survenance?: string | null
+          description?: string | null
+          gestionnaire?: string | null
+          id?: string
+          montant?: number | null
+          reference?: string | null
+          statut?: string
+          type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          contrat_id?: string
+          created_at?: string
+          created_by?: string | null
+          date_survenance?: string | null
+          description?: string | null
+          gestionnaire?: string | null
+          id?: string
+          montant?: number | null
+          reference?: string | null
+          statut?: string
+          type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sinistres_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sinistres_contrat_id_fkey"
+            columns: ["contrat_id"]
+            isOneToOne: false
+            referencedRelation: "contrats"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       taches: {
         Row: {
