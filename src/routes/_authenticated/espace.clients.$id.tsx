@@ -390,6 +390,41 @@ function IdentiteTab({ client, canEdit, onSaved }: { client: Client; canEdit: bo
           Fumeur
         </label>
         {F("N° Sécu", "numero_secu")}
+        <label className="block">
+          <span className="text-xs uppercase tracking-wide text-ink-muted">Nb enfants</span>
+          <input
+            type="number"
+            value={form.nb_enfants ?? ""}
+            onChange={(e) => setForm({ ...form, nb_enfants: e.target.value ? Number(e.target.value) : null })}
+            className="mt-1 w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+          />
+        </label>
+        <label className="block">
+          <span className="text-xs uppercase tracking-wide text-ink-muted">Revenus annuels (€)</span>
+          <input
+            type="number"
+            value={form.revenus_annuels ?? ""}
+            onChange={(e) => setForm({ ...form, revenus_annuels: e.target.value ? Number(e.target.value) : null })}
+            className="mt-1 w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+          />
+        </label>
+      </Section>
+
+      <Section title="PPE (personne politiquement exposée)">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={!!form.ppe}
+            onChange={(e) => setForm({ ...form, ppe: e.target.checked })}
+          />
+          Personne politiquement exposée
+        </label>
+        {form.ppe && (
+          <>
+            {F("Fonction", "ppe_fonction")}
+            {F("Pays", "ppe_pays")}
+          </>
+        )}
       </Section>
 
       <Section title="Remarque" className="md:col-span-2">
