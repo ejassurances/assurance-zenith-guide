@@ -14,6 +14,7 @@ import { Route as PolitiqueDeConfidentialiteRouteImport } from './routes/politiq
 import { Route as MentionsLegalesRouteImport } from './routes/mentions-legales'
 import { Route as CoparentaliteRouteImport } from './routes/coparentalite'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AssuranceEmprunteurRouteImport } from './routes/assurance-emprunteur'
 import { Route as AProposRouteImport } from './routes/a-propos'
 import { Route as IndexRouteImport } from './routes/index'
@@ -46,6 +47,11 @@ const ContactRoute = ContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AssuranceEmprunteurRoute = AssuranceEmprunteurRouteImport.update({
   id: '/assurance-emprunteur',
   path: '/assurance-emprunteur',
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/a-propos': typeof AProposRoute
   '/assurance-emprunteur': typeof AssuranceEmprunteurRoute
+  '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/coparentalite': typeof CoparentaliteRoute
   '/mentions-legales': typeof MentionsLegalesRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/a-propos': typeof AProposRoute
   '/assurance-emprunteur': typeof AssuranceEmprunteurRoute
+  '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/coparentalite': typeof CoparentaliteRoute
   '/mentions-legales': typeof MentionsLegalesRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/a-propos': typeof AProposRoute
   '/assurance-emprunteur': typeof AssuranceEmprunteurRoute
+  '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/coparentalite': typeof CoparentaliteRoute
   '/mentions-legales': typeof MentionsLegalesRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/'
     | '/a-propos'
     | '/assurance-emprunteur'
+    | '/auth'
     | '/contact'
     | '/coparentalite'
     | '/mentions-legales'
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/'
     | '/a-propos'
     | '/assurance-emprunteur'
+    | '/auth'
     | '/contact'
     | '/coparentalite'
     | '/mentions-legales'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/'
     | '/a-propos'
     | '/assurance-emprunteur'
+    | '/auth'
     | '/contact'
     | '/coparentalite'
     | '/mentions-legales'
@@ -152,6 +164,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AProposRoute: typeof AProposRoute
   AssuranceEmprunteurRoute: typeof AssuranceEmprunteurRoute
+  AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
   CoparentaliteRoute: typeof CoparentaliteRoute
   MentionsLegalesRoute: typeof MentionsLegalesRoute
@@ -198,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/assurance-emprunteur': {
       id: '/assurance-emprunteur'
       path: '/assurance-emprunteur'
@@ -240,6 +260,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AProposRoute: AProposRoute,
   AssuranceEmprunteurRoute: AssuranceEmprunteurRoute,
+  AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,
   CoparentaliteRoute: CoparentaliteRoute,
   MentionsLegalesRoute: MentionsLegalesRoute,
