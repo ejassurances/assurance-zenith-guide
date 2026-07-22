@@ -74,6 +74,9 @@ function Dashboard() {
         Connecté en tant que <span className="font-medium text-ink">{user?.email}</span> — rôle {role ?? "…"}
       </p>
 
+      {role === "client" && <ClientDerBanner />}
+
+
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {role !== "client" && <Card label="Clients" value={stats.clients} sub={`${stats.prospects} prospects`} />}
         <Card label="Dossiers" value={stats.dossiers} />
