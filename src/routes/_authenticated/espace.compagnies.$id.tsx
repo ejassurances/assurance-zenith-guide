@@ -144,7 +144,7 @@ function CompagnieDetail() {
       </div>
 
       <div className="flex gap-1 border-b border-line">
-        {(["infos", "produits", "api"] as Tab[]).map((t) => (
+        {(["infos", "produits", "partenariats", "api"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -153,7 +153,13 @@ function CompagnieDetail() {
               (tab === t ? "border-ink font-medium text-ink" : "border-transparent text-ink-muted hover:text-ink")
             }
           >
-            {t === "infos" ? "Identité" : t === "produits" ? "Produits" : "API compagnie"}
+            {t === "infos"
+              ? "Identité"
+              : t === "produits"
+                ? "Produits"
+                : t === "partenariats"
+                  ? "Partenariat"
+                  : "API compagnie"}
           </button>
         ))}
       </div>
@@ -174,6 +180,7 @@ function CompagnieDetail() {
           onChange={load}
         />
       )}
+      {tab === "partenariats" && <PartenariatsTab compagnieId={c.id} compagnieNom={c.nom} isAdmin={isAdmin} />}
       {tab === "api" && <ApiTab c={c} isAdmin={isAdmin} saving={saving} onSave={saveInfos} />}
     </div>
   );
