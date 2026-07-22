@@ -204,3 +204,50 @@ function ClientDerBanner() {
     </div>
   );
 }
+
+type CabinetScore = {
+  score: number;
+  niveau: string;
+  nb_clients: number;
+  nb_vert: number;
+  nb_orange: number;
+  nb_rouge: number;
+  nb_a_relancer: number;
+};
+
+function ConformiteCabinetWidget() {
+  const [data, setData] = useState<CabinetScore | null>(null);
+  useEffect(() => {
+    (async () => {
+      const { data: res } = await supabase.rpc("score_conformite_cabinet");
+      const row = Array.isArray(res) ? (res[0] as CabinetScore | undefined) : (res as CabinetScore | null);
+      if (row) setData(row);
+    })();
+  }, []);
+  if (!data) return null;
+  const color =
+    data.niveau === "vert"
+      ? "border-emerald-300 bg-emerald-50 text-emerald-900"
+      : data.niveau === "orange"
+      ? "border-amber-300 bg-amber-50 text-amber-900"
+      : "border-red-300 bg-red-50 text-red-900";
+  return (
+    <div className={`mt-6 rounded-2xl border p-5 ${color}`}>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wide opacity-70">Conformité du cabinet</p>
+          <p className="mt-1 font-serif text-4xl font-medium">{Number(data.score).toFixed(0)}/100</p>
+          <p className="mt-1 text-xs opacity-80">
+            {data.nb_clients} clients actifs · {data.nb_a_relancer} à relancer sous 30 jours
+          </p>
+        </div>
+        <div className="flex gap-2 text-xs">
+          <span className="rounded-full bg-emerald-100 px-3 py-1 font-medium text-emerald-900">Vert : {data.nb_vert}</span>
+          <span className="rounded-full bg-amber-100 px-3 py-1 font-medium text-amber-900">Orange : {data.nb_orange}</span>
+          <span className="rounded-full bg-red-100 px-3 py-1 font-medium text-red-900">Rouge : {data.nb_rouge}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
