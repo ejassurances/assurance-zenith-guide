@@ -13,6 +13,10 @@ type Envoi = {
   statut: string;
   notes: string | null;
   created_at: string;
+  signed_at?: string | null;
+  signed_ip?: string | null;
+  signature_png?: string | null;
+  document_hash?: string | null;
 };
 
 type Modele = {
@@ -27,11 +31,13 @@ const STATUT_LABEL: Record<string, string> = {
   a_envoyer: "À envoyer",
   envoye: "Envoyé",
   echec: "Échec",
+  signe: "Signé",
 };
 const STATUT_CLASS: Record<string, string> = {
   a_envoyer: "bg-amber-100 text-amber-900",
   envoye: "bg-emerald-100 text-emerald-900",
   echec: "bg-red-100 text-red-900",
+  signe: "bg-blue-100 text-blue-900",
 };
 
 export function DerTab({ clientId, clientEmail }: { clientId: string; clientEmail: string | null }) {
