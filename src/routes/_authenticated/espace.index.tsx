@@ -74,6 +74,9 @@ function Dashboard() {
         Connecté en tant que <span className="font-medium text-ink">{user?.email}</span> — rôle {role ?? "…"}
       </p>
 
+      {role === "client" && <ClientDerBanner />}
+
+
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {role !== "client" && <Card label="Clients" value={stats.clients} sub={`${stats.prospects} prospects`} />}
         <Card label="Dossiers" value={stats.dossiers} />
@@ -168,6 +171,36 @@ function Card({ label, value, sub }: { label: string; value: number | string; su
       <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">{label}</p>
       <p className="mt-2 font-serif text-3xl font-medium text-ink">{value}</p>
       {sub && <p className="mt-1 text-xs text-ink-muted">{sub}</p>}
+    </div>
+  );
+}
+
+function ClientDerBanner() {
+  const [pending, setPending] = useState(false);
+  useEffect(() => {
+    (async () => {
+      const { count } = await supabase
+        .from("client_der_envois")
+        .select("id", { count: "exact", head: true })
+        .neq("statut", "signe");
+      setPending((count ?? 0) > 0);
+    })();
+  }, []);
+  if (!pending) return null;
+  return (
+    <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4">
+      <div>
+        <p className="font-medium text-amber-900">Document d'Entrée en Relation à signer</p>
+        <p className="text-sm text-amber-800">
+          Merci de signer votre DER pour finaliser votre entrée en relation avec le cabinet.
+        </p>
+      </div>
+      <Link
+        to="/espace/signer-der"
+        className="rounded-full bg-amber-900 px-4 py-2 text-sm font-medium text-white"
+      >
+        Signer maintenant
+      </Link>
     </div>
   );
 }

@@ -28,6 +28,7 @@ import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
 import { Route as ApiPublicBootstrapAdminRouteImport } from './routes/api/public/bootstrap-admin'
 import { Route as AuthenticatedEspaceUtilisateursRouteImport } from './routes/_authenticated/espace.utilisateurs'
 import { Route as AuthenticatedEspaceTachesRouteImport } from './routes/_authenticated/espace.taches'
+import { Route as AuthenticatedEspaceSignerDerRouteImport } from './routes/_authenticated/espace.signer-der'
 import { Route as AuthenticatedEspaceParametresRouteImport } from './routes/_authenticated/espace.parametres'
 import { Route as AuthenticatedEspaceDerModeleRouteImport } from './routes/_authenticated/espace.der-modele'
 import { Route as AuthenticatedEspaceConformiteRouteImport } from './routes/_authenticated/espace.conformite'
@@ -140,6 +141,12 @@ const AuthenticatedEspaceTachesRoute =
     path: '/taches',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const AuthenticatedEspaceSignerDerRoute =
+  AuthenticatedEspaceSignerDerRouteImport.update({
+    id: '/signer-der',
+    path: '/signer-der',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
 const AuthenticatedEspaceParametresRoute =
   AuthenticatedEspaceParametresRouteImport.update({
     id: '/parametres',
@@ -239,6 +246,7 @@ export interface FileRoutesByFullPath {
   '/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
+  '/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
@@ -271,6 +279,7 @@ export interface FileRoutesByTo {
   '/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
+  '/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
@@ -306,6 +315,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/_authenticated/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
   '/_authenticated/espace/parametres': typeof AuthenticatedEspaceParametresRoute
+  '/_authenticated/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
   '/_authenticated/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/_authenticated/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
@@ -341,6 +351,7 @@ export interface FileRouteTypes {
     | '/espace/conformite'
     | '/espace/der-modele'
     | '/espace/parametres'
+    | '/espace/signer-der'
     | '/espace/taches'
     | '/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
@@ -373,6 +384,7 @@ export interface FileRouteTypes {
     | '/espace/conformite'
     | '/espace/der-modele'
     | '/espace/parametres'
+    | '/espace/signer-der'
     | '/espace/taches'
     | '/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
@@ -407,6 +419,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/conformite'
     | '/_authenticated/espace/der-modele'
     | '/_authenticated/espace/parametres'
+    | '/_authenticated/espace/signer-der'
     | '/_authenticated/espace/taches'
     | '/_authenticated/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
@@ -574,6 +587,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceTachesRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/signer-der': {
+      id: '/_authenticated/espace/signer-der'
+      path: '/signer-der'
+      fullPath: '/espace/signer-der'
+      preLoaderRoute: typeof AuthenticatedEspaceSignerDerRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
     '/_authenticated/espace/parametres': {
       id: '/_authenticated/espace/parametres'
       path: '/parametres'
@@ -675,6 +695,7 @@ interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceConformiteRoute: typeof AuthenticatedEspaceConformiteRoute
   AuthenticatedEspaceDerModeleRoute: typeof AuthenticatedEspaceDerModeleRoute
   AuthenticatedEspaceParametresRoute: typeof AuthenticatedEspaceParametresRoute
+  AuthenticatedEspaceSignerDerRoute: typeof AuthenticatedEspaceSignerDerRoute
   AuthenticatedEspaceTachesRoute: typeof AuthenticatedEspaceTachesRoute
   AuthenticatedEspaceUtilisateursRoute: typeof AuthenticatedEspaceUtilisateursRoute
   AuthenticatedEspaceIndexRoute: typeof AuthenticatedEspaceIndexRoute
@@ -694,6 +715,7 @@ const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
   AuthenticatedEspaceConformiteRoute: AuthenticatedEspaceConformiteRoute,
   AuthenticatedEspaceDerModeleRoute: AuthenticatedEspaceDerModeleRoute,
   AuthenticatedEspaceParametresRoute: AuthenticatedEspaceParametresRoute,
+  AuthenticatedEspaceSignerDerRoute: AuthenticatedEspaceSignerDerRoute,
   AuthenticatedEspaceTachesRoute: AuthenticatedEspaceTachesRoute,
   AuthenticatedEspaceUtilisateursRoute: AuthenticatedEspaceUtilisateursRoute,
   AuthenticatedEspaceIndexRoute: AuthenticatedEspaceIndexRoute,

@@ -188,11 +188,17 @@ export type Database = {
           client_id: string
           created_at: string
           der_modele_id: string | null
+          document_hash: string | null
+          document_url_snapshot: string | null
           email_destinataire: string | null
           envoye_le: string | null
           envoye_par: string | null
           id: string
           notes: string | null
+          signature_png: string | null
+          signed_at: string | null
+          signed_ip: string | null
+          signed_ua: string | null
           statut: string
           updated_at: string
         }
@@ -200,11 +206,17 @@ export type Database = {
           client_id: string
           created_at?: string
           der_modele_id?: string | null
+          document_hash?: string | null
+          document_url_snapshot?: string | null
           email_destinataire?: string | null
           envoye_le?: string | null
           envoye_par?: string | null
           id?: string
           notes?: string | null
+          signature_png?: string | null
+          signed_at?: string | null
+          signed_ip?: string | null
+          signed_ua?: string | null
           statut?: string
           updated_at?: string
         }
@@ -212,11 +224,17 @@ export type Database = {
           client_id?: string
           created_at?: string
           der_modele_id?: string | null
+          document_hash?: string | null
+          document_url_snapshot?: string | null
           email_destinataire?: string | null
           envoye_le?: string | null
           envoye_par?: string | null
           id?: string
           notes?: string | null
+          signature_png?: string | null
+          signed_at?: string | null
+          signed_ip?: string | null
+          signed_ua?: string | null
           statut?: string
           updated_at?: string
         }
@@ -417,6 +435,7 @@ export type Database = {
           telephone: string | null
           telephone2: string | null
           updated_at: string
+          user_id: string | null
           ville: string | null
           ville_naissance: string | null
         }
@@ -461,6 +480,7 @@ export type Database = {
           telephone?: string | null
           telephone2?: string | null
           updated_at?: string
+          user_id?: string | null
           ville?: string | null
           ville_naissance?: string | null
         }
@@ -505,6 +525,7 @@ export type Database = {
           telephone?: string | null
           telephone2?: string | null
           updated_at?: string
+          user_id?: string | null
           ville?: string | null
           ville_naissance?: string | null
         }

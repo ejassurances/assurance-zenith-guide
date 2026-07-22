@@ -13,6 +13,10 @@ type Envoi = {
   statut: string;
   notes: string | null;
   created_at: string;
+  signed_at?: string | null;
+  signed_ip?: string | null;
+  signature_png?: string | null;
+  document_hash?: string | null;
 };
 
 type Modele = {
@@ -27,11 +31,13 @@ const STATUT_LABEL: Record<string, string> = {
   a_envoyer: "À envoyer",
   envoye: "Envoyé",
   echec: "Échec",
+  signe: "Signé",
 };
 const STATUT_CLASS: Record<string, string> = {
   a_envoyer: "bg-amber-100 text-amber-900",
   envoye: "bg-emerald-100 text-emerald-900",
   echec: "bg-red-100 text-red-900",
+  signe: "bg-blue-100 text-blue-900",
 };
 
 export function DerTab({ clientId, clientEmail }: { clientId: string; clientEmail: string | null }) {
@@ -169,35 +175,57 @@ export function DerTab({ clientId, clientEmail }: { clientId: string; clientEmai
               </thead>
               <tbody>
                 {envois.map((en) => (
-                  <tr key={en.id} className="border-b border-line last:border-0">
-                    <td className="px-2 py-2">
-                      <span
-                        className={
-                          "rounded-full px-2 py-0.5 text-xs font-medium " +
-                          (STATUT_CLASS[en.statut] ?? "bg-surface text-ink-soft")
-                        }
-                      >
-                        {STATUT_LABEL[en.statut] ?? en.statut}
-                      </span>
-                    </td>
-                    <td className="px-2 py-2 text-ink-soft">{en.email_destinataire ?? "—"}</td>
-                    <td className="px-2 py-2 text-xs text-ink-muted">
-                      {new Date(en.created_at).toLocaleDateString("fr-FR")}
-                    </td>
-                    <td className="px-2 py-2 text-xs text-ink-muted">
-                      {en.envoye_le ? new Date(en.envoye_le).toLocaleString("fr-FR") : "—"}
-                    </td>
-                    <td className="px-2 py-2 text-right">
-                      {en.statut !== "envoye" && (
-                        <button
-                          onClick={() => markSent(en.id)}
-                          className="rounded-full bg-ink px-3 py-1 text-xs font-medium text-primary-foreground"
+                  <>
+                    <tr key={en.id} className="border-b border-line last:border-0">
+                      <td className="px-2 py-2">
+                        <span
+                          className={
+                            "rounded-full px-2 py-0.5 text-xs font-medium " +
+                            (STATUT_CLASS[en.statut] ?? "bg-surface text-ink-soft")
+                          }
                         >
-                          Envoyer par email
-                        </button>
-                      )}
-                    </td>
-                  </tr>
+                          {STATUT_LABEL[en.statut] ?? en.statut}
+                        </span>
+                      </td>
+                      <td className="px-2 py-2 text-ink-soft">{en.email_destinataire ?? "—"}</td>
+                      <td className="px-2 py-2 text-xs text-ink-muted">
+                        {new Date(en.created_at).toLocaleDateString("fr-FR")}
+                      </td>
+                      <td className="px-2 py-2 text-xs text-ink-muted">
+                        {en.envoye_le ? new Date(en.envoye_le).toLocaleString("fr-FR") : "—"}
+                      </td>
+                      <td className="px-2 py-2 text-right">
+                        {en.statut !== "envoye" && en.statut !== "signe" && (
+                          <button
+                            onClick={() => markSent(en.id)}
+                            className="rounded-full bg-ink px-3 py-1 text-xs font-medium text-primary-foreground"
+                          >
+                            Envoyer par email
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                    {en.statut === "signe" && en.signature_png && (
+                      <tr key={en.id + "-sig"} className="border-b border-line last:border-0 bg-blue-50/30">
+                        <td colSpan={5} className="px-2 py-3">
+                          <div className="flex flex-wrap items-start gap-4">
+                            <img
+                              src={en.signature_png}
+                              alt="Signature"
+                              className="h-16 rounded border border-line bg-white"
+                            />
+                            <div className="text-xs text-ink-muted">
+                              <div>Signé le {en.signed_at ? new Date(en.signed_at).toLocaleString("fr-FR") : "—"}</div>
+                              <div>IP : {en.signed_ip ?? "—"}</div>
+                              {en.document_hash && (
+                                <div className="font-mono text-[10px]">Hash : {en.document_hash.slice(0, 32)}…</div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 ))}
               </tbody>
             </table>
