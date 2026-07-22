@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { FamilleTab, EntrepriseTab, EquipementsTab } from "@/components/client-360-tabs";
 import { ContratsTab } from "@/components/contrats-tab";
 import { DerTab } from "@/components/der-tab";
+import { ConformiteClientTab } from "@/components/conformite-client-tab";
 
 export const Route = createFileRoute("/_authenticated/espace/clients/$id")({
   component: ClientDetail,
@@ -85,7 +86,7 @@ type Doc = {
   created_at: string;
 };
 
-type Tab = "identite" | "famille" | "entreprise" | "equipements" | "contrats" | "taches" | "historique" | "documents" | "dossiers" | "der";
+type Tab = "identite" | "famille" | "entreprise" | "equipements" | "contrats" | "taches" | "historique" | "documents" | "dossiers" | "der" | "conformite";
 
 function ClientDetail() {
   const { id } = Route.useParams();
@@ -149,6 +150,7 @@ function ClientDetail() {
             ["documents", "Documents"],
             ["dossiers", "Dossiers"],
             ["der", "DER"],
+            ["conformite", "Conformité"],
           ] as [Tab, string][]
         ).map(([key, label]) => (
           <button
@@ -175,6 +177,7 @@ function ClientDetail() {
         {tab === "documents" && <DocumentsTab clientId={client.id} canEdit={canEdit} />}
         {tab === "dossiers" && <DossiersTab client={client} />}
         {tab === "der" && <DerTab clientId={client.id} clientEmail={client.email} />}
+        {tab === "conformite" && <ConformiteClientTab clientId={client.id} canEdit={canEdit} />}
       </div>
     </div>
   );

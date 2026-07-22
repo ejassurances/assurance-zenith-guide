@@ -393,6 +393,121 @@ export type Database = {
           },
         ]
       }
+      client_kyc_documents: {
+        Row: {
+          client_id: string
+          created_at: string
+          date_emission: string | null
+          date_expiration: string | null
+          id: string
+          nom: string
+          notes: string | null
+          statut: string
+          storage_path: string
+          type: Database["public"]["Enums"]["client_kyc_type"]
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          date_emission?: string | null
+          date_expiration?: string | null
+          id?: string
+          nom: string
+          notes?: string | null
+          statut?: string
+          storage_path: string
+          type: Database["public"]["Enums"]["client_kyc_type"]
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          date_emission?: string | null
+          date_expiration?: string | null
+          id?: string
+          nom?: string
+          notes?: string | null
+          statut?: string
+          storage_path?: string
+          type?: Database["public"]["Enums"]["client_kyc_type"]
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_kyc_documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_lcb_verifications: {
+        Row: {
+          client_id: string
+          created_at: string
+          fournisseur: string
+          id: string
+          nb_correspondances: number
+          notes: string | null
+          requete: Json
+          resultats: Json
+          score_correspondance: number | null
+          statut: string
+          type: string
+          updated_at: string
+          valide_jusqua: string | null
+          verifie_le: string
+          verifie_par: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          fournisseur?: string
+          id?: string
+          nb_correspondances?: number
+          notes?: string | null
+          requete: Json
+          resultats?: Json
+          score_correspondance?: number | null
+          statut?: string
+          type: string
+          updated_at?: string
+          valide_jusqua?: string | null
+          verifie_le?: string
+          verifie_par?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          fournisseur?: string
+          id?: string
+          nb_correspondances?: number
+          notes?: string | null
+          requete?: Json
+          resultats?: Json
+          score_correspondance?: number | null
+          statut?: string
+          type?: string
+          updated_at?: string
+          valide_jusqua?: string | null
+          verifie_le?: string
+          verifie_par?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_lcb_verifications_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           adresse: string | null
@@ -401,6 +516,10 @@ export type Database = {
           code_postal: string | null
           commercial_id: string | null
           complement_adresse: string | null
+          conformite_derniere_verif: string | null
+          conformite_niveau: string | null
+          conformite_prochaine_verif: string | null
+          conformite_score: number | null
           created_at: string
           created_by: string | null
           csp: string | null
@@ -446,6 +565,10 @@ export type Database = {
           code_postal?: string | null
           commercial_id?: string | null
           complement_adresse?: string | null
+          conformite_derniere_verif?: string | null
+          conformite_niveau?: string | null
+          conformite_prochaine_verif?: string | null
+          conformite_score?: number | null
           created_at?: string
           created_by?: string | null
           csp?: string | null
@@ -491,6 +614,10 @@ export type Database = {
           code_postal?: string | null
           commercial_id?: string | null
           complement_adresse?: string | null
+          conformite_derniere_verif?: string | null
+          conformite_niveau?: string | null
+          conformite_prochaine_verif?: string | null
+          conformite_score?: number | null
           created_at?: string
           created_by?: string | null
           csp?: string | null
@@ -2009,6 +2136,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculer_score_conformite_client: {
+        Args: { _client_id: string }
+        Returns: number
+      }
       can_access_client: { Args: { _client_id: string }; Returns: boolean }
       can_access_dossier: { Args: { _dossier_id: string }; Returns: boolean }
       current_user_role: {
@@ -2034,6 +2165,18 @@ export type Database = {
       recalculer_echeances_contrat: {
         Args: { _contrat_id: string }
         Returns: undefined
+      }
+      score_conformite_cabinet: {
+        Args: never
+        Returns: {
+          nb_a_relancer: number
+          nb_clients: number
+          nb_orange: number
+          nb_rouge: number
+          nb_vert: number
+          niveau: string
+          score: number
+        }[]
       }
       solde_compte: {
         Args: { _compte: string; _date_debut: string; _date_fin: string }
@@ -2066,6 +2209,7 @@ export type Database = {
       activite_type: "note" | "appel" | "email" | "sms" | "systeme" | "rdv"
       api_auth_type: "none" | "api_key" | "bearer" | "oauth2" | "basic"
       app_role: "admin" | "mandataire" | "client" | "prescripteur"
+      client_kyc_type: "cni" | "justificatif_domicile" | "rib"
       client_origine:
         | "internet"
         | "assurlead"
@@ -2230,6 +2374,7 @@ export const Constants = {
       activite_type: ["note", "appel", "email", "sms", "systeme", "rdv"],
       api_auth_type: ["none", "api_key", "bearer", "oauth2", "basic"],
       app_role: ["admin", "mandataire", "client", "prescripteur"],
+      client_kyc_type: ["cni", "justificatif_domicile", "rib"],
       client_origine: [
         "internet",
         "assurlead",
