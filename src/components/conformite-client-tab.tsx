@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { rechercherSanctionsPPE, marquerVerificationLCB } from "@/lib/lcb-ft.functions";
+import { DerStatusCard } from "@/components/der-status-card";
 
 /* Onglet Conformité client : KYC + LCB-FT + Score */
 
