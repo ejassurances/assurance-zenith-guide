@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequestHeader, getRequestIP } from "@tanstack/react-start/server";
+import { getRequestHeader, getRequestIP, getRequest } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { createHash } from "node:crypto";
@@ -105,16 +105,14 @@ export const envoyerDerEmail = createServerFn({ method: "POST" })
       .limit(1)
       .maybeSingle();
     if (!existing || existing.statut === "signe") {
-      await supabase
-        .from("client_der_envois")
-        .insert({
-          client_id: data.client_id,
-          der_modele_id: modele.id,
-          email_destinataire: data.email,
-          statut: "envoye",
-          envoye_le: new Date().toISOString(),
-          envoye_par: userId,
-        });
+      await supabase.from("client_der_envois").insert({
+        client_id: data.client_id,
+        der_modele_id: modele.id,
+        email_destinataire: data.email,
+        statut: "envoye",
+        envoye_le: new Date().toISOString(),
+        envoye_par: userId,
+      });
     } else {
       await supabase
         .from("client_der_envois")
