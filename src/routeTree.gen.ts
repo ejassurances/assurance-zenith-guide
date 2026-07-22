@@ -38,6 +38,9 @@ import { Route as AuthenticatedEspaceAuditLogsRouteImport } from './routes/_auth
 import { Route as AuthenticatedEspaceDossiersIndexRouteImport } from './routes/_authenticated/espace.dossiers.index'
 import { Route as AuthenticatedEspaceCompagniesIndexRouteImport } from './routes/_authenticated/espace.compagnies.index'
 import { Route as AuthenticatedEspaceClientsIndexRouteImport } from './routes/_authenticated/espace.clients.index'
+import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
+import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
+import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as AuthenticatedEspaceDossiersIdRouteImport } from './routes/_authenticated/espace.dossiers.$id'
 import { Route as AuthenticatedEspaceContratsIdRouteImport } from './routes/_authenticated/espace.contrats.$id'
 import { Route as AuthenticatedEspaceCompagniesIdRouteImport } from './routes/_authenticated/espace.compagnies.$id'
@@ -201,6 +204,22 @@ const AuthenticatedEspaceClientsIndexRoute =
     path: '/clients/',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const LovableEmailTransactionalPreviewRoute =
+  LovableEmailTransactionalPreviewRouteImport.update({
+    id: '/lovable/email/transactional/preview',
+    path: '/lovable/email/transactional/preview',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const LovableEmailAuthWebhookRoute = LovableEmailAuthWebhookRouteImport.update({
+  id: '/lovable/email/auth/webhook',
+  path: '/lovable/email/auth/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
+  id: '/lovable/email/auth/preview',
+  path: '/lovable/email/auth/preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedEspaceDossiersIdRoute =
   AuthenticatedEspaceDossiersIdRouteImport.update({
     id: '/dossiers/$id',
@@ -256,6 +275,9 @@ export interface FileRoutesByFullPath {
   '/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
   '/espace/contrats/$id': typeof AuthenticatedEspaceContratsIdRoute
   '/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
+  '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
+  '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/espace/clients/': typeof AuthenticatedEspaceClientsIndexRoute
   '/espace/compagnies/': typeof AuthenticatedEspaceCompagniesIndexRoute
   '/espace/dossiers/': typeof AuthenticatedEspaceDossiersIndexRoute
@@ -289,6 +311,9 @@ export interface FileRoutesByTo {
   '/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
   '/espace/contrats/$id': typeof AuthenticatedEspaceContratsIdRoute
   '/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
+  '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
+  '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/espace/clients': typeof AuthenticatedEspaceClientsIndexRoute
   '/espace/compagnies': typeof AuthenticatedEspaceCompagniesIndexRoute
   '/espace/dossiers': typeof AuthenticatedEspaceDossiersIndexRoute
@@ -325,6 +350,9 @@ export interface FileRoutesById {
   '/_authenticated/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
   '/_authenticated/espace/contrats/$id': typeof AuthenticatedEspaceContratsIdRoute
   '/_authenticated/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
+  '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
+  '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/_authenticated/espace/clients/': typeof AuthenticatedEspaceClientsIndexRoute
   '/_authenticated/espace/compagnies/': typeof AuthenticatedEspaceCompagniesIndexRoute
   '/_authenticated/espace/dossiers/': typeof AuthenticatedEspaceDossiersIndexRoute
@@ -361,6 +389,9 @@ export interface FileRouteTypes {
     | '/espace/compagnies/$id'
     | '/espace/contrats/$id'
     | '/espace/dossiers/$id'
+    | '/lovable/email/auth/preview'
+    | '/lovable/email/auth/webhook'
+    | '/lovable/email/transactional/preview'
     | '/espace/clients/'
     | '/espace/compagnies/'
     | '/espace/dossiers/'
@@ -394,6 +425,9 @@ export interface FileRouteTypes {
     | '/espace/compagnies/$id'
     | '/espace/contrats/$id'
     | '/espace/dossiers/$id'
+    | '/lovable/email/auth/preview'
+    | '/lovable/email/auth/webhook'
+    | '/lovable/email/transactional/preview'
     | '/espace/clients'
     | '/espace/compagnies'
     | '/espace/dossiers'
@@ -429,6 +463,9 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/compagnies/$id'
     | '/_authenticated/espace/contrats/$id'
     | '/_authenticated/espace/dossiers/$id'
+    | '/lovable/email/auth/preview'
+    | '/lovable/email/auth/webhook'
+    | '/lovable/email/transactional/preview'
     | '/_authenticated/espace/clients/'
     | '/_authenticated/espace/compagnies/'
     | '/_authenticated/espace/dossiers/'
@@ -450,6 +487,9 @@ export interface RootRouteChildren {
   BlogIndexRoute: typeof BlogIndexRoute
   ApiPublicBootstrapAdminRoute: typeof ApiPublicBootstrapAdminRoute
   ApiPublicLeadsRoute: typeof ApiPublicLeadsRoute
+  LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
+  LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
+  LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -657,6 +697,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceClientsIndexRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/lovable/email/transactional/preview': {
+      id: '/lovable/email/transactional/preview'
+      path: '/lovable/email/transactional/preview'
+      fullPath: '/lovable/email/transactional/preview'
+      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lovable/email/auth/webhook': {
+      id: '/lovable/email/auth/webhook'
+      path: '/lovable/email/auth/webhook'
+      fullPath: '/lovable/email/auth/webhook'
+      preLoaderRoute: typeof LovableEmailAuthWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lovable/email/auth/preview': {
+      id: '/lovable/email/auth/preview'
+      path: '/lovable/email/auth/preview'
+      fullPath: '/lovable/email/auth/preview'
+      preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/espace/dossiers/$id': {
       id: '/_authenticated/espace/dossiers/$id'
       path: '/dossiers/$id'
@@ -759,17 +820,10 @@ const rootRouteChildren: RootRouteChildren = {
   BlogIndexRoute: BlogIndexRoute,
   ApiPublicBootstrapAdminRoute: ApiPublicBootstrapAdminRoute,
   ApiPublicLeadsRoute: ApiPublicLeadsRoute,
+  LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
+  LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
+  LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
