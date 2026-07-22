@@ -32,6 +32,12 @@ export function SiteHeader() {
             </Link>
           ))}
           <Link
+            to="/auth"
+            className="text-sm font-medium text-ink-soft transition-colors hover:text-ink"
+          >
+            Espace
+          </Link>
+          <Link
             to="/contact"
             className="inline-flex h-9 items-center justify-center rounded-full bg-ink px-5 text-sm font-medium text-primary-foreground transition-transform active:scale-95"
           >

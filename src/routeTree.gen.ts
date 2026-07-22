@@ -23,7 +23,10 @@ import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AuthenticatedEspaceRouteImport } from './routes/_authenticated/espace'
 import { Route as AuthenticatedEspaceIndexRouteImport } from './routes/_authenticated/espace.index'
+import { Route as AuthenticatedEspaceUtilisateursRouteImport } from './routes/_authenticated/espace.utilisateurs'
+import { Route as AuthenticatedEspaceCommissionsRouteImport } from './routes/_authenticated/espace.commissions'
 import { Route as AuthenticatedEspaceDossiersIndexRouteImport } from './routes/_authenticated/espace.dossiers.index'
+import { Route as AuthenticatedEspaceDossiersIdRouteImport } from './routes/_authenticated/espace.dossiers.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -96,10 +99,28 @@ const AuthenticatedEspaceIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const AuthenticatedEspaceUtilisateursRoute =
+  AuthenticatedEspaceUtilisateursRouteImport.update({
+    id: '/utilisateurs',
+    path: '/utilisateurs',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
+const AuthenticatedEspaceCommissionsRoute =
+  AuthenticatedEspaceCommissionsRouteImport.update({
+    id: '/commissions',
+    path: '/commissions',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
 const AuthenticatedEspaceDossiersIndexRoute =
   AuthenticatedEspaceDossiersIndexRouteImport.update({
     id: '/dossiers/',
     path: '/dossiers/',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
+const AuthenticatedEspaceDossiersIdRoute =
+  AuthenticatedEspaceDossiersIdRouteImport.update({
+    id: '/dossiers/$id',
+    path: '/dossiers/$id',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
 
@@ -116,7 +137,10 @@ export interface FileRoutesByFullPath {
   '/espace': typeof AuthenticatedEspaceRouteWithChildren
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
+  '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
+  '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/espace/': typeof AuthenticatedEspaceIndexRoute
+  '/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
   '/espace/dossiers/': typeof AuthenticatedEspaceDossiersIndexRoute
 }
 export interface FileRoutesByTo {
@@ -131,7 +155,10 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog': typeof BlogIndexRoute
+  '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
+  '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/espace': typeof AuthenticatedEspaceIndexRoute
+  '/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
   '/espace/dossiers': typeof AuthenticatedEspaceDossiersIndexRoute
 }
 export interface FileRoutesById {
@@ -149,7 +176,10 @@ export interface FileRoutesById {
   '/_authenticated/espace': typeof AuthenticatedEspaceRouteWithChildren
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
+  '/_authenticated/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
+  '/_authenticated/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/_authenticated/espace/': typeof AuthenticatedEspaceIndexRoute
+  '/_authenticated/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
   '/_authenticated/espace/dossiers/': typeof AuthenticatedEspaceDossiersIndexRoute
 }
 export interface FileRouteTypes {
@@ -167,7 +197,10 @@ export interface FileRouteTypes {
     | '/espace'
     | '/blog/$slug'
     | '/blog/'
+    | '/espace/commissions'
+    | '/espace/utilisateurs'
     | '/espace/'
+    | '/espace/dossiers/$id'
     | '/espace/dossiers/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -182,7 +215,10 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/blog/$slug'
     | '/blog'
+    | '/espace/commissions'
+    | '/espace/utilisateurs'
     | '/espace'
+    | '/espace/dossiers/$id'
     | '/espace/dossiers'
   id:
     | '__root__'
@@ -199,7 +235,10 @@ export interface FileRouteTypes {
     | '/_authenticated/espace'
     | '/blog/$slug'
     | '/blog/'
+    | '/_authenticated/espace/commissions'
+    | '/_authenticated/espace/utilisateurs'
     | '/_authenticated/espace/'
+    | '/_authenticated/espace/dossiers/$id'
     | '/_authenticated/espace/dossiers/'
   fileRoutesById: FileRoutesById
 }
@@ -318,6 +357,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceIndexRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/utilisateurs': {
+      id: '/_authenticated/espace/utilisateurs'
+      path: '/utilisateurs'
+      fullPath: '/espace/utilisateurs'
+      preLoaderRoute: typeof AuthenticatedEspaceUtilisateursRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
+    '/_authenticated/espace/commissions': {
+      id: '/_authenticated/espace/commissions'
+      path: '/commissions'
+      fullPath: '/espace/commissions'
+      preLoaderRoute: typeof AuthenticatedEspaceCommissionsRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
     '/_authenticated/espace/dossiers/': {
       id: '/_authenticated/espace/dossiers/'
       path: '/dossiers'
@@ -325,16 +378,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceDossiersIndexRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/dossiers/$id': {
+      id: '/_authenticated/espace/dossiers/$id'
+      path: '/dossiers/$id'
+      fullPath: '/espace/dossiers/$id'
+      preLoaderRoute: typeof AuthenticatedEspaceDossiersIdRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
   }
 }
 
 interface AuthenticatedEspaceRouteChildren {
+  AuthenticatedEspaceCommissionsRoute: typeof AuthenticatedEspaceCommissionsRoute
+  AuthenticatedEspaceUtilisateursRoute: typeof AuthenticatedEspaceUtilisateursRoute
   AuthenticatedEspaceIndexRoute: typeof AuthenticatedEspaceIndexRoute
+  AuthenticatedEspaceDossiersIdRoute: typeof AuthenticatedEspaceDossiersIdRoute
   AuthenticatedEspaceDossiersIndexRoute: typeof AuthenticatedEspaceDossiersIndexRoute
 }
 
 const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
+  AuthenticatedEspaceCommissionsRoute: AuthenticatedEspaceCommissionsRoute,
+  AuthenticatedEspaceUtilisateursRoute: AuthenticatedEspaceUtilisateursRoute,
   AuthenticatedEspaceIndexRoute: AuthenticatedEspaceIndexRoute,
+  AuthenticatedEspaceDossiersIdRoute: AuthenticatedEspaceDossiersIdRoute,
   AuthenticatedEspaceDossiersIndexRoute: AuthenticatedEspaceDossiersIndexRoute,
 }
 
