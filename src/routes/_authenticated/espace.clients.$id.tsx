@@ -40,6 +40,11 @@ type Client = {
   numero_secu: string | null;
   remarque: string | null;
   etiquettes: string[] | null;
+  nb_enfants: number | null;
+  revenus_annuels: number | null;
+  ppe: boolean | null;
+  ppe_fonction: string | null;
+  ppe_pays: string | null;
   created_at: string;
 };
 
