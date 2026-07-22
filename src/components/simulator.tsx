@@ -69,50 +69,50 @@ export function Simulator() {
     setStep("results");
   }
 
-  function handleSendMail(e: React.FormEvent) {
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  async function handleSendMail(e: React.FormEvent) {
     e.preventDefault();
     if (!acceptContact || !acceptRgpd) {
       alert("Veuillez accepter les conditions de recontact et la politique RGPD pour envoyer votre demande.");
       return;
     }
-
-    const subject = `Demande d'étude assurance emprunteur — ${prenom} ${nom}`;
-    const body = [
-      `Bonjour,`,
-      ``,
-      `Je souhaite recevoir une étude personnalisée suite à ma simulation :`,
-      ``,
-      `— Capital emprunté : ${formatEuro(capital)}`,
-      `— Durée du prêt : ${duree} ans`,
-      `— Âge : ${age} ans`,
-      `— Fumeur : ${smoker ? "Oui" : "Non"}`,
-      ``,
-      `Estimation calculée :`,
-      `— Contrat groupe (banque) : ${formatEuro(results.mensGroupe)} / mois — total ${formatEuro(results.totalGroupe)}`,
-      `— Contrat délégué (courtier) : ${formatEuro(results.mensCourtier)} / mois — total ${formatEuro(results.totalCourtier)}`,
-      `— Économie mensuelle : ${formatEuro(results.monthlySaving)}`,
-      `— Économie totale estimée : ${formatEuro(results.totalSaving)}`,
-      ``,
-      `Mes coordonnées :`,
-      `— Nom : ${prenom} ${nom}`,
-      `— Email : ${email}`,
-      `— Téléphone : ${telephone}`,
-      ``,
-      message ? `Message :\n${message}` : ``,
-      ``,
-      `Consentements :`,
-      `— J'accepte d'être recontacté(e) par ${SITE.shortName} ou l'un de ses partenaires : Oui`,
-      `— J'ai pris connaissance de la politique de confidentialité RGPD : Oui`,
-      ``,
-      `Cordialement,`,
-      `${prenom} ${nom}`,
-    ].join("\n");
-
-    const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-      subject
-    )}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
-    setStep("sent");
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const res = await fetch("/api/public/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source: "simulateur",
+          prenom,
+          nom,
+          email,
+          telephone,
+          message: message || null,
+          simulation: {
+            capital,
+            duree_ans: duree,
+            age,
+            fumeur: smoker,
+            economie_totale: results.totalSaving,
+            economie_mensuelle: results.monthlySaving,
+          },
+          consent_contact: acceptContact,
+          consent_rgpd: acceptRgpd,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `Erreur ${res.status}`);
+      }
+      setStep("sent");
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Erreur inattendue");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
