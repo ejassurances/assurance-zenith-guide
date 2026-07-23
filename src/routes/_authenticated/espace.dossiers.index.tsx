@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { estimerEconomie } from "@/lib/insurance-rates";
+import { BRANCHES, getBranche, labelForBranche, type BrancheAssurance, type FieldConfig } from "@/lib/recueil-besoins-schemas";
 
 export const Route = createFileRoute("/_authenticated/espace/dossiers/")({
   component: DossiersList,
@@ -13,6 +14,7 @@ type Dossier = {
   reference: string;
   client_nom: string;
   statut: string;
+  type_assurance: string;
   capital: number | null;
   duree_mois: number | null;
   economie_estimee: number | null;
@@ -30,9 +32,9 @@ function DossiersList() {
     setLoading(true);
     const { data } = await supabase
       .from("dossiers")
-      .select("id,reference,client_nom,statut,capital,duree_mois,economie_estimee,created_at")
+      .select("id,reference,client_nom,statut,type_assurance,capital,duree_mois,economie_estimee,created_at")
       .order("created_at", { ascending: false });
-    setItems(data ?? []);
+    setItems((data ?? []) as Dossier[]);
     setLoading(false);
   };
 
@@ -75,9 +77,9 @@ function DossiersList() {
               <tr>
                 <th className="px-4 py-3">Référence</th>
                 <th className="px-4 py-3">Client</th>
+                <th className="px-4 py-3">Type</th>
                 <th className="px-4 py-3">Statut</th>
-                <th className="px-4 py-3">Capital</th>
-                <th className="px-4 py-3">Économie</th>
+                <th className="px-4 py-3">Capital / valeur</th>
               </tr>
             </thead>
             <tbody>
@@ -89,13 +91,11 @@ function DossiersList() {
                     </Link>
                   </td>
                   <td className="px-4 py-3">{d.client_nom}</td>
+                  <td className="px-4 py-3 text-xs text-ink-muted">{labelForBranche(d.type_assurance)}</td>
                   <td className="px-4 py-3">
                     <StatutBadge s={d.statut} />
                   </td>
                   <td className="px-4 py-3">{d.capital ? `${Number(d.capital).toLocaleString("fr-FR")} €` : "—"}</td>
-                  <td className="px-4 py-3">
-                    {d.economie_estimee ? `${Number(d.economie_estimee).toLocaleString("fr-FR")} €` : "—"}
-                  </td>
                 </tr>
               ))}
             </tbody>
@@ -131,19 +131,16 @@ type ClientOption = {
 };
 
 function NewDossierForm({ onCreated, userId }: { onCreated: () => void; userId: string }) {
+  const [step, setStep] = useState<1 | 2>(1);
+  const [type, setType] = useState<BrancheAssurance>("emprunteur");
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [clientId, setClientId] = useState<string>("");
   const [clientQuery, setClientQuery] = useState("");
-  const [form, setForm] = useState({
-    client_nom: "",
-    client_email: "",
-    client_phone: "",
-    capital: "",
-    duree_mois: "",
-    age: "",
-    fumeur: false,
-    notes: "",
-  });
+  const [clientNom, setClientNom] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
+  const [clientPhone, setClientPhone] = useState("");
+  const [recueil, setRecueil] = useState<Record<string, unknown>>({});
+  const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -168,72 +165,115 @@ function NewDossierForm({ onCreated, userId }: { onCreated: () => void; userId: 
 
   const selectClient = (c: ClientOption) => {
     setClientId(c.id);
-    setForm((f) => ({
-      ...f,
-      client_nom: [c.prenom, c.nom].filter(Boolean).join(" ") || c.nom,
-      client_email: c.email ?? "",
-      client_phone: c.mobile ?? c.telephone ?? "",
-      fumeur: !!c.fumeur,
-    }));
+    setClientNom([c.prenom, c.nom].filter(Boolean).join(" ") || c.nom);
+    setClientEmail(c.email ?? "");
+    setClientPhone(c.mobile ?? c.telephone ?? "");
+    if (type === "emprunteur") setRecueil((r) => ({ ...r, fumeur: !!c.fumeur }));
   };
+
+  const branche = getBranche(type)!;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.client_nom.trim()) {
+    if (!clientNom.trim()) {
       setError("Sélectionnez un client ou saisissez un nom.");
       return;
     }
     setSaving(true);
     setError(null);
-    const capital = Number(form.capital) || 0;
-    const duree_mois = Number(form.duree_mois) || 0;
-    const age = Number(form.age) || 0;
-    let economie = 0;
-    if (capital && duree_mois && age) {
-      try {
-        const est = estimerEconomie({ capital, dureeMois: duree_mois, age, fumeur: form.fumeur });
-        economie = Math.round(est.economieTotale);
-      } catch {
-        // pas de tranche → laisse 0
+
+    // Champs de compat pour emprunteur (pour garder les colonnes existantes utiles)
+    let capital: number | null = null;
+    let duree_mois: number | null = null;
+    let age: number | null = null;
+    let fumeur = false;
+    let economie: number | null = null;
+    if (type === "emprunteur") {
+      capital = Number(recueil.capital) || null;
+      duree_mois = Number(recueil.duree_mois) || null;
+      age = Number(recueil.age) || null;
+      fumeur = !!recueil.fumeur;
+      if (capital && duree_mois && age) {
+        try {
+          const est = estimerEconomie({ capital, dureeMois: duree_mois, age, fumeur });
+          economie = Math.round(est.economieTotale);
+        } catch {
+          // pas de tranche
+        }
       }
     }
-    const { error } = await supabase.from("dossiers").insert({
+
+    const { error: insErr } = await supabase.from("dossiers").insert({
       client_id: clientId || null,
-      client_nom: form.client_nom,
-      client_email: form.client_email || null,
-      client_phone: form.client_phone || null,
-      capital: capital || null,
-      duree_mois: duree_mois || null,
-      age: age || null,
-      fumeur: form.fumeur,
-      notes: form.notes || null,
-      economie_estimee: economie || null,
+      client_nom: clientNom,
+      client_email: clientEmail || null,
+      client_phone: clientPhone || null,
+      type_assurance: type,
+      recueil_besoins: recueil,
+      capital,
+      duree_mois,
+      age,
+      fumeur,
+      notes: notes || null,
+      economie_estimee: economie,
       apporteur_id: userId,
       created_by: userId,
     });
     setSaving(false);
-    if (error) {
-      setError(error.message);
+    if (insErr) {
+      setError(insErr.message);
       return;
     }
     onCreated();
   };
 
-  const Field = (label: string, key: keyof typeof form, type = "text") => (
-    <div>
-      <label className="text-xs font-medium uppercase tracking-wide text-ink-muted">{label}</label>
-      <input
-        type={type}
-        value={String(form[key])}
-        onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-        className="mt-1 w-full rounded-md border border-line bg-background px-3 py-2 text-sm outline-none focus:border-ink"
-      />
-    </div>
-  );
+  if (step === 1) {
+    return (
+      <div className="mt-4 rounded-2xl border border-line bg-surface-elevated p-6">
+        <h2 className="font-serif text-lg">Étape 1 · Type d'assurance</h2>
+        <p className="mt-1 text-sm text-ink-muted">Choisissez la branche concernée pour ce dossier.</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {BRANCHES.map((b) => (
+            <button
+              key={b.value}
+              type="button"
+              onClick={() => setType(b.value)}
+              className={`rounded-2xl border p-4 text-left transition ${
+                type === b.value
+                  ? "border-ink bg-background"
+                  : "border-line bg-background/40 hover:border-ink/40"
+              }`}
+            >
+              <p className="font-medium text-ink">{b.label}</p>
+              <p className="mt-1 text-xs text-ink-muted">{b.description}</p>
+            </button>
+          ))}
+        </div>
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={() => setStep(2)}
+            className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground"
+          >
+            Continuer → Recueil des besoins
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <form onSubmit={submit} className="mt-4 grid gap-4 rounded-2xl border border-line bg-surface-elevated p-6 sm:grid-cols-2">
-      <div className="sm:col-span-2 rounded-xl border border-line bg-background/40 p-4">
+    <form onSubmit={submit} className="mt-4 space-y-6 rounded-2xl border border-line bg-surface-elevated p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-serif text-lg">Étape 2 · Recueil des besoins</h2>
+          <p className="mt-1 text-sm text-ink-muted">{branche.label} — {branche.description}</p>
+        </div>
+        <button type="button" onClick={() => setStep(1)} className="text-xs text-ink-muted underline">
+          ← Changer de branche
+        </button>
+      </div>
+
+      <div className="rounded-xl border border-line bg-background/40 p-4">
         <label className="text-xs font-medium uppercase tracking-wide text-ink-muted">
           Client existant
         </label>
@@ -249,9 +289,7 @@ function NewDossierForm({ onCreated, userId }: { onCreated: () => void; userId: 
             onChange={(e) => {
               const c = clients.find((x) => x.id === e.target.value);
               if (c) selectClient(c);
-              else {
-                setClientId("");
-              }
+              else setClientId("");
             }}
             className="rounded-md border border-line bg-background px-3 py-2 text-sm sm:w-72"
           >
@@ -264,32 +302,36 @@ function NewDossierForm({ onCreated, userId }: { onCreated: () => void; userId: 
             ))}
           </select>
         </div>
-        <p className="mt-2 text-xs text-ink-muted">
-          Ou renseignez les informations manuellement ci-dessous.
-        </p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <TextInput label="Nom du client" value={clientNom} onChange={setClientNom} />
+          <TextInput label="Email" value={clientEmail} onChange={setClientEmail} type="email" />
+          <TextInput label="Téléphone" value={clientPhone} onChange={setClientPhone} />
+        </div>
       </div>
 
-      {Field("Nom du client", "client_nom")}
-      {Field("Email", "client_email", "email")}
-      {Field("Téléphone", "client_phone")}
-      {Field("Capital emprunté (€)", "capital", "number")}
-      {Field("Durée (mois)", "duree_mois", "number")}
-      {Field("Âge", "age", "number")}
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={form.fumeur} onChange={(e) => setForm({ ...form, fumeur: e.target.checked })} />
-        Fumeur
-      </label>
-      <div className="sm:col-span-2">
-        <label className="text-xs font-medium uppercase tracking-wide text-ink-muted">Notes</label>
+      {branche.sections.map((section) => (
+        <div key={section.title}>
+          <h3 className="text-sm font-medium uppercase tracking-wide text-ink-muted">{section.title}</h3>
+          <div className="mt-2 grid gap-3 sm:grid-cols-2">
+            {section.fields.map((f) => (
+              <RecueilField key={f.key} field={f} value={recueil[f.key]} onChange={(v) => setRecueil({ ...recueil, [f.key]: v })} />
+            ))}
+          </div>
+        </div>
+      ))}
+
+      <div>
+        <label className="text-xs font-medium uppercase tracking-wide text-ink-muted">Notes internes</label>
         <textarea
-          value={form.notes}
-          onChange={(e) => setForm({ ...form, notes: e.target.value })}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
           rows={3}
           className="mt-1 w-full rounded-md border border-line bg-background px-3 py-2 text-sm outline-none focus:border-ink"
         />
       </div>
-      {error && <p className="sm:col-span-2 text-sm text-destructive">{error}</p>}
-      <div className="sm:col-span-2">
+
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      <div className="flex justify-end">
         <button
           type="submit"
           disabled={saving}
@@ -299,5 +341,74 @@ function NewDossierForm({ onCreated, userId }: { onCreated: () => void; userId: 
         </button>
       </div>
     </form>
+  );
+}
+
+function TextInput({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
+  return (
+    <label className="block">
+      <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">{label}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 w-full rounded-md border border-line bg-background px-3 py-2 text-sm outline-none focus:border-ink"
+      />
+    </label>
+  );
+}
+
+export function RecueilField({
+  field,
+  value,
+  onChange,
+}: {
+  field: FieldConfig;
+  value: unknown;
+  onChange: (v: unknown) => void;
+}) {
+  const cls = "mt-1 w-full rounded-md border border-line bg-background px-3 py-2 text-sm outline-none focus:border-ink";
+  if (field.type === "checkbox") {
+    return (
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={!!value} onChange={(e) => onChange(e.target.checked)} />
+        <span>{field.label}</span>
+      </label>
+    );
+  }
+  if (field.type === "textarea") {
+    return (
+      <label className="block sm:col-span-2">
+        <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">{field.label}</span>
+        <textarea rows={3} value={(value as string) ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={field.placeholder} className={cls} />
+      </label>
+    );
+  }
+  if (field.type === "select") {
+    return (
+      <label className="block">
+        <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">{field.label}</span>
+        <select value={(value as string) ?? ""} onChange={(e) => onChange(e.target.value)} className={cls}>
+          <option value="">—</option>
+          {field.options?.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      </label>
+    );
+  }
+  return (
+    <label className="block">
+      <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+        {field.label}{field.suffix ? ` (${field.suffix})` : ""}
+      </span>
+      <input
+        type={field.type === "number" ? "number" : "text"}
+        value={(value as string | number | undefined) ?? ""}
+        onChange={(e) => onChange(field.type === "number" ? (e.target.value === "" ? "" : Number(e.target.value)) : e.target.value)}
+        placeholder={field.placeholder}
+        className={cls}
+      />
+    </label>
   );
 }
