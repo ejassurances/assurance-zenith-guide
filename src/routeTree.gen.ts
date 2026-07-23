@@ -28,6 +28,7 @@ import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
 import { Route as ApiPublicBootstrapAdminRouteImport } from './routes/api/public/bootstrap-admin'
 import { Route as AuthenticatedEspaceUtilisateursRouteImport } from './routes/_authenticated/espace.utilisateurs'
 import { Route as AuthenticatedEspaceTachesRouteImport } from './routes/_authenticated/espace.taches'
+import { Route as AuthenticatedEspaceSignerLettreMissionRouteImport } from './routes/_authenticated/espace.signer-lettre-mission'
 import { Route as AuthenticatedEspaceSignerDerRouteImport } from './routes/_authenticated/espace.signer-der'
 import { Route as AuthenticatedEspaceParametresRouteImport } from './routes/_authenticated/espace.parametres'
 import { Route as AuthenticatedEspaceDerModeleRouteImport } from './routes/_authenticated/espace.der-modele'
@@ -142,6 +143,12 @@ const AuthenticatedEspaceTachesRoute =
   AuthenticatedEspaceTachesRouteImport.update({
     id: '/taches',
     path: '/taches',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
+const AuthenticatedEspaceSignerLettreMissionRoute =
+  AuthenticatedEspaceSignerLettreMissionRouteImport.update({
+    id: '/signer-lettre-mission',
+    path: '/signer-lettre-mission',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
 const AuthenticatedEspaceSignerDerRoute =
@@ -266,6 +273,7 @@ export interface FileRoutesByFullPath {
   '/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
+  '/espace/signer-lettre-mission': typeof AuthenticatedEspaceSignerLettreMissionRoute
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
@@ -302,6 +310,7 @@ export interface FileRoutesByTo {
   '/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
+  '/espace/signer-lettre-mission': typeof AuthenticatedEspaceSignerLettreMissionRoute
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
@@ -341,6 +350,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
   '/_authenticated/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/_authenticated/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
+  '/_authenticated/espace/signer-lettre-mission': typeof AuthenticatedEspaceSignerLettreMissionRoute
   '/_authenticated/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/_authenticated/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
@@ -380,6 +390,7 @@ export interface FileRouteTypes {
     | '/espace/der-modele'
     | '/espace/parametres'
     | '/espace/signer-der'
+    | '/espace/signer-lettre-mission'
     | '/espace/taches'
     | '/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
@@ -416,6 +427,7 @@ export interface FileRouteTypes {
     | '/espace/der-modele'
     | '/espace/parametres'
     | '/espace/signer-der'
+    | '/espace/signer-lettre-mission'
     | '/espace/taches'
     | '/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
@@ -454,6 +466,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/der-modele'
     | '/_authenticated/espace/parametres'
     | '/_authenticated/espace/signer-der'
+    | '/_authenticated/espace/signer-lettre-mission'
     | '/_authenticated/espace/taches'
     | '/_authenticated/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
@@ -627,6 +640,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceTachesRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/signer-lettre-mission': {
+      id: '/_authenticated/espace/signer-lettre-mission'
+      path: '/signer-lettre-mission'
+      fullPath: '/espace/signer-lettre-mission'
+      preLoaderRoute: typeof AuthenticatedEspaceSignerLettreMissionRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
     '/_authenticated/espace/signer-der': {
       id: '/_authenticated/espace/signer-der'
       path: '/signer-der'
@@ -757,6 +777,7 @@ interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceDerModeleRoute: typeof AuthenticatedEspaceDerModeleRoute
   AuthenticatedEspaceParametresRoute: typeof AuthenticatedEspaceParametresRoute
   AuthenticatedEspaceSignerDerRoute: typeof AuthenticatedEspaceSignerDerRoute
+  AuthenticatedEspaceSignerLettreMissionRoute: typeof AuthenticatedEspaceSignerLettreMissionRoute
   AuthenticatedEspaceTachesRoute: typeof AuthenticatedEspaceTachesRoute
   AuthenticatedEspaceUtilisateursRoute: typeof AuthenticatedEspaceUtilisateursRoute
   AuthenticatedEspaceIndexRoute: typeof AuthenticatedEspaceIndexRoute
@@ -777,6 +798,8 @@ const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
   AuthenticatedEspaceDerModeleRoute: AuthenticatedEspaceDerModeleRoute,
   AuthenticatedEspaceParametresRoute: AuthenticatedEspaceParametresRoute,
   AuthenticatedEspaceSignerDerRoute: AuthenticatedEspaceSignerDerRoute,
+  AuthenticatedEspaceSignerLettreMissionRoute:
+    AuthenticatedEspaceSignerLettreMissionRoute,
   AuthenticatedEspaceTachesRoute: AuthenticatedEspaceTachesRoute,
   AuthenticatedEspaceUtilisateursRoute: AuthenticatedEspaceUtilisateursRoute,
   AuthenticatedEspaceIndexRoute: AuthenticatedEspaceIndexRoute,
@@ -827,13 +850,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

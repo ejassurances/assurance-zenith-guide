@@ -1336,8 +1336,10 @@ export type Database = {
           fumeur: boolean | null
           id: string
           notes: string | null
+          recueil_besoins: Json | null
           reference: string
           statut: Database["public"]["Enums"]["dossier_statut"]
+          type_assurance: string
           updated_at: string
         }
         Insert: {
@@ -1355,8 +1357,10 @@ export type Database = {
           fumeur?: boolean | null
           id?: string
           notes?: string | null
+          recueil_besoins?: Json | null
           reference?: string
           statut?: Database["public"]["Enums"]["dossier_statut"]
+          type_assurance?: string
           updated_at?: string
         }
         Update: {
@@ -1374,8 +1378,10 @@ export type Database = {
           fumeur?: boolean | null
           id?: string
           notes?: string | null
+          recueil_besoins?: Json | null
           reference?: string
           statut?: Database["public"]["Enums"]["dossier_statut"]
+          type_assurance?: string
           updated_at?: string
         }
         Relationships: []
@@ -1575,6 +1581,81 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "plan_comptable"
             referencedColumns: ["numero"]
+          },
+        ]
+      }
+      lettres_mission: {
+        Row: {
+          client_id: string | null
+          contenu: Json
+          created_at: string
+          created_by: string | null
+          document_hash: string | null
+          dossier_id: string
+          email_destinataire: string | null
+          envoye_le: string | null
+          envoye_par: string | null
+          id: string
+          signature_png: string | null
+          signed_at: string | null
+          signed_ip: string | null
+          signed_ua: string | null
+          statut: string
+          type_assurance: string
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          contenu: Json
+          created_at?: string
+          created_by?: string | null
+          document_hash?: string | null
+          dossier_id: string
+          email_destinataire?: string | null
+          envoye_le?: string | null
+          envoye_par?: string | null
+          id?: string
+          signature_png?: string | null
+          signed_at?: string | null
+          signed_ip?: string | null
+          signed_ua?: string | null
+          statut?: string
+          type_assurance: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          contenu?: Json
+          created_at?: string
+          created_by?: string | null
+          document_hash?: string | null
+          dossier_id?: string
+          email_destinataire?: string | null
+          envoye_le?: string | null
+          envoye_par?: string | null
+          id?: string
+          signature_png?: string | null
+          signed_at?: string | null
+          signed_ip?: string | null
+          signed_ua?: string | null
+          statut?: string
+          type_assurance?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lettres_mission_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lettres_mission_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
           },
         ]
       }

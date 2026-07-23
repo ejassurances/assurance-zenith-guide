@@ -1,7 +1,10 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { creerEtEnvoyerLettreMission } from "@/lib/lettres-mission.functions";
+import { getBranche, labelForBranche } from "@/lib/recueil-besoins-schemas";
 
 export const Route = createFileRoute("/_authenticated/espace/dossiers/$id")({
   component: DossierDetail,
@@ -10,10 +13,13 @@ export const Route = createFileRoute("/_authenticated/espace/dossiers/$id")({
 type Dossier = {
   id: string;
   reference: string;
+  client_id: string | null;
   client_nom: string;
   client_email: string | null;
   client_phone: string | null;
   statut: "nouveau" | "en_cours" | "signe" | "perdu";
+  type_assurance: string;
+  recueil_besoins: Record<string, unknown> | null;
   capital: number | null;
   duree_mois: number | null;
   age: number | null;
@@ -60,8 +66,13 @@ function DossierDetail() {
           ← Retour aux dossiers
         </Link>
         <h1 className="mt-2 font-serif text-3xl font-medium text-ink">{dossier.client_nom}</h1>
-        <p className="mt-1 text-sm text-ink-muted">Référence {dossier.reference}</p>
+        <p className="mt-1 text-sm text-ink-muted">
+          Référence {dossier.reference} · {labelForBranche(dossier.type_assurance)}
+        </p>
       </div>
+
+      <RecueilPanel dossier={dossier} />
+      {canEdit && <LettreMissionPanel dossierId={id} clientEmail={dossier.client_email} />}
 
       <div className="grid gap-6 md:grid-cols-2">
         <Section title="Informations client">
@@ -326,6 +337,130 @@ function DocumentsPanel({ dossierId, userId }: { dossierId: string; userId: stri
           </li>
         ))}
       </ul>
+    </Section>
+  );
+}
+
+function RecueilPanel({ dossier }: { dossier: Dossier }) {
+  const branche = getBranche(dossier.type_assurance);
+  const r = dossier.recueil_besoins ?? {};
+  if (!branche) return null;
+  return (
+    <Section title={`Recueil des besoins — ${branche.label}`}>
+      {branche.sections.map((s) => {
+        const rows = s.fields
+          .map((f) => {
+            const v = (r as Record<string, unknown>)[f.key];
+            if (v === undefined || v === null || v === "" || v === false) return null;
+            const val = typeof v === "boolean" ? "Oui" : String(v);
+            return (
+              <div key={f.key} className="flex justify-between gap-4 border-b border-line py-1 text-sm">
+                <span className="text-ink-muted">{f.label}</span>
+                <span className="text-right font-medium">{val}</span>
+              </div>
+            );
+          })
+          .filter(Boolean);
+        if (rows.length === 0) return null;
+        return (
+          <div key={s.title} className="mt-3">
+            <p className="text-xs uppercase tracking-wide text-ink-muted">{s.title}</p>
+            <div className="mt-1">{rows}</div>
+          </div>
+        );
+      })}
+    </Section>
+  );
+}
+
+type LettreRow = {
+  id: string;
+  statut: string;
+  envoye_le: string | null;
+  signed_at: string | null;
+  email_destinataire: string | null;
+};
+
+function LettreMissionPanel({ dossierId, clientEmail }: { dossierId: string; clientEmail: string | null }) {
+  const envoyer = useServerFn(creerEtEnvoyerLettreMission);
+  const [lettre, setLettre] = useState<LettreRow | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const load = async () => {
+    const { data } = await supabase
+      .from("lettres_mission")
+      .select("id, statut, envoye_le, signed_at, email_destinataire")
+      .eq("dossier_id", dossierId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setLettre((data as LettreRow | null) ?? null);
+  };
+
+  useEffect(() => {
+    load();
+  }, [dossierId]);
+
+  const onSend = async () => {
+    setBusy(true);
+    setMsg(null);
+    try {
+      await envoyer({ data: { dossier_id: dossierId } });
+      setMsg("Lettre de mission envoyée au client.");
+      await load();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Erreur");
+    }
+    setBusy(false);
+  };
+
+  const badge =
+    lettre?.statut === "signee"
+      ? "bg-emerald-100 text-emerald-900"
+      : lettre?.statut === "envoyee"
+      ? "bg-amber-100 text-amber-900"
+      : "bg-surface text-ink-soft";
+
+  return (
+    <Section title="Lettre de mission">
+      {lettre ? (
+        <div className="space-y-1 text-sm">
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${badge}`}>
+              {lettre.statut === "signee" ? "Signée" : lettre.statut === "envoyee" ? "Envoyée · en attente de signature" : lettre.statut}
+            </span>
+          </div>
+          {lettre.envoye_le && (
+            <p className="text-xs text-ink-muted">
+              Envoyée le {new Date(lettre.envoye_le).toLocaleString("fr-FR")} à {lettre.email_destinataire}
+            </p>
+          )}
+          {lettre.signed_at && (
+            <p className="text-xs text-emerald-800">
+              Signée le {new Date(lettre.signed_at).toLocaleString("fr-FR")}
+            </p>
+          )}
+        </div>
+      ) : (
+        <p className="text-sm text-ink-muted">Aucune lettre de mission générée pour ce dossier.</p>
+      )}
+
+      {lettre?.statut !== "signee" && (
+        <div className="mt-3">
+          <button
+            onClick={onSend}
+            disabled={busy || !clientEmail}
+            className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-40"
+          >
+            {busy ? "Envoi…" : lettre ? "Renvoyer la lettre de mission" : "Générer et envoyer la lettre de mission"}
+          </button>
+          {!clientEmail && (
+            <p className="mt-2 text-xs text-destructive">Renseignez un email client pour pouvoir envoyer.</p>
+          )}
+          {msg && <p className="mt-2 text-xs text-ink-muted">{msg}</p>}
+        </div>
+      )}
     </Section>
   );
 }
