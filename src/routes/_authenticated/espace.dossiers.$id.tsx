@@ -1,7 +1,10 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { creerEtEnvoyerLettreMission } from "@/lib/lettres-mission.functions";
+import { getBranche, labelForBranche } from "@/lib/recueil-besoins-schemas";
 
 export const Route = createFileRoute("/_authenticated/espace/dossiers/$id")({
   component: DossierDetail,
@@ -10,10 +13,13 @@ export const Route = createFileRoute("/_authenticated/espace/dossiers/$id")({
 type Dossier = {
   id: string;
   reference: string;
+  client_id: string | null;
   client_nom: string;
   client_email: string | null;
   client_phone: string | null;
   statut: "nouveau" | "en_cours" | "signe" | "perdu";
+  type_assurance: string;
+  recueil_besoins: Record<string, unknown> | null;
   capital: number | null;
   duree_mois: number | null;
   age: number | null;
@@ -60,8 +66,13 @@ function DossierDetail() {
           ← Retour aux dossiers
         </Link>
         <h1 className="mt-2 font-serif text-3xl font-medium text-ink">{dossier.client_nom}</h1>
-        <p className="mt-1 text-sm text-ink-muted">Référence {dossier.reference}</p>
+        <p className="mt-1 text-sm text-ink-muted">
+          Référence {dossier.reference} · {labelForBranche(dossier.type_assurance)}
+        </p>
       </div>
+
+      <RecueilPanel dossier={dossier} />
+      {canEdit && <LettreMissionPanel dossierId={id} clientEmail={dossier.client_email} />}
 
       <div className="grid gap-6 md:grid-cols-2">
         <Section title="Informations client">
