@@ -32,8 +32,8 @@ export const creerEtEnvoyerLettreMission = createServerFn({ method: "POST" })
         shortName: SITE.shortName,
         siret: SITE.siret,
         orias: SITE.orias,
-        adresse: SITE.adresse,
-        telephone: SITE.telephone,
+        adresse: SITE.address,
+        telephone: SITE.phone,
         email: SITE.email,
       },
       client: {
