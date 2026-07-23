@@ -6,6 +6,7 @@ import { FamilleTab, EntrepriseTab, EquipementsTab } from "@/components/client-3
 import { ContratsTab } from "@/components/contrats-tab";
 import { DerTab } from "@/components/der-tab";
 import { ConformiteClientTab } from "@/components/conformite-client-tab";
+import { NewDossierForm } from "@/routes/_authenticated/espace.dossiers.index";
 
 export const Route = createFileRoute("/_authenticated/espace/clients/$id")({
   component: ClientDetail,
@@ -86,7 +87,18 @@ type Doc = {
   created_at: string;
 };
 
-type Tab = "identite" | "famille" | "entreprise" | "equipements" | "contrats" | "taches" | "historique" | "documents" | "dossiers" | "der" | "conformite";
+type Tab =
+  | "identite"
+  | "famille"
+  | "entreprise"
+  | "equipements"
+  | "contrats"
+  | "taches"
+  | "historique"
+  | "documents"
+  | "dossiers"
+  | "der"
+  | "conformite";
 
 function ClientDetail() {
   const { id } = Route.useParams();
@@ -177,7 +189,9 @@ function ClientDetail() {
         {tab === "documents" && <DocumentsTab clientId={client.id} canEdit={canEdit} />}
         {tab === "dossiers" && <DossiersTab client={client} />}
         {tab === "der" && <DerTab clientId={client.id} clientEmail={client.email} />}
-        {tab === "conformite" && <ConformiteClientTab clientId={client.id} clientEmail={client.email} canEdit={canEdit} />}
+        {tab === "conformite" && (
+          <ConformiteClientTab clientId={client.id} clientEmail={client.email} canEdit={canEdit} />
+        )}
       </div>
     </div>
   );
@@ -195,8 +209,13 @@ function IdentiteTab({ client, canEdit, onSaved }: { client: Client; canEdit: bo
   const save = async () => {
     setSaving(true);
     const { id, reference, created_at, ...rest } = form;
-    void id; void reference; void created_at;
-    const { error } = await supabase.from("clients").update(rest as never).eq("id", client.id);
+    void id;
+    void reference;
+    void created_at;
+    const { error } = await supabase
+      .from("clients")
+      .update(rest as never)
+      .eq("id", client.id);
     setSaving(false);
     if (!error) {
       setEditing(false);
@@ -421,11 +440,7 @@ function IdentiteTab({ client, canEdit, onSaved }: { client: Client; canEdit: bo
 
       <Section title="PPE (personne politiquement exposée)">
         <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={!!form.ppe}
-            onChange={(e) => setForm({ ...form, ppe: e.target.checked })}
-          />
+          <input type="checkbox" checked={!!form.ppe} onChange={(e) => setForm({ ...form, ppe: e.target.checked })} />
           Personne politiquement exposée
         </label>
         {form.ppe && (
@@ -467,7 +482,15 @@ function IdentiteTab({ client, canEdit, onSaved }: { client: Client; canEdit: bo
   );
 }
 
-function Section({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
+function Section({
+  title,
+  children,
+  className = "",
+}: {
+  title: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <div className={"rounded-2xl border border-line bg-surface-elevated p-5 " + className}>
       <h3 className="font-serif text-base font-medium text-ink">{title}</h3>
@@ -537,7 +560,10 @@ function TachesTab({ clientId, canEdit }: { clientId: string; canEdit: boolean }
         </button>
       )}
       {showForm && (
-        <form onSubmit={submit} className="mt-4 grid gap-3 rounded-2xl border border-line bg-surface-elevated p-5 sm:grid-cols-2">
+        <form
+          onSubmit={submit}
+          className="mt-4 grid gap-3 rounded-2xl border border-line bg-surface-elevated p-5 sm:grid-cols-2"
+        >
           <input
             required
             placeholder="Titre *"
@@ -580,20 +606,21 @@ function TachesTab({ clientId, canEdit }: { clientId: string; canEdit: boolean }
         ) : (
           items.map((t) => (
             <div key={t.id} className="flex items-start gap-3 rounded-xl border border-line bg-surface-elevated p-4">
-              <input
-                type="checkbox"
-                checked={t.statut === "terminee"}
-                onChange={() => toggle(t)}
-                className="mt-1"
-              />
+              <input type="checkbox" checked={t.statut === "terminee"} onChange={() => toggle(t)} className="mt-1" />
               <div className="flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <p className={"text-sm font-medium " + (t.statut === "terminee" ? "text-ink-muted line-through" : "text-ink")}>
+                  <p
+                    className={
+                      "text-sm font-medium " + (t.statut === "terminee" ? "text-ink-muted line-through" : "text-ink")
+                    }
+                  >
                     {t.titre}
                   </p>
                   <div className="flex items-center gap-2 text-xs">
                     <span className="rounded-full border border-line px-2 py-0.5">{t.priorite}</span>
-                    {t.echeance && <span className="text-ink-muted">{new Date(t.echeance).toLocaleDateString("fr-FR")}</span>}
+                    {t.echeance && (
+                      <span className="text-ink-muted">{new Date(t.echeance).toLocaleDateString("fr-FR")}</span>
+                    )}
                   </div>
                 </div>
                 {t.description && <p className="mt-1 text-sm text-ink-soft">{t.description}</p>}
@@ -639,7 +666,10 @@ function HistoriqueTab({ clientId }: { clientId: string }) {
 
   return (
     <div>
-      <form onSubmit={submit} className="grid gap-3 rounded-2xl border border-line bg-surface-elevated p-5 sm:grid-cols-[160px_1fr]">
+      <form
+        onSubmit={submit}
+        className="grid gap-3 rounded-2xl border border-line bg-surface-elevated p-5 sm:grid-cols-[160px_1fr]"
+      >
         <select
           value={form.type}
           onChange={(e) => setForm({ ...form, type: e.target.value })}
@@ -849,39 +879,22 @@ function DossiersTab({ client }: { client: Client }) {
       )}
 
       {showForm && canCreate && (
-        <form onSubmit={submit} className="mb-6 grid gap-3 rounded-2xl border border-line bg-surface-elevated p-5 sm:grid-cols-2">
-          <label className="block">
-            <span className="text-xs uppercase tracking-wide text-ink-muted">Capital (€)</span>
-            <input type="number" value={form.capital} onChange={(e) => setForm({ ...form, capital: e.target.value })}
-              className="mt-1 w-full rounded-md border border-line bg-background px-3 py-2 text-sm" />
-          </label>
-          <label className="block">
-            <span className="text-xs uppercase tracking-wide text-ink-muted">Durée (mois)</span>
-            <input type="number" value={form.duree_mois} onChange={(e) => setForm({ ...form, duree_mois: e.target.value })}
-              className="mt-1 w-full rounded-md border border-line bg-background px-3 py-2 text-sm" />
-          </label>
-          <label className="block">
-            <span className="text-xs uppercase tracking-wide text-ink-muted">Âge</span>
-            <input type="number" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })}
-              className="mt-1 w-full rounded-md border border-line bg-background px-3 py-2 text-sm" />
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={form.fumeur} onChange={(e) => setForm({ ...form, fumeur: e.target.checked })} />
-            Fumeur
-          </label>
-          <label className="block sm:col-span-2">
-            <span className="text-xs uppercase tracking-wide text-ink-muted">Notes</span>
-            <textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              className="mt-1 w-full rounded-md border border-line bg-background px-3 py-2 text-sm" />
-          </label>
-          {error && <p className="sm:col-span-2 text-sm text-destructive">{error}</p>}
-          <div className="sm:col-span-2">
-            <button type="submit" disabled={saving}
-              className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
-              {saving ? "Enregistrement…" : "Créer le dossier"}
-            </button>
-          </div>
-        </form>
+        <NewDossierForm
+          userId={user!.id}
+          onCreated={() => {
+            setShowForm(false);
+            load();
+          }}
+          presetClient={{
+            id: client.id,
+            prenom: client.prenom,
+            nom: client.nom,
+            email: client.email,
+            mobile: client.mobile,
+            telephone: client.telephone,
+            fumeur: client.fumeur,
+          }}
+        />
       )}
 
       {items.length === 0 ? (
