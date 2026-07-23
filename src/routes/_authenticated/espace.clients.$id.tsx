@@ -805,9 +805,6 @@ function DossiersTab({ client }: { client: Client }) {
   const canCreate = role === "admin" || role === "mandataire" || role === "prescripteur";
   const [items, setItems] = useState<Dossier[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ capital: "", duree_mois: "", age: "", fumeur: !!client.fumeur, notes: "" });
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
     const filters: string[] = [`client_id.eq.${client.id}`];
@@ -824,48 +821,6 @@ function DossiersTab({ client }: { client: Client }) {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client.id]);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-    setSaving(true);
-    setError(null);
-    const capital = Number(form.capital) || 0;
-    const duree_mois = Number(form.duree_mois) || 0;
-    const age = Number(form.age) || 0;
-    let economie = 0;
-    if (capital && duree_mois && age) {
-      try {
-        const { estimerEconomie } = await import("@/lib/insurance-rates");
-        const est = estimerEconomie({ capital, dureeMois: duree_mois, age, fumeur: form.fumeur });
-        economie = Math.round(est.economieTotale);
-      } catch {
-        // pas de tranche
-      }
-    }
-    const { error } = await supabase.from("dossiers").insert({
-      client_id: client.id,
-      client_nom: [client.prenom, client.nom].filter(Boolean).join(" ") || client.nom,
-      client_email: client.email,
-      client_phone: client.mobile ?? client.telephone,
-      capital: capital || null,
-      duree_mois: duree_mois || null,
-      age: age || null,
-      fumeur: form.fumeur,
-      notes: form.notes || null,
-      economie_estimee: economie || null,
-      apporteur_id: user.id,
-      created_by: user.id,
-    });
-    setSaving(false);
-    if (error) {
-      setError(error.message);
-      return;
-    }
-    setShowForm(false);
-    setForm({ capital: "", duree_mois: "", age: "", fumeur: !!client.fumeur, notes: "" });
-    load();
-  };
 
   return (
     <div>
