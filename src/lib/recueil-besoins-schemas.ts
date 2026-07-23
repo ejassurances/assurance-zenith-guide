@@ -1,7 +1,7 @@
 // Configuration du recueil des besoins par branche d'assurance.
 // Chaque champ est stocké dans dossiers.recueil_besoins (jsonb) sous sa clé.
 
-export type BrancheAssurance = "emprunteur" | "prevoyance_sante" | "epargne_retraite" | "iard";
+export type BrancheAssurance = "emprunteur" | "prevoyance_sante" | "epargne_retraite" | "iard" | "trottinette";
 
 export type FieldType = "text" | "number" | "textarea" | "select" | "checkbox";
 
@@ -33,12 +33,17 @@ export const BRANCHES: BrancheConfig[] = [
         title: "Le prêt",
         fields: [
           { key: "banque", label: "Banque prêteuse", type: "text", placeholder: "Ex : Crédit Agricole" },
-          { key: "objet_pret", label: "Objet du prêt", type: "select", options: [
-            { value: "residence_principale", label: "Résidence principale" },
-            { value: "residence_secondaire", label: "Résidence secondaire" },
-            { value: "investissement_locatif", label: "Investissement locatif" },
-            { value: "professionnel", label: "Prêt professionnel" },
-          ] },
+          {
+            key: "objet_pret",
+            label: "Objet du prêt",
+            type: "select",
+            options: [
+              { value: "residence_principale", label: "Résidence principale" },
+              { value: "residence_secondaire", label: "Résidence secondaire" },
+              { value: "investissement_locatif", label: "Investissement locatif" },
+              { value: "professionnel", label: "Prêt professionnel" },
+            ],
+          },
           { key: "capital", label: "Capital emprunté", type: "number", suffix: "€", required: true },
           { key: "duree_mois", label: "Durée restante", type: "number", suffix: "mois", required: true },
           { key: "taux_pret", label: "Taux nominal du prêt", type: "number", suffix: "%" },
@@ -49,30 +54,50 @@ export const BRANCHES: BrancheConfig[] = [
         title: "Assuré principal",
         fields: [
           { key: "age", label: "Âge de l'assuré", type: "number", required: true },
-          { key: "csp", label: "Catégorie socio-professionnelle", type: "select", options: [
-            { value: "cadre", label: "Cadre" },
-            { value: "employe", label: "Employé" },
-            { value: "artisan", label: "Artisan / commerçant" },
-            { value: "profession_liberale", label: "Profession libérale" },
-            { value: "tns", label: "TNS" },
-            { value: "fonctionnaire", label: "Fonctionnaire" },
-            { value: "retraite", label: "Retraité" },
-            { value: "sans_activite", label: "Sans activité" },
-          ] },
+          {
+            key: "csp",
+            label: "Catégorie socio-professionnelle",
+            type: "select",
+            options: [
+              { value: "cadre", label: "Cadre" },
+              { value: "employe", label: "Employé" },
+              { value: "artisan", label: "Artisan / commerçant" },
+              { value: "profession_liberale", label: "Profession libérale" },
+              { value: "tns", label: "TNS" },
+              { value: "fonctionnaire", label: "Fonctionnaire" },
+              { value: "retraite", label: "Retraité" },
+              { value: "sans_activite", label: "Sans activité" },
+            ],
+          },
           { key: "fumeur", label: "Fumeur (ou vapoteur)", type: "checkbox" },
-          { key: "sports_risque", label: "Sports à risque pratiqués", type: "text", placeholder: "Aucun / Moto / Alpinisme…" },
+          {
+            key: "sports_risque",
+            label: "Sports à risque pratiqués",
+            type: "text",
+            placeholder: "Aucun / Moto / Alpinisme…",
+          },
           { key: "antecedents_sante", label: "Antécédents de santé notables", type: "textarea" },
         ],
       },
       {
         title: "Besoins & attentes",
         fields: [
-          { key: "priorite", label: "Priorité", type: "select", options: [
-            { value: "economies", label: "Réduire le coût de l'assurance" },
-            { value: "garanties", label: "Améliorer les garanties" },
-            { value: "equilibre", label: "Trouver un équilibre coût / garanties" },
-          ] },
-          { key: "garanties_souhaitees", label: "Garanties souhaitées", type: "textarea", placeholder: "Décès, PTIA, IPT, ITT, IPP, exonération dos/psy…" },
+          {
+            key: "priorite",
+            label: "Priorité",
+            type: "select",
+            options: [
+              { value: "economies", label: "Réduire le coût de l'assurance" },
+              { value: "garanties", label: "Améliorer les garanties" },
+              { value: "equilibre", label: "Trouver un équilibre coût / garanties" },
+            ],
+          },
+          {
+            key: "garanties_souhaitees",
+            label: "Garanties souhaitées",
+            type: "textarea",
+            placeholder: "Décès, PTIA, IPT, ITT, IPP, exonération dos/psy…",
+          },
         ],
       },
     ],
@@ -85,15 +110,25 @@ export const BRANCHES: BrancheConfig[] = [
       {
         title: "Situation",
         fields: [
-          { key: "regime_social", label: "Régime social", type: "select", options: [
-            { value: "salarie", label: "Salarié" },
-            { value: "tns", label: "Travailleur non salarié (TNS)" },
-            { value: "fonctionnaire", label: "Fonctionnaire" },
-            { value: "profession_liberale", label: "Profession libérale" },
-            { value: "retraite", label: "Retraité" },
-            { value: "autre", label: "Autre" },
-          ] },
-          { key: "composition_foyer", label: "Composition du foyer", type: "text", placeholder: "Ex : couple + 2 enfants" },
+          {
+            key: "regime_social",
+            label: "Régime social",
+            type: "select",
+            options: [
+              { value: "salarie", label: "Salarié" },
+              { value: "tns", label: "Travailleur non salarié (TNS)" },
+              { value: "fonctionnaire", label: "Fonctionnaire" },
+              { value: "profession_liberale", label: "Profession libérale" },
+              { value: "retraite", label: "Retraité" },
+              { value: "autre", label: "Autre" },
+            ],
+          },
+          {
+            key: "composition_foyer",
+            label: "Composition du foyer",
+            type: "text",
+            placeholder: "Ex : couple + 2 enfants",
+          },
           { key: "revenus_annuels", label: "Revenus nets annuels du foyer", type: "number", suffix: "€" },
           { key: "budget_mensuel", label: "Budget mensuel envisagé", type: "number", suffix: "€/mois" },
         ],
@@ -101,7 +136,12 @@ export const BRANCHES: BrancheConfig[] = [
       {
         title: "Couvertures actuelles",
         fields: [
-          { key: "prevoyance_actuelle", label: "Prévoyance en place", type: "textarea", placeholder: "Contrats existants (compagnie, garanties)" },
+          {
+            key: "prevoyance_actuelle",
+            label: "Prévoyance en place",
+            type: "textarea",
+            placeholder: "Contrats existants (compagnie, garanties)",
+          },
           { key: "sante_actuelle", label: "Complémentaire santé en place", type: "textarea" },
         ],
       },
@@ -136,28 +176,36 @@ export const BRANCHES: BrancheConfig[] = [
       {
         title: "Projet",
         fields: [
-          { key: "objectif", label: "Objectif principal", type: "select", options: [
-            { value: "retraite", label: "Préparer la retraite" },
-            { value: "transmission", label: "Transmission / succession" },
-            { value: "projet", label: "Financer un projet à moyen terme" },
-            { value: "defiscalisation", label: "Défiscaliser" },
-            { value: "epargne_precaution", label: "Épargne de précaution" },
-          ] },
+          {
+            key: "objectif",
+            label: "Objectif principal",
+            type: "select",
+            options: [
+              { value: "retraite", label: "Préparer la retraite" },
+              { value: "transmission", label: "Transmission / succession" },
+              { value: "projet", label: "Financer un projet à moyen terme" },
+              { value: "defiscalisation", label: "Défiscaliser" },
+              { value: "epargne_precaution", label: "Épargne de précaution" },
+            ],
+          },
           { key: "horizon_ans", label: "Horizon de placement", type: "number", suffix: "ans" },
-          { key: "profil_risque", label: "Profil de risque", type: "select", options: [
-            { value: "prudent", label: "Prudent (capital garanti)" },
-            { value: "equilibre", label: "Équilibré" },
-            { value: "dynamique", label: "Dynamique" },
-          ] },
+          {
+            key: "profil_risque",
+            label: "Profil de risque",
+            type: "select",
+            options: [
+              { value: "prudent", label: "Prudent (capital garanti)" },
+              { value: "equilibre", label: "Équilibré" },
+              { value: "dynamique", label: "Dynamique" },
+            ],
+          },
           { key: "montant_initial", label: "Versement initial envisagé", type: "number", suffix: "€" },
           { key: "versements_mensuels", label: "Versements réguliers envisagés", type: "number", suffix: "€/mois" },
         ],
       },
       {
         title: "Attentes",
-        fields: [
-          { key: "attentes", label: "Précisions / attentes particulières", type: "textarea" },
-        ],
+        fields: [{ key: "attentes", label: "Précisions / attentes particulières", type: "textarea" }],
       },
     ],
   },
@@ -169,14 +217,25 @@ export const BRANCHES: BrancheConfig[] = [
       {
         title: "Nature du risque",
         fields: [
-          { key: "sous_type", label: "Type de contrat recherché", type: "select", required: true, options: [
-            { value: "auto", label: "Auto" },
-            { value: "habitation", label: "Habitation" },
-            { value: "mrp", label: "Multirisque professionnelle" },
-            { value: "rc_pro", label: "RC professionnelle" },
-            { value: "autre_iard", label: "Autre" },
-          ] },
-          { key: "description_bien", label: "Description du bien / activité à assurer", type: "textarea", required: true },
+          {
+            key: "sous_type",
+            label: "Type de contrat recherché",
+            type: "select",
+            required: true,
+            options: [
+              { value: "auto", label: "Auto" },
+              { value: "habitation", label: "Habitation" },
+              { value: "mrp", label: "Multirisque professionnelle" },
+              { value: "rc_pro", label: "RC professionnelle" },
+              { value: "autre_iard", label: "Autre" },
+            ],
+          },
+          {
+            key: "description_bien",
+            label: "Description du bien / activité à assurer",
+            type: "textarea",
+            required: true,
+          },
           { key: "valeur_a_assurer", label: "Valeur à assurer", type: "number", suffix: "€" },
           { key: "adresse_risque", label: "Adresse du risque", type: "text" },
         ],
@@ -184,7 +243,12 @@ export const BRANCHES: BrancheConfig[] = [
       {
         title: "Antécédents",
         fields: [
-          { key: "sinistres_36mois", label: "Sinistres des 36 derniers mois", type: "textarea", placeholder: "Nature, date, montant" },
+          {
+            key: "sinistres_36mois",
+            label: "Sinistres des 36 derniers mois",
+            type: "textarea",
+            placeholder: "Nature, date, montant",
+          },
           { key: "resiliation", label: "Résiliation par un précédent assureur", type: "checkbox" },
           { key: "assureur_actuel", label: "Assureur actuel & prime annuelle", type: "text" },
         ],
