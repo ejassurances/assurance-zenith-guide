@@ -3,7 +3,13 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { estimerEconomie } from "@/lib/insurance-rates";
-import { BRANCHES, getBranche, labelForBranche, type BrancheAssurance, type FieldConfig } from "@/lib/recueil-besoins-schemas";
+import {
+  BRANCHES,
+  getBranche,
+  labelForBranche,
+  type BrancheAssurance,
+  type FieldConfig,
+} from "@/lib/recueil-besoins-schemas";
 
 export const Route = createFileRoute("/_authenticated/espace/dossiers/")({
   component: DossiersList,
@@ -130,15 +136,25 @@ type ClientOption = {
   fumeur: boolean | null;
 };
 
-function NewDossierForm({ onCreated, userId }: { onCreated: () => void; userId: string }) {
+export function NewDossierForm({
+  onCreated,
+  userId,
+  presetClient,
+}: {
+  onCreated: () => void;
+  userId: string;
+  presetClient?: ClientOption;
+}) {
   const [step, setStep] = useState<1 | 2>(1);
   const [type, setType] = useState<BrancheAssurance>("emprunteur");
   const [clients, setClients] = useState<ClientOption[]>([]);
-  const [clientId, setClientId] = useState<string>("");
+  const [clientId, setClientId] = useState<string>(presetClient?.id ?? "");
   const [clientQuery, setClientQuery] = useState("");
-  const [clientNom, setClientNom] = useState("");
-  const [clientEmail, setClientEmail] = useState("");
-  const [clientPhone, setClientPhone] = useState("");
+  const [clientNom, setClientNom] = useState(
+    presetClient ? [presetClient.prenom, presetClient.nom].filter(Boolean).join(" ") : "",
+  );
+  const [clientEmail, setClientEmail] = useState(presetClient?.email ?? "");
+  const [clientPhone, setClientPhone] = useState(presetClient?.mobile ?? presetClient?.telephone ?? "");
   const [recueil, setRecueil] = useState<Record<string, unknown>>({});
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
@@ -158,9 +174,7 @@ function NewDossierForm({ onCreated, userId }: { onCreated: () => void; userId: 
   const filteredClients = useMemo(() => {
     const t = clientQuery.trim().toLowerCase();
     if (!t) return clients.slice(0, 50);
-    return clients
-      .filter((c) => `${c.prenom ?? ""} ${c.nom} ${c.email ?? ""}`.toLowerCase().includes(t))
-      .slice(0, 50);
+    return clients.filter((c) => `${c.prenom ?? ""} ${c.nom} ${c.email ?? ""}`.toLowerCase().includes(t)).slice(0, 50);
   }, [clients, clientQuery]);
 
   const selectClient = (c: ClientOption) => {
@@ -239,9 +253,7 @@ function NewDossierForm({ onCreated, userId }: { onCreated: () => void; userId: 
               type="button"
               onClick={() => setType(b.value)}
               className={`rounded-2xl border p-4 text-left transition ${
-                type === b.value
-                  ? "border-ink bg-background"
-                  : "border-line bg-background/40 hover:border-ink/40"
+                type === b.value ? "border-ink bg-background" : "border-line bg-background/40 hover:border-ink/40"
               }`}
             >
               <p className="font-medium text-ink">{b.label}</p>
@@ -266,55 +278,63 @@ function NewDossierForm({ onCreated, userId }: { onCreated: () => void; userId: 
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-serif text-lg">Étape 2 · Recueil des besoins</h2>
-          <p className="mt-1 text-sm text-ink-muted">{branche.label} — {branche.description}</p>
+          <p className="mt-1 text-sm text-ink-muted">
+            {branche.label} — {branche.description}
+          </p>
         </div>
         <button type="button" onClick={() => setStep(1)} className="text-xs text-ink-muted underline">
           ← Changer de branche
         </button>
       </div>
 
-      <div className="rounded-xl border border-line bg-background/40 p-4">
-        <label className="text-xs font-medium uppercase tracking-wide text-ink-muted">
-          Client existant
-        </label>
-        <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-          <input
-            placeholder="Rechercher (nom, prénom, email)…"
-            value={clientQuery}
-            onChange={(e) => setClientQuery(e.target.value)}
-            className="flex-1 rounded-md border border-line bg-background px-3 py-2 text-sm"
-          />
-          <select
-            value={clientId}
-            onChange={(e) => {
-              const c = clients.find((x) => x.id === e.target.value);
-              if (c) selectClient(c);
-              else setClientId("");
-            }}
-            className="rounded-md border border-line bg-background px-3 py-2 text-sm sm:w-72"
-          >
-            <option value="">— Sélectionner un client —</option>
-            {filteredClients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {[c.prenom, c.nom].filter(Boolean).join(" ")}
-                {c.email ? ` · ${c.email}` : ""}
-              </option>
-            ))}
-          </select>
+      {!presetClient && (
+        <div className="rounded-xl border border-line bg-background/40 p-4">
+          <label className="text-xs font-medium uppercase tracking-wide text-ink-muted">Client existant</label>
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+            <input
+              placeholder="Rechercher (nom, prénom, email)…"
+              value={clientQuery}
+              onChange={(e) => setClientQuery(e.target.value)}
+              className="flex-1 rounded-md border border-line bg-background px-3 py-2 text-sm"
+            />
+            <select
+              value={clientId}
+              onChange={(e) => {
+                const c = clients.find((x) => x.id === e.target.value);
+                if (c) selectClient(c);
+                else setClientId("");
+              }}
+              className="rounded-md border border-line bg-background px-3 py-2 text-sm sm:w-72"
+            >
+              <option value="">— Sélectionner un client —</option>
+              {filteredClients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {[c.prenom, c.nom].filter(Boolean).join(" ")}
+                  {c.email ? ` · ${c.email}` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <TextInput label="Nom du client" value={clientNom} onChange={setClientNom} />
+            <TextInput label="Email" value={clientEmail} onChange={setClientEmail} type="email" />
+            <TextInput label="Téléphone" value={clientPhone} onChange={setClientPhone} />
+          </div>
         </div>
-        <div className="mt-3 grid gap-3 sm:grid-cols-3">
-          <TextInput label="Nom du client" value={clientNom} onChange={setClientNom} />
-          <TextInput label="Email" value={clientEmail} onChange={setClientEmail} type="email" />
-          <TextInput label="Téléphone" value={clientPhone} onChange={setClientPhone} />
-        </div>
-      </div>
+      )}
+      {presetClient && `Client : ${[presetClient.prenom, presetClient.nom].filter(Boolean).join(" ")}`}
 
       {branche.sections.map((section) => (
         <div key={section.title}>
           <h3 className="text-sm font-medium uppercase tracking-wide text-ink-muted">{section.title}</h3>
           <div className="mt-2 grid gap-3 sm:grid-cols-2">
             {section.fields.map((f) => (
-              <RecueilField key={f.key} field={f} value={recueil[f.key]} onChange={(v) => setRecueil({ ...recueil, [f.key]: v })} />
+              <RecueilField
+                key={f.key}
+                field={f}
+                value={recueil[f.key]}
+                onChange={(v) => setRecueil({ ...recueil, [f.key]: v })}
+              />
             ))}
           </div>
         </div>
@@ -344,7 +364,17 @@ function NewDossierForm({ onCreated, userId }: { onCreated: () => void; userId: 
   );
 }
 
-function TextInput({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
+function TextInput({
+  label,
+  value,
+  onChange,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+}) {
   return (
     <label className="block">
       <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">{label}</span>
@@ -380,7 +410,13 @@ export function RecueilField({
     return (
       <label className="block sm:col-span-2">
         <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">{field.label}</span>
-        <textarea rows={3} value={(value as string) ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={field.placeholder} className={cls} />
+        <textarea
+          rows={3}
+          value={(value as string) ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={field.placeholder}
+          className={cls}
+        />
       </label>
     );
   }
@@ -391,7 +427,9 @@ export function RecueilField({
         <select value={(value as string) ?? ""} onChange={(e) => onChange(e.target.value)} className={cls}>
           <option value="">—</option>
           {field.options?.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
           ))}
         </select>
       </label>
@@ -400,12 +438,15 @@ export function RecueilField({
   return (
     <label className="block">
       <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
-        {field.label}{field.suffix ? ` (${field.suffix})` : ""}
+        {field.label}
+        {field.suffix ? ` (${field.suffix})` : ""}
       </span>
       <input
         type={field.type === "number" ? "number" : "text"}
         value={(value as string | number | undefined) ?? ""}
-        onChange={(e) => onChange(field.type === "number" ? (e.target.value === "" ? "" : Number(e.target.value)) : e.target.value)}
+        onChange={(e) =>
+          onChange(field.type === "number" ? (e.target.value === "" ? "" : Number(e.target.value)) : e.target.value)
+        }
         placeholder={field.placeholder}
         className={cls}
       />
