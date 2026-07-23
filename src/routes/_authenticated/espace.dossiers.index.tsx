@@ -209,7 +209,7 @@ function NewDossierForm({ onCreated, userId }: { onCreated: () => void; userId: 
       client_email: clientEmail || null,
       client_phone: clientPhone || null,
       type_assurance: type,
-      recueil_besoins: recueil,
+      recueil_besoins: recueil as never,
       capital,
       duree_mois,
       age,
