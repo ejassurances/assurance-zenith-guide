@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { estimerEconomie } from "@/lib/insurance-rates";
@@ -120,7 +120,20 @@ function StatutBadge({ s }: { s: string }) {
   );
 }
 
+type ClientOption = {
+  id: string;
+  prenom: string | null;
+  nom: string;
+  email: string | null;
+  mobile: string | null;
+  telephone: string | null;
+  fumeur: boolean | null;
+};
+
 function NewDossierForm({ onCreated, userId }: { onCreated: () => void; userId: string }) {
+  const [clients, setClients] = useState<ClientOption[]>([]);
+  const [clientId, setClientId] = useState<string>("");
+  const [clientQuery, setClientQuery] = useState("");
   const [form, setForm] = useState({
     client_nom: "",
     client_email: "",
@@ -134,8 +147,42 @@ function NewDossierForm({ onCreated, userId }: { onCreated: () => void; userId: 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("clients")
+        .select("id,prenom,nom,email,mobile,telephone,fumeur")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      setClients((data ?? []) as ClientOption[]);
+    })();
+  }, []);
+
+  const filteredClients = useMemo(() => {
+    const t = clientQuery.trim().toLowerCase();
+    if (!t) return clients.slice(0, 50);
+    return clients
+      .filter((c) => `${c.prenom ?? ""} ${c.nom} ${c.email ?? ""}`.toLowerCase().includes(t))
+      .slice(0, 50);
+  }, [clients, clientQuery]);
+
+  const selectClient = (c: ClientOption) => {
+    setClientId(c.id);
+    setForm((f) => ({
+      ...f,
+      client_nom: [c.prenom, c.nom].filter(Boolean).join(" ") || c.nom,
+      client_email: c.email ?? "",
+      client_phone: c.mobile ?? c.telephone ?? "",
+      fumeur: !!c.fumeur,
+    }));
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.client_nom.trim()) {
+      setError("Sélectionnez un client ou saisissez un nom.");
+      return;
+    }
     setSaving(true);
     setError(null);
     const capital = Number(form.capital) || 0;
@@ -151,6 +198,7 @@ function NewDossierForm({ onCreated, userId }: { onCreated: () => void; userId: 
       }
     }
     const { error } = await supabase.from("dossiers").insert({
+      client_id: clientId || null,
       client_nom: form.client_nom,
       client_email: form.client_email || null,
       client_phone: form.client_phone || null,
@@ -185,6 +233,42 @@ function NewDossierForm({ onCreated, userId }: { onCreated: () => void; userId: 
 
   return (
     <form onSubmit={submit} className="mt-4 grid gap-4 rounded-2xl border border-line bg-surface-elevated p-6 sm:grid-cols-2">
+      <div className="sm:col-span-2 rounded-xl border border-line bg-background/40 p-4">
+        <label className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+          Client existant
+        </label>
+        <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+          <input
+            placeholder="Rechercher (nom, prénom, email)…"
+            value={clientQuery}
+            onChange={(e) => setClientQuery(e.target.value)}
+            className="flex-1 rounded-md border border-line bg-background px-3 py-2 text-sm"
+          />
+          <select
+            value={clientId}
+            onChange={(e) => {
+              const c = clients.find((x) => x.id === e.target.value);
+              if (c) selectClient(c);
+              else {
+                setClientId("");
+              }
+            }}
+            className="rounded-md border border-line bg-background px-3 py-2 text-sm sm:w-72"
+          >
+            <option value="">— Sélectionner un client —</option>
+            {filteredClients.map((c) => (
+              <option key={c.id} value={c.id}>
+                {[c.prenom, c.nom].filter(Boolean).join(" ")}
+                {c.email ? ` · ${c.email}` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+        <p className="mt-2 text-xs text-ink-muted">
+          Ou renseignez les informations manuellement ci-dessous.
+        </p>
+      </div>
+
       {Field("Nom du client", "client_nom")}
       {Field("Email", "client_email", "email")}
       {Field("Téléphone", "client_phone")}

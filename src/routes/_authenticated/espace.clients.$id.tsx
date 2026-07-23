@@ -771,31 +771,121 @@ function DocumentsTab({ clientId, canEdit }: { clientId: string; canEdit: boolea
 /* -------------------- DOSSIERS -------------------- */
 
 function DossiersTab({ client }: { client: Client }) {
+  const { user, role } = useAuth();
+  const canCreate = role === "admin" || role === "mandataire" || role === "prescripteur";
   const [items, setItems] = useState<Dossier[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ capital: "", duree_mois: "", age: "", fumeur: !!client.fumeur, notes: "" });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = async () => {
+    const filters: string[] = [`client_id.eq.${client.id}`];
+    if (client.email) filters.push(`client_email.eq.${client.email}`);
+    filters.push(`client_nom.ilike.%${client.nom}%`);
+    const { data } = await supabase
+      .from("dossiers")
+      .select("id,reference,statut,capital,economie_estimee,created_at")
+      .or(filters.join(","))
+      .order("created_at", { ascending: false });
+    setItems((data ?? []) as Dossier[]);
+  };
   useEffect(() => {
-    (async () => {
-      const filters = [client.email, client.nom].filter(Boolean);
-      if (filters.length === 0) return;
-      const { data } = await supabase
-        .from("dossiers")
-        .select("id,reference,statut,capital,economie_estimee,created_at")
-        .or(
-          [
-            client.email ? `client_email.eq.${client.email}` : null,
-            `client_nom.ilike.%${client.nom}%`,
-          ]
-            .filter(Boolean)
-            .join(",")
-        )
-        .order("created_at", { ascending: false });
-      setItems((data ?? []) as Dossier[]);
-    })();
-  }, [client]);
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client.id]);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setSaving(true);
+    setError(null);
+    const capital = Number(form.capital) || 0;
+    const duree_mois = Number(form.duree_mois) || 0;
+    const age = Number(form.age) || 0;
+    let economie = 0;
+    if (capital && duree_mois && age) {
+      try {
+        const { estimerEconomie } = await import("@/lib/insurance-rates");
+        const est = estimerEconomie({ capital, dureeMois: duree_mois, age, fumeur: form.fumeur });
+        economie = Math.round(est.economieTotale);
+      } catch {
+        // pas de tranche
+      }
+    }
+    const { error } = await supabase.from("dossiers").insert({
+      client_id: client.id,
+      client_nom: [client.prenom, client.nom].filter(Boolean).join(" ") || client.nom,
+      client_email: client.email,
+      client_phone: client.mobile ?? client.telephone,
+      capital: capital || null,
+      duree_mois: duree_mois || null,
+      age: age || null,
+      fumeur: form.fumeur,
+      notes: form.notes || null,
+      economie_estimee: economie || null,
+      apporteur_id: user.id,
+      created_by: user.id,
+    });
+    setSaving(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setShowForm(false);
+    setForm({ capital: "", duree_mois: "", age: "", fumeur: !!client.fumeur, notes: "" });
+    load();
+  };
 
   return (
     <div>
+      {canCreate && (
+        <button
+          onClick={() => setShowForm((v) => !v)}
+          className="mb-4 rounded-full bg-ink px-4 py-2 text-sm font-medium text-primary-foreground"
+        >
+          {showForm ? "Annuler" : "Nouveau dossier"}
+        </button>
+      )}
+
+      {showForm && canCreate && (
+        <form onSubmit={submit} className="mb-6 grid gap-3 rounded-2xl border border-line bg-surface-elevated p-5 sm:grid-cols-2">
+          <label className="block">
+            <span className="text-xs uppercase tracking-wide text-ink-muted">Capital (€)</span>
+            <input type="number" value={form.capital} onChange={(e) => setForm({ ...form, capital: e.target.value })}
+              className="mt-1 w-full rounded-md border border-line bg-background px-3 py-2 text-sm" />
+          </label>
+          <label className="block">
+            <span className="text-xs uppercase tracking-wide text-ink-muted">Durée (mois)</span>
+            <input type="number" value={form.duree_mois} onChange={(e) => setForm({ ...form, duree_mois: e.target.value })}
+              className="mt-1 w-full rounded-md border border-line bg-background px-3 py-2 text-sm" />
+          </label>
+          <label className="block">
+            <span className="text-xs uppercase tracking-wide text-ink-muted">Âge</span>
+            <input type="number" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })}
+              className="mt-1 w-full rounded-md border border-line bg-background px-3 py-2 text-sm" />
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={form.fumeur} onChange={(e) => setForm({ ...form, fumeur: e.target.checked })} />
+            Fumeur
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="text-xs uppercase tracking-wide text-ink-muted">Notes</span>
+            <textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              className="mt-1 w-full rounded-md border border-line bg-background px-3 py-2 text-sm" />
+          </label>
+          {error && <p className="sm:col-span-2 text-sm text-destructive">{error}</p>}
+          <div className="sm:col-span-2">
+            <button type="submit" disabled={saving}
+              className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
+              {saving ? "Enregistrement…" : "Créer le dossier"}
+            </button>
+          </div>
+        </form>
+      )}
+
       {items.length === 0 ? (
-        <p className="text-sm text-ink-muted">Aucun dossier lié (recherche par nom ou email).</p>
+        <p className="text-sm text-ink-muted">Aucun dossier lié à ce client.</p>
       ) : (
         <div className="space-y-2">
           {items.map((d) => (
