@@ -143,6 +143,17 @@ export function ConformiteClientTab({
     if (data?.signedUrl) window.open(data.signedUrl, "_blank");
   };
 
+  const enregistrerDrive = async (doc: KycDoc) => {
+    const url = prompt("Lien Google Drive du document", doc.drive_url ?? "https://drive.google.com/");
+    if (url === null) return;
+    await supabase
+      .from("client_kyc_documents")
+      .update({ drive_url: url.trim() || null })
+      .eq("id", doc.id);
+    await load();
+  };
+
+
   const lancerRecherche = async () => {
     if (!client) return;
     setSearching(true);
