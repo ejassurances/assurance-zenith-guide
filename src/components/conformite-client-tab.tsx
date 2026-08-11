@@ -286,6 +286,21 @@ export function ConformiteClientTab({
                           <button onClick={() => telecharger(doc.storage_path)} className="text-xs underline">
                             Voir
                           </button>
+                          {doc.drive_url && (
+                            <a
+                              href={doc.drive_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs font-medium text-[color:var(--crm-gold)] underline"
+                            >
+                              Drive
+                            </a>
+                          )}
+                          {canEdit && (
+                            <button onClick={() => enregistrerDrive(doc)} className="text-xs text-ink-muted underline">
+                              {doc.drive_url ? "Modifier le lien" : "Lier à Drive"}
+                            </button>
+                          )}
                           {canEdit && doc.statut !== "valide" && (
                             <button
                               onClick={() => valider(doc.id, "valide")}
