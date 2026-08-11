@@ -107,6 +107,35 @@ function ClientsList() {
         </select>
       </div>
 
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          onClick={() => setMarqueFilter("")}
+          className={
+            "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors " +
+            (marqueFilter === "" ? "border-transparent bg-ink text-primary-foreground" : "border-line text-ink-soft hover:bg-surface")
+          }
+        >
+          Toutes les marques ({items.length})
+        </button>
+        {MARQUE_KEYS.map((k) => {
+          const count = items.filter((c) => c.marque === k).length;
+          const active = marqueFilter === k;
+          return (
+            <button
+              key={k}
+              onClick={() => setMarqueFilter(active ? "" : k)}
+              className={
+                "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors " +
+                (active ? MARQUES[k].badge + " ring-1 ring-current" : "border-line text-ink-soft hover:bg-surface")
+              }
+            >
+              <span className={`size-1.5 rounded-full ${MARQUES[k].dot}`} />
+              {MARQUES[k].label} ({count})
+            </button>
+          );
+        })}
+      </div>
+
       <div className="mt-6 overflow-hidden rounded-2xl border border-line bg-surface-elevated">
         {loading ? (
           <p className="p-6 text-sm text-ink-muted">Chargement…</p>
@@ -118,14 +147,16 @@ function ClientsList() {
               <tr>
                 <th className="px-4 py-3">Référence</th>
                 <th className="px-4 py-3">Nom</th>
+                <th className="px-4 py-3">Marque</th>
+                <th className="px-4 py-3">Besoins</th>
                 <th className="px-4 py-3">Contact</th>
-                <th className="px-4 py-3">Ville</th>
                 <th className="px-4 py-3">Statut</th>
-                <th className="px-4 py-3">Origine</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((c) => (
+              {filtered.map((c) => {
+                const m = marque(c.marque);
+                return (
                 <tr key={c.id} className="border-b border-line last:border-0 hover:bg-background/40">
                   <td className="px-4 py-3 font-mono text-xs">
                     <Link to="/espace/clients/$id" params={{ id: c.id }} className="text-ink hover:underline">
@@ -136,18 +167,37 @@ function ClientsList() {
                     <Link to="/espace/clients/$id" params={{ id: c.id }} className="font-medium text-ink hover:underline">
                       {[c.civilite, c.prenom, c.nom].filter(Boolean).join(" ")}
                     </Link>
+                    <div className="text-xs text-ink-muted">{c.ville ?? ""}</div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${m.badge}`}>
+                      <span className={`size-1.5 rounded-full ${m.dot}`} />
+                      {m.short}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {(c.besoins ?? []).length === 0 ? (
+                        <span className="text-xs text-ink-muted">—</span>
+                      ) : (
+                        (c.besoins ?? []).slice(0, 3).map((b) => (
+                          <span key={b} className="rounded-full border border-line bg-surface px-2 py-0.5 text-[11px] text-ink-soft">
+                            {besoinLabel(b)}
+                          </span>
+                        ))
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-ink-soft">
                     <div>{c.email ?? "—"}</div>
                     <div className="text-xs text-ink-muted">{c.mobile ?? ""}</div>
                   </td>
-                  <td className="px-4 py-3 text-ink-soft">{c.ville ?? "—"}</td>
                   <td className="px-4 py-3">
                     <span className="rounded-full border border-line bg-background px-2 py-0.5 text-xs">{c.statut}</span>
                   </td>
-                  <td className="px-4 py-3 text-xs text-ink-muted">{c.origine ?? "—"}</td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         )}
