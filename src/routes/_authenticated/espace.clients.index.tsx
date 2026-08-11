@@ -216,6 +216,7 @@ function NewClientForm({ onCreated }: { onCreated: (id: string) => void }) {
     mobile: "",
     ville: "",
     origine: "internet" as const,
+    marque: "ej_assurances",
   });
 
   const submit = async (e: React.FormEvent) => {
@@ -232,6 +233,7 @@ function NewClientForm({ onCreated }: { onCreated: (id: string) => void }) {
         mobile: form.mobile || null,
         ville: form.ville || null,
         origine: form.origine,
+        marque: form.marque,
       })
       .select("id")
       .single();
