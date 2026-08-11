@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
-import { SITE } from "@/lib/site";
+
 
 export const Route = createFileRoute("/_authenticated/espace")({
   component: EspaceLayout,
