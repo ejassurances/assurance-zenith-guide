@@ -6,6 +6,7 @@ import { FamilleTab, EntrepriseTab, EquipementsTab } from "@/components/client-3
 import { ContratsTab } from "@/components/contrats-tab";
 import { DerTab } from "@/components/der-tab";
 import { ConformiteClientTab } from "@/components/conformite-client-tab";
+import { CrmBrandPanel } from "@/components/crm-brand-panel";
 import { NewDossierForm } from "@/routes/_authenticated/espace.dossiers.index";
 
 export const Route = createFileRoute("/_authenticated/espace/clients/$id")({
@@ -138,7 +139,7 @@ function ClientDetail() {
       </Link>
       <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-serif text-3xl font-medium text-ink">{fullName}</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-ink">{fullName}</h1>
           <p className="mt-1 text-xs text-ink-muted">
             <span className="font-mono">{client.reference}</span> · Créé le{" "}
             {new Date(client.created_at).toLocaleDateString("fr-FR")}
@@ -148,6 +149,12 @@ function ClientDetail() {
           {client.statut}
         </span>
       </div>
+
+      <div className="mt-4">
+        <CrmBrandPanel clientId={client.id} canEdit={canEdit} />
+      </div>
+
+
 
       <div className="mt-6 flex gap-1 overflow-x-auto border-b border-line">
         {(

@@ -12,6 +12,7 @@ type KycDoc = {
   type: "cni" | "justificatif_domicile" | "rib";
   nom: string;
   storage_path: string;
+  drive_url: string | null;
   date_emission: string | null;
   date_expiration: string | null;
   statut: string;
@@ -141,6 +142,17 @@ export function ConformiteClientTab({
     const { data } = await supabase.storage.from("dossier-documents").createSignedUrl(path, 300);
     if (data?.signedUrl) window.open(data.signedUrl, "_blank");
   };
+
+  const enregistrerDrive = async (doc: KycDoc) => {
+    const url = prompt("Lien Google Drive du document", doc.drive_url ?? "https://drive.google.com/");
+    if (url === null) return;
+    await supabase
+      .from("client_kyc_documents")
+      .update({ drive_url: url.trim() || null })
+      .eq("id", doc.id);
+    await load();
+  };
+
 
   const lancerRecherche = async () => {
     if (!client) return;
@@ -274,6 +286,21 @@ export function ConformiteClientTab({
                           <button onClick={() => telecharger(doc.storage_path)} className="text-xs underline">
                             Voir
                           </button>
+                          {doc.drive_url && (
+                            <a
+                              href={doc.drive_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs font-medium text-[color:var(--crm-gold)] underline"
+                            >
+                              Drive
+                            </a>
+                          )}
+                          {canEdit && (
+                            <button onClick={() => enregistrerDrive(doc)} className="text-xs text-ink-muted underline">
+                              {doc.drive_url ? "Modifier le lien" : "Lier à Drive"}
+                            </button>
+                          )}
                           {canEdit && doc.statut !== "valide" && (
                             <button
                               onClick={() => valider(doc.id, "valide")}

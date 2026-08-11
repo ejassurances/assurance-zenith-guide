@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
-import { SITE } from "@/lib/site";
+
 
 export const Route = createFileRoute("/_authenticated/espace")({
   component: EspaceLayout,
@@ -44,13 +44,15 @@ function EspaceLayout() {
   ].filter((n) => !n.hide);
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-line bg-background">
+    <div className="crm-theme min-h-screen bg-background">
+      <header className="border-b border-line bg-surface-elevated">
         <div className="container-page flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
             <img src="/logo-ej-partners.png" alt="" className="size-8 rounded-md object-cover" />
-            <span className="font-serif text-base font-medium">{SITE.shortName}</span>
-            <span className="ml-2 rounded-full border border-line bg-surface-elevated px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
+            <span className="text-base font-bold tracking-tight text-ink">
+              EJ Partners <span className="font-medium text-[color:var(--crm-gold)]">Assurances</span>
+            </span>
+            <span className="ml-2 rounded-full border border-line bg-background px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
               Espace {role ? ROLE_LABEL[role] : ""}
             </span>
           </Link>

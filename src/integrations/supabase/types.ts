@@ -399,6 +399,7 @@ export type Database = {
           created_at: string
           date_emission: string | null
           date_expiration: string | null
+          drive_url: string | null
           id: string
           nom: string
           notes: string | null
@@ -413,6 +414,7 @@ export type Database = {
           created_at?: string
           date_emission?: string | null
           date_expiration?: string | null
+          drive_url?: string | null
           id?: string
           nom: string
           notes?: string | null
@@ -427,6 +429,7 @@ export type Database = {
           created_at?: string
           date_emission?: string | null
           date_expiration?: string | null
+          drive_url?: string | null
           id?: string
           nom?: string
           notes?: string | null
@@ -512,6 +515,7 @@ export type Database = {
         Row: {
           adresse: string | null
           apporteur_id: string | null
+          besoins: string[]
           civilite: string | null
           code_postal: string | null
           commercial_id: string | null
@@ -524,12 +528,14 @@ export type Database = {
           created_by: string | null
           csp: string | null
           date_naissance: string | null
+          dda_statut: string
           email: string | null
           email2: string | null
           etiquettes: string[] | null
           fumeur: boolean | null
           id: string
           lieu_naissance: string | null
+          marque: string
           metier: string | null
           mobile: string | null
           mobile2: string | null
@@ -561,6 +567,7 @@ export type Database = {
         Insert: {
           adresse?: string | null
           apporteur_id?: string | null
+          besoins?: string[]
           civilite?: string | null
           code_postal?: string | null
           commercial_id?: string | null
@@ -573,12 +580,14 @@ export type Database = {
           created_by?: string | null
           csp?: string | null
           date_naissance?: string | null
+          dda_statut?: string
           email?: string | null
           email2?: string | null
           etiquettes?: string[] | null
           fumeur?: boolean | null
           id?: string
           lieu_naissance?: string | null
+          marque?: string
           metier?: string | null
           mobile?: string | null
           mobile2?: string | null
@@ -610,6 +619,7 @@ export type Database = {
         Update: {
           adresse?: string | null
           apporteur_id?: string | null
+          besoins?: string[]
           civilite?: string | null
           code_postal?: string | null
           commercial_id?: string | null
@@ -622,12 +632,14 @@ export type Database = {
           created_by?: string | null
           csp?: string | null
           date_naissance?: string | null
+          dda_statut?: string
           email?: string | null
           email2?: string | null
           etiquettes?: string[] | null
           fumeur?: boolean | null
           id?: string
           lieu_naissance?: string | null
+          marque?: string
           metier?: string | null
           mobile?: string | null
           mobile2?: string | null

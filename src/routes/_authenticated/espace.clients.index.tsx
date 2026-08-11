@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { MARQUES, MARQUE_KEYS, besoinLabel, marque } from "@/lib/crm-brands";
 
 export const Route = createFileRoute("/_authenticated/espace/clients/")({
   component: ClientsList,
@@ -18,6 +19,8 @@ type ClientRow = {
   ville: string | null;
   statut: string;
   origine: string | null;
+  marque: string;
+  besoins: string[] | null;
   created_at: string;
 };
 
@@ -30,6 +33,7 @@ function ClientsList() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [statutFilter, setStatutFilter] = useState<string>("");
+  const [marqueFilter, setMarqueFilter] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
   const canCreate = role === "admin" || role === "mandataire" || role === "prescripteur";
 
@@ -37,7 +41,7 @@ function ClientsList() {
     setLoading(true);
     const { data } = await supabase
       .from("clients")
-      .select("id,reference,civilite,prenom,nom,email,mobile,ville,statut,origine,created_at")
+      .select("id,reference,civilite,prenom,nom,email,mobile,ville,statut,origine,marque,besoins,created_at")
       .order("created_at", { ascending: false })
       .limit(200);
     setItems((data ?? []) as ClientRow[]);
@@ -51,11 +55,13 @@ function ClientsList() {
     const term = q.trim().toLowerCase();
     return items.filter((c) => {
       if (statutFilter && c.statut !== statutFilter) return false;
+      if (marqueFilter && c.marque !== marqueFilter) return false;
       if (!term) return true;
       const hay = `${c.reference} ${c.prenom ?? ""} ${c.nom} ${c.email ?? ""} ${c.mobile ?? ""} ${c.ville ?? ""}`.toLowerCase();
       return hay.includes(term);
     });
-  }, [items, q, statutFilter]);
+  }, [items, q, statutFilter, marqueFilter]);
+
 
   return (
     <div>
@@ -101,6 +107,35 @@ function ClientsList() {
         </select>
       </div>
 
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          onClick={() => setMarqueFilter("")}
+          className={
+            "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors " +
+            (marqueFilter === "" ? "border-transparent bg-ink text-primary-foreground" : "border-line text-ink-soft hover:bg-surface")
+          }
+        >
+          Toutes les marques ({items.length})
+        </button>
+        {MARQUE_KEYS.map((k) => {
+          const count = items.filter((c) => c.marque === k).length;
+          const active = marqueFilter === k;
+          return (
+            <button
+              key={k}
+              onClick={() => setMarqueFilter(active ? "" : k)}
+              className={
+                "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors " +
+                (active ? MARQUES[k].badge + " ring-1 ring-current" : "border-line text-ink-soft hover:bg-surface")
+              }
+            >
+              <span className={`size-1.5 rounded-full ${MARQUES[k].dot}`} />
+              {MARQUES[k].label} ({count})
+            </button>
+          );
+        })}
+      </div>
+
       <div className="mt-6 overflow-hidden rounded-2xl border border-line bg-surface-elevated">
         {loading ? (
           <p className="p-6 text-sm text-ink-muted">Chargement…</p>
@@ -112,14 +147,16 @@ function ClientsList() {
               <tr>
                 <th className="px-4 py-3">Référence</th>
                 <th className="px-4 py-3">Nom</th>
+                <th className="px-4 py-3">Marque</th>
+                <th className="px-4 py-3">Besoins</th>
                 <th className="px-4 py-3">Contact</th>
-                <th className="px-4 py-3">Ville</th>
                 <th className="px-4 py-3">Statut</th>
-                <th className="px-4 py-3">Origine</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((c) => (
+              {filtered.map((c) => {
+                const m = marque(c.marque);
+                return (
                 <tr key={c.id} className="border-b border-line last:border-0 hover:bg-background/40">
                   <td className="px-4 py-3 font-mono text-xs">
                     <Link to="/espace/clients/$id" params={{ id: c.id }} className="text-ink hover:underline">
@@ -130,18 +167,37 @@ function ClientsList() {
                     <Link to="/espace/clients/$id" params={{ id: c.id }} className="font-medium text-ink hover:underline">
                       {[c.civilite, c.prenom, c.nom].filter(Boolean).join(" ")}
                     </Link>
+                    <div className="text-xs text-ink-muted">{c.ville ?? ""}</div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${m.badge}`}>
+                      <span className={`size-1.5 rounded-full ${m.dot}`} />
+                      {m.short}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {(c.besoins ?? []).length === 0 ? (
+                        <span className="text-xs text-ink-muted">—</span>
+                      ) : (
+                        (c.besoins ?? []).slice(0, 3).map((b) => (
+                          <span key={b} className="rounded-full border border-line bg-surface px-2 py-0.5 text-[11px] text-ink-soft">
+                            {besoinLabel(b)}
+                          </span>
+                        ))
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-ink-soft">
                     <div>{c.email ?? "—"}</div>
                     <div className="text-xs text-ink-muted">{c.mobile ?? ""}</div>
                   </td>
-                  <td className="px-4 py-3 text-ink-soft">{c.ville ?? "—"}</td>
                   <td className="px-4 py-3">
                     <span className="rounded-full border border-line bg-background px-2 py-0.5 text-xs">{c.statut}</span>
                   </td>
-                  <td className="px-4 py-3 text-xs text-ink-muted">{c.origine ?? "—"}</td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -160,6 +216,7 @@ function NewClientForm({ onCreated }: { onCreated: (id: string) => void }) {
     mobile: "",
     ville: "",
     origine: "internet" as const,
+    marque: "ej_assurances",
   });
 
   const submit = async (e: React.FormEvent) => {
@@ -176,6 +233,7 @@ function NewClientForm({ onCreated }: { onCreated: (id: string) => void }) {
         mobile: form.mobile || null,
         ville: form.ville || null,
         origine: form.origine,
+        marque: form.marque,
       })
       .select("id")
       .single();
@@ -237,6 +295,17 @@ function NewClientForm({ onCreated }: { onCreated: (id: string) => void }) {
         <option value="apporteur">Apporteur</option>
         <option value="reseau">Réseau</option>
         <option value="autre">Autre</option>
+      </select>
+      <select
+        value={form.marque}
+        onChange={(e) => setForm({ ...form, marque: e.target.value })}
+        className="rounded-md border border-line bg-background px-3 py-2 text-sm sm:col-span-2"
+      >
+        {MARQUE_KEYS.map((k) => (
+          <option key={k} value={k}>
+            {MARQUES[k].label}
+          </option>
+        ))}
       </select>
       <div className="sm:col-span-3">
         <button
