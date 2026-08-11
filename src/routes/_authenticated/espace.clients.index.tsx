@@ -296,6 +296,17 @@ function NewClientForm({ onCreated }: { onCreated: (id: string) => void }) {
         <option value="reseau">Réseau</option>
         <option value="autre">Autre</option>
       </select>
+      <select
+        value={form.marque}
+        onChange={(e) => setForm({ ...form, marque: e.target.value })}
+        className="rounded-md border border-line bg-background px-3 py-2 text-sm sm:col-span-2"
+      >
+        {MARQUE_KEYS.map((k) => (
+          <option key={k} value={k}>
+            {MARQUES[k].label}
+          </option>
+        ))}
+      </select>
       <div className="sm:col-span-3">
         <button
           type="submit"
