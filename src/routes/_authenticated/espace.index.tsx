@@ -69,7 +69,7 @@ function Dashboard() {
 
   return (
     <div>
-      <h1 className="font-serif text-3xl font-medium text-ink">Bonjour</h1>
+      <h1 className="text-3xl font-bold tracking-tight text-ink">Tableau de bord</h1>
       <p className="mt-1 text-sm text-ink-muted">
         Connecté en tant que <span className="font-medium text-ink">{user?.email}</span> — rôle {role ?? "…"}
       </p>
@@ -78,14 +78,16 @@ function Dashboard() {
       {(role === "admin" || role === "mandataire") && <ConformiteCabinetWidget />}
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {role !== "client" && <Card label="Clients" value={stats.clients} sub={`${stats.prospects} prospects`} />}
-        <Card label="Dossiers" value={stats.dossiers} />
-        <Card label="En cours" value={stats.enCours} />
-        <Card label="Signés" value={stats.signes} />
         {role !== "client" && (
-          <Card label="Commissions (€)" value={stats.commissions.toLocaleString("fr-FR")} />
+          <Card label="Prospects" value={stats.prospects} sub={`${stats.clients} fiches au total`} accent />
+        )}
+        <Card label="Devis en cours" value={stats.enCours} sub={`${stats.dossiers} dossiers ouverts`} />
+        <Card label="Affaires conclues" value={stats.signes} />
+        {role !== "client" && (
+          <Card label="Commissions estimées" value={`${stats.commissions.toLocaleString("fr-FR")} €`} accent />
         )}
       </div>
+
 
       <div className="mt-10 grid gap-6 lg:grid-cols-2">
         <section className="rounded-2xl border border-line bg-surface-elevated p-6">
