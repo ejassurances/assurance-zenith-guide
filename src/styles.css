@@ -103,3 +103,48 @@
   max-width: 72rem;
   padding-inline: 1.5rem;
 }
+
+/* ---- Thème CRM : bleu nuit, doré, fond clair ---- */
+.crm-theme {
+  --font-sans-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+  --font-serif-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+
+  --background: #f8fafc;
+  --foreground: #0a192f;
+  --surface: #f1f5f9;
+  --surface-elevated: #ffffff;
+  --ink: #0a192f;
+  --ink-soft: #33475f;
+  --ink-muted: #64748b;
+  --line: rgb(10 25 47 / 0.1);
+
+  --card: #ffffff;
+  --card-foreground: #0a192f;
+  --primary: #0a192f;
+  --primary-foreground: #f8fafc;
+  --secondary: #e2e8f0;
+  --secondary-foreground: #0a192f;
+  --muted: #eef2f7;
+  --muted-foreground: #64748b;
+  --accent: #d4af37;
+  --accent-foreground: #0a192f;
+  --border: rgb(10 25 47 / 0.1);
+  --input: rgb(10 25 47 / 0.18);
+  --ring: #d4af37;
+
+  --crm-gold: #d4af37;
+  --crm-brand-blue: #1d4ed8;
+  --crm-brand-sage: #6b8f71;
+
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans-family);
+}
+
+.crm-theme h1,
+.crm-theme h2,
+.crm-theme h3,
+.crm-theme h4 {
+  font-family: var(--font-sans-family);
+  letter-spacing: -0.02em;
+}
