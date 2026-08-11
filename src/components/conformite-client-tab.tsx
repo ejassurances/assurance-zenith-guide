@@ -12,6 +12,7 @@ type KycDoc = {
   type: "cni" | "justificatif_domicile" | "rib";
   nom: string;
   storage_path: string;
+  drive_url: string | null;
   date_emission: string | null;
   date_expiration: string | null;
   statut: string;
