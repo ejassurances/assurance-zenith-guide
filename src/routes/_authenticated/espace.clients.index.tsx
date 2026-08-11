@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { MARQUES, MARQUE_KEYS, besoinLabel, marque } from "@/lib/crm-brands";
 
 export const Route = createFileRoute("/_authenticated/espace/clients/")({
   component: ClientsList,
@@ -18,6 +19,8 @@ type ClientRow = {
   ville: string | null;
   statut: string;
   origine: string | null;
+  marque: string;
+  besoins: string[] | null;
   created_at: string;
 };
 
@@ -30,6 +33,7 @@ function ClientsList() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [statutFilter, setStatutFilter] = useState<string>("");
+  const [marqueFilter, setMarqueFilter] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
   const canCreate = role === "admin" || role === "mandataire" || role === "prescripteur";
 
@@ -37,7 +41,7 @@ function ClientsList() {
     setLoading(true);
     const { data } = await supabase
       .from("clients")
-      .select("id,reference,civilite,prenom,nom,email,mobile,ville,statut,origine,created_at")
+      .select("id,reference,civilite,prenom,nom,email,mobile,ville,statut,origine,marque,besoins,created_at")
       .order("created_at", { ascending: false })
       .limit(200);
     setItems((data ?? []) as ClientRow[]);
@@ -51,11 +55,13 @@ function ClientsList() {
     const term = q.trim().toLowerCase();
     return items.filter((c) => {
       if (statutFilter && c.statut !== statutFilter) return false;
+      if (marqueFilter && c.marque !== marqueFilter) return false;
       if (!term) return true;
       const hay = `${c.reference} ${c.prenom ?? ""} ${c.nom} ${c.email ?? ""} ${c.mobile ?? ""} ${c.ville ?? ""}`.toLowerCase();
       return hay.includes(term);
     });
-  }, [items, q, statutFilter]);
+  }, [items, q, statutFilter, marqueFilter]);
+
 
   return (
     <div>
