@@ -167,15 +167,32 @@ function Dashboard() {
   );
 }
 
-function Card({ label, value, sub }: { label: string; value: number | string; sub?: string }) {
+function Card({
+  label,
+  value,
+  sub,
+  accent,
+}: {
+  label: string;
+  value: number | string;
+  sub?: string;
+  accent?: boolean;
+}) {
   return (
-    <div className="rounded-2xl border border-line bg-surface-elevated p-5">
-      <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">{label}</p>
-      <p className="mt-2 font-serif text-3xl font-medium text-ink">{value}</p>
+    <div className="rounded-2xl border border-line bg-surface-elevated p-5 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">{label}</p>
+      <p
+        className={
+          "mt-2 text-3xl font-bold tracking-tight " + (accent ? "text-[color:var(--crm-gold)]" : "text-ink")
+        }
+      >
+        {value}
+      </p>
       {sub && <p className="mt-1 text-xs text-ink-muted">{sub}</p>}
     </div>
   );
 }
+
 
 function ClientDerBanner() {
   const [derPending, setDerPending] = useState(false);
