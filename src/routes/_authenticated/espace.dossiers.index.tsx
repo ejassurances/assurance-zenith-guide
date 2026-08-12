@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { estimerEconomie } from "@/lib/insurance-rates";
+import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
+import { ProduitDocumentsLink } from "@/components/produit-documents-link";
 import {
   BRANCHES,
   getBranche,
@@ -157,6 +159,8 @@ export function NewDossierForm({
   const [clientPhone, setClientPhone] = useState(presetClient?.mobile ?? presetClient?.telephone ?? "");
   const [recueil, setRecueil] = useState<Record<string, unknown>>({});
   const [notes, setNotes] = useState("");
+  const [compagnieId, setCompagnieId] = useState<string | null>(null);
+  const [produitId, setProduitId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -223,6 +227,8 @@ export function NewDossierForm({
       client_email: clientEmail || null,
       client_phone: clientPhone || null,
       type_assurance: type,
+      compagnie_id: compagnieId,
+      produit_id: produitId,
       recueil_besoins: recueil as never,
       capital,
       duree_mois,
@@ -339,6 +345,24 @@ export function NewDossierForm({
           </div>
         </div>
       ))}
+
+      <div className="rounded-xl border border-line bg-background/40 p-4">
+        <h3 className="text-sm font-medium uppercase tracking-wide text-ink-muted">Compagnie et produit (optionnel)</h3>
+        <div className="mt-2 grid gap-3 sm:grid-cols-2">
+          <CompagnieProduitPicker
+            branche={type}
+            compagnieId={compagnieId}
+            produitId={produitId}
+            onChange={(sel) => {
+              setCompagnieId(sel.compagnie_id);
+              setProduitId(sel.produit_id);
+            }}
+          />
+        </div>
+        <div className="mt-3">
+          <ProduitDocumentsLink produitId={produitId} compagnieId={compagnieId} />
+        </div>
+      </div>
 
       <div>
         <label className="text-xs font-medium uppercase tracking-wide text-ink-muted">Notes internes</label>
