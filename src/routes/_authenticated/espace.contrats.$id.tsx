@@ -607,3 +607,12 @@ function formatEuro(n: number | null | undefined) {
     Number(n),
   );
 }
+
+function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div className="rounded-md border border-line bg-surface p-3">
+      <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">{label}</p>
+      <p className={"mt-1 text-lg font-semibold " + (accent ? "text-[color:var(--crm-gold)]" : "text-ink")}>{value}</p>
+    </div>
+  );
+}
