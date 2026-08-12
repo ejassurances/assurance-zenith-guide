@@ -145,9 +145,18 @@ function ClientDetail() {
             {new Date(client.created_at).toLocaleDateString("fr-FR")}
           </p>
         </div>
-        <span className="rounded-full border border-line bg-surface-elevated px-3 py-1 text-xs font-medium">
-          {client.statut}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="rounded-full border border-line bg-surface-elevated px-3 py-1 text-xs font-medium">
+            {client.statut}
+          </span>
+          {role === "admin" && (
+            <DeleteClientButton
+              clientId={client.id}
+              clientLabel={fullName}
+              onDeleted={() => navigate({ to: "/espace/clients" })}
+            />
+          )}
+        </div>
       </div>
 
       <div className="mt-4">
