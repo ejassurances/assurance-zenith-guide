@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { calculerEconomieEmprunteur, economieColumns } from "@/lib/economie-emprunteur";
+import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
+import { ProduitDocumentsLink } from "@/components/produit-documents-link";
 
 export const Route = createFileRoute("/_authenticated/espace/contrats/$id")({
   component: ContratDetail,
