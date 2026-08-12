@@ -27,7 +27,7 @@ export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: 
     const { data } = await supabase
       .from("contrats")
       .select(
-        "id,numero,assureur,produit,date_effet,duree_mois,prime_annuelle,is_emprunteur,capital_initial,taux_assurance_annuel,statut",
+        "id,numero,assureur,produit,date_effet,duree_mois,prime_annuelle,is_emprunteur,capital_initial,taux_assurance_annuel,statut,economie_realisee",
       )
       .eq("client_id", clientId)
       .order("created_at", { ascending: false });
