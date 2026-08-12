@@ -37,6 +37,7 @@ function ClientsList() {
   const [marqueFilter, setMarqueFilter] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
   const canCreate = role === "admin" || role === "mandataire" || role === "prescripteur";
+  const canDelete = role === "admin";
 
   const load = async () => {
     setLoading(true);
