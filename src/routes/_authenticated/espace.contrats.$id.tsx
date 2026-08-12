@@ -128,7 +128,27 @@ function ContratDetail() {
     [produits, c?.compagnie_id],
   );
 
-  async function save() {
+  /** Économie figée : calculée quand un contrat emprunteur devient « signé ». */
+  function economiePayload(force = false) {
+    if (!c) return {};
+    const signe = c.is_emprunteur && c.statut === "signe";
+    if (!signe) {
+      return c.economie_realisee !== null ? economieColumns(null) : {};
+    }
+    if (c.economie_realisee !== null && !force) return {};
+    const res = calculerEconomieEmprunteur({
+      capitalInitial: c.capital_initial,
+      dureeMois: c.duree_mois,
+      quotite: c.quotite,
+      tauxAssuranceAnnuel: c.taux_assurance_annuel,
+      dateNaissance: client?.date_naissance ?? null,
+      fumeur: client?.fumeur ?? null,
+      dateEffet: c.date_effet,
+    });
+    return res ? economieColumns(res) : {};
+  }
+
+  async function save(forceEconomie = false) {
     if (!c) return;
     setSaving(true);
     setErr(null);
@@ -157,6 +177,7 @@ function ContratDetail() {
         taux_assurance_annuel: c.taux_assurance_annuel,
         quotite: c.quotite,
         assiette: c.assiette,
+        ...economiePayload(forceEconomie),
       } as never)
       .eq("id", c.id);
     setSaving(false);
