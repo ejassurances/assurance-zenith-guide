@@ -131,6 +131,15 @@ export function ConformiteClientTab({
     await load();
   };
 
+  const setExpiration = async (id: string, valeur: string) => {
+    await supabase
+      .from("client_kyc_documents")
+      .update({ date_expiration: valeur || null, rappel_expiration_envoye_le: null })
+      .eq("id", id);
+    await load();
+  };
+
+
   const supprimer = async (doc: KycDoc) => {
     if (!confirm("Supprimer ce document ?")) return;
     await supabase.storage.from("dossier-documents").remove([doc.storage_path]);
