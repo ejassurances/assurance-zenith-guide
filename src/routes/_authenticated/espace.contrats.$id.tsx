@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { calculerEconomieEmprunteur, economieColumns } from "@/lib/economie-emprunteur";
 
 export const Route = createFileRoute("/_authenticated/espace/contrats/$id")({
   component: ContratDetail,
