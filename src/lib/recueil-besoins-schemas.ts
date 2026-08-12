@@ -443,3 +443,17 @@ export function getBranche(value: string): BrancheConfig | undefined {
 export function labelForBranche(value: string): string {
   return getBranche(value)?.label ?? value;
 }
+
+export function isFieldVisible(field: FieldConfig, values: Record<string, unknown>): boolean {
+  return field.showIf ? field.showIf(values) : true;
+}
+
+/** Champs obligatoires non renseignés d'une étape */
+export function missingRequired(section: SectionConfig, values: Record<string, unknown>): FieldConfig[] {
+  return section.fields.filter((f) => {
+    if (!f.required || !isFieldVisible(f, values)) return false;
+    const v = values[f.key];
+    if (f.type === "checkbox") return v !== true;
+    return v === undefined || v === null || v === "";
+  });
+}
