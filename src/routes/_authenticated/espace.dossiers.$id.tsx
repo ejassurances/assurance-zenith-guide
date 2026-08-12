@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { creerEtEnvoyerLettreMission } from "@/lib/lettres-mission.functions";
 import { getBranche, labelForBranche } from "@/lib/recueil-besoins-schemas";
+import { DossierPiecesPanel } from "@/components/dossier-pieces-panel";
 
 export const Route = createFileRoute("/_authenticated/espace/dossiers/$id")({
   component: DossierDetail,
@@ -114,8 +115,48 @@ function DossierDetail() {
         </Section>
       )}
 
+      <PiecesSection dossierId={id} clientEmail={dossier.client_email} canValidate={canEdit} />
+
       <MessagesPanel dossierId={id} userId={user!.id} />
       <DocumentsPanel dossierId={id} userId={user!.id} />
+    </div>
+  );
+}
+
+function PiecesSection({
+  dossierId,
+  clientEmail,
+  canValidate,
+}: {
+  dossierId: string;
+  clientEmail: string | null;
+  canValidate: boolean;
+}) {
+  const [clientId, setClientId] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data: piece } = await supabase
+        .from("dossier_pieces_requises")
+        .select("client_id")
+        .eq("dossier_id", dossierId)
+        .not("client_id", "is", null)
+        .limit(1)
+        .maybeSingle();
+      if (piece?.client_id) {
+        setClientId(piece.client_id);
+        return;
+      }
+      if (clientEmail) {
+        const { data: c } = await supabase.from("clients").select("id").eq("email", clientEmail).maybeSingle();
+        setClientId(c?.id ?? null);
+      }
+    })();
+  }, [dossierId, clientEmail]);
+
+  return (
+    <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+      <DossierPiecesPanel dossierId={dossierId} clientId={clientId} canValidate={canValidate} />
     </div>
   );
 }
