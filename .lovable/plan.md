@@ -1,51 +1,77 @@
-# Rattacher devis et contrats au référentiel compagnies / produits
+# Recueil des besoins adaptatif + équipements client
 
-## Constat vérifié
+## Ce qu'on construit
 
-- `contrats` possède **déjà** `compagnie_id` et `produit_id` (FK vers `compagnies` / `produits`), en plus des champs texte `assureur` et `produit`. La fiche contrat (`espace.contrats.$id.tsx`) affiche déjà deux listes déroulantes compagnie/produit, mais : les compagnies ne sont **pas filtrées sur le statut actif**, les produits sont filtrés **uniquement par compagnie** (pas par famille), et les champs texte libres `assureur` / `produit` restent éditables et servent d'affichage principal (titre de la fiche, colonnes de `contrats-tab.tsx`).
-- `dossiers` n'a **aucun** rattachement : seulement `type_assurance` (valeurs `emprunteur`, `prevoyance_sante`, `epargne_retraite`, `iard`, `trottinette`).
-- `produit_familles` contient 7 familles : `emprunteur`, `auto`, `moto`, `mrh`, `sante`, `prevoyance`, `pro`. Il n'y a donc **pas** de correspondance 1:1 avec les branches du recueil : une branche correspond à un ensemble de familles, et `epargne_retraite` n'a aujourd'hui aucune famille correspondante.
-- `produit_documents` (types `ipid`, `conditions_generales`, `fiche_produit`, `tarifs`, `autre`) est déjà géré dans la fiche compagnie, avec URL signée depuis le bucket `produits-documents`.
+1. Un parcours de recueil unique, public, partageable par lien, qui s'adapte aux réponses et ne redemande jamais une information déjà connue.
+2. Une gestion des équipements assurables du client (logement, véhicule, EDPM, épargne…), avec détection automatique d'opportunités et passerelle directe vers le recueil de la bonne branche.
 
-## 1. Migration
+## 1. Recueil des besoins — workflow adaptatif
 
-- `dossiers` : ajout de `compagnie_id uuid references public.compagnies(id)` et `produit_id uuid references public.produits(id)`, tous deux nullables (un devis peut démarrer sans produit retenu), plus index sur ces colonnes.
-- `contrats` : les FK existent — on garde `assureur` / `produit` en **libellés dénormalisés** (historique des contrats déjà saisis, et trace du nom au moment de la signature), mais ils deviennent **non éditables** et recalculés depuis la sélection.
-- Ajout d'un mapping branche → familles côté base : nouvelle colonne `produit_familles.branches text[]` (valeurs parmi les branches du recueil), renseignée dans la même migration :
-  - `emprunteur` → `{emprunteur}`
-  - `prevoyance`, `sante` → `{prevoyance_sante}`
-  - `auto`, `moto`, `mrh`, `pro` → `{iard}` (+ `trottinette` pour `moto`)
-  - `epargne_retraite` : aucune famille pour l'instant — le sélecteur affichera un message explicite invitant l'admin à créer la famille.
-  Ce choix garde la règle métier en base, modifiable sans redéploiement, plutôt que codée en dur.
-- Aucune nouvelle table, aucun changement de RLS (les politiques existantes sur `dossiers`, `contrats`, `produits`, `compagnies`, `produit_documents` suffisent).
+### Modèle de parcours
+Le socle actuel (`recueil-besoins-schemas.ts` + `recueil-workflow.tsx`) contient déjà des étapes, du conditionnel par champ (`showIf`), des cartes illustrées et des blocs pédagogiques. On le fait évoluer plutôt que le remplacer :
 
-## 2. Sélecteur compagnie / produit réutilisable
+- **Étapes conditionnelles** : ajouter `showIf` au niveau d'une étape entière (aujourd'hui uniquement au niveau du champ), pour sauter des étapes non pertinentes. La progression et le numéro d'étape se calculent sur les étapes réellement visibles.
+- **Étapes système réutilisables**, communes à toutes les branches, insérables dans n'importe quel ordre :
+  - `contact` (nom, prénom, email, téléphone, consentements contact + RGPD)
+  - `equipement` (rattachement à un équipement existant ou création)
+  - `recap` (récapitulatif, déjà présent)
+- **Ordre non figé** : le parcours est décrit par une séquence d'étapes calculée à l'ouverture selon le contexte d'entrée :
+  - entrée « je veux une étude » (site public, branche connue) → recueil d'abord, contact ensuite ;
+  - entrée « contactez-moi » (formulaire simple) → contact d'abord, puis proposition d'enchaîner le recueil ;
+  - entrée depuis l'espace client / un tag « Demander une étude » → contact déjà connu, on démarre directement au recueil.
 
-Nouveau composant `src/components/compagnie-produit-picker.tsx`, utilisé à la fois par les dossiers et les contrats :
-- Liste des compagnies **filtrée sur `statut = 'actif'`** (les compagnies inactives déjà rattachées restent affichées pour ne pas casser l'historique).
-- Liste des produits filtrée par compagnie **et** par famille autorisée pour la branche (`produit_familles.branches` contient le `type_assurance`), statut `actif` ou `en_test`.
-- Changement de compagnie → réinitialisation du produit ; famille affichée en libellé sous le produit sélectionné.
-- Message clair quand aucun produit n'est disponible pour la branche.
-- Charte existante conservée (mêmes classes de champ que les formulaires actuels, tokens de marque inchangés).
+### Lien public
+- Nouvelle route publique `/-/recueil/$token` (SSR, sans authentification), plus une variante `/-/recueil?branche=auto` pour un lien générique intégrable sur le futur site EJ Assurances (iframe ou lien).
+- Les jetons sont stockés en base (`recueil_liens`) : branche visée, client rattaché éventuel, équipement rattaché éventuel, date d'expiration, usage unique ou non, réponses partielles.
+- **Aucune donnée client n'est lisible par la clé publique** : le préremplissage et l'enregistrement passent par des server functions non authentifiées qui ne prennent que le jeton et ne renvoient que les champs stricts du préremplissage (prénom/nom/email/téléphone/équipement du client rattaché). Un lien générique sans client rattaché ne préremplit rien.
+- À la soumission : création ou mise à jour de la fiche client, création du dossier avec `recueil_besoins`, création de la tâche admin de reprise de contact — en réutilisant la logique déjà en place dans `api/public/leads`.
+- Sauvegarde automatique de l'avancement sur le jeton : le client peut reprendre son parcours plus tard avec le même lien.
 
-## 3. Documents du produit
+### Préremplissage
+Sources, par ordre de priorité : réponses déjà saisies sur le jeton → fiche client rattachée (identité, coordonnées) → équipement rattaché (type, libellé, valeur, date d'acquisition) → vide. Les champs préremplis restent modifiables et sont marqués « déjà connu » dans l'interface.
 
-Nouveau composant `src/components/produit-documents-link.tsx` : dès qu'un produit est sélectionné, affiche la liste de ses documents (`produit_documents`, hors documents internes pour les rôles non admin/mandataire) avec ouverture via URL signée — même logique que la fiche compagnie — plus un lien « Voir la fiche produit » vers `/espace/compagnies/$id`.
+## 2. Équipements et opportunités
 
-## 4. Impact sur les formulaires existants
+### Stockage
+La table `client_equipements` existe déjà (type, libellé, valeur, date d'acquisition, notes) et est éditable dans le back-office. On l'enrichit :
 
-- **Création de dossier** (`espace.dossiers.index.tsx`, formulaire `NewDossierForm`, également accessible depuis la fiche client) : après le choix du type d'assurance, ajout du sélecteur compagnie/produit (optionnel à cette étape) ; enregistrement de `compagnie_id` / `produit_id`.
-- **Fiche dossier** (`espace.dossiers.$id.tsx`) : bloc « Compagnie et produit » modifiable par admin/mandataire/prescripteur, avec les documents du produit ; lecture seule pour le client.
-- **Fiche contrat** (`espace.contrats.$id.tsx`) : remplacement des deux `select` actuels par le nouveau sélecteur (filtre statut actif + famille déduite de `is_emprunteur` / du dossier d'origine) ; `assureur` et `produit` passent en lecture seule et sont renseignés automatiquement à l'enregistrement depuis les libellés sélectionnés ; ajout du bloc documents produit.
-- **Création de contrat depuis la fiche client** (`contrats-tab.tsx`) : les valeurs de remplissage actuelles (« À définir » / « Nouveau contrat ») sont conservées à la création, puis remplacées dès la sélection dans la fiche ; la colonne « Assureur » affiche le nom de la compagnie rattachée quand elle existe.
-- Reprise des données existantes : pas de migration automatique du texte libre vers les FK (risque d'appariement erroné) ; un indicateur « produit non rattaché » signale les contrats à compléter manuellement.
+- `branche` : branche d'assurance visée par l'équipement (auto, habitation, emprunteur, EDPM, épargne…)
+- `assure_chez_nous` : booléen
+- `contrat_id` : contrat interne rattaché le cas échéant
+- `assureur_actuel`, `echeance_contrat_actuel` : contexte concurrent
+- `opportunite_statut` : `aucune` / `a_etudier` / `etude_demandee` / `traitee`
+- `ajoute_par_client` : distingue une saisie client d'une saisie back-office
+
+Les règles d'accès permettront au client de gérer ses propres équipements (lecture/ajout/modification sur sa fiche), le staff conservant l'accès complet.
+
+### Détection d'opportunité
+Déclenchée en base (trigger) à l'ajout ou à la modification d'un équipement, pour rester cohérente quelle que soit l'origine de la saisie. Règle : un équipement est `a_etudier` s'il n'est pas rattaché à un contrat actif chez nous, et qu'aucun dossier en cours ne couvre déjà sa branche pour ce client. Passe à `etude_demandee` quand le recueil est lancé depuis le tag, puis `traitee` à la signature d'un contrat rattaché.
+
+### Espace client
+- Nouvel onglet « Mes équipements » : liste, ajout, modification, avec badge d'opportunité.
+- Le tag « Demander une étude » génère un lien de recueil préconfiguré (branche déduite de l'équipement, équipement et client rattachés) et ouvre directement le parcours à l'étape de recueil.
+- Bandeau de notification en tête d'espace quand au moins une opportunité est `a_etudier`.
+- **Onboarding léger** : au premier accès, si aucun équipement n'est déclaré, un encart en 3 écrans invite à ajouter logement / véhicule / épargne, avec possibilité de passer. État stocké sur le profil du client pour ne pas réafficher.
+
+### Back-office
+Onglet équipements de la fiche client enrichi des mêmes champs et badges, plus un filtre « clients avec opportunités » dans la liste clients.
 
 ## Détails techniques
 
-- Une seule migration : 2 colonnes sur `dossiers`, 1 colonne sur `produit_familles` + mise à jour des valeurs, index.
-- `src/lib/produit-familles.ts` : helper de résolution branche → familles côté client (lecture de `produit_familles.branches`) et libellés.
-- Aucun impact sur le calcul des commissions ni sur `recalculer_echeances_contrat`, qui utilisent déjà `produit_id` / `famille_id` quand ils sont renseignés — le rattachement améliore d'ailleurs la recherche de règle de commission (`trouver_taux_regle`).
+- **Schémas** : `SectionConfig` gagne `id` et `showIf`; nouveau type `ParcoursContext` (branche, client, équipement, point d'entrée) et fonction `buildParcours(context)` retournant la séquence d'étapes. Les branches existantes restent compatibles.
+- **Composant** : `recueil-workflow.tsx` refactoré pour consommer une séquence d'étapes filtrée dynamiquement, avec un rendu dédié pour les étapes système (contact, équipement).
+- **Server functions** (`src/lib/recueil-public.functions.ts`, non authentifiées, validation Zod) : `ouvrirRecueil(token)`, `sauverBrouillon(token, values)`, `soumettreRecueil(token, values)`. Rate limiting simple par jeton et expiration à 30 jours. Les écritures passent par le client admin côté serveur uniquement.
+- **Migrations** : table `recueil_liens` (+ grants et politiques : aucun accès direct anon/authenticated, tout passe par les server functions), colonnes ajoutées sur `client_equipements` (+ politiques client), trigger de détection d'opportunité, énumération des branches d'équipement.
 
-## Point à confirmer
+## Découpage proposé
 
-Faut-il créer dès maintenant une famille de produits « Épargne / Retraite » pour que la branche `epargne_retraite` soit sélectionnable, ou la laisser sans produit rattachable pour l'instant ?
+1. Migrations (équipements enrichis + `recueil_liens` + trigger opportunité).
+2. Moteur de parcours adaptatif (schémas, étapes système, refonte du composant) — le recueil interne existant continue de fonctionner.
+3. Route publique par lien + server functions + préremplissage.
+4. Espace client : onglet équipements, notifications, onboarding, tag « Demander une étude ».
+5. Back-office : équipements enrichis, filtre opportunités.
+
+## Hypothèses à confirmer
+
+- Le lien public est valable 30 jours et réutilisable jusqu'à soumission (pas usage unique).
+- La branche « habitation » n'existe pas encore comme branche de recueil distincte (aujourd'hui regroupée dans `iard`) : je créerais `habitation` et `auto` comme branches propres, nécessaires pour que le mapping équipement → recueil soit précis.
