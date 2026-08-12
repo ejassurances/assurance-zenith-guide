@@ -198,6 +198,16 @@ function ClientsList() {
                   <td className="px-4 py-3">
                     <span className="rounded-full border border-line bg-background px-2 py-0.5 text-xs">{c.statut}</span>
                   </td>
+                  {canDelete && (
+                    <td className="px-4 py-3 text-right">
+                      <DeleteClientButton
+                        variant="icon"
+                        clientId={c.id}
+                        clientLabel={[c.prenom, c.nom].filter(Boolean).join(" ")}
+                        onDeleted={() => setItems((prev) => prev.filter((x) => x.id !== c.id))}
+                      />
+                    </td>
+                  )}
                 </tr>
                 );
               })}
