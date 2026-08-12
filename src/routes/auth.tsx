@@ -96,7 +96,7 @@ function AuthPage() {
               alt={`Logo ${SITE.name}`}
               className="size-14 rounded-xl object-cover ring-1 ring-[#d4af37]/40"
             />
-            <h1 className="mt-5 text-2xl font-bold tracking-tight text-white">{SITE.name}</h1>
+            <h1 className="mt-5 font-sans text-2xl font-bold tracking-tight text-white">{SITE.name}</h1>
             <p className="mt-1.5 text-sm text-white/55">CRM interne — accès sécurisé</p>
             <span className="mt-4 h-px w-16 bg-[#d4af37]/60" />
           </div>
@@ -104,7 +104,7 @@ function AuthPage() {
           <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.04] p-7 shadow-2xl backdrop-blur">
             {!forgotOpen ? (
               <>
-                <h2 className="text-base font-semibold text-white">Connexion</h2>
+                <h2 className="font-sans text-base font-semibold text-white">Connexion</h2>
                 <p className="mt-1 text-xs text-white/50">
                   Administrateur, mandataire, prescripteur ou client.
                 </p>
@@ -176,7 +176,7 @@ function AuthPage() {
               </>
             ) : (
               <form onSubmit={requestReset} className="space-y-4">
-                <h2 className="text-base font-semibold text-white">Réinitialiser le mot de passe</h2>
+                <h2 className="font-sans text-base font-semibold text-white">Réinitialiser le mot de passe</h2>
                 <div>
                   <label htmlFor="forgot" className={labelClass}>Adresse e-mail du compte</label>
                   <input
