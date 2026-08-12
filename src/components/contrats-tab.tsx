@@ -14,6 +14,7 @@ type Row = {
   capital_initial: number | null;
   taux_assurance_annuel: number | null;
   statut: string;
+  economie_realisee: number | null;
 };
 
 export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: boolean }) {
@@ -26,7 +27,7 @@ export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: 
     const { data } = await supabase
       .from("contrats")
       .select(
-        "id,numero,assureur,produit,date_effet,duree_mois,prime_annuelle,is_emprunteur,capital_initial,taux_assurance_annuel,statut",
+        "id,numero,assureur,produit,date_effet,duree_mois,prime_annuelle,is_emprunteur,capital_initial,taux_assurance_annuel,statut,economie_realisee",
       )
       .eq("client_id", clientId)
       .order("created_at", { ascending: false });
@@ -98,6 +99,7 @@ export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: 
                 <th className="px-3 py-2 text-left">Assureur</th>
                 <th className="px-3 py-2 text-left">N° / Effet</th>
                 <th className="px-3 py-2 text-right">Prime annuelle</th>
+                <th className="px-3 py-2 text-right">Économie réalisée</th>
                 <th className="px-3 py-2 text-left">Statut</th>
                 <th className="px-3 py-2" />
               </tr>
@@ -118,6 +120,13 @@ export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: 
                     {r.date_effet ? new Date(r.date_effet).toLocaleDateString("fr-FR") : "—"}
                   </td>
                   <td className="px-3 py-2 text-right">{formatEuro(r.prime_annuelle)}</td>
+                  <td className="px-3 py-2 text-right">
+                    {r.is_emprunteur && r.economie_realisee !== null ? (
+                      <span className="font-medium text-[color:var(--crm-gold)]">{formatEuro(r.economie_realisee)}</span>
+                    ) : (
+                      <span className="text-ink-muted">—</span>
+                    )}
+                  </td>
                   <td className="px-3 py-2">
                     <span className="rounded-full bg-surface px-2 py-0.5 text-xs">{r.statut}</span>
                   </td>

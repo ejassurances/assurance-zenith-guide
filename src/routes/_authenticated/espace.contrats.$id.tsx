@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { calculerEconomieEmprunteur, economieColumns } from "@/lib/economie-emprunteur";
 
 export const Route = createFileRoute("/_authenticated/espace/contrats/$id")({
   component: ContratDetail,
@@ -32,6 +33,10 @@ type Contrat = {
   taux_assurance_annuel: number | null;
   quotite: number | null;
   assiette: "capital_initial" | "capital_restant_du";
+  economie_cout_groupe: number | null;
+  economie_cout_delegue: number | null;
+  economie_realisee: number | null;
+  economie_calculee_le: string | null;
 };
 
 type Echeance = {
@@ -50,7 +55,15 @@ type Echeance = {
 type Compagnie = { id: string; nom: string };
 type Produit = { id: string; nom: string; compagnie_id: string };
 type Partenaire = { id: string; full_name: string | null; email: string | null; role: string };
-type ClientLite = { id: string; nom: string; prenom: string | null; reference: string };
+type ClientLite = {
+  id: string;
+  nom: string;
+  prenom: string | null;
+  reference: string;
+  date_naissance: string | null;
+  fumeur: boolean | null;
+  marque: string;
+};
 
 function ContratDetail() {
   const { id } = Route.useParams();
@@ -97,7 +110,11 @@ function ContratDetail() {
     setPrescripteurs(profs.filter((p) => roleMap.get(p.id)?.includes("prescripteur")).map((p) => ({ ...p, role: "prescripteur" })));
 
     if (ct) {
-      const cl = await supabase.from("clients").select("id,nom,prenom,reference").eq("id", ct.client_id).maybeSingle();
+      const cl = await supabase
+        .from("clients")
+        .select("id,nom,prenom,reference,date_naissance,fumeur,marque")
+        .eq("id", ct.client_id)
+        .maybeSingle();
       setClient((cl.data as ClientLite | null) ?? null);
     }
     setLoading(false);
@@ -112,7 +129,27 @@ function ContratDetail() {
     [produits, c?.compagnie_id],
   );
 
-  async function save() {
+  /** Économie figée : calculée quand un contrat emprunteur devient « signé ». */
+  function economiePayload(force = false) {
+    if (!c) return {};
+    const signe = c.is_emprunteur && c.statut === "signe";
+    if (!signe) {
+      return c.economie_realisee !== null ? economieColumns(null) : {};
+    }
+    if (c.economie_realisee !== null && !force) return {};
+    const res = calculerEconomieEmprunteur({
+      capitalInitial: c.capital_initial,
+      dureeMois: c.duree_mois,
+      quotite: c.quotite,
+      tauxAssuranceAnnuel: c.taux_assurance_annuel,
+      dateNaissance: client?.date_naissance ?? null,
+      fumeur: client?.fumeur ?? null,
+      dateEffet: c.date_effet,
+    });
+    return res ? economieColumns(res) : {};
+  }
+
+  async function save(forceEconomie = false) {
     if (!c) return;
     setSaving(true);
     setErr(null);
@@ -141,6 +178,7 @@ function ContratDetail() {
         taux_assurance_annuel: c.taux_assurance_annuel,
         quotite: c.quotite,
         assiette: c.assiette,
+        ...economiePayload(forceEconomie),
       } as never)
       .eq("id", c.id);
     setSaving(false);
@@ -346,6 +384,45 @@ function ContratDetail() {
               <option value="capital_restant_du">Capital restant dû (délégation)</option>
             </select>
           </F>
+
+          <div className="md:col-span-3 rounded-lg border border-line bg-surface-elevated p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h4 className="text-sm font-semibold text-ink">Économie réalisée pour le client</h4>
+                <p className="text-xs text-ink-muted">
+                  Figée automatiquement au passage du contrat au statut « Signé » (contrat groupe bancaire vs
+                  délégation).
+                </p>
+              </div>
+              {canEdit && c.statut === "signe" && (
+                <button
+                  onClick={() => save(true)}
+                  disabled={saving}
+                  className="rounded-md border border-line px-3 py-1.5 text-xs disabled:opacity-60"
+                >
+                  Recalculer l'économie
+                </button>
+              )}
+            </div>
+            {c.economie_realisee === null ? (
+              <p className="mt-3 text-xs text-ink-muted">
+                {c.statut === "signe"
+                  ? "Calcul impossible : renseignez le capital initial, la durée et la date de naissance du client."
+                  : "Aucune économie figée — le contrat n'est pas encore signé."}
+              </p>
+            ) : (
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                <Stat label="Coût contrat bancaire" value={formatEuro(c.economie_cout_groupe)} />
+                <Stat label="Coût contrat délégué" value={formatEuro(c.economie_cout_delegue)} />
+                <Stat label="Économie réalisée" value={formatEuro(c.economie_realisee)} accent />
+                {c.economie_calculee_le && (
+                  <p className="sm:col-span-3 text-xs text-ink-muted">
+                    Calculée le {new Date(c.economie_calculee_le).toLocaleDateString("fr-FR")}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </section>
       )}
 
@@ -434,7 +511,7 @@ function ContratDetail() {
       {canEdit && (
         <div className="flex justify-end">
           <button
-            onClick={save}
+            onClick={() => save()}
             disabled={saving}
             className="rounded-md bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
           >
@@ -528,5 +605,14 @@ function formatEuro(n: number | null | undefined) {
   if (n === null || n === undefined) return "—";
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 2 }).format(
     Number(n),
+  );
+}
+
+function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div className="rounded-md border border-line bg-surface p-3">
+      <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">{label}</p>
+      <p className={"mt-1 text-lg font-semibold " + (accent ? "text-[color:var(--crm-gold)]" : "text-ink")}>{value}</p>
+    </div>
   );
 }
