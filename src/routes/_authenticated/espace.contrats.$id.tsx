@@ -109,7 +109,11 @@ function ContratDetail() {
     setPrescripteurs(profs.filter((p) => roleMap.get(p.id)?.includes("prescripteur")).map((p) => ({ ...p, role: "prescripteur" })));
 
     if (ct) {
-      const cl = await supabase.from("clients").select("id,nom,prenom,reference").eq("id", ct.client_id).maybeSingle();
+      const cl = await supabase
+        .from("clients")
+        .select("id,nom,prenom,reference,date_naissance,fumeur,marque")
+        .eq("id", ct.client_id)
+        .maybeSingle();
       setClient((cl.data as ClientLite | null) ?? null);
     }
     setLoading(false);
