@@ -6,6 +6,8 @@ import { useAuth } from "@/lib/auth-context";
 import { creerEtEnvoyerLettreMission } from "@/lib/lettres-mission.functions";
 import { getBranche, labelForBranche } from "@/lib/recueil-besoins-schemas";
 import { DossierPiecesPanel } from "@/components/dossier-pieces-panel";
+import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
+import { ProduitDocumentsLink } from "@/components/produit-documents-link";
 
 export const Route = createFileRoute("/_authenticated/espace/dossiers/$id")({
   component: DossierDetail,
@@ -27,8 +29,58 @@ type Dossier = {
   fumeur: boolean | null;
   economie_estimee: number | null;
   notes: string | null;
+  compagnie_id: string | null;
+  produit_id: string | null;
   created_at: string;
 };
+
+function CompagnieProduitSection({
+  dossier,
+  canEdit,
+  onSaved,
+}: {
+  dossier: Dossier;
+  canEdit: boolean;
+  onSaved: () => void;
+}) {
+  const [compagnieId, setCompagnieId] = useState<string | null>(dossier.compagnie_id);
+  const [produitId, setProduitId] = useState<string | null>(dossier.produit_id);
+  const [saving, setSaving] = useState(false);
+
+  const save = async (compagnie: string | null, produit: string | null) => {
+    setSaving(true);
+    await supabase.from("dossiers").update({ compagnie_id: compagnie, produit_id: produit }).eq("id", dossier.id);
+    setSaving(false);
+    onSaved();
+  };
+
+  return (
+    <Section title="Compagnie et produit">
+      {canEdit ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <CompagnieProduitPicker
+            branche={dossier.type_assurance}
+            compagnieId={compagnieId}
+            produitId={produitId}
+            onChange={(sel) => {
+              setCompagnieId(sel.compagnie_id);
+              setProduitId(sel.produit_id);
+              save(sel.compagnie_id, sel.produit_id);
+            }}
+          />
+        </div>
+      ) : (
+        <p className="text-sm text-ink-soft">
+          {produitId ? "Produit retenu pour ce dossier." : "Aucun produit retenu pour le moment."}
+        </p>
+      )}
+      {saving && <p className="mt-2 text-xs text-ink-muted">Enregistrement…</p>}
+      <div className="mt-3">
+        <ProduitDocumentsLink produitId={produitId} compagnieId={compagnieId} />
+      </div>
+    </Section>
+  );
+}
 
 function DossierDetail() {
   const { id } = useParams({ from: "/_authenticated/espace/dossiers/$id" });
@@ -71,6 +123,8 @@ function DossierDetail() {
           Référence {dossier.reference} · {labelForBranche(dossier.type_assurance)}
         </p>
       </div>
+
+      <CompagnieProduitSection dossier={dossier} canEdit={canEdit} onSaved={load} />
 
       <RecueilPanel dossier={dossier} />
       {canEdit && <LettreMissionPanel dossierId={id} clientEmail={dossier.client_email} />}

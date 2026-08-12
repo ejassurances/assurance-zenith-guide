@@ -1454,6 +1454,7 @@ export type Database = {
           client_id: string | null
           client_nom: string
           client_phone: string | null
+          compagnie_id: string | null
           created_at: string
           created_by: string | null
           cree_automatiquement: boolean
@@ -1462,6 +1463,7 @@ export type Database = {
           fumeur: boolean | null
           id: string
           notes: string | null
+          produit_id: string | null
           recueil_besoins: Json | null
           reference: string
           relance_pieces_envoyee_le: string | null
@@ -1477,6 +1479,7 @@ export type Database = {
           client_id?: string | null
           client_nom: string
           client_phone?: string | null
+          compagnie_id?: string | null
           created_at?: string
           created_by?: string | null
           cree_automatiquement?: boolean
@@ -1485,6 +1488,7 @@ export type Database = {
           fumeur?: boolean | null
           id?: string
           notes?: string | null
+          produit_id?: string | null
           recueil_besoins?: Json | null
           reference?: string
           relance_pieces_envoyee_le?: string | null
@@ -1500,6 +1504,7 @@ export type Database = {
           client_id?: string | null
           client_nom?: string
           client_phone?: string | null
+          compagnie_id?: string | null
           created_at?: string
           created_by?: string | null
           cree_automatiquement?: boolean
@@ -1508,6 +1513,7 @@ export type Database = {
           fumeur?: boolean | null
           id?: string
           notes?: string | null
+          produit_id?: string | null
           recueil_besoins?: Json | null
           reference?: string
           relance_pieces_envoyee_le?: string | null
@@ -1515,7 +1521,22 @@ export type Database = {
           type_assurance?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "dossiers_compagnie_id_fkey"
+            columns: ["compagnie_id"]
+            isOneToOne: false
+            referencedRelation: "compagnies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dossiers_produit_id_fkey"
+            columns: ["produit_id"]
+            isOneToOne: false
+            referencedRelation: "produits"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ecritures: {
         Row: {
@@ -1969,6 +1990,7 @@ export type Database = {
       }
       produit_familles: {
         Row: {
+          branches: string[]
           champs_standards: Json
           code: string
           created_at: string
@@ -1979,6 +2001,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          branches?: string[]
           champs_standards?: Json
           code: string
           created_at?: string
@@ -1989,6 +2012,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          branches?: string[]
           champs_standards?: Json
           code?: string
           created_at?: string

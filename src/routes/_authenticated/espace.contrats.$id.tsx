@@ -1,8 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { calculerEconomieEmprunteur, economieColumns } from "@/lib/economie-emprunteur";
+import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
+import { ProduitDocumentsLink } from "@/components/produit-documents-link";
 
 export const Route = createFileRoute("/_authenticated/espace/contrats/$id")({
   component: ContratDetail,
@@ -52,8 +54,6 @@ type Echeance = {
   statut: string;
 };
 
-type Compagnie = { id: string; nom: string };
-type Produit = { id: string; nom: string; compagnie_id: string };
 type Partenaire = { id: string; full_name: string | null; email: string | null; role: string };
 type ClientLite = {
   id: string;
@@ -74,8 +74,6 @@ function ContratDetail() {
   const [c, setC] = useState<Contrat | null>(null);
   const [client, setClient] = useState<ClientLite | null>(null);
   const [ech, setEch] = useState<Echeance[]>([]);
-  const [compagnies, setCompagnies] = useState<Compagnie[]>([]);
-  const [produits, setProduits] = useState<Produit[]>([]);
   const [mandataires, setMandataires] = useState<Partenaire[]>([]);
   const [prescripteurs, setPrescripteurs] = useState<Partenaire[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,11 +82,9 @@ function ContratDetail() {
 
   async function load() {
     setLoading(true);
-    const [contrat, echeances, cies, prods, users, roles] = await Promise.all([
+    const [contrat, echeances, users, roles] = await Promise.all([
       supabase.from("contrats").select("*").eq("id", id).maybeSingle(),
       supabase.from("contrat_echeances").select("*").eq("contrat_id", id).order("annee"),
-      supabase.from("compagnies").select("id,nom").order("nom"),
-      supabase.from("produits").select("id,nom,compagnie_id").order("nom"),
       supabase.from("profiles").select("id,full_name,email"),
       supabase.from("user_roles").select("user_id,role"),
     ]);
@@ -96,8 +92,6 @@ function ContratDetail() {
     const ct = contrat.data as Contrat | null;
     setC(ct);
     setEch((echeances.data as Echeance[]) ?? []);
-    setCompagnies((cies.data as Compagnie[]) ?? []);
-    setProduits((prods.data as Produit[]) ?? []);
 
     const roleMap = new Map<string, string[]>();
     for (const r of (roles.data as { user_id: string; role: string }[]) ?? []) {
@@ -124,10 +118,6 @@ function ContratDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const filteredProduits = useMemo(
-    () => produits.filter((p) => !c?.compagnie_id || p.compagnie_id === c.compagnie_id),
-    [produits, c?.compagnie_id],
-  );
 
   /** Économie figée : calculée quand un contrat emprunteur devient « signé ». */
   function economiePayload(force = false) {
@@ -264,42 +254,38 @@ function ContratDetail() {
           </label>
         </F>
 
-        <F label="Compagnie">
-          <select
-            value={c.compagnie_id ?? ""}
+        <div className="md:col-span-2 grid gap-4 md:grid-cols-2">
+          <CompagnieProduitPicker
+            branche={c.is_emprunteur ? "emprunteur" : null}
+            compagnieId={c.compagnie_id}
+            produitId={c.produit_id}
             disabled={!canEdit}
-            onChange={(e) => setC({ ...c, compagnie_id: e.target.value || null, produit_id: null })}
-            className={inp}
-          >
-            <option value="">— Choisir —</option>
-            {compagnies.map((x) => (
-              <option key={x.id} value={x.id}>
-                {x.nom}
-              </option>
-            ))}
-          </select>
+            onChange={(sel) =>
+              setC({
+                ...c,
+                compagnie_id: sel.compagnie_id,
+                produit_id: sel.produit_id,
+                assureur: sel.compagnie_nom ?? c.assureur,
+                produit: sel.produit_nom ?? c.produit,
+              })
+            }
+          />
+        </div>
+        <div className="md:col-span-3">
+          <ProduitDocumentsLink produitId={c.produit_id} compagnieId={c.compagnie_id} />
+        </div>
+        <F label="Assureur (libellé enregistré)">
+          <input value={c.assureur} readOnly className={`${inp} bg-background/60`} />
         </F>
-        <F label="Produit référencé">
-          <select
-            value={c.produit_id ?? ""}
-            disabled={!canEdit}
-            onChange={(e) => setC({ ...c, produit_id: e.target.value || null })}
-            className={inp}
-          >
-            <option value="">— Choisir —</option>
-            {filteredProduits.map((x) => (
-              <option key={x.id} value={x.id}>
-                {x.nom}
-              </option>
-            ))}
-          </select>
+        <F label="Nom du produit (libellé enregistré)">
+          <input value={c.produit} readOnly className={`${inp} bg-background/60`} />
         </F>
-        <F label="Nom commercial affiché">
-          <input value={c.produit} onChange={(e) => setC({ ...c, produit: e.target.value })} readOnly={!canEdit} className={inp} />
-        </F>
-        <F label="Assureur (libellé libre)">
-          <input value={c.assureur} onChange={(e) => setC({ ...c, assureur: e.target.value })} readOnly={!canEdit} className={inp} />
-        </F>
+        {!c.produit_id && (
+          <p className="md:col-span-3 rounded-md bg-amber-50 p-2 text-xs text-amber-800">
+            Produit non rattaché au référentiel — à compléter.
+          </p>
+        )}
+
         <F label="Numéro contrat">
           <input value={c.numero ?? ""} onChange={(e) => setC({ ...c, numero: e.target.value })} readOnly={!canEdit} className={inp} />
         </F>
