@@ -1523,6 +1523,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "dossiers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "dossiers_compagnie_id_fkey"
             columns: ["compagnie_id"]
             isOneToOne: false
