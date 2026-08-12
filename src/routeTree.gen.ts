@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedEspaceRouteImport } from './routes/_authenticated/espace'
 import { Route as AuthenticatedEspaceIndexRouteImport } from './routes/_authenticated/espace.index'
 import { Route as ApiPublicRelancePiecesRouteImport } from './routes/api/public/relance-pieces'
+import { Route as ApiPublicRappelsExpirationRouteImport } from './routes/api/public/rappels-expiration'
 import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
 import { Route as ApiPublicBootstrapAdminRouteImport } from './routes/api/public/bootstrap-admin'
 import { Route as AuthenticatedEspaceUtilisateursRouteImport } from './routes/_authenticated/espace.utilisateurs'
@@ -76,6 +77,12 @@ const ApiPublicRelancePiecesRoute = ApiPublicRelancePiecesRouteImport.update({
   path: '/api/public/relance-pieces',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicRappelsExpirationRoute =
+  ApiPublicRappelsExpirationRouteImport.update({
+    id: '/api/public/rappels-expiration',
+    path: '/api/public/rappels-expiration',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicLeadsRoute = ApiPublicLeadsRouteImport.update({
   id: '/api/public/leads',
   path: '/api/public/leads',
@@ -234,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
+  '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/espace/': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
@@ -265,6 +273,7 @@ export interface FileRoutesByTo {
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
+  '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/espace': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
@@ -299,6 +308,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
+  '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/_authenticated/espace/': typeof AuthenticatedEspaceIndexRoute
   '/_authenticated/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
@@ -333,6 +343,7 @@ export interface FileRouteTypes {
     | '/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
     | '/api/public/leads'
+    | '/api/public/rappels-expiration'
     | '/api/public/relance-pieces'
     | '/espace/'
     | '/espace/clients/$id'
@@ -364,6 +375,7 @@ export interface FileRouteTypes {
     | '/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
     | '/api/public/leads'
+    | '/api/public/rappels-expiration'
     | '/api/public/relance-pieces'
     | '/espace'
     | '/espace/clients/$id'
@@ -397,6 +409,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
     | '/api/public/leads'
+    | '/api/public/rappels-expiration'
     | '/api/public/relance-pieces'
     | '/_authenticated/espace/'
     | '/_authenticated/espace/clients/$id'
@@ -419,6 +432,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   ApiPublicBootstrapAdminRoute: typeof ApiPublicBootstrapAdminRoute
   ApiPublicLeadsRoute: typeof ApiPublicLeadsRoute
+  ApiPublicRappelsExpirationRoute: typeof ApiPublicRappelsExpirationRoute
   ApiPublicRelancePiecesRoute: typeof ApiPublicRelancePiecesRoute
   ApiPublicWebhooksCrmRoute: typeof ApiPublicWebhooksCrmRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -475,6 +489,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/relance-pieces'
       fullPath: '/api/public/relance-pieces'
       preLoaderRoute: typeof ApiPublicRelancePiecesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/rappels-expiration': {
+      id: '/api/public/rappels-expiration'
+      path: '/api/public/rappels-expiration'
+      fullPath: '/api/public/rappels-expiration'
+      preLoaderRoute: typeof ApiPublicRappelsExpirationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/leads': {
@@ -715,6 +736,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   ApiPublicBootstrapAdminRoute: ApiPublicBootstrapAdminRoute,
   ApiPublicLeadsRoute: ApiPublicLeadsRoute,
+  ApiPublicRappelsExpirationRoute: ApiPublicRappelsExpirationRoute,
   ApiPublicRelancePiecesRoute: ApiPublicRelancePiecesRoute,
   ApiPublicWebhooksCrmRoute: ApiPublicWebhooksCrmRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
