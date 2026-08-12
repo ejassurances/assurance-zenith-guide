@@ -116,7 +116,45 @@ function PiecesManquantesEmail(props: {
   return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
 }
 
+function DocumentsExpirationEmail(props: {
+  clientName?: string;
+  cabinetName?: string;
+  documents?: string[];
+  link?: string;
+}) {
+  const nom = props.cabinetName || "EJ Partners Assurances";
+  const liste = (props.documents || []).map((d) => "<li>" + d + "</li>").join("");
+  const html =
+    "<p>Bonjour " +
+    (props.clientName || "") +
+    ",</p>" +
+    "<p>Certains documents de votre dossier arrivent a expiration :</p>" +
+    "<ul>" +
+    liste +
+    "</ul>" +
+    "<p>Afin de maintenir votre dossier a jour, merci de nous transmettre les pieces renouvelees.</p>" +
+    "<p><a href='" +
+    (props.link || "") +
+    "'>Deposer mes pieces dans mon espace client</a></p>" +
+    "<p>Cordialement,<br/>L'equipe " +
+    nom +
+    "</p>";
+  const style = { fontFamily: "Arial, sans-serif", color: "#1a1a1a", fontSize: "15px", lineHeight: "1.6" };
+  return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
+}
+
 export const TEMPLATES: Record<string, TemplateEntry> = {
+  "documents-expiration": {
+    component: DocumentsExpirationEmail,
+    subject: "Vos documents arrivent a expiration",
+    displayName: "Relance - Documents expirant",
+    previewData: {
+      clientName: "Jean Dupont",
+      documents: ["Carte d'identite (valide jusqu'au 01/09/2026)"],
+      link: "https://example.com/espace/mon-espace",
+    },
+  },
+
   "compte-client-cree": {
     component: CompteClientCreeEmail,
     subject: (data: Record<string, any>) =>

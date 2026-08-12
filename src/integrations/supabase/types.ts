@@ -403,6 +403,7 @@ export type Database = {
           id: string
           nom: string
           notes: string | null
+          rappel_expiration_envoye_le: string | null
           statut: string
           storage_path: string
           type: Database["public"]["Enums"]["client_kyc_type"]
@@ -418,6 +419,7 @@ export type Database = {
           id?: string
           nom: string
           notes?: string | null
+          rappel_expiration_envoye_le?: string | null
           statut?: string
           storage_path: string
           type: Database["public"]["Enums"]["client_kyc_type"]
@@ -433,6 +435,7 @@ export type Database = {
           id?: string
           nom?: string
           notes?: string | null
+          rappel_expiration_envoye_le?: string | null
           statut?: string
           storage_path?: string
           type?: Database["public"]["Enums"]["client_kyc_type"]
@@ -1307,11 +1310,13 @@ export type Database = {
           categorie: string
           client_id: string | null
           created_at: string
+          date_expiration: string | null
           dossier_id: string | null
           file_name: string
           file_size: number | null
           id: string
           mime_type: string | null
+          rappel_expiration_envoye_le: string | null
           storage_path: string
           uploader_id: string
         }
@@ -1319,11 +1324,13 @@ export type Database = {
           categorie?: string
           client_id?: string | null
           created_at?: string
+          date_expiration?: string | null
           dossier_id?: string | null
           file_name: string
           file_size?: number | null
           id?: string
           mime_type?: string | null
+          rappel_expiration_envoye_le?: string | null
           storage_path: string
           uploader_id: string
         }
@@ -1331,11 +1338,13 @@ export type Database = {
           categorie?: string
           client_id?: string | null
           created_at?: string
+          date_expiration?: string | null
           dossier_id?: string | null
           file_name?: string
           file_size?: number | null
           id?: string
           mime_type?: string | null
+          rappel_expiration_envoye_le?: string | null
           storage_path?: string
           uploader_id?: string
         }
