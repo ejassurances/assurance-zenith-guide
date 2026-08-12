@@ -18,20 +18,37 @@ function EspaceLayout() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [mustChange, setMustChange] = useState(false);
 
   const signOut = async () => {
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   };
 
+  // Changement de mot de passe obligatoire après création automatique du compte.
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase.from("profiles").select("must_change_password").eq("id", user.id).maybeSingle();
+      setMustChange(!!(data as { must_change_password?: boolean } | null)?.must_change_password);
+    })();
+  }, [user]);
+
+  useEffect(() => {
+    if (mustChange && pathname !== "/espace/parametres") {
+      navigate({ to: "/espace/parametres", replace: true });
+    }
+  }, [mustChange, pathname, navigate]);
+
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center text-ink-muted">Chargement…</div>;
   }
 
   const nav = [
-    { to: "/espace", label: "Tableau de bord", exact: true },
+    { to: "/espace", label: "Tableau de bord", exact: true, hide: role === "client" },
+    { to: "/espace/mon-espace", label: "Mon espace", hide: role !== "client" },
     { to: "/espace/clients", label: "Clients", hide: role === "client" },
-    { to: "/espace/dossiers", label: "Dossiers" },
+    { to: "/espace/dossiers", label: "Dossiers", hide: role === "client" },
     { to: "/espace/taches", label: "Tâches", hide: role === "client" },
     { to: "/espace/compagnies", label: "Compagnies", hide: role !== "admin" && role !== "mandataire" },
     { to: "/espace/commissions", label: "Commissions", hide: role === "client" },
@@ -42,6 +59,7 @@ function EspaceLayout() {
     { to: "/espace/utilisateurs", label: "Utilisateurs", hide: role !== "admin" },
     { to: "/espace/parametres", label: "Paramètres" },
   ].filter((n) => !n.hide);
+
 
   return (
     <div className="crm-theme min-h-screen bg-background">
