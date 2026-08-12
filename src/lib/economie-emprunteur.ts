@@ -38,6 +38,10 @@ export type EconomieResult = {
     taux_source: "contrat" | "table";
   };
 };
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
+}
+
 
 export function ageALaDate(dateNaissance: string | null, reference: string | null): number | null {
   if (!dateNaissance) return null;
