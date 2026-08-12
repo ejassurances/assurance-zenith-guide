@@ -119,7 +119,13 @@ export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: 
                     <br />
                     {r.date_effet ? new Date(r.date_effet).toLocaleDateString("fr-FR") : "—"}
                   </td>
-                  <td className="px-3 py-2 text-right">{formatEuro(r.prime_annuelle)}</td>
+                  <td className="px-3 py-2 text-right">
+                    {r.is_emprunteur && r.economie_realisee !== null ? (
+                      <span className="font-medium text-[color:var(--crm-gold)]">{formatEuro(r.economie_realisee)}</span>
+                    ) : (
+                      <span className="text-ink-muted">—</span>
+                    )}
+                  </td>
                   <td className="px-3 py-2">
                     <span className="rounded-full bg-surface px-2 py-0.5 text-xs">{r.statut}</span>
                   </td>
