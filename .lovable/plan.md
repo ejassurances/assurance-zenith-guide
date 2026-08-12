@@ -104,6 +104,8 @@ Le pipeline est conçu comme un dossier de preuve opposable en cas de contrôle 
 - Même frise, mais les étapes 3 à 5 fusionnées en un seul jalon « Étude en cours ».
 - Actions client : signer la lettre de mission, signer / refuser / demander une modification du devoir de conseil, ouvrir le lien de souscription, accéder au contrat.
 - Documents signés téléchargeables.
+- Un projet passé en `contrat_actif` disparaît de cette liste ; le client le retrouve sous forme de contrat, avec ses documents signés rattachés.
+
 
 ### Onglet Conformité
 Inchangé : KYC (CNI, justificatif de domicile, RIB) et LCB-FT uniquement. Les documents contractuels en sont retirés s'ils y figurent.
