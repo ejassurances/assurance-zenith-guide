@@ -27,7 +27,7 @@ function NotFoundComponent() {
             to="/"
             className="inline-flex items-center justify-center rounded-full bg-ink px-6 py-2.5 text-sm font-medium text-primary-foreground"
           >
-            Retour à l'accueil
+            Retour au CRM
           </Link>
         </div>
       </div>
@@ -60,7 +60,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             href="/"
             className="inline-flex items-center justify-center rounded-full border border-line bg-surface-elevated px-5 py-2.5 text-sm font-medium text-ink"
           >
-            Retour à l'accueil
+            Retour au CRM
           </a>
         </div>
       </div>
@@ -68,46 +68,14 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
-const orgJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "FinancialService",
-  name: SITE.name,
-  description: SITE.description,
-  areaServed: "FR",
-  serviceType: [
-    "Courtage en assurance emprunteur",
-    "Conseil en transmission de patrimoine",
-    "Prévoyance et transmission pour familles en coparentalité",
-  ],
-  telephone: SITE.phone,
-  email: SITE.email,
-  address: {
-    "@type": "PostalAddress",
-    streetAddress: "71 Rue du Docteur Roux",
-    postalCode: "95600",
-    addressLocality: "Eaubonne",
-    addressCountry: "FR",
-  },
-  identifier: [
-    { "@type": "PropertyValue", propertyID: "SIRET", value: SITE.siret },
-    { "@type": "PropertyValue", propertyID: "ORIAS", value: "25005811" },
-  ],
-};
-
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: `${SITE.name} — Courtage en assurance emprunteur & transmission` },
+      { title: `CRM — ${SITE.name}` },
       { name: "description", content: SITE.description },
-      { name: "author", content: SITE.name },
-      { property: "og:title", content: `${SITE.name} — Courtier en assurances` },
-      { property: "og:description", content: SITE.description },
-      { property: "og:type", content: "website" },
-      { property: "og:site_name", content: SITE.name },
-      { property: "og:locale", content: "fr_FR" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { name: "robots", content: "noindex,nofollow" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -118,9 +86,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&display=swap",
       },
-    ],
-    scripts: [
-      { type: "application/ld+json", children: JSON.stringify(orgJsonLd) },
     ],
   }),
   shellComponent: RootShell,
