@@ -1,77 +1,110 @@
-# Recueil des besoins adaptatif + équipements client
+# Pipeline projet (dossier) — de la lettre de mission au contrat actif
 
-## Ce qu'on construit
+Le développement précédent (« générer une lettre de mission ») est mis en pause : la lettre de mission devient la première étape d'un pipeline plus large porté par le dossier.
 
-1. Un parcours de recueil unique, public, partageable par lien, qui s'adapte aux réponses et ne redemande jamais une information déjà connue.
-2. Une gestion des équipements assurables du client (logement, véhicule, EDPM, épargne…), avec détection automatique d'opportunités et passerelle directe vers le recueil de la bonne branche.
+## Principe
 
-## 1. Recueil des besoins — workflow adaptatif
+Le dossier porte un **statut de pipeline** unique qui avance étape par étape. Chaque étape définit :
+- qui la voit (client / staff seulement),
+- qui peut la faire avancer,
+- quels documents et traces elle produit.
 
-### Modèle de parcours
-Le socle actuel (`recueil-besoins-schemas.ts` + `recueil-workflow.tsx`) contient déjà des étapes, du conditionnel par champ (`showIf`), des cartes illustrées et des blocs pédagogiques. On le fait évoluer plutôt que le remplacer :
+Les documents produits (lettre de mission, devoir de conseil, contrat) s'affichent dans l'onglet **Projet** du dossier, côté back-office comme côté espace client. L'onglet **Conformité** reste strictement réservé au KYC et au LCB-FT.
 
-- **Étapes conditionnelles** : ajouter `showIf` au niveau d'une étape entière (aujourd'hui uniquement au niveau du champ), pour sauter des étapes non pertinentes. La progression et le numéro d'étape se calculent sur les étapes réellement visibles.
-- **Étapes système réutilisables**, communes à toutes les branches, insérables dans n'importe quel ordre :
-  - `contact` (nom, prénom, email, téléphone, consentements contact + RGPD)
-  - `equipement` (rattachement à un équipement existant ou création)
-  - `recap` (récapitulatif, déjà présent)
-- **Ordre non figé** : le parcours est décrit par une séquence d'étapes calculée à l'ouverture selon le contexte d'entrée :
-  - entrée « je veux une étude » (site public, branche connue) → recueil d'abord, contact ensuite ;
-  - entrée « contactez-moi » (formulaire simple) → contact d'abord, puis proposition d'enchaîner le recueil ;
-  - entrée depuis l'espace client / un tag « Demander une étude » → contact déjà connu, on démarre directement au recueil.
+## Les étapes
 
-### Lien public
-- Nouvelle route publique `/-/recueil/$token` (SSR, sans authentification), plus une variante `/-/recueil?branche=auto` pour un lien générique intégrable sur le futur site EJ Assurances (iframe ou lien).
-- Les jetons sont stockés en base (`recueil_liens`) : branche visée, client rattaché éventuel, équipement rattaché éventuel, date d'expiration, usage unique ou non, réponses partielles.
-- **Aucune donnée client n'est lisible par la clé publique** : le préremplissage et l'enregistrement passent par des server functions non authentifiées qui ne prennent que le jeton et ne renvoient que les champs stricts du préremplissage (prénom/nom/email/téléphone/équipement du client rattaché). Un lien générique sans client rattaché ne préremplit rien.
-- À la soumission : création ou mise à jour de la fiche client, création du dossier avec `recueil_besoins`, création de la tâche admin de reprise de contact — en réutilisant la logique déjà en place dans `api/public/leads`.
-- Sauvegarde automatique de l'avancement sur le jeton : le client peut reprendre son parcours plus tard avec le même lien.
+```text
+1  lettre_mission_a_signer        client : voit + signe
+2  lettre_mission_signee          document signé visible dans le projet
+3  devis_en_cours                 STAFF UNIQUEMENT — création des devis
+4  conseil_prerempli              STAFF UNIQUEMENT — pré-remplissage
+5  conseil_valide_staff           STAFF UNIQUEMENT — validé avant envoi
+6  conseil_a_signer               client : voit + signe / refuse / demande modif
+7a conseil_signe                  -> étape 8
+7b conseil_refuse                 fin de parcours (ou reprise manuelle)
+7c conseil_modif_demandee         retour possible à l'étape 4
+8  souscription_envoyee           lien de souscription envoyé par mail, trace visible
+9  en_traitement_assureur         suivi des demandes de l'assureur
+10 contrat_valide                 bouton d'accès direct au contrat
+11 contrat_actif                  entrée en vigueur réelle
+```
 
-### Préremplissage
-Sources, par ordre de priorité : réponses déjà saisies sur le jeton → fiche client rattachée (identité, coordonnées) → équipement rattaché (type, libellé, valeur, date d'acquisition) → vide. Les champs préremplis restent modifiables et sont marqués « déjà connu » dans l'interface.
+Les statuts terminaux hors parcours restent disponibles : `perdu` / `abandonne`.
 
-## 2. Équipements et opportunités
+### Visibilité
 
-### Stockage
-La table `client_equipements` existe déjà (type, libellé, valeur, date d'acquisition, notes) et est éditable dans le back-office. On l'enrichit :
+| Étape | Client | Staff |
+|---|---|---|
+| 1, 2 | oui | oui |
+| 3, 4, 5 | **non** (le client voit « étude en cours ») | oui |
+| 6, 7a/b/c | oui | oui |
+| 8, 9 | oui (trace d'envoi + « en traitement ») | oui + détail assureur |
+| 10, 11 | oui + accès contrat | oui |
 
-- `branche` : branche d'assurance visée par l'équipement (auto, habitation, emprunteur, EDPM, épargne…)
-- `assure_chez_nous` : booléen
-- `contrat_id` : contrat interne rattaché le cas échéant
-- `assureur_actuel`, `echeance_contrat_actuel` : contexte concurrent
-- `opportunite_statut` : `aucune` / `a_etudier` / `etude_demandee` / `traitee`
-- `ajoute_par_client` : distingue une saisie client d'une saisie back-office
+Le client ne voit jamais les étapes 3 à 5 : son espace affiche un libellé neutre « Étude en cours par votre conseiller ». Cette masquage est appliqué en base (politique de lecture) et pas seulement dans l'interface.
 
-Les règles d'accès permettront au client de gérer ses propres équipements (lecture/ajout/modification sur sa fiche), le staff conservant l'accès complet.
+### Transitions
 
-### Détection d'opportunité
-Déclenchée en base (trigger) à l'ajout ou à la modification d'un équipement, pour rester cohérente quelle que soit l'origine de la saisie. Règle : un équipement est `a_etudier` s'il n'est pas rattaché à un contrat actif chez nous, et qu'aucun dossier en cours ne couvre déjà sa branche pour ce client. Passe à `etude_demandee` quand le recueil est lancé depuis le tag, puis `traitee` à la signature d'un contrat rattaché.
+Chaque avancement est validé côté serveur : une transition n'est acceptée que si elle part du statut attendu, si l'auteur a le rôle requis, et si les prérequis sont remplis (lettre signée avant devis, devoir de conseil validé avant envoi au client, etc.). Toute transition est journalisée.
 
-### Espace client
-- Nouvel onglet « Mes équipements » : liste, ajout, modification, avec badge d'opportunité.
-- Le tag « Demander une étude » génère un lien de recueil préconfiguré (branche déduite de l'équipement, équipement et client rattachés) et ouvre directement le parcours à l'étape de recueil.
-- Bandeau de notification en tête d'espace quand au moins une opportunité est `a_etudier`.
-- **Onboarding léger** : au premier accès, si aucun équipement n'est déclaré, un encart en 3 écrans invite à ajouter logement / véhicule / épargne, avec possibilité de passer. État stocké sur le profil du client pour ne pas réafficher.
+## Modélisation
 
-### Back-office
-Onglet équipements de la fiche client enrichi des mêmes champs et badges, plus un filtre « clients avec opportunités » dans la liste clients.
+### Statut du dossier
+Le type actuel `dossier_statut` (nouveau / en_cours / signe / perdu) est trop pauvre. On ajoute les valeurs du pipeline ci-dessus à l'énumération, et on conserve les anciennes valeurs pour les dossiers existants, en les rattachant au pipeline (`nouveau` → étape 1, `signe` → `contrat_valide`).
+
+### Historique du pipeline
+Nouvelle table `dossier_etapes` : dossier, statut atteint, auteur, rôle, date, commentaire, données associées. Elle sert de journal (« qui a fait avancer quoi et quand ») et alimente la frise d'avancement affichée dans l'onglet Projet.
+
+### Devoir de conseil
+Nouvelle table `devoirs_conseil` : dossier, contenu (réponses du recueil figées), statut (`prerempli`, `valide_staff`, `a_signer`, `signe`, `refuse`, `modif_demandee`), motif de refus / demande de modification, signature, date, empreinte du document, IP et agent — même schéma de preuve que `lettres_mission`. Le retour en pré-remplissage crée une nouvelle version plutôt que d'écraser la précédente, pour garder la trace des allers-retours.
+
+### Souscription
+Nouvelle table `souscription_envois` : dossier, lien envoyé, email destinataire, date d'envoi, auteur, date de première ouverture éventuelle. Chaque envoi est une ligne, ce qui donne la trace visible sur le projet et permet les relances.
+
+### Suivi assureur
+Nouvelle table `dossier_suivi_assureur` : dossier, type (`piece_complementaire`, `question_medicale`, `tarification`, `autre`), description libre, statut (`en_attente`, `fourni`, `clos`), date. Un statut libre serait insuffisant : les demandes de l'assureur sont multiples et se cumulent, donc on les liste sous l'étape 9 sans changer le statut du dossier.
+
+### Création du contrat depuis les informations compagnie
+Nouvelle table `contrats_entrants` : source (`saisie_manuelle` ou `email_auto`), dossier rattaché (déductible d'une référence), payload brut, champs normalisés (numéro de contrat, date d'effet, prime, compagnie, produit, garanties), statut (`a_valider`, `valide`, `rejete`), contrat créé.
+
+Le back-office propose un formulaire de saisie manuelle qui crée une ligne `a_valider`, puis un écran de contrôle qui la transforme en contrat réel (réutilisant la logique de calcul de commissions et d'économies déjà en place). Le futur script d'automatisation mail écrira dans la **même table** avec `source = 'email_auto'` : il n'aura qu'à alimenter le payload et les champs normalisés, la validation humaine et la création du contrat restent identiques. C'est ce qui rend l'automatisation future compatible sans refonte.
+
+La transition vers `contrat_valide` exige un contrat rattaché (d'où le bouton d'accès direct), et `contrat_actif` exige une date d'effet atteinte — mise à jour automatique quotidienne possible, plus bascule manuelle.
+
+## Interfaces
+
+### Onglet Projet (back-office, fiche dossier)
+- Frise d'avancement des 11 étapes, avec l'étape courante mise en avant.
+- Un panneau par étape active, avec l'action possible pour le rôle courant.
+- Bloc **Documents du projet** : lettre de mission (envoyée / signée), devoir de conseil (toutes versions), lien de souscription (historique des envois), contrat.
+- Bloc **Demandes de l'assureur** sous l'étape 9.
+
+### Espace client, onglet Projet
+- Même frise, mais les étapes 3 à 5 fusionnées en un seul jalon « Étude en cours ».
+- Actions client : signer la lettre de mission, signer / refuser / demander une modification du devoir de conseil, ouvrir le lien de souscription, accéder au contrat.
+- Documents signés téléchargeables.
+
+### Onglet Conformité
+Inchangé : KYC (CNI, justificatif de domicile, RIB) et LCB-FT uniquement. Les documents contractuels en sont retirés s'ils y figurent.
 
 ## Détails techniques
 
-- **Schémas** : `SectionConfig` gagne `id` et `showIf`; nouveau type `ParcoursContext` (branche, client, équipement, point d'entrée) et fonction `buildParcours(context)` retournant la séquence d'étapes. Les branches existantes restent compatibles.
-- **Composant** : `recueil-workflow.tsx` refactoré pour consommer une séquence d'étapes filtrée dynamiquement, avec un rendu dédié pour les étapes système (contact, équipement).
-- **Server functions** (`src/lib/recueil-public.functions.ts`, non authentifiées, validation Zod) : `ouvrirRecueil(token)`, `sauverBrouillon(token, values)`, `soumettreRecueil(token, values)`. Rate limiting simple par jeton et expiration à 30 jours. Les écritures passent par le client admin côté serveur uniquement.
-- **Migrations** : table `recueil_liens` (+ grants et politiques : aucun accès direct anon/authenticated, tout passe par les server functions), colonnes ajoutées sur `client_equipements` (+ politiques client), trigger de détection d'opportunité, énumération des branches d'équipement.
+- **Source de vérité des étapes** : un module partagé `src/lib/pipeline-dossier.ts` décrivant chaque étape (clé, libellé, libellé client, visibilité, rôles autorisés, transitions permises, prérequis). L'interface et les server functions consomment ce même module, ce qui évite les divergences.
+- **Transitions** : server functions authentifiées dans `src/lib/pipeline-dossier.functions.ts` (`avancerEtape`, `validerConseil`, `envoyerConseilAuClient`, `repondreConseilClient`, `envoyerLienSouscription`, `enregistrerContratEntrant`, `validerContratEntrant`), chacune vérifiant statut de départ, rôle et prérequis avant écriture, puis insérant la ligne d'historique.
+- **Migrations** : extension de l'énumération `dossier_statut`, tables `dossier_etapes`, `devoirs_conseil`, `souscription_envois`, `dossier_suivi_assureur`, `contrats_entrants` — chacune avec grants explicites et politiques d'accès (staff complet ; client limité à ses dossiers et aux étapes visibles).
+- **Emails** : lien de souscription et invitation à signer le devoir de conseil passent par le registre transactionnel existant.
+- **Signature** : réutilisation de `SignaturePad` et du schéma de preuve déjà en place pour la lettre de mission et le DER.
 
 ## Découpage proposé
 
-1. Migrations (équipements enrichis + `recueil_liens` + trigger opportunité).
-2. Moteur de parcours adaptatif (schémas, étapes système, refonte du composant) — le recueil interne existant continue de fonctionner.
-3. Route publique par lien + server functions + préremplissage.
-4. Espace client : onglet équipements, notifications, onboarding, tag « Demander une étude ».
-5. Back-office : équipements enrichis, filtre opportunités.
+1. Migrations + module de pipeline partagé.
+2. Onglet Projet back-office : frise, transitions, documents.
+3. Devoir de conseil : pré-remplissage, validation, envoi, signature / refus / demande de modification.
+4. Lien de souscription + suivi assureur.
+5. Contrats entrants : saisie manuelle, validation, création du contrat, accès direct.
+6. Espace client : frise simplifiée, actions et documents.
 
-## Hypothèses à confirmer
+## Points à confirmer
 
-- Le lien public est valable 30 jours et réutilisable jusqu'à soumission (pas usage unique).
-- La branche « habitation » n'existe pas encore comme branche de recueil distincte (aujourd'hui regroupée dans `iard`) : je créerais `habitation` et `auto` comme branches propres, nécessaires pour que le mapping équipement → recueil soit précis.
+- Un dossier peut-il porter **plusieurs devis** simultanément (étape 3) avec un devoir de conseil par devis, ou un seul devis retenu par dossier ? Je partirais sur plusieurs devis possibles mais un seul devoir de conseil, portant sur le devis retenu.
+- Sur un refus client du devoir de conseil (7b), le dossier est-il clôturé automatiquement en `perdu`, ou reste-t-il ouvert pour reprise par le conseiller ? Je partirais sur « reste ouvert ».
