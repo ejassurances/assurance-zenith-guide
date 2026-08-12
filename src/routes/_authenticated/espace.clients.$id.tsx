@@ -105,6 +105,7 @@ type Tab =
 function ClientDetail() {
   const { id } = Route.useParams();
   const { role } = useAuth();
+  const navigate = useNavigate();
   const [client, setClient] = useState<Client | null>(null);
   const [tab, setTab] = useState<Tab>("identite");
   const [loading, setLoading] = useState(true);
