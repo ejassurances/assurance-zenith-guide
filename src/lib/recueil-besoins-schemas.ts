@@ -3,24 +3,46 @@
 
 export type BrancheAssurance = "emprunteur" | "prevoyance_sante" | "epargne_retraite" | "iard" | "trottinette";
 
-export type FieldType = "text" | "number" | "textarea" | "select" | "checkbox";
+export type FieldType = "text" | "number" | "textarea" | "select" | "checkbox" | "cards" | "yesno";
+
+export interface FieldOption {
+  value: string;
+  label: string;
+  description?: string;
+  /** Clé d'illustration, résolue côté UI (voir recueil-workflow.tsx) */
+  imageKey?: string;
+}
 
 export interface FieldConfig {
   key: string;
   label: string;
   type: FieldType;
-  options?: { value: string; label: string }[];
+  options?: FieldOption[];
   placeholder?: string;
   required?: boolean;
   help?: string;
   suffix?: string;
+  /** Question mise en avant dans le workflow (sinon le label est utilisé) */
+  question?: string;
+  /** Bloc pédagogique « bon à savoir » affiché avant la question */
+  info?: string;
+  infoTitle?: string;
+  /** Affichage conditionnel selon les réponses déjà saisies */
+  showIf?: (values: Record<string, unknown>) => boolean;
+}
+
+export interface SectionConfig {
+  title: string;
+  /** Sous-titre / contexte de l'étape */
+  intro?: string;
+  fields: FieldConfig[];
 }
 
 export interface BrancheConfig {
   value: BrancheAssurance;
   label: string;
   description: string;
-  sections: { title: string; fields: FieldConfig[] }[];
+  sections: SectionConfig[];
 }
 
 export const BRANCHES: BrancheConfig[] = [
