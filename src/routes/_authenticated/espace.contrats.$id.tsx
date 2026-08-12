@@ -264,42 +264,38 @@ function ContratDetail() {
           </label>
         </F>
 
-        <F label="Compagnie">
-          <select
-            value={c.compagnie_id ?? ""}
+        <div className="md:col-span-2 grid gap-4 md:grid-cols-2">
+          <CompagnieProduitPicker
+            branche={c.is_emprunteur ? "emprunteur" : null}
+            compagnieId={c.compagnie_id}
+            produitId={c.produit_id}
             disabled={!canEdit}
-            onChange={(e) => setC({ ...c, compagnie_id: e.target.value || null, produit_id: null })}
-            className={inp}
-          >
-            <option value="">— Choisir —</option>
-            {compagnies.map((x) => (
-              <option key={x.id} value={x.id}>
-                {x.nom}
-              </option>
-            ))}
-          </select>
+            onChange={(sel) =>
+              setC({
+                ...c,
+                compagnie_id: sel.compagnie_id,
+                produit_id: sel.produit_id,
+                assureur: sel.compagnie_nom ?? c.assureur,
+                produit: sel.produit_nom ?? c.produit,
+              })
+            }
+          />
+        </div>
+        <div className="md:col-span-3">
+          <ProduitDocumentsLink produitId={c.produit_id} compagnieId={c.compagnie_id} />
+        </div>
+        <F label="Assureur (libellé enregistré)">
+          <input value={c.assureur} readOnly className={`${inp} bg-background/60`} />
         </F>
-        <F label="Produit référencé">
-          <select
-            value={c.produit_id ?? ""}
-            disabled={!canEdit}
-            onChange={(e) => setC({ ...c, produit_id: e.target.value || null })}
-            className={inp}
-          >
-            <option value="">— Choisir —</option>
-            {filteredProduits.map((x) => (
-              <option key={x.id} value={x.id}>
-                {x.nom}
-              </option>
-            ))}
-          </select>
+        <F label="Nom du produit (libellé enregistré)">
+          <input value={c.produit} readOnly className={`${inp} bg-background/60`} />
         </F>
-        <F label="Nom commercial affiché">
-          <input value={c.produit} onChange={(e) => setC({ ...c, produit: e.target.value })} readOnly={!canEdit} className={inp} />
-        </F>
-        <F label="Assureur (libellé libre)">
-          <input value={c.assureur} onChange={(e) => setC({ ...c, assureur: e.target.value })} readOnly={!canEdit} className={inp} />
-        </F>
+        {!c.produit_id && (
+          <p className="md:col-span-3 rounded-md bg-amber-50 p-2 text-xs text-amber-800">
+            Produit non rattaché au référentiel — à compléter.
+          </p>
+        )}
+
         <F label="Numéro contrat">
           <input value={c.numero ?? ""} onChange={(e) => setC({ ...c, numero: e.target.value })} readOnly={!canEdit} className={inp} />
         </F>
