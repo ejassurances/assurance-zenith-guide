@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { MARQUES, MARQUE_KEYS, besoinLabel, marque } from "@/lib/crm-brands";
+import { DeleteClientButton } from "@/components/delete-client-button";
 
 export const Route = createFileRoute("/_authenticated/espace/clients/")({
   component: ClientsList,
