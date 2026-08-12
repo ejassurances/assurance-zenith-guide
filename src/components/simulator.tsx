@@ -364,7 +364,7 @@ export function Simulator() {
                   disabled={submitting}
                   className="flex-1 rounded-xl bg-ink px-5 py-3 text-sm font-medium text-white transition hover:bg-ink/90 disabled:opacity-60"
                 >
-                  {submitting ? "Envoi…" : "Envoyer ma demande"}
+                  {submitting ? "Envoi…" : "Valider la demande"}
                 </button>
               </div>
               <p className="text-[11px] italic text-ink-muted">

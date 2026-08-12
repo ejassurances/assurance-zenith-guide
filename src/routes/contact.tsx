@@ -26,11 +26,36 @@ function Page() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  async function fileToBase64(file: File) {
+    const buf = await file.arrayBuffer();
+    let binary = "";
+    const bytes = new Uint8Array(buf);
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]!);
+    return btoa(binary);
+  }
+
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
     const fd = new FormData(e.currentTarget);
+    const files = fd.getAll("attachments").filter((f): f is File => f instanceof File && f.size > 0);
+    let pieces_jointes: { nom: string; type: string; taille: number; contenu_base64: string }[] = [];
+    try {
+      if (files.some((f) => f.size > 4_000_000)) throw new Error("Chaque pièce jointe doit peser moins de 4 Mo");
+      pieces_jointes = await Promise.all(
+        files.slice(0, 5).map(async (f) => ({
+          nom: f.name,
+          type: f.type || "application/octet-stream",
+          taille: f.size,
+          contenu_base64: await fileToBase64(f),
+        })),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Pièces jointes invalides");
+      setSubmitting(false);
+      return;
+    }
     const payload = {
       source: "contact" as const,
       prenom: String(fd.get("firstname") ?? ""),
@@ -39,6 +64,7 @@ function Page() {
       telephone: String(fd.get("phone") ?? "") || null,
       sujet: String(fd.get("subject") ?? "") || null,
       message: String(fd.get("message") ?? "") || null,
+      pieces_jointes,
       consent_contact: true,
       consent_rgpd: true,
     };
@@ -56,6 +82,7 @@ function Page() {
       setSubmitting(false);
     }
   }
+
 
   return (
     <div className="min-h-screen bg-background text-ink">
@@ -104,13 +131,26 @@ function Page() {
                 placeholder="Décrivez brièvement votre situation…"
               />
             </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-ink-soft">
+                Pièces jointes (facultatif — 5 fichiers max, 4 Mo par fichier)
+              </label>
+              <input
+                name="attachments"
+                type="file"
+                multiple
+                accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
+                className="w-full rounded-md border border-line bg-background px-4 py-2.5 text-sm file:mr-3 file:rounded file:border-0 file:bg-surface file:px-3 file:py-1.5 file:text-sm"
+              />
+            </div>
             <button
               type="submit"
               disabled={submitting || sent}
               className="inline-flex h-12 items-center justify-center rounded-md bg-ink px-8 text-sm font-medium text-primary-foreground disabled:opacity-60"
             >
-              {submitting ? "Envoi…" : sent ? "Demande envoyée" : "Envoyer ma demande"}
+              {submitting ? "Envoi…" : sent ? "Demande envoyée" : "Valider la demande"}
             </button>
+
             {error && (
               <p className="rounded-md bg-red-50 p-4 text-sm text-red-800">Une erreur est survenue : {error}</p>
             )}
