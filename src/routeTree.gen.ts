@@ -9,19 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as PolitiqueDeConfidentialiteRouteImport } from './routes/politique-de-confidentialite'
-import { Route as MentionsLegalesRouteImport } from './routes/mentions-legales'
-import { Route as CoparentaliteRouteImport } from './routes/coparentalite'
-import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AssuranceEmprunteurRouteImport } from './routes/assurance-emprunteur'
-import { Route as AProposRouteImport } from './routes/a-propos'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as BlogIndexRouteImport } from './routes/blog.index'
-import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AuthenticatedEspaceRouteImport } from './routes/_authenticated/espace'
 import { Route as AuthenticatedEspaceIndexRouteImport } from './routes/_authenticated/espace.index'
 import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
@@ -48,50 +39,14 @@ import { Route as AuthenticatedEspaceContratsIdRouteImport } from './routes/_aut
 import { Route as AuthenticatedEspaceCompagniesIdRouteImport } from './routes/_authenticated/espace.compagnies.$id'
 import { Route as AuthenticatedEspaceClientsIdRouteImport } from './routes/_authenticated/espace.clients.$id'
 
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PolitiqueDeConfidentialiteRoute =
-  PolitiqueDeConfidentialiteRouteImport.update({
-    id: '/politique-de-confidentialite',
-    path: '/politique-de-confidentialite',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const MentionsLegalesRoute = MentionsLegalesRouteImport.update({
-  id: '/mentions-legales',
-  path: '/mentions-legales',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CoparentaliteRoute = CoparentaliteRouteImport.update({
-  id: '/coparentalite',
-  path: '/coparentalite',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContactRoute = ContactRouteImport.update({
-  id: '/contact',
-  path: '/contact',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AssuranceEmprunteurRoute = AssuranceEmprunteurRouteImport.update({
-  id: '/assurance-emprunteur',
-  path: '/assurance-emprunteur',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AProposRoute = AProposRouteImport.update({
-  id: '/a-propos',
-  path: '/a-propos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -101,16 +56,6 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BlogIndexRoute = BlogIndexRouteImport.update({
-  id: '/blog/',
-  path: '/blog/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BlogSlugRoute = BlogSlugRouteImport.update({
-  id: '/blog/$slug',
-  path: '/blog/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedEspaceRoute = AuthenticatedEspaceRouteImport.update({
@@ -260,18 +205,9 @@ const AuthenticatedEspaceClientsIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/a-propos': typeof AProposRoute
-  '/assurance-emprunteur': typeof AssuranceEmprunteurRoute
   '/auth': typeof AuthRoute
-  '/contact': typeof ContactRoute
-  '/coparentalite': typeof CoparentaliteRoute
-  '/mentions-legales': typeof MentionsLegalesRoute
-  '/politique-de-confidentialite': typeof PolitiqueDeConfidentialiteRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/espace': typeof AuthenticatedEspaceRouteWithChildren
-  '/blog/$slug': typeof BlogSlugRoute
-  '/blog/': typeof BlogIndexRoute
   '/espace/audit-logs': typeof AuthenticatedEspaceAuditLogsRoute
   '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
   '/espace/comptabilite': typeof AuthenticatedEspaceComptabiliteRoute
@@ -299,17 +235,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/a-propos': typeof AProposRoute
-  '/assurance-emprunteur': typeof AssuranceEmprunteurRoute
   '/auth': typeof AuthRoute
-  '/contact': typeof ContactRoute
-  '/coparentalite': typeof CoparentaliteRoute
-  '/mentions-legales': typeof MentionsLegalesRoute
-  '/politique-de-confidentialite': typeof PolitiqueDeConfidentialiteRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/blog/$slug': typeof BlogSlugRoute
-  '/blog': typeof BlogIndexRoute
   '/espace/audit-logs': typeof AuthenticatedEspaceAuditLogsRoute
   '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
   '/espace/comptabilite': typeof AuthenticatedEspaceComptabiliteRoute
@@ -339,18 +266,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/a-propos': typeof AProposRoute
-  '/assurance-emprunteur': typeof AssuranceEmprunteurRoute
   '/auth': typeof AuthRoute
-  '/contact': typeof ContactRoute
-  '/coparentalite': typeof CoparentaliteRoute
-  '/mentions-legales': typeof MentionsLegalesRoute
-  '/politique-de-confidentialite': typeof PolitiqueDeConfidentialiteRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/espace': typeof AuthenticatedEspaceRouteWithChildren
-  '/blog/$slug': typeof BlogSlugRoute
-  '/blog/': typeof BlogIndexRoute
   '/_authenticated/espace/audit-logs': typeof AuthenticatedEspaceAuditLogsRoute
   '/_authenticated/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
   '/_authenticated/espace/comptabilite': typeof AuthenticatedEspaceComptabiliteRoute
@@ -380,18 +298,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/a-propos'
-    | '/assurance-emprunteur'
     | '/auth'
-    | '/contact'
-    | '/coparentalite'
-    | '/mentions-legales'
-    | '/politique-de-confidentialite'
     | '/reset-password'
-    | '/sitemap.xml'
     | '/espace'
-    | '/blog/$slug'
-    | '/blog/'
     | '/espace/audit-logs'
     | '/espace/commissions'
     | '/espace/comptabilite'
@@ -419,17 +328,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/a-propos'
-    | '/assurance-emprunteur'
     | '/auth'
-    | '/contact'
-    | '/coparentalite'
-    | '/mentions-legales'
-    | '/politique-de-confidentialite'
     | '/reset-password'
-    | '/sitemap.xml'
-    | '/blog/$slug'
-    | '/blog'
     | '/espace/audit-logs'
     | '/espace/commissions'
     | '/espace/comptabilite'
@@ -458,18 +358,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
-    | '/a-propos'
-    | '/assurance-emprunteur'
     | '/auth'
-    | '/contact'
-    | '/coparentalite'
-    | '/mentions-legales'
-    | '/politique-de-confidentialite'
     | '/reset-password'
-    | '/sitemap.xml'
     | '/_authenticated/espace'
-    | '/blog/$slug'
-    | '/blog/'
     | '/_authenticated/espace/audit-logs'
     | '/_authenticated/espace/commissions'
     | '/_authenticated/espace/comptabilite'
@@ -499,17 +390,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  AProposRoute: typeof AProposRoute
-  AssuranceEmprunteurRoute: typeof AssuranceEmprunteurRoute
   AuthRoute: typeof AuthRoute
-  ContactRoute: typeof ContactRoute
-  CoparentaliteRoute: typeof CoparentaliteRoute
-  MentionsLegalesRoute: typeof MentionsLegalesRoute
-  PolitiqueDeConfidentialiteRoute: typeof PolitiqueDeConfidentialiteRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
-  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
-  BlogSlugRoute: typeof BlogSlugRoute
-  BlogIndexRoute: typeof BlogIndexRoute
   ApiPublicBootstrapAdminRoute: typeof ApiPublicBootstrapAdminRoute
   ApiPublicLeadsRoute: typeof ApiPublicLeadsRoute
   ApiPublicWebhooksCrmRoute: typeof ApiPublicWebhooksCrmRoute
@@ -520,13 +402,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -534,53 +409,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/politique-de-confidentialite': {
-      id: '/politique-de-confidentialite'
-      path: '/politique-de-confidentialite'
-      fullPath: '/politique-de-confidentialite'
-      preLoaderRoute: typeof PolitiqueDeConfidentialiteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mentions-legales': {
-      id: '/mentions-legales'
-      path: '/mentions-legales'
-      fullPath: '/mentions-legales'
-      preLoaderRoute: typeof MentionsLegalesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/coparentalite': {
-      id: '/coparentalite'
-      path: '/coparentalite'
-      fullPath: '/coparentalite'
-      preLoaderRoute: typeof CoparentaliteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/contact': {
-      id: '/contact'
-      path: '/contact'
-      fullPath: '/contact'
-      preLoaderRoute: typeof ContactRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/auth': {
       id: '/auth'
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/assurance-emprunteur': {
-      id: '/assurance-emprunteur'
-      path: '/assurance-emprunteur'
-      fullPath: '/assurance-emprunteur'
-      preLoaderRoute: typeof AssuranceEmprunteurRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/a-propos': {
-      id: '/a-propos'
-      path: '/a-propos'
-      fullPath: '/a-propos'
-      preLoaderRoute: typeof AProposRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -595,20 +428,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/blog/': {
-      id: '/blog/'
-      path: '/blog'
-      fullPath: '/blog/'
-      preLoaderRoute: typeof BlogIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/blog/$slug': {
-      id: '/blog/$slug'
-      path: '/blog/$slug'
-      fullPath: '/blog/$slug'
-      preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/espace': {
@@ -850,17 +669,8 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  AProposRoute: AProposRoute,
-  AssuranceEmprunteurRoute: AssuranceEmprunteurRoute,
   AuthRoute: AuthRoute,
-  ContactRoute: ContactRoute,
-  CoparentaliteRoute: CoparentaliteRoute,
-  MentionsLegalesRoute: MentionsLegalesRoute,
-  PolitiqueDeConfidentialiteRoute: PolitiqueDeConfidentialiteRoute,
   ResetPasswordRoute: ResetPasswordRoute,
-  SitemapDotxmlRoute: SitemapDotxmlRoute,
-  BlogSlugRoute: BlogSlugRoute,
-  BlogIndexRoute: BlogIndexRoute,
   ApiPublicBootstrapAdminRoute: ApiPublicBootstrapAdminRoute,
   ApiPublicLeadsRoute: ApiPublicLeadsRoute,
   ApiPublicWebhooksCrmRoute: ApiPublicWebhooksCrmRoute,
