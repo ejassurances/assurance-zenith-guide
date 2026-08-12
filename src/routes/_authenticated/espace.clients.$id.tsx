@@ -6,6 +6,7 @@ import { FamilleTab, EntrepriseTab, EquipementsTab } from "@/components/client-3
 import { ContratsTab } from "@/components/contrats-tab";
 import { DerTab } from "@/components/der-tab";
 import { ConformiteClientTab } from "@/components/conformite-client-tab";
+import { DeleteClientButton } from "@/components/delete-client-button";
 import { CrmBrandPanel } from "@/components/crm-brand-panel";
 import { NewDossierForm } from "@/routes/_authenticated/espace.dossiers.index";
 
