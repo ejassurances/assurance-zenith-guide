@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { estimerEconomie } from "@/lib/insurance-rates";
 import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
 import { ProduitDocumentsLink } from "@/components/produit-documents-link";
+import { RecueilWorkflow } from "@/components/recueil-workflow";
 import {
   BRANCHES,
   getBranche,
