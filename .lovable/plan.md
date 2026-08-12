@@ -71,6 +71,27 @@ Le back-office propose un formulaire de saisie manuelle qui crée une ligne `a_v
 
 La transition vers `contrat_valide` exige un contrat rattaché (d'où le bouton d'accès direct), et `contrat_actif` exige une date d'effet atteinte — mise à jour automatique quotidienne possible, plus bascule manuelle.
 
+### Lien bidirectionnel projet ↔ contrat
+Le contrat porte déjà `dossier_id` : on l'exploite dans les deux sens.
+- Depuis la fiche contrat : bloc « Projet d'origine » avec accès au dossier, à son historique d'étapes et à ses documents signés.
+- Depuis le projet (back-office) : bloc « Contrat résultant » avec accès direct au contrat.
+Le rattachement est posé au moment de la validation du contrat entrant, et l'index correspondant est ajouté pour la navigation dans les deux sens.
+
+### Traçabilité ACPR
+Le pipeline est conçu comme un dossier de preuve opposable en cas de contrôle ACPR. En conséquence :
+- **Aucune suppression, aucun écrasement** : les étapes, versions du devoir de conseil, envois de lien de souscription et demandes assureur sont en append-only. Les politiques d'accès interdisent la suppression et la modification a posteriori des lignes de preuve (seul l'ajout est permis, y compris pour l'admin) ; une correction se matérialise par une nouvelle version.
+- **Horodatage systématique** : chaque étape enregistre date, auteur, rôle. Chaque signature conserve date, empreinte du document signé, IP et agent — comme déjà fait pour la lettre de mission et le DER.
+- **Consultation après finalisation** : l'historique complet reste consultable côté back-office indéfiniment, même une fois le contrat actif ou le projet perdu. Rien n'est purgé ni archivé hors de portée.
+- **Vue « dossier de preuve »** : sur le projet en back-office, un panneau chronologique reprend étape par étape l'horodatage, l'auteur et le document associé, exportable en PDF pour transmission à un contrôleur.
+- Les transitions restent journalisées dans `audit_logs` en plus de `dossier_etapes`.
+
+### Projet finalisé : masqué côté client, conservé côté back-office
+À `contrat_actif`, le projet sort de l'onglet Projet de l'espace client : le client ne suit plus un projet abouti, il consulte son contrat. Concrètement :
+- La politique de lecture client sur `dossiers` exclut les dossiers `contrat_actif` (ainsi que les dossiers clos type `perdu`) ; le masquage est donc effectif en base, pas seulement dans l'interface.
+- Les documents signés du projet restent accessibles au client via son contrat (bloc « Documents contractuels » sur le contrat), pour ne pas lui retirer ses propres pièces signées.
+- Côté back-office, la fiche client conserve la totalité des projets, avec un filtre « projets finalisés / en cours » et l'historique intégral consultable.
+
+
 ## Interfaces
 
 ### Onglet Projet (back-office, fiche dossier)
@@ -83,6 +104,8 @@ La transition vers `contrat_valide` exige un contrat rattaché (d'où le bouton 
 - Même frise, mais les étapes 3 à 5 fusionnées en un seul jalon « Étude en cours ».
 - Actions client : signer la lettre de mission, signer / refuser / demander une modification du devoir de conseil, ouvrir le lien de souscription, accéder au contrat.
 - Documents signés téléchargeables.
+- Un projet passé en `contrat_actif` disparaît de cette liste ; le client le retrouve sous forme de contrat, avec ses documents signés rattachés.
+
 
 ### Onglet Conformité
 Inchangé : KYC (CNI, justificatif de domicile, RIB) et LCB-FT uniquement. Les documents contractuels en sont retirés s'ils y figurent.
