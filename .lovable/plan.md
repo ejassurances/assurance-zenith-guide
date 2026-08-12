@@ -1,68 +1,54 @@
-# Module comptabilité — partie double + PCG
+# Économies réellement réalisées (assurance emprunteur)
 
-Livré en 4 lots séquentiels. Chaque lot est utilisable indépendamment.
+Remplacer la logique "simulateur prospect" par un suivi des économies **constatées à la signature** d'un contrat emprunteur, agrégées pour l'admin (tout le cabinet) et pour chaque mandataire (ses seuls contrats).
 
-## Lot 1 — Fondations comptables (PCG + écritures)
+## Principe
 
-**Base de données** (migration Supabase) :
+Une économie est figée au moment où un contrat emprunteur passe au statut **Signé** :
+- coût du contrat groupe bancaire = taux banque appliqué sur le capital initial (non dégressif),
+- coût du contrat délégué = taux courtier appliqué sur le capital restant dû (dégressif),
+- économie = coût groupe − coût délégué (jamais négative).
 
-- `plan_comptable` : comptes PCG (numero, libelle, classe 1-7, type, parent_id, actif). Pré-rempli avec ~40 comptes utiles au courtage (411 clients, 401 fournisseurs, 512 banque, 530 caisse, 606x achats, 613 locations, 622x commissions/honoraires, 626 postes, 641 salaires, 645 charges sociales, 706 prestations, 708 produits annexes, 44566/44571 TVA, etc.).
-- `journaux` : AC (achats), VE (ventes), BQ (banque), OD (opérations diverses), NDF (notes de frais).
-- `ecritures` : entête (date, journal, numero_piece, libelle, mandataire_id nullable, statut brouillon/validé, exercice).
-- `ecritures_lignes` : ligne (compte_numero, debit, credit, libelle, tiers_id nullable, mandataire_id nullable). Contrainte : somme débits = somme crédits par écriture.
-- `exercices` : période comptable (date_debut, date_fin, cloturé).
-- `tiers` : fournisseurs et clients tiers (nom, siret, adresse, compte_auxiliaire).
+Le calcul réutilise `src/lib/insurance-rates.ts` (`coutTotalGroupe`, `coutTotalCourtier`, table de taux par tranche d'âge + surprime fumeur). L'âge et le statut fumeur proviennent de la fiche client (`date_naissance`, `fumeur`) ; le taux réellement négocié sur le contrat (`taux_assurance_annuel`) est utilisé en priorité pour le coût délégué quand il est renseigné, sinon on retombe sur la table de taux.
 
-**RLS** :
-- Admin : CRUD complet.
-- Mandataire : lecture seule des écritures où `mandataire_id = auth.uid()`, création sur journal NDF pour ses propres charges.
+Le montant est **stocké** (photo à la signature), pas recalculé à l'affichage : il ne bouge plus si la table de taux évolue.
 
-**UI** `/espace/comptabilite/journaux` : saisie d'écriture (admin), vue grand livre par compte, balance, journal centralisateur.
+## Données (migration)
 
-## Lot 2 — Factures d'achat + OCR
+Nouvelles colonnes sur `contrats` :
+- `economie_cout_groupe` numeric — coût total estimé du contrat bancaire
+- `economie_cout_delegue` numeric — coût total du contrat courtier
+- `economie_realisee` numeric — écart retenu
+- `economie_taux_groupe` / `economie_taux_delegue` numeric — taux utilisés (traçabilité)
+- `economie_base` jsonb — âge, fumeur, capital, durée, quotité au moment du calcul
+- `economie_calculee_le` timestamptz
 
-- Table `factures_achat` : fournisseur, date, numero, montant_ht, tva, ttc, compte_charge, pdf_url, statut, ecriture_id, mandataire_id nullable.
-- Bucket privé `factures-achat` (RLS : admin tout, mandataire ses fichiers).
-- Composant upload PDF → server function `parseFactureAchat` qui appelle Lovable AI (`google/gemini-3.6-flash`) avec le PDF en `input_file` et un schéma Zod (fournisseur, siret, date, HT, TVA, TTC, catégorie suggérée). L'utilisateur valide/corrige avant enregistrement.
-- À la validation : création automatique de l'écriture (débit 6xx + 44566 TVA / crédit 401 fournisseur) et pièce jointe stockée.
-- Vue liste : filtres période/fournisseur/statut, export CSV.
+Fonction d'agrégation `public.economies_emprunteur(_mandataire_id uuid default null)` (SECURITY DEFINER, STABLE, `search_path = public`, EXECUTE réservé à `authenticated`) retournant `total_economies`, `nb_contrats`, `economie_moyenne`, `capital_total` :
+- périmètre : `contrats.is_emprunteur`, `statut = 'signe'`, client de marque `ej_assurances` ;
+- admin : tout le cabinet, ou filtré si `_mandataire_id` est fourni ;
+- mandataire : forcé sur `auth.uid()` (le paramètre est ignoré) ;
+- autres rôles : zéros.
 
-## Lot 3 — Bulletins de commission
+Aucun nouveau droit d'accès direct aux contrats n'est ajouté ; les règles RLS existantes restent inchangées.
 
-**Bordereaux compagnies (entrants)** :
-- Table `bordereaux_commissions` étendue : upload PDF du bordereau reçu, rapprochement manuel avec les `contrat_echeances` (statut « encaissé »).
-- Écriture auto générée : débit 512 banque / crédit 706 commissions cabinet.
+## Écriture du montant
 
-**Bulletins mandataires (sortants)** :
-- Table `bulletins_commission` : mandataire_id, periode, lignes (rétrocessions dues), total_ht, tva (si mandataire assujetti), total_ttc, statut, pdf_url.
-- Génération PDF via `pdf-lib` côté serveur : en-tête cabinet, tableau des commissions (contrat, période, base, taux, montant), pied avec totaux et mentions légales.
-- Envoi email au mandataire via Lovable AI Gateway (SMTP à définir) + stockage bucket privé `bulletins-mandataires`.
-- Écriture auto : débit 622x rétrocessions / crédit 401 mandataire, puis débit 401 / crédit 512 au paiement.
+Dans `src/routes/_authenticated/espace.contrats.$id.tsx` (enregistrement du contrat) :
+- si `is_emprunteur` et que le statut devient `signe` et qu'aucune économie n'est encore figée → calcul et écriture des colonnes ci-dessus dans le même `update` ;
+- si le statut repasse hors `signe` → remise à `null` (l'économie n'est plus "réalisée") ;
+- bouton discret « Recalculer l'économie » (admin uniquement) pour rafraîchir un contrat déjà signé après correction des paramètres du prêt ;
+- affichage d'un encart dans le bloc emprunteur : coût banque, coût délégué, économie retenue, date de calcul.
 
-## Lot 4 — États financiers + comptes mandataires
+Un helper `src/lib/economie-emprunteur.ts` porte le calcul (entrées contrat + client → montants), pour éviter de dupliquer la logique.
 
-**Compte de résultat cabinet** `/espace/comptabilite/resultat` :
-- Produits (classe 7) : commissions perçues, autres produits.
-- Charges (classe 6) : achats, services extérieurs, rétrocessions mandataires, charges de personnel, impôts.
-- Résultat net avec comparaison N-1, filtre par période, export PDF.
+## Affichage
 
-**Mini compte de résultat mandataire** `/espace/comptabilite` (vue mandataire) :
-- Produits : ses commissions encaissées (via `paiements_partenaires`).
-- Charges : ses saisies de notes de frais (journal NDF) — URSSAF, frais pro, abonnements, formation, etc.
-- Résultat perso, export PDF mensuel/annuel.
-- Rôle mandataire peut créer/modifier/supprimer ses propres écritures NDF uniquement.
+- `src/routes/_authenticated/espace.index.tsx` : nouvelle carte KPI « Économies réalisées » (montant total, avec sous-titre « N contrats emprunteur signés · moyenne X € »), alimentée par la fonction d'agrégation. Libellé « — tout le cabinet » pour l'admin, « — mes contrats » pour un mandataire. Carte masquée pour le rôle client.
+- `src/components/contrats-tab.tsx` (fiche client) : colonne « Économie » sur les contrats emprunteur signés.
+- Aucun simulateur, aucune saisie prospect n'est réintroduit.
 
-## Détails techniques
+## Points à confirmer
 
-- Toutes les fonctions SQL (validation équilibre débit/crédit, clôture exercice, calcul soldes) en `SECURITY DEFINER` avec `search_path = public` et `REVOKE` sur `PUBLIC`/`anon`.
-- Séparation stricte des rôles via RLS et fonctions helper existantes (`has_role`, `current_user_role`).
-- OCR via `document--parse_document` équivalent côté runtime : appel `fetch` gateway `google/gemini-3.6-flash` avec `input_file` + schéma structuré.
-- PDF bulletins : `pdf-lib` (compatible Workers), template avec logo EJ Partners.
-- Pas de FEC export dans ce chantier — ajouté ensuite si besoin.
-- Pas de vraie compta multi-devises, TVA simplifiée (taux fixes 20/10/5.5/0).
-
-## Ordre d'exécution
-
-Je propose de démarrer par le **Lot 1** (fondations) car tous les autres en dépendent. Une fois validé, j'enchaîne Lot 2 (factures+OCR), puis Lot 3 (bulletins), puis Lot 4 (états).
-
-Confirmez-vous cet ordre, ou souhaitez-vous prioriser autrement (par ex. Lot 3 bulletins avant OCR) ?
+1. Seuls les contrats de clients marqués **EJ Assurances** comptent (les contrats emprunteur rattachés à la marque Coparentalité sont exclus de l'indicateur) — hypothèse retenue.
+2. Un contrat `résilié` après signature reste-t-il compté ? Hypothèse retenue : oui, l'économie a été réalisée jusqu'à la résiliation, mais l'indicateur peut afficher un second compteur « dont contrats résiliés » si vous préférez.
+3. Économie calculée sur toute la durée du prêt (économie cumulée), pas annualisée — hypothèse retenue.
