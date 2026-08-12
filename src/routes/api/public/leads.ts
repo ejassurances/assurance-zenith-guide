@@ -233,7 +233,7 @@ export const Route = createFileRoute("/api/public/leads")({
         }
         if (lcb) {
           suivi.push(
-            `LCB-FT : ${lcb.statut} · ${lcb.nb_correspondances ?? lcb.matches.length} correspondance(s)${lcb.has_ppe ? " · PPE" : ""}${lcb.has_sanction ? " · sanction" : ""}`,
+            `LCB-FT : ${lcb.statut} · ${lcb.matches.length} correspondance(s)${lcb.has_ppe ? " · PPE" : ""}${lcb.has_sanction ? " · sanction" : ""}`,
           );
         }
         if (espace.created) suivi.push("Espace client créé (mot de passe provisoire envoyé par e-mail).");
@@ -270,7 +270,7 @@ export const Route = createFileRoute("/api/public/leads")({
         });
 
         return Response.json(
-          { ok: true, client_id: clientId, invite_sent: inviteSent, webhook_ok: webhook.ok },
+          { ok: true, client_id: clientId, invite_sent: espace.email_sent, dossier_ref: dossierRef, webhook_ok: webhook.ok },
           { headers: corsHeaders() },
         );
       },
