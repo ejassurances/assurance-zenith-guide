@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -6,6 +6,7 @@ import { FamilleTab, EntrepriseTab, EquipementsTab } from "@/components/client-3
 import { ContratsTab } from "@/components/contrats-tab";
 import { DerTab } from "@/components/der-tab";
 import { ConformiteClientTab } from "@/components/conformite-client-tab";
+import { DeleteClientButton } from "@/components/delete-client-button";
 import { CrmBrandPanel } from "@/components/crm-brand-panel";
 import { NewDossierForm } from "@/routes/_authenticated/espace.dossiers.index";
 
@@ -104,6 +105,7 @@ type Tab =
 function ClientDetail() {
   const { id } = Route.useParams();
   const { role } = useAuth();
+  const navigate = useNavigate();
   const [client, setClient] = useState<Client | null>(null);
   const [tab, setTab] = useState<Tab>("identite");
   const [loading, setLoading] = useState(true);
@@ -145,9 +147,18 @@ function ClientDetail() {
             {new Date(client.created_at).toLocaleDateString("fr-FR")}
           </p>
         </div>
-        <span className="rounded-full border border-line bg-surface-elevated px-3 py-1 text-xs font-medium">
-          {client.statut}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="rounded-full border border-line bg-surface-elevated px-3 py-1 text-xs font-medium">
+            {client.statut}
+          </span>
+          {role === "admin" && (
+            <DeleteClientButton
+              clientId={client.id}
+              clientLabel={fullName}
+              onDeleted={() => navigate({ to: "/espace/clients" })}
+            />
+          )}
+        </div>
       </div>
 
       <div className="mt-4">

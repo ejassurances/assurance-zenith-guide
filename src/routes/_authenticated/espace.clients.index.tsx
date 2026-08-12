@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { MARQUES, MARQUE_KEYS, besoinLabel, marque } from "@/lib/crm-brands";
+import { DeleteClientButton } from "@/components/delete-client-button";
 
 export const Route = createFileRoute("/_authenticated/espace/clients/")({
   component: ClientsList,
@@ -36,6 +37,7 @@ function ClientsList() {
   const [marqueFilter, setMarqueFilter] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
   const canCreate = role === "admin" || role === "mandataire" || role === "prescripteur";
+  const canDelete = role === "admin";
 
   const load = async () => {
     setLoading(true);
@@ -151,6 +153,7 @@ function ClientsList() {
                 <th className="px-4 py-3">Besoins</th>
                 <th className="px-4 py-3">Contact</th>
                 <th className="px-4 py-3">Statut</th>
+                {canDelete && <th className="px-4 py-3 text-right">Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -195,6 +198,16 @@ function ClientsList() {
                   <td className="px-4 py-3">
                     <span className="rounded-full border border-line bg-background px-2 py-0.5 text-xs">{c.statut}</span>
                   </td>
+                  {canDelete && (
+                    <td className="px-4 py-3 text-right">
+                      <DeleteClientButton
+                        variant="icon"
+                        clientId={c.id}
+                        clientLabel={[c.prenom, c.nom].filter(Boolean).join(" ")}
+                        onDeleted={() => setItems((prev) => prev.filter((x) => x.id !== c.id))}
+                      />
+                    </td>
+                  )}
                 </tr>
                 );
               })}
