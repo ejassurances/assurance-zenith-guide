@@ -15,6 +15,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedEspaceRouteImport } from './routes/_authenticated/espace'
 import { Route as AuthenticatedEspaceIndexRouteImport } from './routes/_authenticated/espace.index'
+import { Route as ApiPublicRelancePiecesRouteImport } from './routes/api/public/relance-pieces'
 import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
 import { Route as ApiPublicBootstrapAdminRouteImport } from './routes/api/public/bootstrap-admin'
 import { Route as AuthenticatedEspaceUtilisateursRouteImport } from './routes/_authenticated/espace.utilisateurs'
@@ -22,6 +23,7 @@ import { Route as AuthenticatedEspaceTachesRouteImport } from './routes/_authent
 import { Route as AuthenticatedEspaceSignerLettreMissionRouteImport } from './routes/_authenticated/espace.signer-lettre-mission'
 import { Route as AuthenticatedEspaceSignerDerRouteImport } from './routes/_authenticated/espace.signer-der'
 import { Route as AuthenticatedEspaceParametresRouteImport } from './routes/_authenticated/espace.parametres'
+import { Route as AuthenticatedEspaceMonEspaceRouteImport } from './routes/_authenticated/espace.mon-espace'
 import { Route as AuthenticatedEspaceDerModeleRouteImport } from './routes/_authenticated/espace.der-modele'
 import { Route as AuthenticatedEspaceConformiteRouteImport } from './routes/_authenticated/espace.conformite'
 import { Route as AuthenticatedEspaceComptabiliteRouteImport } from './routes/_authenticated/espace.comptabilite'
@@ -69,6 +71,11 @@ const AuthenticatedEspaceIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const ApiPublicRelancePiecesRoute = ApiPublicRelancePiecesRouteImport.update({
+  id: '/api/public/relance-pieces',
+  path: '/api/public/relance-pieces',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicLeadsRoute = ApiPublicLeadsRouteImport.update({
   id: '/api/public/leads',
   path: '/api/public/leads',
@@ -107,6 +114,12 @@ const AuthenticatedEspaceParametresRoute =
   AuthenticatedEspaceParametresRouteImport.update({
     id: '/parametres',
     path: '/parametres',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
+const AuthenticatedEspaceMonEspaceRoute =
+  AuthenticatedEspaceMonEspaceRouteImport.update({
+    id: '/mon-espace',
+    path: '/mon-espace',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
 const AuthenticatedEspaceDerModeleRoute =
@@ -213,6 +226,7 @@ export interface FileRoutesByFullPath {
   '/espace/comptabilite': typeof AuthenticatedEspaceComptabiliteRoute
   '/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
+  '/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
   '/espace/signer-lettre-mission': typeof AuthenticatedEspaceSignerLettreMissionRoute
@@ -220,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
+  '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/espace/': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
@@ -242,6 +257,7 @@ export interface FileRoutesByTo {
   '/espace/comptabilite': typeof AuthenticatedEspaceComptabiliteRoute
   '/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
+  '/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
   '/espace/signer-lettre-mission': typeof AuthenticatedEspaceSignerLettreMissionRoute
@@ -249,6 +265,7 @@ export interface FileRoutesByTo {
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
+  '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/espace': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
@@ -274,6 +291,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/comptabilite': typeof AuthenticatedEspaceComptabiliteRoute
   '/_authenticated/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/_authenticated/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
+  '/_authenticated/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
   '/_authenticated/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/_authenticated/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
   '/_authenticated/espace/signer-lettre-mission': typeof AuthenticatedEspaceSignerLettreMissionRoute
@@ -281,6 +299,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
+  '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/_authenticated/espace/': typeof AuthenticatedEspaceIndexRoute
   '/_authenticated/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/_authenticated/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
@@ -306,6 +325,7 @@ export interface FileRouteTypes {
     | '/espace/comptabilite'
     | '/espace/conformite'
     | '/espace/der-modele'
+    | '/espace/mon-espace'
     | '/espace/parametres'
     | '/espace/signer-der'
     | '/espace/signer-lettre-mission'
@@ -313,6 +333,7 @@ export interface FileRouteTypes {
     | '/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
     | '/api/public/leads'
+    | '/api/public/relance-pieces'
     | '/espace/'
     | '/espace/clients/$id'
     | '/espace/compagnies/$id'
@@ -335,6 +356,7 @@ export interface FileRouteTypes {
     | '/espace/comptabilite'
     | '/espace/conformite'
     | '/espace/der-modele'
+    | '/espace/mon-espace'
     | '/espace/parametres'
     | '/espace/signer-der'
     | '/espace/signer-lettre-mission'
@@ -342,6 +364,7 @@ export interface FileRouteTypes {
     | '/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
     | '/api/public/leads'
+    | '/api/public/relance-pieces'
     | '/espace'
     | '/espace/clients/$id'
     | '/espace/compagnies/$id'
@@ -366,6 +389,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/comptabilite'
     | '/_authenticated/espace/conformite'
     | '/_authenticated/espace/der-modele'
+    | '/_authenticated/espace/mon-espace'
     | '/_authenticated/espace/parametres'
     | '/_authenticated/espace/signer-der'
     | '/_authenticated/espace/signer-lettre-mission'
@@ -373,6 +397,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
     | '/api/public/leads'
+    | '/api/public/relance-pieces'
     | '/_authenticated/espace/'
     | '/_authenticated/espace/clients/$id'
     | '/_authenticated/espace/compagnies/$id'
@@ -394,6 +419,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   ApiPublicBootstrapAdminRoute: typeof ApiPublicBootstrapAdminRoute
   ApiPublicLeadsRoute: typeof ApiPublicLeadsRoute
+  ApiPublicRelancePiecesRoute: typeof ApiPublicRelancePiecesRoute
   ApiPublicWebhooksCrmRoute: typeof ApiPublicWebhooksCrmRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
@@ -444,6 +470,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceIndexRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/api/public/relance-pieces': {
+      id: '/api/public/relance-pieces'
+      path: '/api/public/relance-pieces'
+      fullPath: '/api/public/relance-pieces'
+      preLoaderRoute: typeof ApiPublicRelancePiecesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/leads': {
       id: '/api/public/leads'
       path: '/api/public/leads'
@@ -491,6 +524,13 @@ declare module '@tanstack/react-router' {
       path: '/parametres'
       fullPath: '/espace/parametres'
       preLoaderRoute: typeof AuthenticatedEspaceParametresRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
+    '/_authenticated/espace/mon-espace': {
+      id: '/_authenticated/espace/mon-espace'
+      path: '/mon-espace'
+      fullPath: '/espace/mon-espace'
+      preLoaderRoute: typeof AuthenticatedEspaceMonEspaceRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
     '/_authenticated/espace/der-modele': {
@@ -614,6 +654,7 @@ interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceComptabiliteRoute: typeof AuthenticatedEspaceComptabiliteRoute
   AuthenticatedEspaceConformiteRoute: typeof AuthenticatedEspaceConformiteRoute
   AuthenticatedEspaceDerModeleRoute: typeof AuthenticatedEspaceDerModeleRoute
+  AuthenticatedEspaceMonEspaceRoute: typeof AuthenticatedEspaceMonEspaceRoute
   AuthenticatedEspaceParametresRoute: typeof AuthenticatedEspaceParametresRoute
   AuthenticatedEspaceSignerDerRoute: typeof AuthenticatedEspaceSignerDerRoute
   AuthenticatedEspaceSignerLettreMissionRoute: typeof AuthenticatedEspaceSignerLettreMissionRoute
@@ -635,6 +676,7 @@ const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
   AuthenticatedEspaceComptabiliteRoute: AuthenticatedEspaceComptabiliteRoute,
   AuthenticatedEspaceConformiteRoute: AuthenticatedEspaceConformiteRoute,
   AuthenticatedEspaceDerModeleRoute: AuthenticatedEspaceDerModeleRoute,
+  AuthenticatedEspaceMonEspaceRoute: AuthenticatedEspaceMonEspaceRoute,
   AuthenticatedEspaceParametresRoute: AuthenticatedEspaceParametresRoute,
   AuthenticatedEspaceSignerDerRoute: AuthenticatedEspaceSignerDerRoute,
   AuthenticatedEspaceSignerLettreMissionRoute:
@@ -673,6 +715,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   ApiPublicBootstrapAdminRoute: ApiPublicBootstrapAdminRoute,
   ApiPublicLeadsRoute: ApiPublicLeadsRoute,
+  ApiPublicRelancePiecesRoute: ApiPublicRelancePiecesRoute,
   ApiPublicWebhooksCrmRoute: ApiPublicWebhooksCrmRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,

@@ -56,7 +56,91 @@ function LettreMissionEnvoiEmail(props: {
   return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
 }
 
+function CompteClientCreeEmail(props: {
+  clientName?: string;
+  email?: string;
+  motDePasseProvisoire?: string;
+  cabinetName?: string;
+  link?: string;
+}) {
+  const nom = props.cabinetName || "EJ Partners Assurances";
+  const html =
+    "<p>Bonjour " +
+    (props.clientName || "") +
+    ",</p>" +
+    "<p>Votre espace client " +
+    nom +
+    " a ete cree. Vous y retrouverez votre projet, vos pieces justificatives et vos documents a signer.</p>" +
+    "<p><strong>Identifiant :</strong> " +
+    (props.email || "") +
+    "<br/><strong>Mot de passe provisoire :</strong> " +
+    (props.motDePasseProvisoire || "") +
+    "</p>" +
+    "<p><a href='" +
+    (props.link || "") +
+    "'>Acceder a mon espace client</a></p>" +
+    "<p>Pour votre securite, le changement de ce mot de passe provisoire est obligatoire lors de votre premiere connexion.</p>" +
+    "<p>Cordialement,<br/>L'equipe " +
+    nom +
+    "</p>";
+  const style = { fontFamily: "Arial, sans-serif", color: "#1a1a1a", fontSize: "15px", lineHeight: "1.6" };
+  return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
+}
+
+function PiecesManquantesEmail(props: {
+  clientName?: string;
+  cabinetName?: string;
+  reference?: string;
+  pieces?: string[];
+  link?: string;
+}) {
+  const nom = props.cabinetName || "EJ Partners Assurances";
+  const liste = (props.pieces || []).map((p) => "<li>" + p + "</li>").join("");
+  const html =
+    "<p>Bonjour " +
+    (props.clientName || "") +
+    ",</p>" +
+    "<p>Afin de poursuivre l'etude de votre dossier " +
+    (props.reference || "") +
+    ", il nous manque les pieces suivantes :</p>" +
+    "<ul>" +
+    liste +
+    "</ul>" +
+    "<p><a href='" +
+    (props.link || "") +
+    "'>Deposer mes pieces dans mon espace client</a></p>" +
+    "<p>Cordialement,<br/>L'equipe " +
+    nom +
+    "</p>";
+  const style = { fontFamily: "Arial, sans-serif", color: "#1a1a1a", fontSize: "15px", lineHeight: "1.6" };
+  return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
+}
+
 export const TEMPLATES: Record<string, TemplateEntry> = {
+  "compte-client-cree": {
+    component: CompteClientCreeEmail,
+    subject: (data: Record<string, any>) =>
+      (data && data.cabinetName ? data.cabinetName : "EJ Partners Assurances") + " - Vos acces a votre espace client",
+    displayName: "Espace client - Acces provisoires",
+    previewData: {
+      clientName: "Jean Dupont",
+      email: "jean.dupont@example.com",
+      motDePasseProvisoire: "Xk4mQr9pTz2v!7",
+      link: "https://example.com/auth",
+    },
+  },
+  "pieces-manquantes": {
+    component: PiecesManquantesEmail,
+    subject: (data: Record<string, any>) =>
+      "Votre dossier " + (data && data.reference ? data.reference : "") + " - pieces manquantes",
+    displayName: "Relance - Pieces manquantes",
+    previewData: {
+      clientName: "Jean Dupont",
+      reference: "DOSS-2025-001",
+      pieces: ["Piece d'identite", "RIB"],
+      link: "https://example.com/espace/mon-espace",
+    },
+  },
   "der-envoi": {
     component: DerEnvoiEmail,
     subject: (data: Record<string, any>) =>

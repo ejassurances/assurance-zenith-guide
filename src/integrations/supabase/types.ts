@@ -1304,6 +1304,7 @@ export type Database = {
       }
       documents: {
         Row: {
+          categorie: string
           client_id: string | null
           created_at: string
           dossier_id: string | null
@@ -1315,6 +1316,7 @@ export type Database = {
           uploader_id: string
         }
         Insert: {
+          categorie?: string
           client_id?: string | null
           created_at?: string
           dossier_id?: string | null
@@ -1326,6 +1328,7 @@ export type Database = {
           uploader_id: string
         }
         Update: {
+          categorie?: string
           client_id?: string | null
           created_at?: string
           dossier_id?: string | null
@@ -1353,6 +1356,86 @@ export type Database = {
           },
         ]
       }
+      dossier_pieces_requises: {
+        Row: {
+          categorie: string
+          client_id: string | null
+          code: string
+          created_at: string
+          document_id: string | null
+          dossier_id: string
+          id: string
+          kyc_document_id: string | null
+          libelle: string
+          notes: string | null
+          obligatoire: boolean
+          recue_le: string | null
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          categorie?: string
+          client_id?: string | null
+          code: string
+          created_at?: string
+          document_id?: string | null
+          dossier_id: string
+          id?: string
+          kyc_document_id?: string | null
+          libelle: string
+          notes?: string | null
+          obligatoire?: boolean
+          recue_le?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          categorie?: string
+          client_id?: string | null
+          code?: string
+          created_at?: string
+          document_id?: string | null
+          dossier_id?: string
+          id?: string
+          kyc_document_id?: string | null
+          libelle?: string
+          notes?: string | null
+          obligatoire?: boolean
+          recue_le?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dossier_pieces_requises_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dossier_pieces_requises_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dossier_pieces_requises_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dossier_pieces_requises_kyc_document_id_fkey"
+            columns: ["kyc_document_id"]
+            isOneToOne: false
+            referencedRelation: "client_kyc_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dossiers: {
         Row: {
           age: number | null
@@ -1364,6 +1447,7 @@ export type Database = {
           client_phone: string | null
           created_at: string
           created_by: string | null
+          cree_automatiquement: boolean
           duree_mois: number | null
           economie_estimee: number | null
           fumeur: boolean | null
@@ -1371,6 +1455,7 @@ export type Database = {
           notes: string | null
           recueil_besoins: Json | null
           reference: string
+          relance_pieces_envoyee_le: string | null
           statut: Database["public"]["Enums"]["dossier_statut"]
           type_assurance: string
           updated_at: string
@@ -1385,6 +1470,7 @@ export type Database = {
           client_phone?: string | null
           created_at?: string
           created_by?: string | null
+          cree_automatiquement?: boolean
           duree_mois?: number | null
           economie_estimee?: number | null
           fumeur?: boolean | null
@@ -1392,6 +1478,7 @@ export type Database = {
           notes?: string | null
           recueil_besoins?: Json | null
           reference?: string
+          relance_pieces_envoyee_le?: string | null
           statut?: Database["public"]["Enums"]["dossier_statut"]
           type_assurance?: string
           updated_at?: string
@@ -1406,6 +1493,7 @@ export type Database = {
           client_phone?: string | null
           created_at?: string
           created_by?: string | null
+          cree_automatiquement?: boolean
           duree_mois?: number | null
           economie_estimee?: number | null
           fumeur?: boolean | null
@@ -1413,6 +1501,7 @@ export type Database = {
           notes?: string | null
           recueil_besoins?: Json | null
           reference?: string
+          relance_pieces_envoyee_le?: string | null
           statut?: Database["public"]["Enums"]["dossier_statut"]
           type_assurance?: string
           updated_at?: string
@@ -1978,6 +2067,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          must_change_password: boolean
           phone: string | null
           updated_at: string
         }
@@ -1987,6 +2077,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          must_change_password?: boolean
           phone?: string | null
           updated_at?: string
         }
@@ -1996,6 +2087,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          must_change_password?: boolean
           phone?: string | null
           updated_at?: string
         }

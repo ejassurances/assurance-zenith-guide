@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -28,6 +28,12 @@ type Tache = {
 
 function Dashboard() {
   const { role, user } = useAuth();
+  const navigate = useNavigate();
+
+  // Les clients disposent de leur espace dédié.
+  useEffect(() => {
+    if (role === "client") navigate({ to: "/espace/mon-espace", replace: true });
+  }, [role, navigate]);
   const [stats, setStats] = useState({ clients: 0, prospects: 0, dossiers: 0, enCours: 0, signes: 0, commissions: 0 });
   const [activites, setActivites] = useState<Activite[]>([]);
   const [taches, setTaches] = useState<Tache[]>([]);

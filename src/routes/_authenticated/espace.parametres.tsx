@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { validerChangementMotDePasse } from "@/lib/client-espace.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 
@@ -19,6 +21,16 @@ function Parametres() {
   const [confirmPwd, setConfirmPwd] = useState("");
   const [savingPwd, setSavingPwd] = useState(false);
   const [pwdMsg, setPwdMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [mustChange, setMustChange] = useState(false);
+  const validerMdp = useServerFn(validerChangementMotDePasse);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase.from("profiles").select("must_change_password").eq("id", user.id).maybeSingle();
+      setMustChange(!!(data as { must_change_password?: boolean } | null)?.must_change_password);
+    })();
+  }, [user]);
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -68,10 +80,28 @@ function Parametres() {
     setNewPwd("");
     setConfirmPwd("");
     setPwdMsg({ type: "ok", text: "Mot de passe modifié avec succès." });
+    if (mustChange) {
+      try {
+        await validerMdp({ data: undefined });
+      } catch {
+        // sans effet bloquant
+      }
+      setMustChange(false);
+    }
   }
 
   return (
     <div className="max-w-2xl space-y-8">
+      {mustChange && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-medium">Changement de mot de passe obligatoire</p>
+          <p className="mt-1">
+            Votre compte a été créé avec un mot de passe provisoire. Pour accéder à votre espace, définissez un
+            nouveau mot de passe ci-dessous.
+          </p>
+        </div>
+      )}
+
       <div>
         <h1 className="font-serif text-3xl">Paramètres du compte</h1>
         <p className="mt-1 text-sm text-ink-muted">
