@@ -263,6 +263,93 @@ export const BRANCHES: BrancheConfig[] = [
       },
     ],
   },
+  {
+    value: "trottinette",
+    label: "Assurance trottinette (EDPM)",
+    description: "Engins de déplacement personnel motorisés : trottinette, gyroroue, monoroue, hoverboard.",
+    sections: [
+      {
+        title: "L'engin",
+        fields: [
+          {
+            key: "type_engin",
+            label: "Type d'engin",
+            type: "select",
+            required: true,
+            options: [
+              { value: "trottinette", label: "Trottinette électrique" },
+              { value: "gyroroue", label: "Gyroroue" },
+              { value: "monoroue", label: "Monoroue" },
+              { value: "hoverboard", label: "Hoverboard" },
+              { value: "gyropode", label: "Gyropode / Segway" },
+              { value: "autre_edpm", label: "Autre EDPM" },
+            ],
+          },
+          { key: "marque_modele", label: "Marque et modèle", type: "text", placeholder: "Ex : Xiaomi Pro 2" },
+          { key: "valeur_bien", label: "Valeur du bien (achat)", type: "number", suffix: "€", required: true },
+          { key: "date_achat", label: "Date d'achat", type: "text", placeholder: "MM/AAAA" },
+          { key: "numero_serie", label: "Numéro de série", type: "text" },
+          { key: "vitesse_max", label: "Vitesse maximale bridée", type: "number", suffix: "km/h" },
+        ],
+      },
+      {
+        title: "Usage et stationnement",
+        fields: [
+          {
+            key: "usage",
+            label: "Usage principal",
+            type: "select",
+            required: true,
+            options: [
+              { value: "loisir", label: "Loisir" },
+              { value: "trajet_travail", label: "Trajets domicile - travail" },
+              { value: "professionnel", label: "Usage professionnel (livraison, tournées…)" },
+              { value: "mixte", label: "Mixte" },
+            ],
+          },
+          {
+            key: "lieu_stationnement",
+            label: "Lieu de stationnement habituel",
+            type: "select",
+            options: [
+              { value: "domicile_interieur", label: "Au domicile, à l'intérieur" },
+              { value: "garage_ferme", label: "Garage ou local fermé" },
+              { value: "cave_commune", label: "Cave / local commun" },
+              { value: "voie_publique", label: "Voie publique (attaché)" },
+              { value: "bureau", label: "Sur le lieu de travail" },
+            ],
+          },
+          { key: "km_annuels", label: "Kilométrage annuel estimé", type: "number", suffix: "km" },
+        ],
+      },
+      {
+        title: "Antécédents",
+        fields: [
+          {
+            key: "sinistres_36mois",
+            label: "Sinistres des 36 derniers mois",
+            type: "textarea",
+            placeholder: "Nature, date, montant (vol, casse, accident…)",
+          },
+          { key: "resiliation", label: "Résiliation par un précédent assureur", type: "checkbox" },
+          { key: "assureur_actuel", label: "Assureur actuel & prime annuelle", type: "text" },
+        ],
+      },
+      {
+        title: "Besoins",
+        fields: [
+          { key: "besoin_rc", label: "Responsabilité civile (obligatoire)", type: "checkbox" },
+          { key: "besoin_vol", label: "Vol", type: "checkbox" },
+          { key: "besoin_casse", label: "Casse / dommages matériels", type: "checkbox" },
+          { key: "besoin_assistance", label: "Assistance / dépannage", type: "checkbox" },
+          { key: "besoin_protection_conducteur", label: "Protection corporelle du conducteur", type: "checkbox" },
+          { key: "budget_annuel", label: "Budget annuel envisagé", type: "number", suffix: "€" },
+          { key: "franchise_max", label: "Franchise maximale acceptable", type: "number", suffix: "€" },
+          { key: "garanties_souhaitees", label: "Précisions sur les garanties souhaitées", type: "textarea" },
+        ],
+      },
+    ],
+  },
 ];
 
 export function getBranche(value: string): BrancheConfig | undefined {
