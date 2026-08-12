@@ -268,8 +268,32 @@ export function ConformiteClientTab({
                             {doc.date_emission
                               ? ` · Émis le ${new Date(doc.date_emission).toLocaleDateString("fr-FR")}`
                               : ""}
+                            {doc.date_expiration ? (
+                              <span
+                                className={new Date(doc.date_expiration) < new Date() ? "text-red-700" : ""}
+                              >
+                                {" · "}
+                                {new Date(doc.date_expiration) < new Date() ? "Expiré le " : "Valide jusqu'au "}
+                                {new Date(doc.date_expiration).toLocaleDateString("fr-FR")}
+                              </span>
+                            ) : (
+                              ""
+                            )}
                           </p>
+                          {canEdit && (
+                            <label className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-muted">
+                              Fin de validité
+                              <input
+                                type="date"
+                                defaultValue={doc.date_expiration ?? ""}
+                                onChange={(e) => setExpiration(doc.id, e.target.value)}
+                                className="rounded-md border border-line bg-surface px-2 py-1 text-xs text-ink"
+                              />
+                              <span>Rappel client automatique 30 jours avant l'échéance.</span>
+                            </label>
+                          )}
                         </div>
+
                         <span
                           className={
                             "rounded-full px-2 py-0.5 text-xs font-medium " +
