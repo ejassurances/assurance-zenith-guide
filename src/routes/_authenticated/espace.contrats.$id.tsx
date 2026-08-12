@@ -384,6 +384,45 @@ function ContratDetail() {
               <option value="capital_restant_du">Capital restant dû (délégation)</option>
             </select>
           </F>
+
+          <div className="md:col-span-3 rounded-lg border border-line bg-surface-elevated p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h4 className="text-sm font-semibold text-ink">Économie réalisée pour le client</h4>
+                <p className="text-xs text-ink-muted">
+                  Figée automatiquement au passage du contrat au statut « Signé » (contrat groupe bancaire vs
+                  délégation).
+                </p>
+              </div>
+              {canEdit && c.statut === "signe" && (
+                <button
+                  onClick={() => save(true)}
+                  disabled={saving}
+                  className="rounded-md border border-line px-3 py-1.5 text-xs disabled:opacity-60"
+                >
+                  Recalculer l'économie
+                </button>
+              )}
+            </div>
+            {c.economie_realisee === null ? (
+              <p className="mt-3 text-xs text-ink-muted">
+                {c.statut === "signe"
+                  ? "Calcul impossible : renseignez le capital initial, la durée et la date de naissance du client."
+                  : "Aucune économie figée — le contrat n'est pas encore signé."}
+              </p>
+            ) : (
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                <Stat label="Coût contrat bancaire" value={formatEuro(c.economie_cout_groupe)} />
+                <Stat label="Coût contrat délégué" value={formatEuro(c.economie_cout_delegue)} />
+                <Stat label="Économie réalisée" value={formatEuro(c.economie_realisee)} accent />
+                {c.economie_calculee_le && (
+                  <p className="sm:col-span-3 text-xs text-ink-muted">
+                    Calculée le {new Date(c.economie_calculee_le).toLocaleDateString("fr-FR")}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </section>
       )}
 
