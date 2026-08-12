@@ -73,24 +73,32 @@ function AuthPage() {
   };
 
   const inputClass =
-    "mt-1.5 w-full rounded-lg border border-white/15 bg-white/5 px-3.5 py-2.5 text-sm text-white placeholder:text-white/35 outline-none transition focus:border-[var(--crm-gold)] focus:ring-2 focus:ring-[var(--crm-gold)]/25";
+    "mt-1.5 w-full rounded-lg border border-white/15 bg-white/5 px-3.5 py-2.5 text-sm text-white placeholder:text-white/35 outline-none transition focus:border-[#d4af37] focus:ring-2 focus:ring-[#d4af37]/25";
   const labelClass = "text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55";
   const buttonClass =
-    "w-full rounded-lg bg-[var(--crm-gold)] px-5 py-2.5 text-sm font-semibold text-[#0a192f] transition hover:brightness-110 disabled:opacity-50";
+    "w-full rounded-lg bg-[#d4af37] px-5 py-2.5 text-sm font-semibold text-[#0a192f] transition hover:brightness-110 disabled:opacity-50";
 
   return (
-    <div className="crm-theme min-h-screen bg-[#0a192f]">
+    <div
+      className="min-h-screen font-sans"
+      style={{
+        backgroundColor: "#0a192f",
+        backgroundImage:
+          "radial-gradient(80rem 40rem at 50% -10%, rgba(212,175,55,0.10), transparent 60%)",
+        fontFamily: '"Plus Jakarta Sans", Inter, system-ui, sans-serif',
+      }}
+    >
       <div className="flex min-h-screen items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
           <div className="flex flex-col items-center text-center">
             <img
               src="/logo-ej-partners.png"
               alt={`Logo ${SITE.name}`}
-              className="size-14 rounded-xl object-cover ring-1 ring-[var(--crm-gold)]/40"
+              className="size-14 rounded-xl object-cover ring-1 ring-[#d4af37]/40"
             />
             <h1 className="mt-5 text-2xl font-bold tracking-tight text-white">{SITE.name}</h1>
             <p className="mt-1.5 text-sm text-white/55">CRM interne — accès sécurisé</p>
-            <span className="mt-4 h-px w-16 bg-[var(--crm-gold)]/60" />
+            <span className="mt-4 h-px w-16 bg-[#d4af37]/60" />
           </div>
 
           <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.04] p-7 shadow-2xl backdrop-blur">
@@ -188,7 +196,7 @@ function AuthPage() {
                   <p
                     className={`rounded-lg px-3 py-2 text-sm ${
                       forgotMsg.type === "ok"
-                        ? "border border-[var(--crm-gold)]/30 bg-[var(--crm-gold)]/10 text-[var(--crm-gold)]"
+                        ? "border border-[#d4af37]/30 bg-[#d4af37]/10 text-[#d4af37]"
                         : "border border-red-400/30 bg-red-500/10 text-red-200"
                     }`}
                   >
