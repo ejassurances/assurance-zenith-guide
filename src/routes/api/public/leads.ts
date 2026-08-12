@@ -185,12 +185,35 @@ export const Route = createFileRoute("/api/public/leads")({
           assignee_id: adminId,
         });
 
+        // Transfert de la demande complète vers le webhook Google Apps Script.
+        const { postLeadToWebhook, resolveLeadSource } = await import("@/lib/lead-webhook.server");
+        const webhook = await postLeadToWebhook({
+          source: resolveLeadSource(d.sujet),
+          formulaire: d.source,
+          envoye_le: new Date().toISOString(),
+          client_id: clientId,
+          nom: d.nom,
+          prenom: d.prenom || "",
+          email: d.email || null,
+          telephone: d.telephone || null,
+          type_besoin: d.sujet || (d.source === "simulateur" ? "emprunteur" : null),
+          message: d.message || null,
+          simulation: d.simulation ?? null,
+          pieces_jointes: (d.pieces_jointes ?? []).map((p) => ({
+            nom: p.nom,
+            type: p.type ?? null,
+            taille: p.taille ?? null,
+            contenu_base64: p.contenu_base64 ?? null,
+          })),
+        });
+
         return Response.json(
-          { ok: true, client_id: clientId, invite_sent: inviteSent },
+          { ok: true, client_id: clientId, invite_sent: inviteSent, webhook_ok: webhook.ok },
           { headers: corsHeaders() },
         );
       },
     },
   },
 });
+
 
