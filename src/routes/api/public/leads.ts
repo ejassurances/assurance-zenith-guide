@@ -19,9 +19,22 @@ const leadSchema = z.object({
       economie_mensuelle: z.number().nonnegative().max(100_000),
     })
     .optional(),
+  pieces_jointes: z
+    .array(
+      z.object({
+        nom: z.string().trim().max(255),
+        type: z.string().trim().max(120).optional().nullable(),
+        taille: z.number().nonnegative().max(10_000_000).optional().nullable(),
+        contenu_base64: z.string().max(7_000_000).optional().nullable(),
+      }),
+    )
+    .max(5)
+    .optional()
+    .default([]),
   consent_contact: z.boolean(),
   consent_rgpd: z.boolean(),
 });
+
 
 function corsHeaders() {
   return {
