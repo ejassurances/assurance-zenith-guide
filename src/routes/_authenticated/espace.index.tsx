@@ -88,6 +88,10 @@ function Dashboard() {
         )}
       </div>
 
+      {role !== "client" && <EconomiesEmprunteurCard scope={role === "admin" ? "cabinet" : "perso"} />}
+
+
+
 
       <div className="mt-10 grid gap-6 lg:grid-cols-2">
         <section className="rounded-2xl border border-line bg-surface-elevated p-6">
