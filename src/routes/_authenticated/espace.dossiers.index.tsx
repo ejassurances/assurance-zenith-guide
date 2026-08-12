@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { estimerEconomie } from "@/lib/insurance-rates";
 import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
 import { ProduitDocumentsLink } from "@/components/produit-documents-link";
+import { RecueilWorkflow } from "@/components/recueil-workflow";
 import {
   BRANCHES,
   getBranche,
@@ -191,8 +192,7 @@ export function NewDossierForm({
 
   const branche = getBranche(type)!;
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submit = async () => {
     if (!clientNom.trim()) {
       setError("Sélectionnez un client ou saisissez un nom.");
       return;
@@ -280,111 +280,90 @@ export function NewDossierForm({
   }
 
   return (
-    <form onSubmit={submit} className="mt-4 space-y-6 rounded-2xl border border-line bg-surface-elevated p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="font-serif text-lg">Étape 2 · Recueil des besoins</h2>
-          <p className="mt-1 text-sm text-ink-muted">
-            {branche.label} — {branche.description}
-          </p>
-        </div>
-        <button type="button" onClick={() => setStep(1)} className="text-xs text-ink-muted underline">
-          ← Changer de branche
-        </button>
-      </div>
+    <div className="mt-4">
+      <RecueilWorkflow
+        branche={branche}
+        values={recueil}
+        onChange={setRecueil}
+        onBack={() => setStep(1)}
+        onComplete={() => submit()}
+        completeLabel={saving ? "Enregistrement…" : "Créer le dossier"}
+      >
+        <div className="space-y-6">
+          {!presetClient ? (
+            <div className="rounded-xl border border-line bg-background/40 p-4">
+              <label className="text-xs font-medium uppercase tracking-wide text-ink-muted">Client</label>
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                <input
+                  placeholder="Rechercher (nom, prénom, email)…"
+                  value={clientQuery}
+                  onChange={(e) => setClientQuery(e.target.value)}
+                  className="flex-1 rounded-md border border-line bg-background px-3 py-2 text-sm"
+                />
+                <select
+                  value={clientId}
+                  onChange={(e) => {
+                    const c = clients.find((x) => x.id === e.target.value);
+                    if (c) selectClient(c);
+                    else setClientId("");
+                  }}
+                  className="rounded-md border border-line bg-background px-3 py-2 text-sm sm:w-72"
+                >
+                  <option value="">— Sélectionner un client —</option>
+                  {filteredClients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {[c.prenom, c.nom].filter(Boolean).join(" ")}
+                      {c.email ? ` · ${c.email}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                <TextInput label="Nom du client" value={clientNom} onChange={setClientNom} />
+                <TextInput label="Email" value={clientEmail} onChange={setClientEmail} type="email" />
+                <TextInput label="Téléphone" value={clientPhone} onChange={setClientPhone} />
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-ink-muted">
+              Client : {[presetClient.prenom, presetClient.nom].filter(Boolean).join(" ")}
+            </p>
+          )}
 
-      {!presetClient && (
-        <div className="rounded-xl border border-line bg-background/40 p-4">
-          <label className="text-xs font-medium uppercase tracking-wide text-ink-muted">Client existant</label>
-          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-            <input
-              placeholder="Rechercher (nom, prénom, email)…"
-              value={clientQuery}
-              onChange={(e) => setClientQuery(e.target.value)}
-              className="flex-1 rounded-md border border-line bg-background px-3 py-2 text-sm"
-            />
-            <select
-              value={clientId}
-              onChange={(e) => {
-                const c = clients.find((x) => x.id === e.target.value);
-                if (c) selectClient(c);
-                else setClientId("");
-              }}
-              className="rounded-md border border-line bg-background px-3 py-2 text-sm sm:w-72"
-            >
-              <option value="">— Sélectionner un client —</option>
-              {filteredClients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {[c.prenom, c.nom].filter(Boolean).join(" ")}
-                  {c.email ? ` · ${c.email}` : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="mt-3 grid gap-3 sm:grid-cols-3">
-            <TextInput label="Nom du client" value={clientNom} onChange={setClientNom} />
-            <TextInput label="Email" value={clientEmail} onChange={setClientEmail} type="email" />
-            <TextInput label="Téléphone" value={clientPhone} onChange={setClientPhone} />
-          </div>
-        </div>
-      )}
-      {presetClient && `Client : ${[presetClient.prenom, presetClient.nom].filter(Boolean).join(" ")}`}
-
-      {branche.sections.map((section) => (
-        <div key={section.title}>
-          <h3 className="text-sm font-medium uppercase tracking-wide text-ink-muted">{section.title}</h3>
-          <div className="mt-2 grid gap-3 sm:grid-cols-2">
-            {section.fields.map((f) => (
-              <RecueilField
-                key={f.key}
-                field={f}
-                value={recueil[f.key]}
-                onChange={(v) => setRecueil({ ...recueil, [f.key]: v })}
+          <div className="rounded-xl border border-line bg-background/40 p-4">
+            <h3 className="text-sm font-medium uppercase tracking-wide text-ink-muted">
+              Compagnie et produit (optionnel)
+            </h3>
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+              <CompagnieProduitPicker
+                branche={type}
+                compagnieId={compagnieId}
+                produitId={produitId}
+                onChange={(sel) => {
+                  setCompagnieId(sel.compagnie_id);
+                  setProduitId(sel.produit_id);
+                }}
               />
-            ))}
+            </div>
+            <div className="mt-3">
+              <ProduitDocumentsLink produitId={produitId} compagnieId={compagnieId} />
+            </div>
           </div>
-        </div>
-      ))}
 
-      <div className="rounded-xl border border-line bg-background/40 p-4">
-        <h3 className="text-sm font-medium uppercase tracking-wide text-ink-muted">Compagnie et produit (optionnel)</h3>
-        <div className="mt-2 grid gap-3 sm:grid-cols-2">
-          <CompagnieProduitPicker
-            branche={type}
-            compagnieId={compagnieId}
-            produitId={produitId}
-            onChange={(sel) => {
-              setCompagnieId(sel.compagnie_id);
-              setProduitId(sel.produit_id);
-            }}
-          />
-        </div>
-        <div className="mt-3">
-          <ProduitDocumentsLink produitId={produitId} compagnieId={compagnieId} />
-        </div>
-      </div>
+          <div>
+            <label className="text-xs font-medium uppercase tracking-wide text-ink-muted">Notes internes</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              className="mt-1 w-full rounded-md border border-line bg-background px-3 py-2 text-sm outline-none focus:border-ink"
+            />
+          </div>
 
-      <div>
-        <label className="text-xs font-medium uppercase tracking-wide text-ink-muted">Notes internes</label>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={3}
-          className="mt-1 w-full rounded-md border border-line bg-background px-3 py-2 text-sm outline-none focus:border-ink"
-        />
-      </div>
-
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
-        >
-          {saving ? "Enregistrement…" : "Créer le dossier"}
-        </button>
-      </div>
-    </form>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </div>
+      </RecueilWorkflow>
+    </div>
   );
 }
 
