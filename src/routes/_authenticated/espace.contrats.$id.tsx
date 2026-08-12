@@ -54,7 +54,15 @@ type Echeance = {
 type Compagnie = { id: string; nom: string };
 type Produit = { id: string; nom: string; compagnie_id: string };
 type Partenaire = { id: string; full_name: string | null; email: string | null; role: string };
-type ClientLite = { id: string; nom: string; prenom: string | null; reference: string };
+type ClientLite = {
+  id: string;
+  nom: string;
+  prenom: string | null;
+  reference: string;
+  date_naissance: string | null;
+  fumeur: boolean | null;
+  marque: string;
+};
 
 function ContratDetail() {
   const { id } = Route.useParams();
