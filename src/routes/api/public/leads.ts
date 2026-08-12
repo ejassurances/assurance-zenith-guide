@@ -126,61 +126,123 @@ export const Route = createFileRoute("/api/public/leads")({
           contenu: parts.join("\n"),
         });
 
-        // Création automatique du compte client + invitation email + tâche admin
-        let inviteSent = false;
-        if (d.email) {
-          try {
-            // Vérifier si un utilisateur existe déjà avec cet email
-            const { data: existingUser } = await supabaseAdmin
-              .from("profiles")
-              .select("id")
-              .eq("email", d.email)
-              .maybeSingle();
+        const origin = new URL(request.url).origin;
 
-            let userId: string | null = existingUser?.id ?? null;
-
-            if (!userId) {
-              const origin = new URL(request.url).origin;
-              const { data: invited, error: inviteErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(
-                d.email,
-                {
-                  data: { full_name: `${d.prenom || ""} ${d.nom}`.trim() },
-                  redirectTo: `${origin}/reset-password`,
-                },
-              );
-              if (!inviteErr && invited.user) {
-                userId = invited.user.id;
-                inviteSent = true;
-              }
-            }
-
-            if (userId) {
-              await supabaseAdmin
-                .from("clients")
-                .update({ user_id: userId })
-                .eq("id", clientId)
-                .is("user_id", null);
-            }
-          } catch {
-            // On n'échoue pas la requête si l'invitation échoue — le lead est capturé.
-          }
-        }
-
-        // Tâche automatique pour l'admin : rappeler le prospect
+        // Admin de référence (propriétaire technique des documents et des tâches)
         const { data: admins } = await supabaseAdmin
           .from("user_roles")
           .select("user_id")
           .eq("role", "admin")
           .limit(1);
         const adminId = admins?.[0]?.user_id ?? null;
+
+        const {
+          creerDossierAutomatique,
+          classerPiecesJointes,
+          lancerLcbAutomatique,
+          creerEspaceClient,
+        } = await import("@/lib/dossier-automation.server");
+
+        // Branche concernée : déduite du sujet du formulaire (emprunteur par défaut
+        // pour une demande issue du simulateur).
+        const sujet = (d.sujet ?? "").toLowerCase();
+        let typeAssurance = "emprunteur";
+        if (d.source !== "simulateur") {
+          if (/prevoyance|pr[ée]voyance|sant[ée]|mutuelle/.test(sujet)) typeAssurance = "prevoyance_sante";
+          else if (/epargne|[ée]pargne|retraite|transmission|coparent/.test(sujet)) typeAssurance = "epargne_retraite";
+          else if (/auto|habitation|iard|mrh/.test(sujet)) typeAssurance = "iard";
+          else if (/trottinette|edpm/.test(sujet)) typeAssurance = "trottinette";
+        }
+
+        // 1) Dossier + checklist des pièces requises
+        let dossierId: string | null = null;
+        let dossierRef: string | null = null;
+        try {
+          const dossier = await creerDossierAutomatique(supabaseAdmin, {
+            client_id: clientId,
+            nom: d.nom,
+            prenom: d.prenom || null,
+            email: d.email || null,
+            telephone: d.telephone || null,
+            type_assurance: typeAssurance,
+            notes: d.message || null,
+            capital: d.simulation?.capital ?? null,
+            duree_mois: d.simulation ? d.simulation.duree_ans * 12 : null,
+            age: d.simulation?.age ?? null,
+            fumeur: d.simulation?.fumeur ?? null,
+            economie_estimee: d.simulation ? Math.round(d.simulation.economie_totale) : null,
+            admin_id: adminId,
+            origin,
+          });
+          dossierId = dossier.id;
+          dossierRef = dossier.reference;
+        } catch {
+          // Le lead reste capturé même si la création du dossier échoue.
+        }
+
+        // 2) Classement automatique des pièces jointes reçues
+        let classement: { nom: string; code: string | null; categorie: string }[] = [];
+        if (dossierId && (d.pieces_jointes ?? []).length > 0) {
+          try {
+            classement = await classerPiecesJointes(supabaseAdmin, {
+              client_id: clientId,
+              dossier_id: dossierId,
+              type_assurance: typeAssurance,
+              admin_id: adminId,
+              pieces: d.pieces_jointes ?? [],
+            });
+          } catch {
+            classement = [];
+          }
+        }
+
+        // 3) Contrôle LCB-FT automatique (sanctions + PPE)
+        const lcb = await lancerLcbAutomatique(supabaseAdmin, {
+          client_id: clientId,
+          nom: d.nom,
+          prenom: d.prenom || null,
+        });
+
+        // 4) Espace client (mot de passe provisoire + e-mail d'accès)
+        let espace: { created: boolean; email_sent: boolean } = { created: false, email_sent: false };
+        if (d.email) {
+          try {
+            const res = await creerEspaceClient(supabaseAdmin, {
+              client_id: clientId,
+              email: d.email,
+              nom: d.nom,
+              prenom: d.prenom || null,
+              origin,
+            });
+            espace = { created: res.created, email_sent: res.email_sent };
+          } catch {
+            espace = { created: false, email_sent: false };
+          }
+        }
+
+        // 5) Tâche automatique pour l'admin : rappeler le prospect
         const echeance = new Date();
         echeance.setDate(echeance.getDate() + 2);
+        const suivi: string[] = [...parts];
+        if (dossierRef) suivi.push(`Dossier créé automatiquement : ${dossierRef} (${typeAssurance})`);
+        if (classement.length > 0) {
+          suivi.push(
+            "Pièces classées : " +
+              classement.map((c) => `${c.nom} → ${c.code ?? "à qualifier"}`).join(", "),
+          );
+        }
+        if (lcb) {
+          suivi.push(
+            `LCB-FT : ${lcb.statut} · ${lcb.nb_correspondances ?? lcb.matches.length} correspondance(s)${lcb.has_ppe ? " · PPE" : ""}${lcb.has_sanction ? " · sanction" : ""}`,
+          );
+        }
+        if (espace.created) suivi.push("Espace client créé (mot de passe provisoire envoyé par e-mail).");
         await supabaseAdmin.from("taches").insert({
           client_id: clientId,
           titre: `Rappeler ${d.prenom || ""} ${d.nom}`.trim() + (d.source === "simulateur" ? " (simulateur)" : " (contact)"),
-          description: parts.join("\n"),
+          description: suivi.join("\n"),
           echeance: echeance.toISOString().slice(0, 10),
-          priorite: "haute",
+          priorite: lcb && lcb.statut === "a_verifier" ? "urgente" : "haute",
           statut: "a_faire",
           assignee_id: adminId,
         });
