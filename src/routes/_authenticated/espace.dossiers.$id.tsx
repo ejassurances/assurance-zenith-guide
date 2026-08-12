@@ -447,7 +447,8 @@ function RecueilPanel({ dossier }: { dossier: Dossier }) {
           .map((f) => {
             const v = (r as Record<string, unknown>)[f.key];
             if (v === undefined || v === null || v === "" || v === false) return null;
-            const val = typeof v === "boolean" ? "Oui" : String(v);
+            const val =
+              typeof v === "boolean" ? "Oui" : (f.options?.find((o) => o.value === v)?.label ?? String(v));
             return (
               <div key={f.key} className="flex justify-between gap-4 border-b border-line py-1 text-sm">
                 <span className="text-ink-muted">{f.label}</span>
