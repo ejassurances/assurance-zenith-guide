@@ -472,7 +472,7 @@ function ContratDetail() {
       {canEdit && (
         <div className="flex justify-end">
           <button
-            onClick={save}
+            onClick={() => save()}
             disabled={saving}
             className="rounded-md bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
           >
