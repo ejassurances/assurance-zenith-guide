@@ -290,3 +290,43 @@ function ConformiteCabinetWidget() {
   );
 }
 
+
+type EconomiesRow = {
+  total_economies: number;
+  nb_contrats: number;
+  economie_moyenne: number;
+  capital_total: number;
+};
+
+function EconomiesEmprunteurCard({ scope }: { scope: "cabinet" | "perso" }) {
+  const [data, setData] = useState<EconomiesRow | null>(null);
+  useEffect(() => {
+    (async () => {
+      const { data: res } = await supabase.rpc("economies_emprunteur", {} as never);
+      const row = Array.isArray(res) ? (res[0] as EconomiesRow | undefined) : (res as EconomiesRow | null);
+      if (row) setData(row);
+    })();
+  }, []);
+  if (!data) return null;
+  const euro = (n: number) =>
+    new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Number(n));
+  return (
+    <div className="mt-6 rounded-2xl border border-line bg-surface-elevated p-5 shadow-sm">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+            Économies réalisées — assurance emprunteur {scope === "cabinet" ? "· tout le cabinet" : "· mes contrats"}
+          </p>
+          <p className="mt-2 text-4xl font-bold tracking-tight text-[color:var(--crm-gold)]">
+            {euro(data.total_economies)}
+          </p>
+          <p className="mt-1 text-xs text-ink-muted">
+            {data.nb_contrats} contrat{data.nb_contrats > 1 ? "s" : ""} emprunteur signé
+            {data.nb_contrats > 1 ? "s" : ""} · moyenne {euro(data.economie_moyenne)} par client · marque EJ Assurances
+          </p>
+        </div>
+        <p className="text-xs text-ink-muted">Capital assuré : {euro(data.capital_total)}</p>
+      </div>
+    </div>
+  );
+}
