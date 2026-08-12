@@ -54,8 +54,6 @@ type Echeance = {
   statut: string;
 };
 
-type Compagnie = { id: string; nom: string };
-type Produit = { id: string; nom: string; compagnie_id: string };
 type Partenaire = { id: string; full_name: string | null; email: string | null; role: string };
 type ClientLite = {
   id: string;
@@ -76,8 +74,6 @@ function ContratDetail() {
   const [c, setC] = useState<Contrat | null>(null);
   const [client, setClient] = useState<ClientLite | null>(null);
   const [ech, setEch] = useState<Echeance[]>([]);
-  const [compagnies, setCompagnies] = useState<Compagnie[]>([]);
-  const [produits, setProduits] = useState<Produit[]>([]);
   const [mandataires, setMandataires] = useState<Partenaire[]>([]);
   const [prescripteurs, setPrescripteurs] = useState<Partenaire[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,11 +82,9 @@ function ContratDetail() {
 
   async function load() {
     setLoading(true);
-    const [contrat, echeances, cies, prods, users, roles] = await Promise.all([
+    const [contrat, echeances, users, roles] = await Promise.all([
       supabase.from("contrats").select("*").eq("id", id).maybeSingle(),
       supabase.from("contrat_echeances").select("*").eq("contrat_id", id).order("annee"),
-      supabase.from("compagnies").select("id,nom").order("nom"),
-      supabase.from("produits").select("id,nom,compagnie_id").order("nom"),
       supabase.from("profiles").select("id,full_name,email"),
       supabase.from("user_roles").select("user_id,role"),
     ]);
@@ -98,8 +92,6 @@ function ContratDetail() {
     const ct = contrat.data as Contrat | null;
     setC(ct);
     setEch((echeances.data as Echeance[]) ?? []);
-    setCompagnies((cies.data as Compagnie[]) ?? []);
-    setProduits((prods.data as Produit[]) ?? []);
 
     const roleMap = new Map<string, string[]>();
     for (const r of (roles.data as { user_id: string; role: string }[]) ?? []) {
@@ -126,10 +118,6 @@ function ContratDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const filteredProduits = useMemo(
-    () => produits.filter((p) => !c?.compagnie_id || p.compagnie_id === c.compagnie_id),
-    [produits, c?.compagnie_id],
-  );
 
   /** Économie figée : calculée quand un contrat emprunteur devient « signé ». */
   function economiePayload(force = false) {
