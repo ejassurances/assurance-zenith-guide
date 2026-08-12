@@ -131,13 +131,26 @@ function Page() {
                 placeholder="Décrivez brièvement votre situation…"
               />
             </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-ink-soft">
+                Pièces jointes (facultatif — 5 fichiers max, 4 Mo par fichier)
+              </label>
+              <input
+                name="attachments"
+                type="file"
+                multiple
+                accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
+                className="w-full rounded-md border border-line bg-background px-4 py-2.5 text-sm file:mr-3 file:rounded file:border-0 file:bg-surface file:px-3 file:py-1.5 file:text-sm"
+              />
+            </div>
             <button
               type="submit"
               disabled={submitting || sent}
               className="inline-flex h-12 items-center justify-center rounded-md bg-ink px-8 text-sm font-medium text-primary-foreground disabled:opacity-60"
             >
-              {submitting ? "Envoi…" : sent ? "Demande envoyée" : "Envoyer ma demande"}
+              {submitting ? "Envoi…" : sent ? "Demande envoyée" : "Valider la demande"}
             </button>
+
             {error && (
               <p className="rounded-md bg-red-50 p-4 text-sm text-red-800">Une erreur est survenue : {error}</p>
             )}
