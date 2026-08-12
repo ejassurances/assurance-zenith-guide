@@ -99,6 +99,7 @@ export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: 
                 <th className="px-3 py-2 text-left">Assureur</th>
                 <th className="px-3 py-2 text-left">N° / Effet</th>
                 <th className="px-3 py-2 text-right">Prime annuelle</th>
+                <th className="px-3 py-2 text-right">Économie réalisée</th>
                 <th className="px-3 py-2 text-left">Statut</th>
                 <th className="px-3 py-2" />
               </tr>
