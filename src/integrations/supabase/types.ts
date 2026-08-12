@@ -1125,6 +1125,13 @@ export type Database = {
           date_effet: string | null
           dossier_id: string | null
           duree_mois: number | null
+          economie_base: Json | null
+          economie_calculee_le: string | null
+          economie_cout_delegue: number | null
+          economie_cout_groupe: number | null
+          economie_realisee: number | null
+          economie_taux_delegue: number | null
+          economie_taux_groupe: number | null
           fractionnement: string
           id: string
           is_emprunteur: boolean
@@ -1157,6 +1164,13 @@ export type Database = {
           date_effet?: string | null
           dossier_id?: string | null
           duree_mois?: number | null
+          economie_base?: Json | null
+          economie_calculee_le?: string | null
+          economie_cout_delegue?: number | null
+          economie_cout_groupe?: number | null
+          economie_realisee?: number | null
+          economie_taux_delegue?: number | null
+          economie_taux_groupe?: number | null
           fractionnement?: string
           id?: string
           is_emprunteur?: boolean
@@ -1189,6 +1203,13 @@ export type Database = {
           date_effet?: string | null
           dossier_id?: string | null
           duree_mois?: number | null
+          economie_base?: Json | null
+          economie_calculee_le?: string | null
+          economie_cout_delegue?: number | null
+          economie_cout_groupe?: number | null
+          economie_realisee?: number | null
+          economie_taux_delegue?: number | null
+          economie_taux_groupe?: number | null
           fractionnement?: string
           id?: string
           is_emprunteur?: boolean
@@ -2238,6 +2259,15 @@ export type Database = {
       current_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      economies_emprunteur: {
+        Args: { _mandataire_id?: string }
+        Returns: {
+          capital_total: number
+          economie_moyenne: number
+          nb_contrats: number
+          total_economies: number
+        }[]
       }
       has_role: {
         Args: {
