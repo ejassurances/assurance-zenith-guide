@@ -57,6 +57,19 @@ export function piecesRequisesPour(typeAssurance: string): PieceRequise[] {
   return [...KYC_COMMUN, ...(PAR_BRANCHE[typeAssurance] ?? [])];
 }
 
+/**
+ * Catalogue dédupliqué de toutes les pièces connues, toutes branches confondues.
+ * Sert au classement manuel des pièces « à qualifier ».
+ */
+export function toutesPiecesConnues(): PieceRequise[] {
+  const vues = new Map<string, PieceRequise>();
+  for (const p of [...KYC_COMMUN, ...Object.values(PAR_BRANCHE).flat()]) {
+    if (!vues.has(p.code)) vues.set(p.code, p);
+  }
+  return [...vues.values()];
+}
+
+
 interface RegleClassement {
   code: string;
   motifs: RegExp;
