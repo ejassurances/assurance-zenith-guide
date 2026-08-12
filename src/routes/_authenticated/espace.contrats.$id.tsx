@@ -32,6 +32,10 @@ type Contrat = {
   taux_assurance_annuel: number | null;
   quotite: number | null;
   assiette: "capital_initial" | "capital_restant_du";
+  economie_cout_groupe: number | null;
+  economie_cout_delegue: number | null;
+  economie_realisee: number | null;
+  economie_calculee_le: string | null;
 };
 
 type Echeance = {
