@@ -14,6 +14,7 @@ type Row = {
   capital_initial: number | null;
   taux_assurance_annuel: number | null;
   statut: string;
+  economie_realisee: number | null;
 };
 
 export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: boolean }) {
