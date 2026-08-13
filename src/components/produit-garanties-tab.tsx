@@ -4,13 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   COUVERTURE_LABEL,
   grillePourFamille,
+  groupesGrille,
   valeurVide,
   type Couverture,
+  type GarantieDef,
   type ValeurGarantie,
   type ValeursGrille,
 } from "@/lib/garanties-grille";
 import {
-  analyserDocumentGaranties,
+  analyserDocumentsGaranties,
   enregistrerGrilleBrouillon,
   rejeterPropositionGaranties,
   validerGrilleGaranties,
