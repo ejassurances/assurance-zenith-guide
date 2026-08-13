@@ -187,17 +187,35 @@ export function ProduitGarantiesTab({
     document_source_id: docId || null,
   });
 
+  /** Écriture de la grille d'une formule (RLS + trigger imposent la validation admin). */
+  const enregistrerFormule = async (statut: "brouillon" | "valide") => {
+    const { data: session } = await supabase.auth.getUser();
+    const { error } = await supabase.from("formule_garanties").upsert(
+      {
+        formule_id: formuleId!,
+        grille_version: grille.version,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        valeurs: valeurs as any,
+        statut,
+        updated_by: session.user?.id ?? null,
+      },
+      { onConflict: "formule_id" },
+    );
+    if (error) throw new Error(error.message);
+  };
+
   const validee = ligne?.statut === "valide" && ligne.grille_version === grille.version;
 
   return (
     <section className="space-y-5 rounded-lg border border-line bg-surface p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="font-serif text-lg">Grille de garanties — {familleNom ?? grille.libelle}</h3>
+          <h3 className="font-serif text-lg">{titre ?? `Grille de garanties — ${familleNom ?? grille.libelle}`}</h3>
           <p className="text-xs text-ink-muted">
             Structure standardisée (version {grille.version}) commune à toutes les compagnies de cette typologie.
           </p>
         </div>
+
         <span className={`rounded-full border px-3 py-1 text-xs font-medium ${validee ? badge("oui") : badge("non")}`}>
           {validee
             ? `Grille validée${ligne?.valide_le ? ` le ${new Date(ligne.valide_le).toLocaleDateString("fr-FR")}` : ""}`
