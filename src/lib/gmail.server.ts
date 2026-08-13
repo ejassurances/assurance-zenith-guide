@@ -78,9 +78,12 @@ export interface EmailResume {
   snippet: string;
   date: string | null;
   non_lu: boolean;
+  etiquettes: string[];
 }
 
-function toResume(msg: GmailMessage): EmailResume {
+const LABELS_SYSTEME = /^(INBOX|SENT|DRAFT|SPAM|TRASH|UNREAD|STARRED|IMPORTANT|CATEGORY_.*|CHAT)$/;
+
+function toResume(msg: GmailMessage, nomsLabels?: Map<string, string>): EmailResume {
   const from = parseFrom(header(msg, "From"));
   const dateHeader = header(msg, "Date");
   const ts = msg.internalDate ? Number(msg.internalDate) : Date.parse(dateHeader);
@@ -94,6 +97,11 @@ function toResume(msg: GmailMessage): EmailResume {
     snippet: msg.snippet ?? "",
     date: Number.isFinite(ts) ? new Date(ts).toISOString() : null,
     non_lu: (msg.labelIds ?? []).includes("UNREAD"),
+    etiquettes: nomsLabels
+      ? (msg.labelIds ?? [])
+          .map((id) => nomsLabels.get(id))
+          .filter((n): n is string => !!n && !LABELS_SYSTEME.test(n.toUpperCase()))
+      : [],
   };
 }
 
@@ -124,8 +132,13 @@ export async function listerBoitePrincipale(params: {
     ),
   );
 
+  const { labels } = await gmailFetch<{ labels?: { id: string; name: string }[] }>("/users/me/labels").catch(
+    () => ({ labels: [] as { id: string; name: string }[] }),
+  );
+  const nomsLabels = new Map((labels ?? []).map((l) => [l.id, l.name] as const));
+
   return {
-    messages: details.filter((m): m is GmailMessage => !!m).map(toResume),
+    messages: details.filter((m): m is GmailMessage => !!m).map((m) => toResume(m, nomsLabels)),
     nextPageToken: list.nextPageToken ?? null,
   };
 }
