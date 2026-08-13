@@ -503,8 +503,8 @@ function NouvelleFacture({
         </Button>
       </div>
       <p className="mt-3 text-xs text-ink-muted">
-        L'écriture comptable (journal Achats : charge au débit, TVA déductible, fournisseur au crédit) est générée
-        ensuite en un clic depuis la liste.
+        À l'enregistrement, l'écriture comptable est générée automatiquement dans le journal Achats : compte de charge
+        au débit, TVA déductible (445660) au débit, fournisseur (401000) au crédit.
       </p>
     </div>
   );
