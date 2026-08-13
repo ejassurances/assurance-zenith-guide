@@ -1745,6 +1745,8 @@ export type Database = {
       }
       lettres_mission: {
         Row: {
+          archive_envoye_le: string | null
+          archive_reponse: string | null
           client_id: string | null
           contenu: Json
           created_at: string
@@ -1755,6 +1757,7 @@ export type Database = {
           envoye_le: string | null
           envoye_par: string | null
           id: string
+          pdf_storage_path: string | null
           signature_png: string | null
           signed_at: string | null
           signed_ip: string | null
@@ -1764,6 +1767,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archive_envoye_le?: string | null
+          archive_reponse?: string | null
           client_id?: string | null
           contenu: Json
           created_at?: string
@@ -1774,6 +1779,7 @@ export type Database = {
           envoye_le?: string | null
           envoye_par?: string | null
           id?: string
+          pdf_storage_path?: string | null
           signature_png?: string | null
           signed_at?: string | null
           signed_ip?: string | null
@@ -1783,6 +1789,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archive_envoye_le?: string | null
+          archive_reponse?: string | null
           client_id?: string | null
           contenu?: Json
           created_at?: string
@@ -1793,6 +1801,7 @@ export type Database = {
           envoye_le?: string | null
           envoye_par?: string | null
           id?: string
+          pdf_storage_path?: string | null
           signature_png?: string | null
           signed_at?: string | null
           signed_ip?: string | null
@@ -2464,7 +2473,7 @@ export type Database = {
       activite_type: "note" | "appel" | "email" | "sms" | "systeme" | "rdv"
       api_auth_type: "none" | "api_key" | "bearer" | "oauth2" | "basic"
       app_role: "admin" | "mandataire" | "client" | "prescripteur"
-      client_kyc_type: "cni" | "justificatif_domicile" | "rib"
+      client_kyc_type: "cni" | "justificatif_domicile" | "rib" | "kbis"
       client_origine:
         | "internet"
         | "assurlead"
@@ -2489,7 +2498,13 @@ export type Database = {
         | "rcpro"
         | "der"
         | "autre"
-      dossier_statut: "nouveau" | "en_cours" | "signe" | "perdu"
+      dossier_statut:
+        | "nouveau"
+        | "en_cours"
+        | "signe"
+        | "perdu"
+        | "lettre_mission_envoyee"
+        | "dda_validee"
       produit_document_type:
         | "conditions_generales"
         | "ipid"
@@ -2629,7 +2644,7 @@ export const Constants = {
       activite_type: ["note", "appel", "email", "sms", "systeme", "rdv"],
       api_auth_type: ["none", "api_key", "bearer", "oauth2", "basic"],
       app_role: ["admin", "mandataire", "client", "prescripteur"],
-      client_kyc_type: ["cni", "justificatif_domicile", "rib"],
+      client_kyc_type: ["cni", "justificatif_domicile", "rib", "kbis"],
       client_origine: [
         "internet",
         "assurlead",
@@ -2657,7 +2672,14 @@ export const Constants = {
         "der",
         "autre",
       ],
-      dossier_statut: ["nouveau", "en_cours", "signe", "perdu"],
+      dossier_statut: [
+        "nouveau",
+        "en_cours",
+        "signe",
+        "perdu",
+        "lettre_mission_envoyee",
+        "dda_validee",
+      ],
       produit_document_type: [
         "conditions_generales",
         "ipid",

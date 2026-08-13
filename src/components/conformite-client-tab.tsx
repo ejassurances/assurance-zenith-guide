@@ -9,7 +9,7 @@ import { DerStatusCard } from "@/components/der-status-card";
 type KycDoc = {
   id: string;
   client_id: string;
-  type: "cni" | "justificatif_domicile" | "rib";
+  type: "cni" | "justificatif_domicile" | "rib" | "kbis";
   nom: string;
   storage_path: string;
   drive_url: string | null;
@@ -49,6 +49,7 @@ const TYPES: { key: KycDoc["type"]; label: string }[] = [
   { key: "cni", label: "Carte d'identité / Passeport" },
   { key: "justificatif_domicile", label: "Justificatif de domicile (< 3 mois)" },
   { key: "rib", label: "RIB" },
+  { key: "kbis", label: "KBIS / avis Sirene (client professionnel)" },
 ];
 
 const NIVEAU_COLOR: Record<string, string> = {
@@ -225,8 +226,9 @@ export function ConformiteClientTab({
           </div>
         </div>
         <p className="mt-3 text-xs opacity-80">
-          Barème : CNI valide (30 pts) · Justificatif de domicile &lt; 3 mois (20 pts) · RIB (15 pts) · Vérification
-          LCB-FT (35 pts). Revérification 18 mois si vert · 12 mois si orange · 6 mois si rouge.
+          Barème : identité valide non expirée (30 pts) · RIB + justificatif de domicile &lt; 3 mois (30 pts) ·
+          KBIS / Sirene à jour si client professionnel (20 pts) · questionnaire LCB-FT validé &lt; 12 mois (20 pts).
+          Sous 50 % 🔴 la création de contrat est bloquée · 50-89 % 🟡 en attente · 90-100 % 🟢 conforme.
         </p>
       </div>
 

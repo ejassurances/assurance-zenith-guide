@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { declencherLettreMissionAuto } from "@/lib/lettres-mission.functions";
 import { useAuth } from "@/lib/auth-context";
 import { estimerEconomie } from "@/lib/insurance-rates";
 import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
@@ -164,6 +166,7 @@ export function NewDossierForm({
   const [produitId, setProduitId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const lancerLettreMission = useServerFn(declencherLettreMissionAuto);
 
   useEffect(() => {
     (async () => {
@@ -221,7 +224,7 @@ export function NewDossierForm({
       }
     }
 
-    const { error: insErr } = await supabase.from("dossiers").insert({
+    const { data: created, error: insErr } = await supabase.from("dossiers").insert({
       client_id: clientId || null,
       client_nom: clientNom,
       client_email: clientEmail || null,
@@ -238,12 +241,17 @@ export function NewDossierForm({
       economie_estimee: economie,
       apporteur_id: userId,
       created_by: userId,
-    });
-    setSaving(false);
-    if (insErr) {
-      setError(insErr.message);
+    }).select("id").single();
+    if (insErr || !created) {
+      setSaving(false);
+      setError(insErr?.message ?? "Erreur de création");
       return;
     }
+
+    // Recueil validé → lettre de mission générée et envoyée automatiquement
+    const res = await lancerLettreMission({ data: { dossier_id: created.id } });
+    setSaving(false);
+    if (!res.ok && res.raison) setError(res.raison);
     onCreated();
   };
 

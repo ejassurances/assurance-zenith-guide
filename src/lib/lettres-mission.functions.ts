@@ -2,120 +2,45 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader, getRequestIP, getRequest } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { createHash } from "node:crypto";
-import { sendTemplateEmail } from "@/lib/email-templates/send-email";
-import { SITE } from "@/lib/site";
 
 const creerInput = z.object({ dossier_id: z.string().uuid() });
 
+/** Envoi manuel de la lettre de mission depuis la fiche dossier. */
 export const creerEtEnvoyerLettreMission = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => creerInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { envoyerLettreMission } = await import("./lettres-mission.server");
+    const origin = new URL(getRequest().url).origin;
+    const res = await envoyerLettreMission(context.supabase, data.dossier_id, context.userId, origin);
+    return { ok: true, id: res.id };
+  });
 
-    const { data: dossier, error: dErr } = await supabase
+/**
+ * Déclenchement automatique après validation du recueil des besoins.
+ * Ne lève pas d'erreur bloquante : le dossier reste créé même si l'envoi échoue.
+ */
+export const declencherLettreMissionAuto = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => creerInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: dossier } = await supabase
       .from("dossiers")
-      .select("*")
+      .select("client_email")
       .eq("id", data.dossier_id)
       .maybeSingle();
-    if (dErr || !dossier) throw new Error("Dossier introuvable ou accès refusé");
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const d = dossier as any;
-    if (!d.client_email) throw new Error("Le dossier n'a pas d'email client — renseignez-le d'abord.");
-
-    // Snapshot du contenu de la lettre : identité + recueil
-    const contenu = {
-      cabinet: {
-        nom: SITE.name,
-        shortName: SITE.shortName,
-        siret: SITE.siret,
-        orias: SITE.orias,
-        adresse: SITE.address,
-        telephone: SITE.phone,
-        email: SITE.email,
-      },
-      client: {
-        nom: d.client_nom,
-        email: d.client_email,
-        telephone: d.client_phone,
-      },
-      dossier: {
-        reference: d.reference,
-        type_assurance: d.type_assurance,
-      },
-      recueil_besoins: d.recueil_besoins ?? {},
-      genere_le: new Date().toISOString(),
-    };
-
-    const hash = createHash("sha256")
-      .update(JSON.stringify(contenu))
-      .digest("hex");
-
-    // Une seule lettre "vivante" par dossier : on ré-utilise la brouillon/envoyée non signée
-    const { data: existing } = await supabase
-      .from("lettres_mission")
-      .select("id, statut")
-      .eq("dossier_id", data.dossier_id)
-      .neq("statut", "annulee")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    let lettreId: string;
-    if (existing && existing.statut !== "signee") {
-      const { error: upErr } = await supabase
-        .from("lettres_mission")
-        .update({
-          contenu,
-          document_hash: hash,
-          type_assurance: d.type_assurance,
-          client_id: d.client_id,
-          email_destinataire: d.client_email,
-          envoye_le: new Date().toISOString(),
-          envoye_par: userId,
-          statut: "envoyee",
-        })
-        .eq("id", existing.id);
-      if (upErr) throw new Error(upErr.message);
-      lettreId = existing.id;
-    } else {
-      const { data: inserted, error: insErr } = await supabase
-        .from("lettres_mission")
-        .insert({
-          dossier_id: data.dossier_id,
-          client_id: d.client_id,
-          type_assurance: d.type_assurance,
-          contenu,
-          document_hash: hash,
-          statut: "envoyee",
-          email_destinataire: d.client_email,
-          envoye_le: new Date().toISOString(),
-          envoye_par: userId,
-          created_by: userId,
-        })
-        .select("id")
-        .single();
-      if (insErr || !inserted) throw new Error(insErr?.message ?? "Erreur création lettre");
-      lettreId = inserted.id;
+    if (!dossier?.client_email) {
+      return { ok: false, raison: "Aucun email client : lettre de mission à envoyer manuellement." };
     }
-
-    // Email au client
-    const origin = new URL(getRequest().url).origin;
-    const link = `${origin}/espace/signer-lettre-mission`;
-    const result = await sendTemplateEmail("lettre-mission-envoi", d.client_email, {
-      templateData: {
-        clientName: d.client_nom,
-        cabinetName: SITE.shortName,
-        reference: d.reference,
-        link,
-      },
-      replyTo: SITE.email,
-    });
-    if (!result.sent) throw new Error("Adresse en liste de suppression — envoi refusé");
-
-    return { ok: true, id: lettreId };
+    try {
+      const { envoyerLettreMission } = await import("./lettres-mission.server");
+      const origin = new URL(getRequest().url).origin;
+      const res = await envoyerLettreMission(supabase, data.dossier_id, userId, origin);
+      return { ok: true, id: res.id };
+    } catch (e) {
+      return { ok: false, raison: e instanceof Error ? e.message : "Erreur d'envoi" };
+    }
   });
 
 const signerInput = z.object({
@@ -131,7 +56,7 @@ export const signerLettreMission = createServerFn({ method: "POST" })
 
     const { data: lettre, error } = await supabase
       .from("lettres_mission")
-      .select("id, statut, client_id, clients:client_id(user_id)")
+      .select("id, statut, dossier_id, client_id, clients:client_id(user_id)")
       .eq("id", data.lettre_id)
       .maybeSingle();
     if (error || !lettre) throw new Error("Lettre introuvable");
@@ -155,5 +80,23 @@ export const signerLettreMission = createServerFn({ method: "POST" })
       .eq("id", data.lettre_id);
     if (upErr) throw new Error(upErr.message);
 
-    return { ok: true };
+    // DDA validée : statut dossier + client
+    await supabase.from("dossiers").update({ statut: "dda_validee" }).eq("id", lettre.dossier_id);
+    if (lettre.client_id) {
+      await supabase.from("clients").update({ dda_statut: "validee" }).eq("id", lettre.client_id);
+    }
+
+    // PDF signé : archivage + transmission au webhook (Drive 02_Conformite_DDA)
+    let archive: { path: string; webhook: string } | null = null;
+    let archiveErreur: string | null = null;
+    try {
+      const { archiverLettreMissionSignee } = await import("./lettre-mission-archive.server");
+      const res = await archiverLettreMissionSignee(supabase, data.lettre_id, userId);
+      archive = { path: res.path, webhook: res.webhook };
+    } catch (e) {
+      archiveErreur = e instanceof Error ? e.message : "Erreur d'archivage";
+      console.error("Archivage lettre de mission :", archiveErreur);
+    }
+
+    return { ok: true, archive, archive_erreur: archiveErreur };
   });
