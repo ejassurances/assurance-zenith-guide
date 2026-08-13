@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { envoyerEmailCrm } from "@/lib/emails.functions";
+import { ContactPicker } from "@/components/contact-picker";
+import type { ContactCrm } from "@/lib/contacts.functions";
 
 export interface EmailLiens {
   client_id?: string | null;
@@ -34,6 +36,17 @@ export function EmailComposeDialog({
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [carnetOuvert, setCarnetOuvert] = useState(false);
+  const [contactChoisi, setContactChoisi] = useState<ContactCrm | null>(null);
+
+  const ajouterContact = (contact: ContactCrm) => {
+    if (!to.trim()) {
+      setTo(contact.email);
+      setContactChoisi(contact);
+    } else if (!`${to},${cc}`.toLowerCase().includes(contact.email.toLowerCase())) {
+      setCc((prev) => (prev.trim() ? `${prev.trim()}, ${contact.email}` : contact.email));
+    }
+  };
 
   if (!open) return null;
 
@@ -49,10 +62,10 @@ export function EmailComposeDialog({
           sujet: sujet.trim(),
           message,
           thread_id: threadId ?? null,
-          client_id: liens?.client_id ?? null,
+          client_id: liens?.client_id ?? contactChoisi?.client_id ?? null,
           dossier_id: liens?.dossier_id ?? null,
           contrat_id: liens?.contrat_id ?? null,
-          compagnie_id: liens?.compagnie_id ?? null,
+          compagnie_id: liens?.compagnie_id ?? contactChoisi?.compagnie_id ?? null,
         },
       });
       setMessage("");
@@ -77,6 +90,19 @@ export function EmailComposeDialog({
             Fermer
           </button>
         </div>
+
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-ink-muted">Choisissez un destinataire dans le carnet du CRM ou saisissez-le.</p>
+          <button
+            type="button"
+            onClick={() => setCarnetOuvert((v) => !v)}
+            className="rounded-full border border-line px-3 py-1 text-xs hover:bg-surface"
+          >
+            {carnetOuvert ? "Masquer le carnet" : "Carnet CRM"}
+          </button>
+        </div>
+
+        {carnetOuvert && <ContactPicker onPick={ajouterContact} />}
 
         <input
           required
