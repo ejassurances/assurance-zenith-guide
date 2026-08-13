@@ -193,7 +193,7 @@ function CompagnieDetail() {
       </div>
 
       <div className="flex gap-1 border-b border-line">
-        {(["infos", "produits", "partenariats", "api"] as Tab[]).map((t) => (
+        {(["infos", "produits", "partenariats", "emails", "api"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
