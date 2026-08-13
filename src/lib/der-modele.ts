@@ -19,6 +19,8 @@ export const DER_MENTIONS = {
   reclamation:
     "Toute réclamation peut être adressée au cabinet par écrit ; à défaut de réponse satisfaisante sous deux mois, le client peut saisir La Médiation de l'Assurance, TSA 50110, 75441 Paris Cedex 09.",
   registre: "Le registre ORIAS est consultable sur www.orias.fr.",
+  intelligence_artificielle:
+    "Le cabinet peut avoir recours à des outils d'intelligence artificielle pour enrichir la qualité de son analyse et la préparation de ses recommandations. Ce recours reste systématiquement encadré et validé par un professionnel habilité du cabinet, seul responsable du conseil délivré.",
 } as const;
 
 export const DER_SECTIONS = [
@@ -27,7 +29,9 @@ export const DER_SECTIONS = [
   { cle: "remuneration", titre: "3. Mode de rémunération" },
   { cle: "reclamation", titre: "4. Réclamations et médiation" },
   { cle: "registre", titre: "5. Registre des intermédiaires" },
+  { cle: "intelligence_artificielle", titre: "6. Recours à l'intelligence artificielle" },
 ] as const;
+
 
 export type DerPartenaire = { compagnie: string; produits: string[] };
 

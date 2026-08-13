@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EspaceConfidentialiteRouteImport } from './routes/espace.confidentialite'
+import { Route as EspaceCguRouteImport } from './routes/espace.cgu'
 import { Route as AuthenticatedEspaceRouteImport } from './routes/_authenticated/espace'
 import { Route as AuthenticatedEspaceIndexRouteImport } from './routes/_authenticated/espace.index'
 import { Route as ApiPublicRelanceSouscriptionRouteImport } from './routes/api/public/relance-souscription'
@@ -69,6 +70,11 @@ const IndexRoute = IndexRouteImport.update({
 const EspaceConfidentialiteRoute = EspaceConfidentialiteRouteImport.update({
   id: '/espace/confidentialite',
   path: '/espace/confidentialite',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EspaceCguRoute = EspaceCguRouteImport.update({
+  id: '/espace/cgu',
+  path: '/espace/cgu',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedEspaceRoute = AuthenticatedEspaceRouteImport.update({
@@ -262,6 +268,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/espace': typeof AuthenticatedEspaceRouteWithChildren
+  '/espace/cgu': typeof EspaceCguRoute
   '/espace/confidentialite': typeof EspaceConfidentialiteRoute
   '/espace/audit-logs': typeof AuthenticatedEspaceAuditLogsRoute
   '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
@@ -299,6 +306,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/espace/cgu': typeof EspaceCguRoute
   '/espace/confidentialite': typeof EspaceConfidentialiteRoute
   '/espace/audit-logs': typeof AuthenticatedEspaceAuditLogsRoute
   '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
@@ -339,6 +347,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/espace': typeof AuthenticatedEspaceRouteWithChildren
+  '/espace/cgu': typeof EspaceCguRoute
   '/espace/confidentialite': typeof EspaceConfidentialiteRoute
   '/_authenticated/espace/audit-logs': typeof AuthenticatedEspaceAuditLogsRoute
   '/_authenticated/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
@@ -379,6 +388,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/espace'
+    | '/espace/cgu'
     | '/espace/confidentialite'
     | '/espace/audit-logs'
     | '/espace/commissions'
@@ -416,6 +426,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/reset-password'
+    | '/espace/cgu'
     | '/espace/confidentialite'
     | '/espace/audit-logs'
     | '/espace/commissions'
@@ -455,6 +466,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/_authenticated/espace'
+    | '/espace/cgu'
     | '/espace/confidentialite'
     | '/_authenticated/espace/audit-logs'
     | '/_authenticated/espace/commissions'
@@ -494,6 +506,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  EspaceCguRoute: typeof EspaceCguRoute
   EspaceConfidentialiteRoute: typeof EspaceConfidentialiteRoute
   ApiPublicBootstrapAdminRoute: typeof ApiPublicBootstrapAdminRoute
   ApiPublicLeadsRoute: typeof ApiPublicLeadsRoute
@@ -541,6 +554,13 @@ declare module '@tanstack/react-router' {
       path: '/espace/confidentialite'
       fullPath: '/espace/confidentialite'
       preLoaderRoute: typeof EspaceConfidentialiteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/espace/cgu': {
+      id: '/espace/cgu'
+      path: '/espace/cgu'
+      fullPath: '/espace/cgu'
+      preLoaderRoute: typeof EspaceCguRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/espace': {
@@ -842,6 +862,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  EspaceCguRoute: EspaceCguRoute,
   EspaceConfidentialiteRoute: EspaceConfidentialiteRoute,
   ApiPublicBootstrapAdminRoute: ApiPublicBootstrapAdminRoute,
   ApiPublicLeadsRoute: ApiPublicLeadsRoute,
