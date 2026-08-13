@@ -80,6 +80,7 @@ export async function sendTemplateEmail(
       subject,
       htmlContent: html,
       textContent: text,
+      ...(options.brevoParams ? { params: options.brevoParams } : {}),
       ...(options.replyTo ? { replyTo: { email: options.replyTo } } : {}),
       tags: [templateName],
     }),
