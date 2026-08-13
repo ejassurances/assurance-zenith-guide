@@ -7,6 +7,7 @@ import { ProduitGarantiesTab } from "@/components/produit-garanties-tab";
 import { ProduitFormulesTab } from "@/components/produit-formules-tab";
 
 import { EmailsLiesPanel } from "@/components/emails-lies-panel";
+import { ImageUploadField, StoredImage } from "@/components/image-upload-field";
 
 type CompagnieDocRow = {
   id: string;
