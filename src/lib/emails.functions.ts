@@ -8,14 +8,19 @@ import { z } from "zod";
  * création de fiche + dossier depuis un email, et envoi depuis le CRM.
  */
 
-type StaffClient = { rpc: (fn: "current_user_role") => PromiseLike<{ data: unknown }> };
+type StaffClient = {
+  from: (table: "user_roles") => {
+    select: (cols: string) => { eq: (col: string, val: string) => PromiseLike<{ data: { role: string }[] | null }> };
+  };
+};
 
-async function exigerStaff(supabase: unknown) {
-  const { data } = await (supabase as StaffClient).rpc("current_user_role");
-  const role = typeof data === "string" ? data : null;
-  if (role !== "admin" && role !== "mandataire") throw new Error("Accès réservé au cabinet.");
-  return role;
+async function exigerStaff(supabase: unknown, userId: string) {
+  const { data } = await (supabase as StaffClient).from("user_roles").select("role").eq("user_id", userId);
+  const roles = (data ?? []).map((r) => r.role);
+  if (!roles.includes("admin") && !roles.includes("mandataire")) throw new Error("Accès réservé au cabinet.");
+  return roles.includes("admin") ? "admin" : "mandataire";
 }
+
 
 const liensSchema = z.object({
   client_id: z.string().uuid().optional().nullable(),
