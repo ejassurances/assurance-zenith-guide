@@ -281,22 +281,21 @@ function EconomiesEmprunteurCard({ scope }: { scope: "cabinet" | "perso" }) {
   const euro = (n: number) =>
     new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Number(n));
   return (
-    <div className="mt-6 rounded-2xl border-2 border-[color:var(--crm-gold)] bg-[color:var(--crm-gold-soft)] p-7 shadow-sm">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="crm-band mt-6 p-8">
+      <div className="relative z-10 flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-85">
             Économies réalisées — assurance emprunteur {scope === "cabinet" ? "· tout le cabinet" : "· mes contrats"}
           </p>
-          <p className="mt-3 font-serif text-5xl font-semibold tracking-tight text-[color:var(--crm-gold-muted)]">
-            {euro(data.total_economies)}
-          </p>
-          <p className="mt-2 text-xs text-ink-muted">
-
+          <p className="mt-3 font-serif text-5xl font-semibold tracking-tight">{euro(data.total_economies)}</p>
+          <p className="mt-2 text-xs opacity-85">
             {data.nb_contrats} contrat{data.nb_contrats > 1 ? "s" : ""} emprunteur signé
             {data.nb_contrats > 1 ? "s" : ""} · moyenne {euro(data.economie_moyenne)} par client · marque EJ Assurances
           </p>
         </div>
-        <p className="text-xs text-ink-muted">Capital assuré : {euro(data.capital_total)}</p>
+        <p className="rounded-sm border border-white/30 px-4 py-2 text-xs font-medium uppercase tracking-widest">
+          Capital assuré : {euro(data.capital_total)}
+        </p>
       </div>
     </div>
   );
