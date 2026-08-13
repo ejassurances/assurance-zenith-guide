@@ -37,6 +37,7 @@ function AuthPage() {
   const [signupLoading, setSignupLoading] = useState(false);
   const [signupMsg, setSignupMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const creerCompte = useServerFn(autoInscriptionClient);
+  const demanderReset = useServerFn(demanderReinitialisationMotDePasse);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
