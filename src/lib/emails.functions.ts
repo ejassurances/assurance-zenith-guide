@@ -489,3 +489,131 @@ export const etiqueterMessageCrm = createServerFn({ method: "POST" })
     await etiqueterMessage(data.id, data.etiquette);
     return { ok: true };
   });
+
+/**
+ * Scan complet de la boîte principale (messages LUS inclus) pour mettre à jour le CRM :
+ * rattache automatiquement chaque message à un client (expéditeur ou destinataire connu)
+ * ou à une compagnie (email de contact / domaine du site).
+ */
+export const scannerBoiteCrm = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ pages: z.number().int().min(1).max(20).optional() }).parse(input ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    await exigerStaff(context.supabase, context.userId);
+    const { listerBoitePrincipale } = await import("@/lib/gmail.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const maxPages = data.pages ?? 8;
+
+    const [{ data: clients }, { data: compagnies }] = await Promise.all([
+      supabaseAdmin.from("clients").select("id, email, email2, nom, prenom"),
+      supabaseAdmin.from("compagnies").select("id, nom, contact_email, site_web"),
+    ]);
+
+    const clientParEmail = new Map<string, { id: string; nom: string | null; prenom: string | null }>();
+    for (const c of clients ?? []) {
+      for (const e of [c.email, c.email2]) {
+        if (e) clientParEmail.set(e.toLowerCase().trim(), { id: c.id, nom: c.nom, prenom: c.prenom });
+      }
+    }
+
+    const domaine = (v: string | null) => {
+      if (!v) return null;
+      const m = v.toLowerCase().match(/([a-z0-9-]+\.[a-z.]{2,})/);
+      return m ? m[1].replace(/^www\./, "") : null;
+    };
+    const compagnieParDomaine = new Map<string, { id: string; nom: string }>();
+    for (const cp of compagnies ?? []) {
+      for (const d of [domaine(cp.contact_email), domaine(cp.site_web)]) {
+        if (d) compagnieParDomaine.set(d, { id: cp.id, nom: cp.nom });
+      }
+    }
+
+    let analyses = 0;
+    let rattachesClient = 0;
+    let rattachesCompagnie = 0;
+    let deja = 0;
+    let pageToken: string | null = null;
+
+    for (let p = 0; p < maxPages; p++) {
+      const { messages, nextPageToken } = await listerBoitePrincipale({
+        pageToken,
+        maxResults: 50,
+      });
+      if (!messages.length) break;
+      analyses += messages.length;
+
+      const ids = messages.map((m) => m.id);
+      const { data: liens } = await supabaseAdmin
+        .from("crm_emails")
+        .select("gmail_message_id")
+        .in("gmail_message_id", ids);
+      const dejaLies = new Set((liens ?? []).map((l) => l.gmail_message_id));
+
+      for (const m of messages) {
+        if (dejaLies.has(m.id)) {
+          deja++;
+          continue;
+        }
+        const expediteur = m.expediteur_email?.toLowerCase().trim() ?? null;
+        const destinataires = (m.destinataires ?? "").toLowerCase();
+
+        let client = expediteur ? clientParEmail.get(expediteur) ?? null : null;
+        if (!client) {
+          for (const [email, c] of clientParEmail) {
+            if (destinataires.includes(email)) {
+              client = c;
+              break;
+            }
+          }
+        }
+        const compagnie = !client && expediteur ? compagnieParDomaine.get(domaine(expediteur) ?? "") ?? null : null;
+        if (!client && !compagnie) continue;
+
+        const { error } = await supabaseAdmin.from("crm_emails").upsert(
+          {
+            gmail_message_id: m.id,
+            gmail_thread_id: m.thread_id ?? null,
+            direction: m.etiquettes.includes("SENT") ? "sortant" : "entrant",
+            expediteur_nom: m.expediteur_nom ?? null,
+            expediteur_email: m.expediteur_email ?? null,
+            destinataires: m.destinataires ?? null,
+            sujet: m.sujet ?? null,
+            snippet: m.snippet ?? null,
+            recu_le: m.date ?? null,
+            client_id: client?.id ?? null,
+            compagnie_id: compagnie?.id ?? null,
+            notes: client
+              ? "Rattaché automatiquement (scan boîte — email client connu)"
+              : "Rattaché automatiquement (scan boîte — domaine compagnie)",
+            created_by: context.userId,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "gmail_message_id" },
+        );
+        if (error) {
+          console.error("Scan boîte email:", error.message);
+          continue;
+        }
+        if (client) {
+          rattachesClient++;
+          await supabaseAdmin.from("activites").insert({
+            client_id: client.id,
+            type: "email",
+            titre: "Email rattaché automatiquement (scan)",
+            contenu: `De ${m.expediteur_email ?? "?"}\nObjet : ${m.sujet ?? "(sans objet)"}\n\n${m.snippet ?? ""}`,
+            created_by: context.userId,
+          });
+        } else {
+          rattachesCompagnie++;
+        }
+      }
+
+      pageToken = nextPageToken;
+      if (!pageToken) break;
+    }
+
+    return { analyses, rattachesClient, rattachesCompagnie, deja };
+  });
