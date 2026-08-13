@@ -179,7 +179,9 @@ export async function genererDevoirConseilAuto(
 ) {
   const { data: dossier, error } = await supabase
     .from("dossiers")
-    .select("id, type_assurance, client_nom, client_email, compagnie_id, produit_id, recueil_besoins, economie_estimee")
+    .select(
+      "id, type_assurance, client_nom, client_email, compagnie_id, produit_id, recueil_besoins, economie_estimee, capital, duree_mois",
+    )
     .eq("id", dossierId)
     .maybeSingle();
   if (error || !dossier) throw new Error("Dossier introuvable ou accès refusé");
