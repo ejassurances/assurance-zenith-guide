@@ -1,0 +1,2 @@
+ALTER TABLE public.dossiers DROP CONSTRAINT IF EXISTS dossiers_type_assurance_check;
+ALTER TABLE public.dossiers ADD CONSTRAINT dossiers_type_assurance_check CHECK (type_assurance = ANY (ARRAY['emprunteur','sante','prevoyance','prevoyance_sante','epargne_retraite','iard','trottinette']));
