@@ -125,7 +125,124 @@ export const BRANCHES: BrancheConfig[] = [
     ],
   },
   {
+    value: "sante",
+    label: "Complémentaire santé",
+    description: "Mutuelle / complémentaire santé : assurés à couvrir, postes de soins et budget.",
+    sections: [
+      {
+        title: "Assurés à couvrir",
+        intro:
+          "Listez toutes les personnes à couvrir : l'assuré principal et, le cas échéant, le conjoint, les enfants et autres ayants droit.",
+        fields: [
+          {
+            key: "assures",
+            label: "Personnes à couvrir",
+            question: "Qui doit être couvert par la complémentaire santé ?",
+            type: "personnes",
+            required: true,
+            help: "La date de naissance est obligatoire pour chaque personne : elle conditionne la tarification.",
+          },
+        ],
+      },
+      {
+        title: "Postes de soins",
+        intro:
+          "Pour chaque poste, indiquez le niveau de couverture souhaité par le client. Ces niveaux constituent ses exigences et besoins au sens du devoir de conseil.",
+        fields: POSTES_SOINS.map((p) => ({
+          key: `niveau_${p.key}`,
+          label: p.label,
+          question: `${p.label} : quel niveau souhaite-t-il ?`,
+          type: "cards" as FieldType,
+          options: NIVEAUX_SOINS.map((n) => ({ value: n.value, label: n.label, description: n.description })),
+        })),
+      },
+      {
+        title: "Budget",
+        fields: [
+          {
+            key: "budget_mensuel",
+            label: "Budget mensuel souhaité (montant choisi)",
+            question: "Quel budget mensuel le client souhaite-t-il consacrer à sa complémentaire santé ?",
+            type: "number",
+            suffix: "€/mois",
+            required: true,
+          },
+        ],
+      },
+      {
+        title: "Contrat actuel",
+        intro: "Facultatif : à renseigner si le client dispose déjà d'une complémentaire santé.",
+        fields: [
+          { key: "compagnie_actuelle", label: "Compagnie actuelle", type: "text" },
+          { key: "cotisation_actuelle", label: "Cotisation actuelle", type: "number", suffix: "€/mois" },
+          {
+            key: "motif_changement",
+            label: "Motif de changement",
+            type: "textarea",
+            placeholder: "Tarif, garanties insuffisantes, changement de situation…",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    value: "prevoyance",
+    label: "Prévoyance",
+    description: "Décès, incapacité de travail, invalidité, dépendance.",
+    sections: [
+      {
+        title: "Situation",
+        fields: [
+          {
+            key: "regime_social",
+            label: "Régime social",
+            type: "select",
+            options: [
+              { value: "salarie", label: "Salarié" },
+              { value: "tns", label: "Travailleur non salarié (TNS)" },
+              { value: "fonctionnaire", label: "Fonctionnaire" },
+              { value: "profession_liberale", label: "Profession libérale" },
+              { value: "retraite", label: "Retraité" },
+              { value: "autre", label: "Autre" },
+            ],
+          },
+          {
+            key: "composition_foyer",
+            label: "Composition du foyer",
+            type: "text",
+            placeholder: "Ex : couple + 2 enfants",
+          },
+          { key: "revenus_annuels", label: "Revenus nets annuels du foyer", type: "number", suffix: "€" },
+          { key: "budget_mensuel", label: "Budget mensuel envisagé", type: "number", suffix: "€/mois" },
+        ],
+      },
+      {
+        title: "Couverture actuelle",
+        fields: [
+          {
+            key: "prevoyance_actuelle",
+            label: "Prévoyance en place",
+            type: "textarea",
+            placeholder: "Contrats existants (compagnie, garanties)",
+          },
+        ],
+      },
+      {
+        title: "Besoins prioritaires",
+        fields: [
+          { key: "besoin_deces", label: "Prévoyance décès (capital / rente conjoint)", type: "checkbox" },
+          { key: "besoin_incapacite", label: "Incapacité de travail (indemnités journalières)", type: "checkbox" },
+          { key: "besoin_invalidite", label: "Invalidité (rente)", type: "checkbox" },
+          { key: "besoin_dependance", label: "Dépendance", type: "checkbox" },
+          { key: "objectifs", label: "Objectifs et attentes", type: "textarea" },
+        ],
+      },
+    ],
+  },
+  {
     value: "prevoyance_sante",
+    legacy: true,
+
     label: "Prévoyance & Santé",
     description: "Décès, incapacité, invalidité, complémentaire santé.",
     sections: [
