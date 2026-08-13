@@ -7,6 +7,17 @@
  * est réservé à l'archivage des PDF signés.
  */
 
+import {
+  ageDepuisDateNaissance,
+  labelNiveauSoins,
+  personnesAssurees,
+  LIENS_ASSURE,
+  POSTES_SOINS,
+  REGIMES_OBLIGATOIRES,
+} from "@/lib/recueil-besoins-schemas";
+
+
+
 export type DevoirConseilContexte = {
   branche: string;
   clientNom?: string | null;
