@@ -142,9 +142,9 @@ function DossierDetail() {
       devis_en_cours: ["section-devis", "section-compagnie-produit"],
       devoir_conseil_envoye: ["section-devoir-conseil"],
       devoir_conseil_signe: ["section-devoir-conseil"],
-      souscription_envoyee: ["section-pieces"],
-      contrat_valide: ["section-pieces"],
-      contrat_actif: ["section-pieces"],
+      souscription_envoyee: ["section-souscription", "section-pieces"],
+      contrat_valide: ["section-souscription", "section-pieces"],
+      contrat_actif: ["section-souscription", "section-pieces"],
     };
     const ids = mapping[key] ?? [];
     for (const sectionId of ids) {
