@@ -379,8 +379,10 @@ export function ProduitGarantiesTab({
                     Proposé : <strong>{COUVERTURE_LABEL[prop.couverture]}</strong>
                     {prop.plafond ? ` — plafond ${prop.plafond}` : ""}
                     {prop.franchise ? ` — franchise ${prop.franchise}` : ""}
+                    {prop.delai_carence ? ` — carence ${prop.delai_carence}` : ""}
                     {typeof prop.confiance === "number" ? ` (confiance ${Math.round(prop.confiance * 100)} %)` : ""}
                   </span>
+
                   {prop.extrait && <span className="text-xs italic text-amber-900">« {prop.extrait} »</span>}
                   <button
                     type="button"
