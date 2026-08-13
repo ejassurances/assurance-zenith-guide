@@ -15,6 +15,26 @@ export type DevoirConseilSaisie = {
   economie_estimee?: number | null;
   garanties?: string;
   exigences_client?: string;
+  /** Offres comparées (3 minimum en emprunteur), appréciation qualitative. */
+  offres?: {
+    compagnie: string;
+    produit: string;
+    cotisation_mensuelle?: number | null;
+    cout_total?: number | null;
+    statut: "retenue" | "equivalente" | "ecartee";
+    commentaire?: string | null;
+  }[];
+  /** Base de calcul du coût (bloc conditionnel emprunteur). */
+  assiette?: "capital_initial" | "capital_restant_du";
+  capital_assure?: number | null;
+  capital_restant_du?: number | null;
+  quotite?: number | null;
+  duree_mois?: number | null;
+  /** Accusé de remise des documents précontractuels. */
+  ipid_remis?: boolean;
+  cg_remis?: boolean;
+  tarifs_remis?: boolean;
+  der_remis?: boolean;
 };
 
 /**
