@@ -21,6 +21,8 @@ function EspaceLayout() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [mustChange, setMustChange] = useState(false);
+  const [menuOuvert, setMenuOuvert] = useState(false);
+
 
   const signOut = async () => {
     await supabase.auth.signOut();
