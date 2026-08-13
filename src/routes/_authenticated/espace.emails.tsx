@@ -100,6 +100,26 @@ function EmailsPage() {
   const supprimerFn = useServerFn(supprimerMessageCrm);
   const etiqueterFn = useServerFn(etiqueterMessageCrm);
   const importerFacture = useServerFn(importerFactureDepuisEmail);
+  const scanner = useServerFn(scannerBoiteCrm);
+  const [scanBusy, setScanBusy] = useState(false);
+
+  const lancerScan = async () => {
+    setScanBusy(true);
+    setError(null);
+    try {
+      const res = await scanner({ data: {} });
+      toast.success(
+        `${res.analyses} mails analysés — ${res.rattachesClient} rattachés à un client, ` +
+          `${res.rattachesCompagnie} à une compagnie (${res.deja} déjà liés).`,
+      );
+      await loadBoite();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Scan de la boîte impossible");
+    } finally {
+      setScanBusy(false);
+    }
+  };
+
 
   const [messages, setMessages] = useState<Resume[]>([]);
   const [liens, setLiens] = useState<Lien[]>([]);
