@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   grillePourFamille,
+  groupesGrille,
   type GrilleGaranties,
   type ValeurGarantie,
   type ValeursGrille,
@@ -10,27 +11,65 @@ const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 /** Modèles essayés dans l'ordre (entrée PDF acceptée). */
 const MODELES = ["google/gemini-3.6-flash", "google/gemini-2.5-flash"];
 const TAILLE_MAX_PDF = 12 * 1024 * 1024;
+/** Enveloppe globale pour une analyse multi-documents (CG + IPID + fiche produit + CCSF). */
+const TAILLE_MAX_TOTALE = 24 * 1024 * 1024;
+const DOCS_MAX = 4;
+
+/** Types de documents exploitables pour standardiser un contrat. */
+export const TYPES_ANALYSABLES = [
+  "conditions_generales",
+  "ipid",
+  "fiche_produit",
+  "ccsf",
+  "tableau_garanties",
+] as const;
+
+const TYPE_LABEL: Record<string, string> = {
+  conditions_generales: "Conditions générales",
+  ipid: "IPID (document d'information)",
+  fiche_produit: "Fiche produit",
+  ccsf: "Fiche CCSF (équivalence de garanties bancaire)",
+  tableau_garanties: "Tableau de garanties",
+};
 
 const COUVERTURES = new Set(["oui", "non", "option", "inconnu"]);
 
-function consigne(grille: GrilleGaranties) {
-  const lignes = grille.garanties.map((g) => `- ${g.code} : ${g.libelle}`).join("\n");
+function consigne(grille: GrilleGaranties, docs: { nom: string; type: string }[], produitNom: string) {
+  const sections = groupesGrille(grille)
+    .map((s) => {
+      const lignes = s.garanties
+        .map((g) => `  - ${g.code} : ${g.libelle}${g.aide ? ` — ${g.aide}` : ""}`)
+        .join("\n");
+      return s.groupe ? `${s.groupe} :\n${lignes}` : lignes;
+    })
+    .join("\n\n");
+
+  const liste = docs.map((d, i) => `${i + 1}. ${TYPE_LABEL[d.type] ?? d.type} — ${d.nom}`).join("\n");
+
   return [
-    "Tu analyses les conditions générales ou l'IPID d'un produit d'assurance français.",
+    `Tu analyses les documents contractuels du produit d'assurance français « ${produitNom} ».`,
     `Typologie : ${grille.libelle}.`,
-    "Remplis la grille de garanties ci-dessous UNIQUEMENT à partir du document fourni.",
+    "",
+    "Documents fournis, dans cet ordre :",
+    liste,
+    "",
+    "Objectif : produire une STANDARDISATION du contrat, c'est-à-dire remplir la trame ci-dessous",
+    "poste par poste avec les valeurs propres à CE contrat, afin de permettre un comparatif",
+    "objectif entre contrats et la rédaction d'un devoir de conseil.",
     "",
     "Règles impératives :",
-    "- N'infère jamais une garantie : si le document ne la mentionne pas explicitement comme couverte, réponds \"non\" lorsqu'il l'exclut, ou \"inconnu\" lorsqu'il est muet.",
-    '- "option" uniquement si le document présente la garantie comme facultative/en supplément.',
-    "- Pour chaque ligne, cite un extrait littéral court du document (champ extrait) qui justifie ta réponse ; laisse-le vide si tu réponds \"inconnu\".",
-    "- Indique le plafond et la franchise tels qu'écrits (texte court), sinon null.",
+    "- Croise les documents : les conditions générales prévalent sur la fiche produit ou l'IPID en cas de contradiction ; signale la contradiction dans avertissements.",
+    "- N'infère jamais : si aucun document ne mentionne explicitement la ligne, réponds \"inconnu\" ; réponds \"non\" seulement lorsqu'un document l'exclut.",
+    '- "option" uniquement si la garantie est présentée comme facultative ou en supplément de cotisation.',
+    "- Pour les lignes qui décrivent une modalité et non une garantie (type d'indemnisation, franchise, âges limites, base de calcul, formalités médicales, équivalence CCSF…), mets couverture=\"oui\" si l'information figure au contrat et place la valeur exacte dans plafond (montant/limite), franchise (durée de franchise) ou conditions (texte court : « forfaitaire », « 90 jours », « 65 ans en ITT / 90 ans en décès », « capital restant dû », « questionnaire simplifié, Loi Lemoine si < 200 000 € et fin avant 60 ans », « 11/11 critères CCSF + 4 »).",
+    "- Renseigne delai_carence quand un délai d'attente ou de carence spécifique s'applique à la ligne.",
+    "- Pour chaque ligne, cite un extrait littéral court (champ extrait) issu des documents, en précisant le document si utile ; laisse-le vide si tu réponds \"inconnu\".",
     "- confiance : nombre entre 0 et 1.",
     "",
-    "Garanties de la grille :",
-    lignes,
+    "Trame standardisée à remplir :",
+    sections,
     "",
-    'Réponds STRICTEMENT en JSON : {"garanties":{"<code>":{"couverture":"oui|non|option|inconnu","plafond":null,"franchise":null,"conditions":null,"extrait":"...","confiance":0.9}},"avertissements":"..."}',
+    'Réponds STRICTEMENT en JSON : {"garanties":{"<code>":{"couverture":"oui|non|option|inconnu","plafond":null,"franchise":null,"delai_carence":null,"conditions":null,"extrait":"...","confiance":0.9}},"avertissements":"..."}',
   ].join("\n");
 }
 
@@ -45,6 +84,7 @@ function normaliser(grille: GrilleGaranties, brut: unknown): { valeurs: ValeursG
       couverture: (COUVERTURES.has(couv) ? couv : "inconnu") as ValeurGarantie["couverture"],
       plafond: raw["plafond"] ? String(raw["plafond"]).slice(0, 300) : null,
       franchise: raw["franchise"] ? String(raw["franchise"]).slice(0, 300) : null,
+      delai_carence: raw["delai_carence"] ? String(raw["delai_carence"]).slice(0, 300) : null,
       conditions: raw["conditions"] ? String(raw["conditions"]).slice(0, 800) : null,
       extrait: raw["extrait"] ? String(raw["extrait"]).slice(0, 1200) : null,
       confiance: typeof raw["confiance"] === "number" ? Math.max(0, Math.min(1, raw["confiance"])) : null,
@@ -67,36 +107,30 @@ function extraireJson(texte: string): unknown {
   }
 }
 
-async function appelerIa(prompt: string, fichier: { nom: string; mime: string; base64: string }) {
+async function appelerIa(prompt: string, fichiers: { nom: string; mime: string; base64: string }[]) {
   const cle = process.env["LOVABLE_API_KEY"];
   if (!cle) throw new Error("Analyse indisponible : clé IA absente du projet.");
+
+  const contenu = [
+    { type: "text", text: prompt },
+    ...fichiers.map((f) => ({
+      type: "file" as const,
+      file: { filename: f.nom, file_data: `data:${f.mime};base64,${f.base64}` },
+    })),
+  ];
 
   let derniere = "";
   for (const modele of MODELES) {
     const res = await fetch(GATEWAY, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${cle}` },
-      body: JSON.stringify({
-        model: modele,
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: prompt },
-              {
-                type: "file",
-                file: { filename: fichier.nom, file_data: `data:${fichier.mime};base64,${fichier.base64}` },
-              },
-            ],
-          },
-        ],
-      }),
+      body: JSON.stringify({ model: modele, messages: [{ role: "user", content: contenu }] }),
     });
     if (res.ok) {
       const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-      const contenu = json.choices?.[0]?.message?.content ?? "";
-      if (!contenu) throw new Error("Réponse IA vide");
-      return { modele, brut: extraireJson(contenu) };
+      const texte = json.choices?.[0]?.message?.content ?? "";
+      if (!texte) throw new Error("Réponse IA vide");
+      return { modele, brut: extraireJson(texte) };
     }
     derniere = `${res.status} ${await res.text()}`;
     if (res.status === 429) throw new Error("Analyse IA momentanément saturée, réessayez dans une minute.");
@@ -106,64 +140,97 @@ async function appelerIa(prompt: string, fichier: { nom: string; mime: string; b
 }
 
 /**
- * Analyse un CG/IPID d'un produit et enregistre une PROPOSITION de grille.
+ * Standardise un contrat en analysant ENSEMBLE ses documents (CG, IPID, fiche
+ * produit, fiche CCSF) et enregistre une PROPOSITION de grille.
  * N'écrit jamais dans `produit_garanties` : la validation humaine est requise.
  */
-export async function analyserDocumentProduit(
+export async function analyserDocumentsProduit(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: SupabaseClient<any, any, any>,
-  documentId: string,
+  documentIds: string[],
   userId: string,
 ) {
-  const { data: doc, error: dErr } = await supabase
+  if (documentIds.length === 0) throw new Error("Sélectionnez au moins un document à analyser.");
+  if (documentIds.length > DOCS_MAX) {
+    throw new Error(`Analyse limitée à ${DOCS_MAX} documents à la fois (privilégiez CG + IPID + fiche produit + CCSF).`);
+  }
+
+  const { data: rows, error: dErr } = await supabase
     .from("produit_documents")
     .select("id, produit_id, nom, type, storage_path, mime_type")
-    .eq("id", documentId)
-    .maybeSingle();
-  if (dErr || !doc) throw new Error("Document introuvable ou accès refusé");
+    .in("id", documentIds);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const d = doc as any;
-  if (!["conditions_generales", "ipid"].includes(d.type)) {
-    throw new Error("Seuls les conditions générales et les IPID peuvent être analysés.");
+  const docs = ((rows ?? []) as any[]).slice();
+  if (dErr || docs.length === 0) throw new Error("Document introuvable ou accès refusé");
+
+  const produitId: string = docs[0].produit_id;
+  if (docs.some((d) => d.produit_id !== produitId)) {
+    throw new Error("Tous les documents analysés doivent appartenir au même produit.");
   }
+  if (docs.some((d) => !TYPES_ANALYSABLES.includes(d.type))) {
+    throw new Error(
+      "Seuls les conditions générales, IPID, fiches produit, fiches CCSF et tableaux de garanties peuvent être analysés.",
+    );
+  }
+  // CG d'abord : elles font foi en cas de contradiction.
+  const priorite = ["conditions_generales", "ipid", "tableau_garanties", "ccsf", "fiche_produit"];
+  docs.sort((a, b) => priorite.indexOf(a.type) - priorite.indexOf(b.type));
 
   const { data: produit, error: pErr } = await supabase
     .from("produits")
     .select("id, nom, famille_id, produit_familles(code, nom)")
-    .eq("id", d.produit_id)
+    .eq("id", produitId)
     .maybeSingle();
   if (pErr || !produit) throw new Error("Produit introuvable ou accès refusé");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const p = produit as any;
-  const familleCode: string | null = p.produit_familles?.code ?? null;
-  const grille = grillePourFamille(familleCode);
+  const grille = grillePourFamille(p.produit_familles?.code ?? null);
   if (!grille) throw new Error("Aucune grille de garanties n'est définie pour cette famille de produits.");
 
-  const { data: blob, error: sErr } = await supabase.storage.from("produits-documents").download(d.storage_path);
-  if (sErr || !blob) throw new Error("Téléchargement du document impossible");
-  const buffer = Buffer.from(await blob.arrayBuffer());
-  if (buffer.byteLength === 0) throw new Error("Le document est vide");
-  if (buffer.byteLength > TAILLE_MAX_PDF) {
-    throw new Error("Document trop volumineux pour l'analyse automatique (12 Mo maximum).");
+  const fichiers: { nom: string; mime: string; base64: string }[] = [];
+  let total = 0;
+  for (const d of docs) {
+    const { data: blob, error: sErr } = await supabase.storage.from("produits-documents").download(d.storage_path);
+    if (sErr || !blob) throw new Error(`Téléchargement impossible : ${d.nom}`);
+    const buffer = Buffer.from(await blob.arrayBuffer());
+    if (buffer.byteLength === 0) throw new Error(`Document vide : ${d.nom}`);
+    if (buffer.byteLength > TAILLE_MAX_PDF) {
+      throw new Error(`Document trop volumineux pour l'analyse automatique (12 Mo maximum) : ${d.nom}`);
+    }
+    total += buffer.byteLength;
+    if (total > TAILLE_MAX_TOTALE) {
+      throw new Error("Ensemble de documents trop volumineux : analysez-les en deux fois.");
+    }
+    fichiers.push({
+      nom: d.nom || "document.pdf",
+      mime: d.mime_type || "application/pdf",
+      base64: buffer.toString("base64"),
+    });
   }
 
-  const { modele, brut } = await appelerIa(consigne(grille), {
-    nom: d.nom || "document.pdf",
-    mime: d.mime_type || "application/pdf",
-    base64: buffer.toString("base64"),
-  });
+  const { modele, brut } = await appelerIa(
+    consigne(
+      grille,
+      docs.map((d) => ({ nom: d.nom, type: d.type })),
+      p.nom ?? "",
+    ),
+    fichiers,
+  );
   const { valeurs, avertissements } = normaliser(grille, brut);
+
+  const sources = docs.map((d) => `${TYPE_LABEL[d.type] ?? d.type} : ${d.nom}`).join(" · ");
+  const remarques = [`Documents analysés — ${sources}`, avertissements].filter(Boolean).join("\n");
 
   const { data: inserted, error: iErr } = await supabase
     .from("produit_garanties_propositions")
     .insert({
-      produit_id: d.produit_id,
-      document_id: d.id,
+      produit_id: produitId,
+      document_id: docs[0].id,
       famille_code: grille.familleCode,
       grille_version: grille.version,
       modele_ia: modele,
       valeurs,
-      avertissements: avertissements || null,
+      avertissements: remarques || null,
       statut: "proposee",
       created_by: userId,
     })
@@ -171,5 +238,15 @@ export async function analyserDocumentProduit(
     .single();
   if (iErr || !inserted) throw new Error(iErr?.message ?? "Enregistrement de la proposition impossible");
 
-  return { proposition_id: inserted.id as string, valeurs, avertissements, modele };
+  return { proposition_id: inserted.id as string, valeurs, avertissements: remarques, modele };
+}
+
+/** Analyse d'un document isolé (compatibilité). */
+export async function analyserDocumentProduit(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any, any, any>,
+  documentId: string,
+  userId: string,
+) {
+  return analyserDocumentsProduit(supabase, [documentId], userId);
 }

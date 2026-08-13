@@ -6,6 +6,7 @@ const valeurSchema = z.object({
   couverture: z.enum(["oui", "non", "option", "inconnu"]),
   plafond: z.string().max(300).nullable().optional(),
   franchise: z.string().max(300).nullable().optional(),
+  delai_carence: z.string().max(300).nullable().optional(),
   conditions: z.string().max(800).nullable().optional(),
   extrait: z.string().max(1200).nullable().optional(),
   confiance: z.number().min(0).max(1).nullable().optional(),
@@ -33,6 +34,21 @@ export const analyserDocumentGaranties = createServerFn({ method: "POST" })
     await assertStaff(context.supabase, context.userId);
     const { analyserDocumentProduit } = await import("./produit-garanties-extraction.server");
     return analyserDocumentProduit(context.supabase, data.document_id, context.userId);
+  });
+
+/**
+ * Standardisation du contrat : analyse croisée de plusieurs documents
+ * (CG + IPID + fiche produit + fiche CCSF) en une seule proposition.
+ */
+export const analyserDocumentsGaranties = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ document_ids: z.array(z.string().uuid()).min(1).max(4) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertStaff(context.supabase, context.userId);
+    const { analyserDocumentsProduit } = await import("./produit-garanties-extraction.server");
+    return analyserDocumentsProduit(context.supabase, data.document_ids, context.userId);
   });
 
 /** Enregistre la grille comme brouillon (saisie humaine en cours). */

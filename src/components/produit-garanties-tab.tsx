@@ -4,13 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   COUVERTURE_LABEL,
   grillePourFamille,
+  groupesGrille,
   valeurVide,
   type Couverture,
+  type GarantieDef,
   type ValeurGarantie,
   type ValeursGrille,
 } from "@/lib/garanties-grille";
 import {
-  analyserDocumentGaranties,
+  analyserDocumentsGaranties,
   enregistrerGrilleBrouillon,
   rejeterPropositionGaranties,
   validerGrilleGaranties,
@@ -42,6 +44,14 @@ type Proposition = {
 export type DocAnalysable = { id: string; nom: string; type: string };
 
 const COUVERTURES: Couverture[] = ["oui", "non", "option", "inconnu"];
+
+const DOC_LABEL: Record<string, string> = {
+  conditions_generales: "CG",
+  ipid: "IPID",
+  fiche_produit: "Fiche produit",
+  ccsf: "CCSF",
+  tableau_garanties: "Tableau de garanties",
+};
 
 const badge = (couv: Couverture) =>
   couv === "oui"
@@ -76,15 +86,20 @@ export function ProduitGarantiesTab({
   const [ligne, setLigne] = useState<Grille | null>(null);
   const [proposition, setProposition] = useState<Proposition | null>(null);
   const [docId, setDocId] = useState<string>("");
+  const [docIds, setDocIds] = useState<string[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
-  const analyser = useServerFn(analyserDocumentGaranties);
+  const analyser = useServerFn(analyserDocumentsGaranties);
   const brouillon = useServerFn(enregistrerGrilleBrouillon);
   const valider = useServerFn(validerGrilleGaranties);
   const rejeter = useServerFn(rejeterPropositionGaranties);
 
-  const analysables = docs.filter((d) => d.type === "conditions_generales" || d.type === "ipid");
+  const analysables = docs.filter((d) =>
+    ["conditions_generales", "ipid", "fiche_produit", "ccsf", "tableau_garanties"].includes(d.type),
+  );
+  const toggleDoc = (id: string) =>
+    setDocIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : ids.length >= 4 ? ids : [...ids, id]));
 
   const load = useCallback(async () => {
     if (!grille) return;
@@ -238,39 +253,59 @@ export function ProduitGarantiesTab({
       <div className={`space-y-2 rounded-md border border-line bg-background p-3 ${modeFormule ? "hidden" : ""}`}>
 
         <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
-          Extraction assistée depuis les CG / IPID
+          Standardisation assistée depuis les documents du contrat
         </p>
         {analysables.length === 0 ? (
           <p className="text-xs text-ink-muted">
-            Ajoutez d'abord des conditions générales ou un IPID dans les documents du produit.
+            Ajoutez d'abord des conditions générales, un IPID, une fiche produit ou une fiche CCSF dans les documents du
+            produit.
           </p>
         ) : (
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={docId}
-              onChange={(e) => setDocId(e.target.value)}
-              className="rounded-md border border-line bg-surface px-3 py-2 text-sm"
-            >
-              <option value="">— Document à analyser —</option>
-              {analysables.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.type === "ipid" ? "IPID" : "CG"} — {d.nom}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              disabled={!docId || busy !== null}
-              onClick={() =>
-                run("analyse", () => analyser({ data: { document_id: docId } }), "Proposition générée — à valider.")
-              }
-              className="rounded-md bg-ink px-3 py-2 text-sm text-surface disabled:opacity-50"
-            >
-              {busy === "analyse" ? "Analyse en cours…" : "Analyser ce document"}
-            </button>
-            <span className="text-xs text-ink-muted">
-              L'analyse ne produit qu'une proposition : rien n'est appliqué sans validation.
-            </span>
+          <div className="space-y-2">
+            <p className="text-xs text-ink-muted">
+              Sélectionnez les documents à croiser (4 maximum). Les conditions générales font foi en cas de
+              contradiction avec la fiche produit ou l'IPID.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {analysables.map((d) => {
+                const actif = docIds.includes(d.id);
+                return (
+                  <label
+                    key={d.id}
+                    className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-xs ${
+                      actif ? "border-ink bg-ink/5" : "border-line"
+                    }`}
+                  >
+                    <input type="checkbox" checked={actif} onChange={() => toggleDoc(d.id)} className="accent-ink" />
+                    <span>
+                      {DOC_LABEL[d.type] ?? d.type} — {d.nom}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                disabled={docIds.length === 0 || busy !== null}
+                onClick={() => {
+                  setDocId(docIds[0] ?? "");
+                  run(
+                    "analyse",
+                    () => analyser({ data: { document_ids: docIds } }),
+                    "Proposition générée — à valider.",
+                  );
+                }}
+                className="rounded-md bg-ink px-3 py-2 text-sm text-surface disabled:opacity-50"
+              >
+                {busy === "analyse"
+                  ? "Analyse en cours…"
+                  : `Analyser ${docIds.length > 1 ? `ces ${docIds.length} documents` : "ce document"}`}
+              </button>
+              <span className="text-xs text-ink-muted">
+                L'analyse ne produit qu'une proposition : rien n'est appliqué sans validation.
+              </span>
+            </div>
           </div>
         )}
       </div>
@@ -312,9 +347,14 @@ export function ProduitGarantiesTab({
         </div>
       )}
 
-      {/* Grille */}
-      <div className="space-y-3">
-        {grille.garanties.map((g) => {
+      {/* Grille standardisée, section par section */}
+      <div className="space-y-5">
+        {groupesGrille(grille).map((sec) => (
+        <div key={sec.groupe ?? "_"} className="space-y-3">
+        {sec.groupe && (
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">{sec.groupe}</h4>
+        )}
+        {sec.garanties.map((g: GarantieDef) => {
           const v = valeurs[g.code] ?? valeurVide();
           const prop = proposition?.valeurs?.[g.code];
           return (
@@ -396,6 +436,8 @@ export function ProduitGarantiesTab({
             </div>
           );
         })}
+        </div>
+        ))}
       </div>
 
       {msg && (
