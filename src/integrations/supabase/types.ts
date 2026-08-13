@@ -1618,6 +1618,77 @@ export type Database = {
           },
         ]
       }
+      dossier_devis: {
+        Row: {
+          compagnie_id: string | null
+          cotisation_mensuelle: number | null
+          created_at: string
+          dossier_id: string
+          formule_id: string | null
+          garanties_resume: string | null
+          id: string
+          produit_id: string | null
+          saisi_par: string | null
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          compagnie_id?: string | null
+          cotisation_mensuelle?: number | null
+          created_at?: string
+          dossier_id: string
+          formule_id?: string | null
+          garanties_resume?: string | null
+          id?: string
+          produit_id?: string | null
+          saisi_par?: string | null
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          compagnie_id?: string | null
+          cotisation_mensuelle?: number | null
+          created_at?: string
+          dossier_id?: string
+          formule_id?: string | null
+          garanties_resume?: string | null
+          id?: string
+          produit_id?: string | null
+          saisi_par?: string | null
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dossier_devis_compagnie_id_fkey"
+            columns: ["compagnie_id"]
+            isOneToOne: false
+            referencedRelation: "compagnies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dossier_devis_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dossier_devis_formule_id_fkey"
+            columns: ["formule_id"]
+            isOneToOne: false
+            referencedRelation: "produit_formules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dossier_devis_produit_id_fkey"
+            columns: ["produit_id"]
+            isOneToOne: false
+            referencedRelation: "produits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dossier_etapes_historique: {
         Row: {
           ancienne_etape: string | null
@@ -1999,6 +2070,97 @@ export type Database = {
         }
         Relationships: []
       }
+      formule_garanties: {
+        Row: {
+          created_at: string
+          formule_id: string
+          grille_version: number
+          id: string
+          statut: string
+          updated_at: string
+          updated_by: string | null
+          valeurs: Json
+          valide_le: string | null
+          valide_par: string | null
+        }
+        Insert: {
+          created_at?: string
+          formule_id: string
+          grille_version?: number
+          id?: string
+          statut?: string
+          updated_at?: string
+          updated_by?: string | null
+          valeurs?: Json
+          valide_le?: string | null
+          valide_par?: string | null
+        }
+        Update: {
+          created_at?: string
+          formule_id?: string
+          grille_version?: number
+          id?: string
+          statut?: string
+          updated_at?: string
+          updated_by?: string | null
+          valeurs?: Json
+          valide_le?: string | null
+          valide_par?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formule_garanties_formule_id_fkey"
+            columns: ["formule_id"]
+            isOneToOne: true
+            referencedRelation: "produit_formules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formule_tarifs: {
+        Row: {
+          age_max: number
+          age_min: number
+          cotisation_mensuelle: number | null
+          created_at: string
+          formule_id: string
+          id: string
+          notes: string | null
+          regime: string | null
+          updated_at: string
+        }
+        Insert: {
+          age_max?: number
+          age_min?: number
+          cotisation_mensuelle?: number | null
+          created_at?: string
+          formule_id: string
+          id?: string
+          notes?: string | null
+          regime?: string | null
+          updated_at?: string
+        }
+        Update: {
+          age_max?: number
+          age_min?: number
+          cotisation_mensuelle?: number | null
+          created_at?: string
+          formule_id?: string
+          id?: string
+          notes?: string | null
+          regime?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formule_tarifs_formule_id_fkey"
+            columns: ["formule_id"]
+            isOneToOne: false
+            referencedRelation: "produit_formules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journaux: {
         Row: {
           actif: boolean
@@ -2330,6 +2492,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      produit_formules: {
+        Row: {
+          actif: boolean
+          code: string
+          created_at: string
+          id: string
+          nom: string
+          ordre: number
+          produit_id: string
+        }
+        Insert: {
+          actif?: boolean
+          code: string
+          created_at?: string
+          id?: string
+          nom: string
+          ordre?: number
+          produit_id: string
+        }
+        Update: {
+          actif?: boolean
+          code?: string
+          created_at?: string
+          id?: string
+          nom?: string
+          ordre?: number
+          produit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produit_formules_produit_id_fkey"
+            columns: ["produit_id"]
+            isOneToOne: false
+            referencedRelation: "produits"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       produit_garanties: {
         Row: {
