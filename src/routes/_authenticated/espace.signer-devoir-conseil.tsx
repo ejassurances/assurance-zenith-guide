@@ -1,0 +1,194 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
+import { SignaturePad } from "@/components/signature-pad";
+import { signerDevoirConseil, refuserDevoirConseil } from "@/lib/devoir-conseil.functions";
+import { labelForBranche } from "@/lib/recueil-besoins-schemas";
+import { SITE } from "@/lib/site";
+
+export const Route = createFileRoute("/_authenticated/espace/signer-devoir-conseil")({
+  component: SignerDevoirConseil,
+});
+
+type Devoir = {
+  id: string;
+  statut: string;
+  type_assurance: string;
+  recommandation: string | null;
+  motifs: string | null;
+  mises_en_garde: string | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  contenu: any;
+};
+
+function SignerDevoirConseil() {
+  const navigate = useNavigate();
+  const signer = useServerFn(signerDevoirConseil);
+  const refuser = useServerFn(refuserDevoirConseil);
+  const [devoir, setDevoir] = useState<Devoir | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [accepte, setAccepte] = useState(false);
+  const [signature, setSignature] = useState<string | null>(null);
+  const [motifRefus, setMotifRefus] = useState("");
+  const [refusOpen, setRefusOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("devoirs_conseil")
+        .select("id, statut, type_assurance, recommandation, motifs, mises_en_garde, contenu")
+        .eq("statut", "envoye")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setDevoir((data as Devoir | null) ?? null);
+      setLoading(false);
+    })();
+  }, []);
+
+  const submitSignature = async () => {
+    if (!devoir || !accepte || !signature) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await signer({ data: { devoir_id: devoir.id, signature_png: signature } });
+      navigate({ to: "/espace/mon-espace" });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erreur");
+      setSubmitting(false);
+    }
+  };
+
+  const submitRefus = async () => {
+    if (!devoir || motifRefus.trim().length < 3) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await refuser({ data: { devoir_id: devoir.id, motif: motifRefus.trim() } });
+      navigate({ to: "/espace/mon-espace" });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erreur");
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) return <p className="p-6 text-sm text-ink-muted">Chargement…</p>;
+
+  if (!devoir) {
+    return (
+      <div className="mx-auto max-w-2xl p-6">
+        <h1 className="font-serif text-2xl">Aucun devoir de conseil à valider</h1>
+        <p className="mt-2 text-sm text-ink-muted">
+          Vous n'avez aucun document de conseil en attente de réponse.
+        </p>
+      </div>
+    );
+  }
+
+  const c = devoir.contenu ?? {};
+  const conseil = c.conseil ?? {};
+
+  return (
+    <div className="mx-auto max-w-3xl space-y-6 p-6">
+      <div>
+        <h1 className="font-serif text-2xl">Devoir de conseil</h1>
+        <p className="mt-1 text-sm text-ink-muted">
+          {SITE.shortName} · ORIAS {SITE.orias} · Dossier {c.dossier?.reference ?? ""} —{" "}
+          {labelForBranche(devoir.type_assurance)}
+        </p>
+      </div>
+
+      <div className="space-y-4 rounded-2xl border border-line bg-surface-elevated p-5 text-sm">
+        {conseil.exigences_client && (
+          <Bloc titre="Vos exigences et besoins">{conseil.exigences_client}</Bloc>
+        )}
+        {(conseil.compagnie || conseil.produit) && (
+          <Bloc titre="Solution recommandée">
+            {[conseil.compagnie, conseil.produit].filter(Boolean).join(" — ")}
+            {conseil.cotisation_mensuelle ? ` · ${conseil.cotisation_mensuelle} €/mois` : ""}
+            {conseil.economie_estimee
+              ? ` · économie estimée ${Number(conseil.economie_estimee).toLocaleString("fr-FR")} €`
+              : ""}
+          </Bloc>
+        )}
+        {conseil.garanties && <Bloc titre="Garanties retenues">{conseil.garanties}</Bloc>}
+        <Bloc titre="Recommandation">{devoir.recommandation ?? "—"}</Bloc>
+        <Bloc titre="Motifs du conseil">{devoir.motifs ?? "—"}</Bloc>
+        {devoir.mises_en_garde && <Bloc titre="Mises en garde">{devoir.mises_en_garde}</Bloc>}
+      </div>
+
+      {!refusOpen ? (
+        <div className="space-y-4 rounded-2xl border border-line bg-surface-elevated p-5">
+          <label className="flex items-start gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={accepte}
+              onChange={(e) => setAccepte(e.target.checked)}
+              className="mt-1"
+            />
+            <span>
+              Je reconnais avoir reçu et compris le présent devoir de conseil et j'accepte la
+              recommandation formulée par {SITE.shortName}.
+            </span>
+          </label>
+          <SignaturePad onChange={setSignature} />
+          {error && <p className="text-xs text-destructive">{error}</p>}
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={submitSignature}
+              disabled={submitting || !accepte || !signature}
+              className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            >
+              {submitting ? "Envoi…" : "Signer le devoir de conseil"}
+            </button>
+            <button
+              onClick={() => setRefusOpen(true)}
+              className="rounded-full border border-line px-5 py-2 text-sm hover:bg-surface"
+            >
+              Refuser la recommandation
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3 rounded-2xl border border-line bg-surface-elevated p-5">
+          <p className="text-sm font-medium text-ink">Motif de votre refus</p>
+          <textarea
+            rows={4}
+            value={motifRefus}
+            onChange={(e) => setMotifRefus(e.target.value)}
+            placeholder="Indiquez pourquoi la recommandation ne vous convient pas."
+            className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+          />
+          {error && <p className="text-xs text-destructive">{error}</p>}
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={submitRefus}
+              disabled={submitting || motifRefus.trim().length < 3}
+              className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            >
+              {submitting ? "Envoi…" : "Confirmer le refus"}
+            </button>
+            <button
+              onClick={() => setRefusOpen(false)}
+              className="rounded-full border border-line px-5 py-2 text-sm hover:bg-surface"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Bloc({ titre, children }: { titre: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-wide text-ink-muted">{titre}</p>
+      <p className="mt-1 whitespace-pre-wrap text-ink">{children}</p>
+    </div>
+  );
+}
