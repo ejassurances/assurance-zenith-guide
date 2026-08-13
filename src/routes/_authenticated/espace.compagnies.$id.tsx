@@ -101,6 +101,7 @@ type Produit = {
   commission_taux: number | null;
   produit_requis_id: string | null;
   famille_requise_id: string | null;
+  image_url: string | null;
 };
 type ProduitDoc = {
   id: string;
