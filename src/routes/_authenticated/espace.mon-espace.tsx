@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { etapeLabel } from "@/lib/pipeline-dossier";
 import { DossierPiecesPanel } from "@/components/dossier-pieces-panel";
 import { labelForBranche } from "@/lib/recueil-besoins-schemas";
 
@@ -64,6 +65,7 @@ function MonEspace() {
   const [dossiers, setDossiers] = useState<DossierRow[]>([]);
   const [derAFaire, setDerAFaire] = useState(false);
   const [lettreAFaire, setLettreAFaire] = useState(false);
+  const [devoirAFaire, setDevoirAFaire] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -131,7 +133,7 @@ function MonEspace() {
         </p>
       </div>
 
-      {(derAFaire || lettreAFaire) && (
+      {(derAFaire || lettreAFaire || devoirAFaire) && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
           <p className="font-medium">Documents à signer</p>
           <div className="mt-2 flex flex-wrap gap-3">
@@ -146,6 +148,14 @@ function MonEspace() {
                 className="rounded-md border border-amber-400 bg-white px-3 py-1.5"
               >
                 Signer la lettre de mission
+              </Link>
+            )}
+            {devoirAFaire && (
+              <Link
+                to="/espace/signer-devoir-conseil"
+                className="rounded-md border border-amber-400 bg-white px-3 py-1.5"
+              >
+                Valider le devoir de conseil
               </Link>
             )}
           </div>
@@ -184,7 +194,7 @@ function MonEspace() {
                   </p>
                 </div>
                 <span className="rounded-full border border-line bg-background px-2.5 py-0.5 text-xs">
-                  {STATUT_LABEL[d.statut] ?? d.statut}
+                  {STATUT_LABEL[d.statut] ?? etapeLabel(d.statut)}
                 </span>
               </div>
               {d.economie_estimee != null && (
