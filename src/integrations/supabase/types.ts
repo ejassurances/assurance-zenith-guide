@@ -1622,6 +1622,7 @@ export type Database = {
         Row: {
           categorie: string
           client_id: string | null
+          contrat_id: string | null
           created_at: string
           date_expiration: string | null
           dossier_id: string | null
@@ -1636,6 +1637,7 @@ export type Database = {
         Insert: {
           categorie?: string
           client_id?: string | null
+          contrat_id?: string | null
           created_at?: string
           date_expiration?: string | null
           dossier_id?: string | null
@@ -1650,6 +1652,7 @@ export type Database = {
         Update: {
           categorie?: string
           client_id?: string | null
+          contrat_id?: string | null
           created_at?: string
           date_expiration?: string | null
           dossier_id?: string | null
@@ -1667,6 +1670,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_contrat_id_fkey"
+            columns: ["contrat_id"]
+            isOneToOne: false
+            referencedRelation: "contrats"
             referencedColumns: ["id"]
           },
           {
@@ -3311,6 +3321,7 @@ export type Database = {
         Returns: number
       }
       can_access_client: { Args: { _client_id: string }; Returns: boolean }
+      can_access_contrat: { Args: { _contrat_id: string }; Returns: boolean }
       can_access_dossier: { Args: { _dossier_id: string }; Returns: boolean }
       current_user_role: {
         Args: never

@@ -124,8 +124,8 @@ function EspaceLayout() {
         </div>
       </header>
 
-      <div className="container-page grid gap-8 py-8 md:grid-cols-[220px_1fr]">
-        <aside className="md:sticky md:top-8 md:self-start">
+      <div className="container-page grid min-w-0 gap-8 py-8 md:grid-cols-[220px_minmax(0,1fr)]">
+        <aside className="min-w-0 md:sticky md:top-8 md:self-start">
           <nav className="flex flex-row gap-1 overflow-x-auto md:flex-col md:gap-0">
             {solo.map((n) => {
               const active = n.exact ? pathname === n.to : pathname.startsWith(n.to);
@@ -155,7 +155,7 @@ function EspaceLayout() {
           </nav>
 
         </aside>
-        <main>
+        <main className="min-w-0">
           <Outlet />
         </main>
       </div>

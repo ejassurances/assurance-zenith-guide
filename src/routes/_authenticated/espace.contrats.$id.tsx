@@ -6,6 +6,7 @@ import { calculerEconomieEmprunteur, economieColumns } from "@/lib/economie-empr
 import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
 import { ProduitDocumentsLink } from "@/components/produit-documents-link";
 import { CommissionContratCard } from "@/components/commission-contrat-card";
+import { ContratDocumentsPanel } from "@/components/contrat-documents-panel";
 
 export const Route = createFileRoute("/_authenticated/espace/contrats/$id")({
   component: ContratDetail,
@@ -69,7 +70,7 @@ type ClientLite = {
 function ContratDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const canEdit = role === "admin" || role === "mandataire";
 
   const [c, setC] = useState<Contrat | null>(null);
@@ -514,6 +515,8 @@ function ContratDetail() {
           </button>
         </div>
       )}
+
+      {user && <ContratDocumentsPanel contratId={c.id} userId={user.id} canEdit={canEdit} />}
 
       {/* Tableau des échéances */}
       <section className="space-y-3 rounded-lg border border-line bg-surface p-5">
