@@ -134,7 +134,7 @@ export function withHtmlSignature(html: string): string {
   return `${html}${signature}`
 }
 
-function withTextSignature(text: string): string {
+export function withTextSignature(text: string): string {
   return `${text}\n\n---------------------------------------------\n${SIGNATURE_LINES.join('\n')}\n`
 }
 
