@@ -238,12 +238,17 @@ export function NewDossierForm({
       economie_estimee: economie,
       apporteur_id: userId,
       created_by: userId,
-    });
-    setSaving(false);
-    if (insErr) {
-      setError(insErr.message);
+    }).select("id").single();
+    if (insErr || !created) {
+      setSaving(false);
+      setError(insErr?.message ?? "Erreur de création");
       return;
     }
+
+    // Recueil validé → lettre de mission générée et envoyée automatiquement
+    const res = await lancerLettreMission({ data: { dossier_id: created.id } });
+    setSaving(false);
+    if (!res.ok && res.raison) setError(res.raison);
     onCreated();
   };
 
