@@ -27,6 +27,7 @@ function SignerDevoirConseil() {
   const navigate = useNavigate();
   const signer = useServerFn(signerDevoirConseil);
   const refuser = useServerFn(refuserDevoirConseil);
+  const getPdf = useServerFn(pdfDevoirConseil);
   const [devoir, setDevoir] = useState<Devoir | null>(null);
   const [loading, setLoading] = useState(true);
   const [accepte, setAccepte] = useState(false);
