@@ -208,7 +208,9 @@ function CompagnieDetail() {
                 ? "Produits"
                 : t === "partenariats"
                   ? "Partenariat"
-                  : "API compagnie"}
+                  : t === "emails"
+                    ? "Emails"
+                    : "API compagnie"}
           </button>
         ))}
       </div>
