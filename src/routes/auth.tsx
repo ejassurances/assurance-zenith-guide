@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SITE } from "@/lib/site";
 import { useServerFn } from "@tanstack/react-start";
 import { autoInscriptionClient } from "@/lib/client-espace.functions";
+import { demanderReinitialisationMotDePasse } from "@/lib/auth-email.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -36,6 +37,7 @@ function AuthPage() {
   const [signupLoading, setSignupLoading] = useState(false);
   const [signupMsg, setSignupMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const creerCompte = useServerFn(autoInscriptionClient);
+  const demanderReset = useServerFn(demanderReinitialisationMotDePasse);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -102,18 +104,16 @@ function AuthPage() {
     e.preventDefault();
     setForgotMsg(null);
     setForgotLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
+    try {
+      await demanderReset({ data: { email: forgotEmail } });
+      setForgotMsg({
+        type: "ok",
+        text: "Si un compte existe pour cette adresse, un e-mail de réinitialisation vient d'être envoyé.",
+      });
+    } catch (err) {
+      setForgotMsg({ type: "err", text: err instanceof Error ? err.message : "Erreur d'envoi" });
+    }
     setForgotLoading(false);
-    setForgotMsg(
-      error
-        ? { type: "err", text: error.message }
-        : {
-            type: "ok",
-            text: "Si un compte existe pour cette adresse, un e-mail de réinitialisation vient d'être envoyé.",
-          },
-    );
   };
 
   const inputClass =

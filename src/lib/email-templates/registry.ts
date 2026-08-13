@@ -169,7 +169,40 @@ function DocumentsExpirationEmail(props: {
   return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
 }
 
+function MotDePasseReinitialisationEmail(props: { prenom?: string; cabinetName?: string; link?: string }) {
+  const nom = props.cabinetName || "EJ Partners Assurances";
+  const html =
+    "<p>Bonjour " +
+    (props.prenom || "") +
+    ",</p>" +
+    "<p>Vous avez demande la definition d'un nouveau mot de passe pour votre espace " +
+    nom +
+    ".</p>" +
+    "<p><a href='" +
+    (props.link || "") +
+    "'>Definir mon nouveau mot de passe</a></p>" +
+    "<p>Ce lien est valable une seule fois et pour une duree limitee. Vous serez connecte automatiquement a votre espace une fois le nouveau mot de passe enregistre.</p>" +
+    "<p>Si vous n'etes pas a l'origine de cette demande, ignorez simplement ce message : votre mot de passe actuel reste inchange.</p>" +
+    "<p>Cordialement,<br/>L'equipe " +
+    nom +
+    "</p>";
+  const style = { fontFamily: "Arial, sans-serif", color: "#1a1a1a", fontSize: "15px", lineHeight: "1.6" };
+  return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
+}
+
 export const TEMPLATES: Record<string, TemplateEntry> = {
+  "mot-de-passe-reinitialisation": {
+    component: MotDePasseReinitialisationEmail,
+    subject: (data: Record<string, any>) =>
+      (data && data.cabinetName ? data.cabinetName : "EJ Partners Assurances") +
+      " - Definition de votre nouveau mot de passe",
+    displayName: "Mot de passe - Reinitialisation",
+    previewData: {
+      prenom: "Jean",
+      cabinetName: "EJ Partners",
+      link: "https://ejpartners.fr/reset-password",
+    },
+  },
   "documents-expiration": {
     component: DocumentsExpirationEmail,
     subject: "Vos documents arrivent a expiration",
