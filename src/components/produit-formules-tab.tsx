@@ -12,7 +12,17 @@ export type Formule = {
   actif: boolean;
   /** Cotisation fixe connue de la formule (mode de tarification « fixe »). */
   tarif_fixe: number | null;
+  /** Base de calcul de la cotisation (emprunteur) : capital initial, CRD, ou les deux. */
+  base_calcul: "na" | "ci" | "crd" | "ci_crd";
 };
+
+/** Bases de calcul possibles d'une formule d'assurance emprunteur. */
+const BASES_CALCUL: { value: Formule["base_calcul"]; label: string; aide: string }[] = [
+  { value: "na", label: "Non précisée", aide: "À renseigner pour comparer correctement les offres." },
+  { value: "ci", label: "Capital initial (CI)", aide: "Cotisation calculée sur le capital emprunté, constante." },
+  { value: "crd", label: "Capital restant dû (CRD)", aide: "Cotisation dégressive, calculée sur le capital restant dû." },
+  { value: "ci_crd", label: "CI et CRD (au choix)", aide: "La compagnie propose les deux bases de calcul." },
+];
 
 export type ProduitOption = {
   id: string;
@@ -79,7 +89,7 @@ export function ProduitFormulesTab({
   const load = useCallback(async () => {
     const { data, error } = await supabase
       .from("produit_formules")
-      .select("id,produit_id,nom,code,ordre,actif,tarif_fixe")
+      .select("id,produit_id,nom,code,ordre,actif,tarif_fixe,base_calcul")
 
       .eq("produit_id", produitId)
       .order("ordre")
@@ -123,6 +133,13 @@ export function ProduitFormulesTab({
     if (tarif === (f.tarif_fixe ?? null)) return;
     setErr(null);
     const { error } = await supabase.from("produit_formules").update({ tarif_fixe: tarif }).eq("id", f.id);
+    if (error) return setErr(error.message);
+    await load();
+  };
+
+  const majBaseCalcul = async (f: Formule, base: Formule["base_calcul"]) => {
+    setErr(null);
+    const { error } = await supabase.from("produit_formules").update({ base_calcul: base }).eq("id", f.id);
     if (error) return setErr(error.message);
     await load();
   };
@@ -235,6 +252,29 @@ export function ProduitFormulesTab({
               </>
             )}
           </div>
+
+          {familleCode === "emprunteur" && (
+            <div className="space-y-1 rounded-md border border-line bg-background p-3">
+              <label className="block text-xs font-medium uppercase tracking-wide text-ink-muted">
+                Base de calcul de la cotisation
+              </label>
+              <select
+                value={active.base_calcul}
+                disabled={!isAdmin}
+                onChange={(e) => majBaseCalcul(active, e.target.value as Formule["base_calcul"])}
+                className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm"
+              >
+                {BASES_CALCUL.map((b) => (
+                  <option key={b.value} value={b.value}>
+                    {b.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] text-ink-muted">
+                {BASES_CALCUL.find((b) => b.value === active.base_calcul)?.aide}
+              </p>
+            </div>
+          )}
 
           {modeFixe && (
             <div className="space-y-1 rounded-md border border-line bg-background p-3">

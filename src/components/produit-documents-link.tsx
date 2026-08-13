@@ -19,6 +19,7 @@ const TYPE_LABELS: Record<string, string> = {
   tableau_garanties: "Tableau de garanties",
   fiche_produit: "Fiche produit",
   tarifs: "Tarifs",
+  ccsf: "CCSF (équivalence bancaire)",
   autre: "Autre",
 };
 
