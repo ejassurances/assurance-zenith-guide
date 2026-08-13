@@ -62,6 +62,15 @@ export function DossierDevisPanel({
   const [iaMsg, setIaMsg] = useState<string | null>(null);
   const lancerClassement = useServerFn(classerDevisDossierFn);
   const retenirOffre = useServerFn(retenirDevisDossierFn);
+  const creerFixe = useServerFn(creerDevisTarifFixeFn);
+
+  /** Produit du dossier en tarification fixe : formules et options à cotisation connue. */
+  const [produitFixe, setProduitFixe] = useState<{ id: string; nom: string } | null>(null);
+  const [formulesFixes, setFormulesFixes] = useState<FormuleFixe[]>([]);
+  const [optionsFixes, setOptionsFixes] = useState<OptionFixe[]>([]);
+  const [fixeFormuleId, setFixeFormuleId] = useState("");
+  const [fixeOptionIds, setFixeOptionIds] = useState<string[]>([]);
+  const [fixeEtat, setFixeEtat] = useState<"idle" | "envoi">("idle");
 
   const [form, setForm] = useState({
     compagnie_id: "",
@@ -72,7 +81,7 @@ export function DossierDevisPanel({
   });
 
   const load = useCallback(async () => {
-    const [d, c, p, cl] = await Promise.all([
+    const [d, c, p, cl, dos] = await Promise.all([
       supabase
         .from("dossier_devis")
         .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,source,garanties_resume,created_at")
@@ -88,13 +97,52 @@ export function DossierDevisPanel({
         .order("genere_le", { ascending: false })
         .limit(1)
         .maybeSingle(),
+      supabase.from("dossiers").select("produit_id").eq("id", dossierId).maybeSingle(),
     ]);
     if (d.error) setErr(d.error.message);
     setDevis((d.data as DossierDevis[]) ?? []);
     setCompagnies((c.data as Ref[]) ?? []);
     setProduits((p.data as ProduitRef[]) ?? []);
     setClassement((cl.data as Classement | null) ?? null);
+
+    const produitDossierId = (dos.data as { produit_id: string | null } | null)?.produit_id ?? null;
+    if (!produitDossierId) {
+      setProduitFixe(null);
+      setFormulesFixes([]);
+      setOptionsFixes([]);
+      return;
+    }
+    const { data: prod } = await supabase
+      .from("produits")
+      .select("id,nom,mode_tarification")
+      .eq("id", produitDossierId)
+      .maybeSingle();
+    const pr = prod as { id: string; nom: string; mode_tarification: string } | null;
+    if (!pr || pr.mode_tarification !== "fixe") {
+      setProduitFixe(null);
+      setFormulesFixes([]);
+      setOptionsFixes([]);
+      return;
+    }
+    setProduitFixe({ id: pr.id, nom: pr.nom });
+    const [fm, op] = await Promise.all([
+      supabase
+        .from("produit_formules")
+        .select("id,nom,tarif_fixe,actif")
+        .eq("produit_id", pr.id)
+        .eq("actif", true)
+        .order("ordre"),
+      supabase
+        .from("produit_options")
+        .select("id,nom,tarif_fixe,description")
+        .eq("produit_id", pr.id)
+        .eq("actif", true)
+        .order("ordre"),
+    ]);
+    setFormulesFixes((fm.data as FormuleFixe[]) ?? []);
+    setOptionsFixes((op.data as OptionFixe[]) ?? []);
   }, [dossierId]);
+
 
 
   useEffect(() => {
