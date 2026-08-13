@@ -16,6 +16,7 @@ type ProduitDoc = {
 const TYPE_LABELS: Record<string, string> = {
   ipid: "IPID",
   conditions_generales: "Conditions générales",
+  tableau_garanties: "Tableau de garanties",
   fiche_produit: "Fiche produit",
   tarifs: "Tarifs",
   autre: "Autre",

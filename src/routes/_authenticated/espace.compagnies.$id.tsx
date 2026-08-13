@@ -104,7 +104,7 @@ type Produit = {
 type ProduitDoc = {
   id: string;
   produit_id: string;
-  type: "conditions_generales" | "ipid" | "fiche_produit" | "tarifs" | "autre";
+  type: "conditions_generales" | "ipid" | "tableau_garanties" | "fiche_produit" | "tarifs" | "autre";
   nom: string;
   version: string | null;
   date_effet: string | null;
@@ -116,6 +116,7 @@ type ProduitDoc = {
 const DOC_TYPE_LABEL: Record<ProduitDoc["type"], string> = {
   conditions_generales: "Conditions générales",
   ipid: "IPID",
+  tableau_garanties: "Tableau de garanties",
   fiche_produit: "Fiche produit (interne)",
   tarifs: "Grille tarifaire",
   autre: "Autre",

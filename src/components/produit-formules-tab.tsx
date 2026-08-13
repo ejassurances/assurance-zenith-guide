@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ProduitGarantiesTab, type DocAnalysable } from "@/components/produit-garanties-tab";
+import { FormulePropositionsPanel } from "@/components/formule-propositions-panel";
 
 export type Formule = {
   id: string;
@@ -144,6 +145,14 @@ export function ProduitFormulesTab({
         ))}
         {formules.length === 0 && <p className="text-sm text-ink-muted">Aucune formule pour ce produit.</p>}
       </div>
+
+      <FormulePropositionsPanel
+        produitId={produitId}
+        familleCode={familleCode}
+        isAdmin={isAdmin}
+        docs={docs}
+        onChange={load}
+      />
 
       {isAdmin && (
         <div className="flex flex-wrap items-center gap-2">
