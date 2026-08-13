@@ -364,26 +364,31 @@ function NouvelleFacture({
       }
       fichier_path = path;
     }
-    const { error } = await supabase.from("factures_achat").insert({
-      fournisseur: form.fournisseur.trim(),
-      numero_facture: form.numero_facture || null,
-      date_facture: form.date_facture,
-      date_echeance: form.date_echeance || null,
-      montant_ht: ht,
-      montant_tva: tva,
-      montant_ttc: ttc,
-      compte_charge: form.compte_charge,
-      moyen_paiement: form.moyen_paiement || null,
-      notes: form.notes || null,
-      fichier_path,
-      fichier_nom: fichier?.name ?? null,
-    });
+    const { data: created, error } = await supabase
+      .from("factures_achat")
+      .insert({
+        fournisseur: form.fournisseur.trim(),
+        numero_facture: form.numero_facture || null,
+        date_facture: form.date_facture,
+        date_echeance: form.date_echeance || null,
+        montant_ht: ht,
+        montant_tva: tva,
+        montant_ttc: ttc,
+        compte_charge: form.compte_charge,
+        moyen_paiement: form.moyen_paiement || null,
+        notes: form.notes || null,
+        fichier_path,
+        fichier_nom: fichier?.name ?? null,
+      })
+      .select("*")
+      .single();
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Facture enregistrée.");
     reset();
     setOpen(false);
-    onCreated();
+    onCreated(created as Facture | null);
+
   };
 
   if (!open) {
