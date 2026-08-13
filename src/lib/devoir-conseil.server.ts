@@ -39,6 +39,9 @@ export async function envoyerDevoirConseil(
   const d = dossier as any;
   if (!d.client_email) throw new Error("Le dossier n'a pas d'email client — renseignez-le d'abord.");
 
+  const modele = modeleDevoirConseil(d.type_assurance);
+
+
   const contenu = {
     cabinet: {
       nom: SITE.name,
