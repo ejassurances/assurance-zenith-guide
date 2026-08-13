@@ -26,7 +26,6 @@ export const Route = createFileRoute("/api/public/rappels-expiration")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { sendTemplateEmail } = await import("@/lib/email-templates/send-email");
-        const origin = new URL(request.url).origin;
 
         const limite = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().slice(0, 10);
         const relanceSeuil = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();

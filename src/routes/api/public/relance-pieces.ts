@@ -20,7 +20,6 @@ export const Route = createFileRoute("/api/public/relance-pieces")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { sendTemplateEmail } = await import("@/lib/email-templates/send-email");
-        const origin = new URL(request.url).origin;
 
         const seuil = new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString();
 
