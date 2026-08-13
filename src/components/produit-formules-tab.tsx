@@ -227,6 +227,29 @@ export function ProduitFormulesTab({
             )}
           </div>
 
+          {modeFixe && (
+            <div className="space-y-1 rounded-md border border-line bg-background p-3">
+              <label className="block text-xs font-medium uppercase tracking-wide text-ink-muted">
+                Cotisation fixe de la formule (€ / mois)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                defaultValue={active.tarif_fixe ?? ""}
+                key={`tf-${active.id}`}
+                readOnly={!isAdmin}
+                onBlur={(e) =>
+                  majTarifFixe(active, e.target.value === "" ? null : Number(e.target.value))
+                }
+                className="w-40 rounded-md border border-line bg-surface px-2 py-1.5 text-sm"
+              />
+              <p className="text-[11px] text-ink-muted">
+                Tarif connu et stable, réutilisé tel quel sur les dossiers. Prioritaire sur la grille par tranche
+                d'âge ci-dessous si les deux sont renseignés.
+              </p>
+            </div>
+          )}
+
           <ProduitGarantiesTab
             produitId={produitId}
             formuleId={active.id}
@@ -240,7 +263,10 @@ export function ProduitFormulesTab({
           <FormuleTarifs formuleId={active.id} isAdmin={isAdmin} />
         </div>
       )}
+
+      {modeFixe && <ProduitOptionsBlock produitId={produitId} isAdmin={isAdmin} />}
     </section>
+
   );
 }
 
