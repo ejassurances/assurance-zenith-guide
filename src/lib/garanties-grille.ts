@@ -57,6 +57,12 @@ const G = (code: string, libelle: string, obligatoire = false, aide?: string): G
   ...(aide ? { aide } : {}),
 });
 
+/** Ligne rattachée à une section de la trame standardisée. */
+const GS = (groupe: string, code: string, libelle: string, obligatoire = false, aide?: string): GarantieDef => ({
+  ...G(code, libelle, obligatoire, aide),
+  groupe,
+});
+
 export const GRILLES: GrilleGaranties[] = [
   {
     familleCode: "edpm",
