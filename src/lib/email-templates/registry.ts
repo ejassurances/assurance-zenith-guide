@@ -204,4 +204,18 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
       link: "https://example.com/signer",
     },
   },
+  "devoir-conseil-envoi": {
+    component: DevoirConseilEnvoiEmail,
+    subject: (data: Record<string, any>) =>
+      (data && data.cabinetName ? data.cabinetName : "EJ Partners Assurances") +
+      " - Votre devoir de conseil",
+    displayName: "Devoir de conseil - Envoi client",
+    previewData: {
+      clientName: "Jean Dupont",
+      cabinetName: "EJ Partners Assurances",
+      reference: "DOSS-2025-001",
+      link: "https://example.com/signer-devoir-conseil",
+    },
+  },
 };
+
