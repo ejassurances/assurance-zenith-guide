@@ -20,6 +20,8 @@ import { ProduitDocumentsLink } from "@/components/produit-documents-link";
 import { DossierPipeline } from "@/components/dossier-pipeline";
 import { DevoirConseilPanel } from "@/components/devoir-conseil-panel";
 import { DevoirConseilRefusAnalysePanel } from "@/components/devoir-conseil-refus-analyse-panel";
+import { SouscriptionPanel } from "@/components/souscription-panel";
+import { CopilotePanel } from "@/components/copilote-panel";
 import { DossierDevisPanel } from "@/components/dossier-devis-panel";
 import { etapeLabel } from "@/lib/pipeline-dossier";
 
@@ -46,6 +48,10 @@ type Dossier = {
   notes: string | null;
   compagnie_id: string | null;
   produit_id: string | null;
+  souscription_email_compagnie: string | null;
+  souscription_envoyee_le: string | null;
+  souscription_relances_nb: number | null;
+  souscription_retour_le: string | null;
   created_at: string;
 };
 
@@ -136,9 +142,9 @@ function DossierDetail() {
       devis_en_cours: ["section-devis", "section-compagnie-produit"],
       devoir_conseil_envoye: ["section-devoir-conseil"],
       devoir_conseil_signe: ["section-devoir-conseil"],
-      souscription_envoyee: ["section-pieces"],
-      contrat_valide: ["section-pieces"],
-      contrat_actif: ["section-pieces"],
+      souscription_envoyee: ["section-souscription", "section-pieces"],
+      contrat_valide: ["section-souscription", "section-pieces"],
+      contrat_actif: ["section-souscription", "section-pieces"],
     };
     const ids = mapping[key] ?? [];
     for (const sectionId of ids) {
@@ -176,6 +182,8 @@ function DossierDetail() {
         onChanged={load}
         onStepClick={(key) => scrollToStep(key)}
       />
+
+      {canEdit && <CopilotePanel dossierId={id} />}
 
       <CompagnieProduitSection dossier={dossier} canEdit={canEdit} onSaved={load} />
 
@@ -218,6 +226,19 @@ function DossierDetail() {
         </div>
       )}
 
+      {canEdit && (
+        <div id="section-souscription">
+          <SouscriptionPanel
+            dossierId={id}
+            statut={dossier.statut}
+            emailCompagnie={dossier.souscription_email_compagnie}
+            envoyeeLe={dossier.souscription_envoyee_le}
+            relances={dossier.souscription_relances_nb}
+            retourLe={dossier.souscription_retour_le}
+            onChanged={load}
+          />
+        </div>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         <Section title="Informations client">

@@ -1889,6 +1889,11 @@ export type Database = {
           recueil_besoins: Json | null
           reference: string
           relance_pieces_envoyee_le: string | null
+          souscription_email_compagnie: string | null
+          souscription_envoyee_le: string | null
+          souscription_relance_le: string | null
+          souscription_relances_nb: number
+          souscription_retour_le: string | null
           statut: Database["public"]["Enums"]["dossier_statut"]
           type_assurance: string
           updated_at: string
@@ -1914,6 +1919,11 @@ export type Database = {
           recueil_besoins?: Json | null
           reference?: string
           relance_pieces_envoyee_le?: string | null
+          souscription_email_compagnie?: string | null
+          souscription_envoyee_le?: string | null
+          souscription_relance_le?: string | null
+          souscription_relances_nb?: number
+          souscription_retour_le?: string | null
           statut?: Database["public"]["Enums"]["dossier_statut"]
           type_assurance?: string
           updated_at?: string
@@ -1939,6 +1949,11 @@ export type Database = {
           recueil_besoins?: Json | null
           reference?: string
           relance_pieces_envoyee_le?: string | null
+          souscription_email_compagnie?: string | null
+          souscription_envoyee_le?: string | null
+          souscription_relance_le?: string | null
+          souscription_relances_nb?: number
+          souscription_retour_le?: string | null
           statut?: Database["public"]["Enums"]["dossier_statut"]
           type_assurance?: string
           updated_at?: string
@@ -2974,47 +2989,171 @@ export type Database = {
           },
         ]
       }
+      sinistre_evenements: {
+        Row: {
+          ancienne_etape: string | null
+          contenu: string | null
+          created_at: string
+          id: string
+          nouvelle_etape: string | null
+          par: string | null
+          sinistre_id: string
+          type: string
+        }
+        Insert: {
+          ancienne_etape?: string | null
+          contenu?: string | null
+          created_at?: string
+          id?: string
+          nouvelle_etape?: string | null
+          par?: string | null
+          sinistre_id: string
+          type?: string
+        }
+        Update: {
+          ancienne_etape?: string | null
+          contenu?: string | null
+          created_at?: string
+          id?: string
+          nouvelle_etape?: string | null
+          par?: string | null
+          sinistre_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sinistre_evenements_sinistre_id_fkey"
+            columns: ["sinistre_id"]
+            isOneToOne: false
+            referencedRelation: "sinistres"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sinistre_pieces: {
+        Row: {
+          code: string
+          commentaire: string | null
+          created_at: string
+          id: string
+          libelle: string
+          mime_type: string | null
+          nom_fichier: string | null
+          obligatoire: boolean
+          sinistre_id: string
+          statut: string
+          storage_path: string | null
+          taille: number | null
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          code: string
+          commentaire?: string | null
+          created_at?: string
+          id?: string
+          libelle: string
+          mime_type?: string | null
+          nom_fichier?: string | null
+          obligatoire?: boolean
+          sinistre_id: string
+          statut?: string
+          storage_path?: string | null
+          taille?: number | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          code?: string
+          commentaire?: string | null
+          created_at?: string
+          id?: string
+          libelle?: string
+          mime_type?: string | null
+          nom_fichier?: string | null
+          obligatoire?: boolean
+          sinistre_id?: string
+          statut?: string
+          storage_path?: string | null
+          taille?: number | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sinistre_pieces_sinistre_id_fkey"
+            columns: ["sinistre_id"]
+            isOneToOne: false
+            referencedRelation: "sinistres"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sinistres: {
         Row: {
+          branche: string | null
           client_id: string
+          clos_le: string | null
           contrat_id: string
           created_at: string
           created_by: string | null
           date_survenance: string | null
+          declare_compagnie_le: string | null
+          declare_le: string | null
+          declare_par_client: boolean
           description: string | null
+          etape: string
           gestionnaire: string | null
           id: string
           montant: number | null
+          montant_indemnise: number | null
+          numero_compagnie: string | null
           reference: string | null
           statut: string
           type: string | null
           updated_at: string
         }
         Insert: {
+          branche?: string | null
           client_id: string
+          clos_le?: string | null
           contrat_id: string
           created_at?: string
           created_by?: string | null
           date_survenance?: string | null
+          declare_compagnie_le?: string | null
+          declare_le?: string | null
+          declare_par_client?: boolean
           description?: string | null
+          etape?: string
           gestionnaire?: string | null
           id?: string
           montant?: number | null
+          montant_indemnise?: number | null
+          numero_compagnie?: string | null
           reference?: string | null
           statut?: string
           type?: string | null
           updated_at?: string
         }
         Update: {
+          branche?: string | null
           client_id?: string
+          clos_le?: string | null
           contrat_id?: string
           created_at?: string
           created_by?: string | null
           date_survenance?: string | null
+          declare_compagnie_le?: string | null
+          declare_le?: string | null
+          declare_par_client?: boolean
           description?: string | null
+          etape?: string
           gestionnaire?: string | null
           id?: string
           montant?: number | null
+          montant_indemnise?: number | null
+          numero_compagnie?: string | null
           reference?: string | null
           statut?: string
           type?: string | null

@@ -227,6 +227,80 @@ function LienConnexionEmail(props: {
   return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
 }
 
+/** Envoi du dossier de souscription à la compagnie (destinataire : service souscription). */
+function SouscriptionCompagnieEmail(props: {
+  compagnieName?: string;
+  cabinetName?: string;
+  reference?: string;
+  clientName?: string;
+  produit?: string;
+  branche?: string;
+  commentaire?: string;
+  link?: string;
+}) {
+  const nom = props.cabinetName || "EJ Partners Assurances";
+  const html =
+    "<p>Bonjour,</p>" +
+    "<p>Veuillez trouver ci-dessous une demande de souscription transmise par le cabinet " +
+    nom +
+    " :</p>" +
+    "<ul>" +
+    "<li><strong>Reference dossier :</strong> " +
+    (props.reference || "") +
+    "</li>" +
+    "<li><strong>Client :</strong> " +
+    (props.clientName || "") +
+    "</li>" +
+    "<li><strong>Branche :</strong> " +
+    (props.branche || "") +
+    "</li>" +
+    "<li><strong>Produit :</strong> " +
+    (props.produit || "") +
+    "</li>" +
+    "</ul>" +
+    (props.commentaire ? "<p>" + props.commentaire + "</p>" : "") +
+    "<p>Le devoir de conseil a ete signe par le client et les pieces justificatives sont disponibles sur demande.</p>" +
+    "<p>Merci de nous confirmer la prise en charge ainsi que le numero de contrat attribue.</p>" +
+    "<p>Cordialement,<br/>Le service souscription " +
+    nom +
+    "</p>";
+  const style = { fontFamily: "Arial, sans-serif", color: "#1a1a1a", fontSize: "15px", lineHeight: "1.6" };
+  return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
+}
+
+/** Relance automatique de la compagnie sans retour sur une souscription. */
+function SouscriptionRelanceEmail(props: {
+  cabinetName?: string;
+  reference?: string;
+  clientName?: string;
+  produit?: string;
+  jours?: number;
+}) {
+  const nom = props.cabinetName || "EJ Partners Assurances";
+  const html =
+    "<p>Bonjour,</p>" +
+    "<p>Sauf erreur de notre part, la demande de souscription suivante reste sans retour depuis " +
+    String(props.jours || 3) +
+    " jours :</p>" +
+    "<ul>" +
+    "<li><strong>Reference dossier :</strong> " +
+    (props.reference || "") +
+    "</li>" +
+    "<li><strong>Client :</strong> " +
+    (props.clientName || "") +
+    "</li>" +
+    "<li><strong>Produit :</strong> " +
+    (props.produit || "") +
+    "</li>" +
+    "</ul>" +
+    "<p>Pourriez-vous nous indiquer l'etat d'avancement du dossier et, le cas echeant, les pieces complementaires attendues ?</p>" +
+    "<p>Cordialement,<br/>Le service souscription " +
+    nom +
+    "</p>";
+  const style = { fontFamily: "Arial, sans-serif", color: "#1a1a1a", fontSize: "15px", lineHeight: "1.6" };
+  return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
+}
+
 export const TEMPLATES: Record<string, TemplateEntry> = {
   "lien-connexion": {
     component: LienConnexionEmail,
@@ -324,6 +398,33 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
       cabinetName: "EJ Partners Assurances",
       reference: "DOSS-2025-001",
       link: "https://example.com/signer-devoir-conseil",
+    },
+  },
+  "souscription-compagnie": {
+    component: SouscriptionCompagnieEmail,
+    subject: (data: Record<string, any>) =>
+      "Demande de souscription - dossier " + (data && data.reference ? data.reference : ""),
+    displayName: "Souscription - Envoi compagnie",
+    previewData: {
+      compagnieName: "April",
+      cabinetName: "EJ Partners Assurances",
+      reference: "DOSS-2025-001",
+      clientName: "Jean Dupont",
+      produit: "Emprunteur Solution",
+      branche: "Assurance emprunteur",
+    },
+  },
+  "souscription-relance-compagnie": {
+    component: SouscriptionRelanceEmail,
+    subject: (data: Record<string, any>) =>
+      "Relance - demande de souscription dossier " + (data && data.reference ? data.reference : ""),
+    displayName: "Souscription - Relance compagnie",
+    previewData: {
+      cabinetName: "EJ Partners Assurances",
+      reference: "DOSS-2025-001",
+      clientName: "Jean Dupont",
+      produit: "Emprunteur Solution",
+      jours: 3,
     },
   },
 };
