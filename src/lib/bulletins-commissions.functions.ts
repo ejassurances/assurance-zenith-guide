@@ -99,7 +99,7 @@ export const importerBulletinCommission = createServerFn({ method: "POST" })
     // Référentiels pour le rapprochement.
     const [{ data: contrats }, { data: clients }] = await Promise.all([
       supabaseAdmin.from("contrats").select("id,numero,client_id,dossier_id,produit"),
-      supabaseAdmin.from("clients").select("id,nom,prenom,raison_sociale"),
+      supabaseAdmin.from("clients").select("id,nom,prenom,societe_nom"),
     ]);
 
     const parNumero = new Map<string, { id: string; client_id: string | null; dossier_id: string | null }>();
@@ -111,7 +111,7 @@ export const importerBulletinCommission = createServerFn({ method: "POST" })
       cles: [
         `${c.nom ?? ""}${c.prenom ?? ""}`,
         `${c.prenom ?? ""}${c.nom ?? ""}`,
-        c.raison_sociale ?? "",
+        c.societe_nom ?? "",
       ]
         .map(normaliser)
         .filter((k) => k.length >= 4),
@@ -145,7 +145,7 @@ export const importerBulletinCommission = createServerFn({ method: "POST" })
         dossier_id: contrat?.dossier_id ?? null,
         statut: rapproche ? "rapprochee" : "a_rapprocher",
         confiance: lu?.confiance ?? null,
-        brut: l as unknown as Record<string, unknown>,
+        brut: l as unknown as Parameters<typeof JSON.stringify>[0] as never,
       };
     });
 
