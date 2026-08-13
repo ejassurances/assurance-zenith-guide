@@ -133,6 +133,18 @@ export function DevoirConseilPanel({
     load();
   }, [dossierId]);
 
+  // Contre-proposition demandée depuis l'analyse IA du refus : ouvre et pré-remplit la saisie.
+  useEffect(() => {
+    if (!contreProposition) return;
+    setOpen(true);
+    setForm((f) => ({
+      ...f,
+      recommandation: contreProposition.suggestion || f.recommandation,
+      motifs: `Contre-proposition suite au refus du client (motif : ${contreProposition.motif}).\n${f.motifs}`.trim(),
+    }));
+  }, [contreProposition?.key]);
+
+
   // Devis saisis sur le dossier : base de pré-remplissage du tableau comparatif.
   useEffect(() => {
     (async () => {
