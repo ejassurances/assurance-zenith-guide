@@ -1,9 +1,79 @@
 // Configuration du recueil des besoins par branche d'assurance.
 // Chaque champ est stocké dans dossiers.recueil_besoins (jsonb) sous sa clé.
 
-export type BrancheAssurance = "emprunteur" | "prevoyance_sante" | "epargne_retraite" | "iard" | "trottinette";
+export type BrancheAssurance =
+  | "emprunteur"
+  | "sante"
+  | "prevoyance"
+  /** Ancienne branche combinée — conservée en lecture seule pour les dossiers existants. */
+  | "prevoyance_sante"
+  | "epargne_retraite"
+  | "iard"
+  | "trottinette";
 
-export type FieldType = "text" | "number" | "textarea" | "select" | "checkbox" | "cards" | "yesno";
+export type FieldType =
+  | "text"
+  | "number"
+  | "textarea"
+  | "select"
+  | "checkbox"
+  | "cards"
+  | "yesno"
+  /** Liste dynamique de personnes à couvrir (voir PersonneAssuree) */
+  | "personnes";
+
+/** Niveaux de couverture proposés poste par poste en complémentaire santé. */
+export const NIVEAUX_SOINS = [
+  { value: "minimal", label: "Minimal", description: "Couverture de base, reste à charge important" },
+  { value: "normal", label: "Normal", description: "Niveau courant du marché" },
+  { value: "fort", label: "Fort", description: "Remboursements renforcés" },
+  { value: "optimal", label: "Optimal", description: "Couverture maximale" },
+] as const;
+
+export type NiveauSoins = (typeof NIVEAUX_SOINS)[number]["value"];
+
+export function labelNiveauSoins(value: unknown): string | null {
+  return NIVEAUX_SOINS.find((n) => n.value === value)?.label ?? null;
+}
+
+/**
+ * Postes de soins du recueil santé — alignés sur la grille de garanties
+ * de la famille « sante » (voir src/lib/garanties-grille.ts).
+ */
+export const POSTES_SOINS = [
+  { key: "hospitalisation", label: "Hospitalisation" },
+  { key: "soins_courants", label: "Soins courants" },
+  { key: "optique", label: "Optique" },
+  { key: "dentaire", label: "Dentaire" },
+  { key: "aides_auditives", label: "Aides auditives" },
+  { key: "medecines_douces", label: "Médecines douces" },
+] as const;
+
+/** Liens de parenté possibles pour un assuré à couvrir. */
+export const LIENS_ASSURE = [
+  { value: "soi_meme", label: "Soi-même (assuré principal)" },
+  { value: "conjoint", label: "Conjoint" },
+  { value: "enfant", label: "Enfant" },
+  { value: "autre", label: "Autre ayant droit" },
+] as const;
+
+/** Régimes obligatoires proposés dans le recueil santé. */
+export const REGIMES_OBLIGATOIRES = [
+  { value: "salarie", label: "Salarié" },
+  { value: "tns", label: "Travailleur non salarié (TNS)" },
+  { value: "fonctionnaire", label: "Fonctionnaire" },
+  { value: "exploitant_agricole", label: "Exploitant agricole" },
+  { value: "etudiant", label: "Étudiant" },
+  { value: "sans_emploi", label: "Sans emploi" },
+  { value: "alsace_moselle", label: "Régime local Alsace-Moselle" },
+] as const;
+
+export type PersonneAssuree = {
+  lien: string;
+  date_naissance: string;
+  regime: string;
+};
+
 
 export interface FieldOption {
   value: string;
