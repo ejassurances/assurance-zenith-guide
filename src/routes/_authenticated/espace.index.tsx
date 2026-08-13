@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { CommissionMoisCard } from "@/components/commission-mois-card";
 
 export const Route = createFileRoute("/_authenticated/espace/")({
   component: Dashboard,
@@ -76,6 +77,8 @@ function Dashboard() {
           <Card label="Commissions estimées" value={`${stats.commissions.toLocaleString("fr-FR")} €`} accent />
         )}
       </div>
+
+      {(role === "admin" || role === "mandataire") && <CommissionMoisCard />}
 
       {role !== "client" && <EconomiesEmprunteurCard scope={role === "admin" ? "cabinet" : "perso"} />}
 

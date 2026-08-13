@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useCommissionBareme } from "@/hooks/use-commission-bareme";
+import { fmtEuros } from "@/lib/commissions-bareme";
 
 type Row = {
   id: string;
@@ -15,19 +17,21 @@ type Row = {
   taux_assurance_annuel: number | null;
   statut: string;
   economie_realisee: number | null;
+  compagnie_id: string | null;
 };
 
 export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: boolean }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const { staff, commissionContrat } = useCommissionBareme();
 
   async function load() {
     setLoading(true);
     const { data } = await supabase
       .from("contrats")
       .select(
-        "id,numero,assureur,produit,date_effet,duree_mois,prime_annuelle,is_emprunteur,capital_initial,taux_assurance_annuel,statut,economie_realisee",
+        "id,numero,assureur,produit,date_effet,duree_mois,prime_annuelle,is_emprunteur,capital_initial,taux_assurance_annuel,statut,economie_realisee,compagnie_id",
       )
       .eq("client_id", clientId)
       .order("created_at", { ascending: false });
@@ -83,6 +87,22 @@ export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: 
           </div>
         )}
       </div>
+
+      {staff && rows.length > 0 && (
+        <div className="flex items-center justify-between rounded-lg border border-line bg-surface px-4 py-3">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+              Commissions générées (cumul)
+            </p>
+            <p className="text-[11px] text-ink-muted">Information interne — non visible par le client.</p>
+          </div>
+          <p className="font-serif text-xl font-medium text-ink">
+            {fmtEuros(rows.reduce((s, r) => s + commissionContrat(r).montant, 0))}
+          </p>
+        </div>
+      )}
+
+
 
       {loading ? (
         <p className="text-sm text-ink-muted">Chargement…</p>

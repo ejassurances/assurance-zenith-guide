@@ -357,6 +357,9 @@ export async function genererPdfDevoirConseil(input: DevoirPdfInput): Promise<Ui
   if (solution) kv("Solution recommandee", solution, { color: OK });
   if (conseil.cotisation_mensuelle != null)
     kv("Cotisation mensuelle", euro(Number(conseil.cotisation_mensuelle)));
+  if (conseil.frais_dossier != null) kv("Frais de dossier", euro(Number(conseil.frais_dossier)));
+  if (conseil.frais_souscription != null)
+    kv("Frais de souscription", euro(Number(conseil.frais_souscription)));
   if (conseil.economie_estimee != null) kv("Economie estimee", euro(Number(conseil.economie_estimee)));
   if (conseil.garanties) kv("Garanties retenues", String(conseil.garanties));
   y -= 4;

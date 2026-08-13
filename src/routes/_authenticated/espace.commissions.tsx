@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { CommissionBaremeConfig } from "@/components/commission-bareme-config";
 
 export const Route = createFileRoute("/_authenticated/espace/commissions")({
   component: CommissionsPage,
@@ -102,6 +103,7 @@ function CommissionsPage() {
       </div>
 
       {role === "admin" && <AddCommissionForm onCreated={load} />}
+      {role === "admin" && <CommissionBaremeConfig />}
     </div>
   );
 }

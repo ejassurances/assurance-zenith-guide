@@ -673,6 +673,56 @@ export type Database = {
         }
         Relationships: []
       }
+      commission_bareme: {
+        Row: {
+          base_calcul: string
+          branche: string
+          compagnie_id: string | null
+          created_at: string
+          id: string
+          montant_fixe: number | null
+          niveau: string
+          notes: string | null
+          taux_pourcentage: number | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          base_calcul: string
+          branche: string
+          compagnie_id?: string | null
+          created_at?: string
+          id?: string
+          montant_fixe?: number | null
+          niveau: string
+          notes?: string | null
+          taux_pourcentage?: number | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          base_calcul?: string
+          branche?: string
+          compagnie_id?: string | null
+          created_at?: string
+          id?: string
+          montant_fixe?: number | null
+          niveau?: string
+          notes?: string | null
+          taux_pourcentage?: number | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_bareme_compagnie_id_fkey"
+            columns: ["compagnie_id"]
+            isOneToOne: false
+            referencedRelation: "compagnies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commission_regles: {
         Row: {
           assiette: string

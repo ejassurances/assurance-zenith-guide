@@ -72,6 +72,8 @@ export function DevoirConseilPanel({
     garanties: "",
     exigences_client: "",
     cotisation_mensuelle: "",
+    frais_dossier: "",
+    frais_souscription: "",
     economie_estimee: "",
     assiette: "capital_restant_du" as "capital_initial" | "capital_restant_du",
     capital_assure: "",
@@ -134,6 +136,8 @@ export function DevoirConseilPanel({
           garanties: form.garanties.trim() || undefined,
           exigences_client: form.exigences_client.trim() || undefined,
           cotisation_mensuelle: form.cotisation_mensuelle ? Number(form.cotisation_mensuelle) : null,
+          frais_dossier: form.frais_dossier ? Number(form.frais_dossier) : null,
+          frais_souscription: form.frais_souscription ? Number(form.frais_souscription) : null,
           economie_estimee: form.economie_estimee ? Number(form.economie_estimee) : null,
           offres:
             offresRemplies.length > 0
@@ -423,6 +427,22 @@ export function DevoirConseilPanel({
                 type="number"
                 value={form.cotisation_mensuelle}
                 onChange={(e) => setForm({ ...form, cotisation_mensuelle: e.target.value })}
+                className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+              />
+            </Field>
+            <Field label="Frais de dossier (€)">
+              <input
+                type="number"
+                value={form.frais_dossier}
+                onChange={(e) => setForm({ ...form, frais_dossier: e.target.value })}
+                className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+              />
+            </Field>
+            <Field label="Frais de souscription (€)">
+              <input
+                type="number"
+                value={form.frais_souscription}
+                onChange={(e) => setForm({ ...form, frais_souscription: e.target.value })}
                 className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
               />
             </Field>

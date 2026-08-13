@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { calculerEconomieEmprunteur, economieColumns } from "@/lib/economie-emprunteur";
 import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
 import { ProduitDocumentsLink } from "@/components/produit-documents-link";
+import { CommissionContratCard } from "@/components/commission-contrat-card";
 
 export const Route = createFileRoute("/_authenticated/espace/contrats/$id")({
   component: ContratDetail,
@@ -239,6 +240,14 @@ function ContratDetail() {
       </div>
 
       {err && <p className="rounded-md bg-red-50 p-3 text-sm text-red-800">{err}</p>}
+
+      <CommissionContratCard
+        dossierId={(c as unknown as { dossier_id: string | null }).dossier_id ?? null}
+        isEmprunteur={c.is_emprunteur}
+        compagnieId={c.compagnie_id}
+        primeAnnuelle={c.prime_annuelle}
+        economieRealisee={c.economie_realisee}
+      />
 
       {/* Bloc identité contrat */}
       <section className="grid gap-4 rounded-lg border border-line bg-surface p-5 md:grid-cols-3">
