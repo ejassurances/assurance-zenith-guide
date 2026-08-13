@@ -1231,6 +1231,7 @@ export type Database = {
           economie_taux_groupe: number | null
           fractionnement: string
           id: string
+          import_externe: boolean
           is_emprunteur: boolean
           mandataire_id: string | null
           mode_commissionnement: string
@@ -1270,6 +1271,7 @@ export type Database = {
           economie_taux_groupe?: number | null
           fractionnement?: string
           id?: string
+          import_externe?: boolean
           is_emprunteur?: boolean
           mandataire_id?: string | null
           mode_commissionnement?: string
@@ -1309,6 +1311,7 @@ export type Database = {
           economie_taux_groupe?: number | null
           fractionnement?: string
           id?: string
+          import_externe?: boolean
           is_emprunteur?: boolean
           mandataire_id?: string | null
           mode_commissionnement?: string
