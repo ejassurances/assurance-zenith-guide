@@ -59,6 +59,9 @@ export async function envoyerDevoirConseil(
     },
     recueil_besoins: d.recueil_besoins ?? {},
     conseil: saisie,
+    modele: modele.branche,
+    modele_libelle: modele.libelle,
+    mentions_legales: modele.mentionsLegales,
     genere_le: new Date().toISOString(),
   };
 
