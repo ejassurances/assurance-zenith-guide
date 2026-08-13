@@ -97,6 +97,7 @@ function EmailsPage() {
   const archiverFn = useServerFn(archiverMessageCrm);
   const supprimerFn = useServerFn(supprimerMessageCrm);
   const etiqueterFn = useServerFn(etiqueterMessageCrm);
+  const importerFacture = useServerFn(importerFactureDepuisEmail);
 
   const [messages, setMessages] = useState<Resume[]>([]);
   const [liens, setLiens] = useState<Lien[]>([]);
