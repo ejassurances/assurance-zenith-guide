@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { classerDevisDossierFn, retenirDevisDossierFn } from "@/lib/devis-classement.functions";
 
 export type DossierDevis = {
   id: string;
@@ -13,11 +15,21 @@ export type DossierDevis = {
   created_at: string;
 };
 
+type LigneClassement = { dossier_devis_id: string; rang: number; justification: string };
+type Classement = {
+  id: string;
+  genere_le: string;
+  modele_ia: string | null;
+  classement: LigneClassement[];
+  statut: string;
+};
+
 type Ref = { id: string; nom: string };
 type ProduitRef = { id: string; nom: string; compagnie_id: string; famille_id: string };
 type FormuleRef = { id: string; nom: string; produit_id: string; actif: boolean };
 
 const inp = "w-full rounded-md border border-line bg-background px-3 py-2 text-sm";
+
 
 /** Devis comparés saisis manuellement par le staff — base du comparatif du devoir de conseil. */
 export function DossierDevisPanel({
