@@ -142,6 +142,42 @@ export function DossierDevisPanel({
 
   const produitsVisibles = produits.filter((p) => !form.compagnie_id || p.compagnie_id === form.compagnie_id);
 
+  const demanderClassement = async () => {
+    setIaMsg(null);
+    setErr(null);
+    setIaEtat("classement");
+    try {
+      await lancerClassement({ data: { dossier_id: dossierId } });
+      await load();
+      setIaMsg("Classement IA généré — à vous de retenir l'offre.");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Classement IA impossible");
+    } finally {
+      setIaEtat("idle");
+    }
+  };
+
+  const retenir = async (devisId: string) => {
+    if (!classement) return;
+    if (!confirm("Retenir cette offre et générer le devoir de conseil en brouillon (sans envoi au client) ?")) return;
+    setIaMsg(null);
+    setErr(null);
+    setIaEtat("selection");
+    try {
+      await retenirOffre({ data: { classement_id: classement.id, devis_id: devisId } });
+      await load();
+      setIaMsg(
+        "Offre retenue : compagnie et produit reportés sur le dossier, devoir de conseil créé en brouillon. L'envoi au client reste à déclencher manuellement.",
+      );
+      onChanged?.();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Sélection impossible");
+    } finally {
+      setIaEtat("idle");
+    }
+  };
+
+
   return (
     <div className="rounded-2xl border border-line bg-surface-elevated p-5">
       <h2 className="font-serif text-lg font-medium text-ink">Devis comparés</h2>
