@@ -169,12 +169,13 @@ export async function envoyerDevoirConseil(
     recommandation: saisie.recommandation,
     motifs: saisie.motifs,
     mises_en_garde: saisie.mises_en_garde ?? null,
-    statut: "envoye",
+    statut: sansEnvoi ? "brouillon" : "envoye",
     email_destinataire: d.client_email,
-    envoye_le: new Date().toISOString(),
+    envoye_le: sansEnvoi ? null : new Date().toISOString(),
     refus_motif: null,
     refuse_le: null,
   };
+
 
   let devoirId: string;
   if (existing && existing.statut !== "signe") {
