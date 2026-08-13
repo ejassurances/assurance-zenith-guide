@@ -10,7 +10,20 @@ export type Formule = {
   code: string;
   ordre: number;
   actif: boolean;
+  /** Cotisation fixe connue de la formule (mode de tarification « fixe »). */
+  tarif_fixe: number | null;
 };
+
+export type ProduitOption = {
+  id: string;
+  produit_id: string;
+  nom: string;
+  tarif_fixe: number | null;
+  description: string | null;
+  actif: boolean;
+  ordre: number;
+};
+
 
 type Tarif = {
   id: string;
