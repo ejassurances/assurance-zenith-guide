@@ -186,6 +186,13 @@ function Overview() {
         <Card label={`Prévu ${currentYear}`} value={fmt(stats.previsionnelYear)} />
       </div>
       <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+        <h3 className="font-serif text-lg font-medium">Poste « Commissions de courtage »</h3>
+        <p className="mt-1 text-xs text-ink-muted">
+          Commissions calculées selon le barème cabinet (branche / compagnie) — poste de produit d'exploitation.
+        </p>
+        <CommissionMoisCard />
+      </div>
+      <div className="rounded-2xl border border-line bg-surface-elevated p-5">
         <h3 className="font-serif text-lg font-medium">Commissions cabinet par année</h3>
         <Table>
           <TableHeader>
