@@ -951,16 +951,20 @@ function ChampInput({
 // ============ Documents ============
 function DocumentsBlock({
   produitId,
+  familleCode,
   docs,
   isAdmin,
   onChange,
 }: {
   produitId: string;
+  familleCode: string | null;
   docs: ProduitDoc[];
   isAdmin: boolean;
   onChange: () => void;
 }) {
+  const typesDisponibles = docTypesPour(familleCode);
   const [type, setType] = useState<ProduitDoc["type"]>("conditions_generales");
+
   const [version, setVersion] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
