@@ -203,6 +203,45 @@ function EmailsPage() {
     }
   };
 
+  /** Enregistre une pièce jointe comme facture d'achat (lecture IA des montants). */
+  const enregistrerFacture = async (
+    m: Resume,
+    piece: { nom: string; mime: string | null; attachment_id: string | null },
+  ) => {
+    if (!piece.attachment_id) return;
+    setFactureBusy(piece.attachment_id);
+    try {
+      const res = await importerFacture({
+        data: {
+          gmail_message_id: m.id,
+          attachment_id: piece.attachment_id,
+          nom_fichier: piece.nom,
+          mime: piece.mime,
+          expediteur_nom: m.expediteur_nom,
+          expediteur_email: m.expediteur_email,
+          sujet: m.sujet,
+          recu_le: m.date,
+        },
+      });
+      if (res.deja_importee) {
+        toast.info("Cette pièce jointe a déjà été importée en facture d'achat.");
+      } else if (res.lue?.montant_ttc) {
+        toast.success(
+          `Facture enregistrée : ${res.lue.fournisseur ?? "fournisseur"} — ${res.lue.montant_ttc.toFixed(2)} € TTC. À vérifier dans Comptabilité › Factures d'achat.`,
+        );
+      } else {
+        toast.success("Facture créée dans Comptabilité › Factures d'achat — montants à compléter.");
+      }
+      if (res.avertissement) toast.warning(res.avertissement);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Import de la facture impossible");
+    } finally {
+      setFactureBusy(null);
+    }
+  };
+
+
+
   /** Compagnie suggérée d'après le domaine de l'expéditeur. */
   const compagnieSuggeree = useMemo(() => {
     const email = selected?.expediteur_email ?? "";
