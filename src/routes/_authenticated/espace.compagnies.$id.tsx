@@ -7,6 +7,7 @@ import { ProduitGarantiesTab } from "@/components/produit-garanties-tab";
 import { ProduitFormulesTab } from "@/components/produit-formules-tab";
 
 import { EmailsLiesPanel } from "@/components/emails-lies-panel";
+import { ImageUploadField, StoredImage } from "@/components/image-upload-field";
 
 type CompagnieDocRow = {
   id: string;
@@ -100,6 +101,7 @@ type Produit = {
   commission_taux: number | null;
   produit_requis_id: string | null;
   famille_requise_id: string | null;
+  image_url: string | null;
 };
 type ProduitDoc = {
   id: string;
@@ -180,14 +182,22 @@ function CompagnieDetail() {
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <Link to="/espace/compagnies" className="text-xs text-ink-muted underline underline-offset-4">
-            ← Toutes les compagnies
-          </Link>
-          <h1 className="mt-2 font-serif text-3xl">{c.nom}</h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            {produits.length} produit{produits.length > 1 ? "s" : ""} référencé{produits.length > 1 ? "s" : ""}
-          </p>
+        <div className="flex items-start gap-4">
+          <StoredImage
+            bucket="compagnies-logos"
+            value={c.logo_url}
+            alt={c.nom}
+            className="size-16 rounded border border-line bg-background object-contain p-1"
+          />
+          <div>
+            <Link to="/espace/compagnies" className="text-xs text-ink-muted underline underline-offset-4">
+              ← Toutes les compagnies
+            </Link>
+            <h1 className="mt-2 font-serif text-3xl">{c.nom}</h1>
+            <p className="mt-1 text-sm text-ink-muted">
+              {produits.length} produit{produits.length > 1 ? "s" : ""} référencé{produits.length > 1 ? "s" : ""}
+            </p>
+          </div>
         </div>
         {isAdmin && (
           <button onClick={del} className="text-xs text-red-700 underline underline-offset-4">
@@ -273,7 +283,17 @@ function InfosTab({
     >
       <Field label="Nom" value={form.nom} onChange={(v) => setForm({ ...form, nom: v })} readOnly={readOnly} />
       <Field label="Site web" value={form.site_web ?? ""} onChange={(v) => setForm({ ...form, site_web: v })} readOnly={readOnly} />
-      <Field label="Logo (URL)" value={form.logo_url ?? ""} onChange={(v) => setForm({ ...form, logo_url: v })} readOnly={readOnly} />
+      <ImageUploadField
+        bucket="compagnies-logos"
+        prefix={c.id}
+        value={form.logo_url}
+        label="Logo de la compagnie"
+        canEdit={!readOnly}
+        onUploaded={async (path) => {
+          setForm({ ...form, logo_url: path });
+          onSave({ logo_url: path });
+        }}
+      />
       <div>
         <label className="mb-1 block text-xs font-medium text-ink-muted">Statut</label>
         <select
@@ -443,7 +463,15 @@ function ProduitsTab({
                   (isActive ? "bg-ink text-primary-foreground" : "hover:bg-surface")
                 }
               >
-                <div className="font-medium">{p.nom}</div>
+                <div className="flex items-center gap-2">
+                  <StoredImage
+                    bucket="produits-images"
+                    value={p.image_url}
+                    alt={p.nom}
+                    className="size-7 shrink-0 rounded bg-background object-contain"
+                  />
+                  <span className="font-medium">{p.nom}</span>
+                </div>
                 <div className={"text-xs " + (isActive ? "text-primary-foreground/70" : "text-ink-muted")}>
                   {f?.nom ?? "—"} · {p.statut}
                 </div>
@@ -529,6 +557,7 @@ function ProduitEditor({
         famille_id: p.famille_id,
         produit_requis_id: p.produit_requis_id,
         famille_requise_id: p.famille_requise_id,
+        image_url: p.image_url,
       })
       .eq("id", p.id);
     setSaving(false);
@@ -558,6 +587,22 @@ function ProduitEditor({
           onChange={(v) => setP({ ...p, code_produit: v })}
           readOnly={readOnly}
         />
+        <div className="md:col-span-2">
+          <ImageUploadField
+            bucket="produits-images"
+            prefix={produit.id}
+            value={p.image_url}
+            label="Image du produit"
+            canEdit={!readOnly}
+            onUploaded={async (path) => {
+              setP({ ...p, image_url: path });
+              const { error } = await supabase.from("produits").update({ image_url: path }).eq("id", p.id);
+              if (error) return alert(error.message);
+              onChange();
+            }}
+          />
+        </div>
+
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-muted">Statut</label>
           <select

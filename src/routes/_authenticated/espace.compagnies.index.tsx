@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { StoredImage } from "@/components/image-upload-field";
 
 export const Route = createFileRoute("/_authenticated/espace/compagnies/")({
   component: CompagniesIndex,
@@ -136,13 +137,18 @@ function CompagniesIndex() {
                 <tr key={c.id} className="hover:bg-surface/50">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      {c.logo_url ? (
-                        <img src={c.logo_url} alt="" className="size-8 rounded object-contain" />
-                      ) : (
-                        <div className="flex size-8 items-center justify-center rounded bg-surface text-xs text-ink-muted">
-                          {c.nom.slice(0, 2).toUpperCase()}
-                        </div>
-                      )}
+                      <StoredImage
+                        bucket="compagnies-logos"
+                        value={c.logo_url}
+                        alt={c.nom}
+                        className="size-8 rounded object-contain"
+                        fallback={
+                          <div className="flex size-8 items-center justify-center rounded bg-surface text-xs text-ink-muted">
+                            {c.nom.slice(0, 2).toUpperCase()}
+                          </div>
+                        }
+                      />
+
                       <div>
                         <div className="font-medium text-ink">{c.nom}</div>
                         <div className="text-xs text-ink-muted">{c.site_web ?? "—"}</div>
