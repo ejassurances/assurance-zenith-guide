@@ -81,6 +81,15 @@ export const signerDevoirConseil = createServerFn({ method: "POST" })
     // Avancement du pipeline + historique : trigger SQL devoir_conseil_avance_dossier
     // (le client signataire n'a pas les droits RLS sur la table dossiers).
 
+    // Archivage du PDF signé (le client n'a pas de droit d'écriture sur le stockage).
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { archiverDevoirConseil } = await import("./devoir-conseil-archive.server");
+      await archiverDevoirConseil(supabaseAdmin, data.devoir_id, userId);
+    } catch {
+      // la signature reste valide même si l'archivage échoue
+    }
+
     return { ok: true };
   });
 
