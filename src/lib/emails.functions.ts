@@ -8,14 +8,19 @@ import { z } from "zod";
  * création de fiche + dossier depuis un email, et envoi depuis le CRM.
  */
 
-type StaffClient = { rpc: (fn: "current_user_role") => PromiseLike<{ data: unknown }> };
+type StaffClient = {
+  from: (table: "user_roles") => {
+    select: (cols: string) => { eq: (col: string, val: string) => PromiseLike<{ data: { role: string }[] | null }> };
+  };
+};
 
-async function exigerStaff(supabase: unknown) {
-  const { data } = await (supabase as StaffClient).rpc("current_user_role");
-  const role = typeof data === "string" ? data : null;
-  if (role !== "admin" && role !== "mandataire") throw new Error("Accès réservé au cabinet.");
-  return role;
+async function exigerStaff(supabase: unknown, userId: string) {
+  const { data } = await (supabase as StaffClient).from("user_roles").select("role").eq("user_id", userId);
+  const roles = (data ?? []).map((r) => r.role);
+  if (!roles.includes("admin") && !roles.includes("mandataire")) throw new Error("Accès réservé au cabinet.");
+  return roles.includes("admin") ? "admin" : "mandataire";
 }
+
 
 const liensSchema = z.object({
   client_id: z.string().uuid().optional().nullable(),
@@ -37,7 +42,7 @@ export const boiteReception = createServerFn({ method: "POST" })
       .parse(input ?? {}),
   )
   .handler(async ({ data, context }) => {
-    await exigerStaff(context.supabase);
+    await exigerStaff(context.supabase, context.userId);
     const { listerBoitePrincipale } = await import("@/lib/gmail.server");
     const { messages, nextPageToken } = await listerBoitePrincipale({
       recherche: data.recherche ?? null,
@@ -63,7 +68,7 @@ export const messageComplet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().min(5).max(80) }).parse(input))
   .handler(async ({ data, context }) => {
-    await exigerStaff(context.supabase);
+    await exigerStaff(context.supabase, context.userId);
     const { lireMessage } = await import("@/lib/gmail.server");
     const message = await lireMessage(data.id);
 
@@ -95,7 +100,7 @@ export const rattacherMessage = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await exigerStaff(context.supabase);
+    await exigerStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: row, error } = await supabaseAdmin
@@ -143,7 +148,7 @@ export const detacherMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ gmail_message_id: z.string().min(5).max(80) }).parse(input))
   .handler(async ({ data, context }) => {
-    await exigerStaff(context.supabase);
+    await exigerStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.from("crm_emails").delete().eq("gmail_message_id", data.gmail_message_id);
     return { ok: true };
@@ -170,7 +175,7 @@ export const creerFicheDepuisEmail = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await exigerStaff(context.supabase);
+    await exigerStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: existant } = await supabaseAdmin
@@ -265,7 +270,7 @@ export const rattacherCompagnie = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await exigerStaff(context.supabase);
+    await exigerStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("crm_emails").upsert(
       {
@@ -302,7 +307,7 @@ export const envoyerEmailCrm = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await exigerStaff(context.supabase);
+    await exigerStaff(context.supabase, context.userId);
     const { envoyerMessage } = await import("@/lib/gmail.server");
 
     const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.6">${data.message
