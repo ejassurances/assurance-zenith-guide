@@ -153,22 +153,8 @@ function DossierDetail() {
           <Row label="Économie estimée">
             {dossier.economie_estimee ? `${Number(dossier.economie_estimee).toLocaleString("fr-FR")} €` : "—"}
           </Row>
-          <Row label="Statut">
-            {canEdit ? (
-              <select
-                value={dossier.statut}
-                onChange={(e) => updateStatut(e.target.value)}
-                className="rounded-md border border-line bg-background px-2 py-1 text-sm"
-              >
-                <option value="nouveau">Nouveau</option>
-                <option value="en_cours">En cours</option>
-                <option value="signe">Signé</option>
-                <option value="perdu">Perdu</option>
-              </select>
-            ) : (
-              dossier.statut
-            )}
-          </Row>
+          <Row label="Étape">{etapeLabel(dossier.statut)}</Row>
+
         </Section>
       </div>
 
