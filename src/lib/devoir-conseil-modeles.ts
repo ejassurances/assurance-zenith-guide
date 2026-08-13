@@ -18,6 +18,46 @@ export type DevoirConseilContexte = {
   economie_estimee?: number | null;
 };
 
+/** Statut qualitatif d'une offre comparée (aucun score chiffré : appréciation motivée). */
+export type StatutOffre = "retenue" | "equivalente" | "ecartee";
+
+export const STATUT_OFFRE_LABEL: Record<StatutOffre, string> = {
+  retenue: "Offre retenue",
+  equivalente: "Équivalente — non retenue",
+  ecartee: "Écartée",
+};
+
+export type OffreComparee = {
+  compagnie: string;
+  produit: string;
+  cotisation_mensuelle?: number | null;
+  cout_total?: number | null;
+  statut: StatutOffre;
+  commentaire?: string | null;
+};
+
+/** Options de décision du client (l'option C impose un motif de refus). */
+export const OPTIONS_DECISION = [
+  {
+    code: "A",
+    titre: "Option A — J'accepte la recommandation",
+    texte:
+      "Je reconnais avoir reçu et compris le présent devoir de conseil et j'accepte la solution recommandée par le cabinet.",
+  },
+  {
+    code: "B",
+    titre: "Option B — Je retiens une autre offre présentée",
+    texte:
+      "Je choisis une autre offre parmi celles présentées, en connaissance des différences de garanties et de tarif exposées ci-dessus.",
+  },
+  {
+    code: "C",
+    titre: "Option C — Je refuse la recommandation",
+    texte:
+      "Je refuse la solution recommandée. Conformément à l'article L. 521-4 du Code des assurances, j'indique ci-dessous le motif de mon refus (mention obligatoire).",
+  },
+] as const;
+
 export type ModeleDevoirConseil = {
   branche: string;
   libelle: string;
