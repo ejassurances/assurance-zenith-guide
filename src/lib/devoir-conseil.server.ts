@@ -144,7 +144,10 @@ export async function envoyerDevoirConseil(
       couvertes: garanties.synthese.couvertes,
       optionnelles: garanties.synthese.optionnelles,
       non_couvertes: garanties.synthese.nonCouvertes,
+      /** Tableau poste par poste (Poste / Couverture / Plafond / Délai de carence). */
+      detail: garanties.synthese.detail,
     },
+
     modele: modele.branche,
     modele_libelle: modele.libelle,
     mentions_legales: modele.mentionsLegales,
@@ -295,6 +298,8 @@ export async function genererDevoirConseilAuto(
     compagnie,
     produit,
     garanties: garantiesTexte || null,
+    garanties_detail: garanties.synthese.detail,
+
     exigences: exigencesDepuisRecueil(d.type_assurance, recueil) ?? undefined,
     economie_estimee: typeof d.economie_estimee === "number" ? d.economie_estimee : null,
   });

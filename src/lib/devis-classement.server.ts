@@ -59,9 +59,13 @@ function consigne(ctx: { branche: string | null; recueil: unknown; devis: unknow
     "Devis saisis (JSON) :",
     JSON.stringify(ctx.devis).slice(0, 6000),
     "",
+    "Chaque devis porte un champ 'compagnie_tier_favori' : 1, 2 ou 3 si la compagnie est une compagnie",
+    "favorite du cabinet (1 = préférence la plus forte), null sinon.",
+    "",
     "Règles :",
     "- Classe TOUS les devis fournis, une seule fois chacun, rangs 1..N sans doublon.",
     "- Reprends exactement les identifiants 'id' fournis dans le champ dossier_devis_id.",
+    "- Si une compagnie favorite (tier 1, 2 ou 3) figure parmi les devis, elle doit être positionnée en priorité dans le classement, même si son tarif n'est pas le plus bas, tant que ses garanties répondent aux besoins exprimés. N'affiche pas comme mieux classé un devis moins cher qu'une offre favorite retenue en rang 1, sauf si l'offre favorite ne couvre pas les besoins prioritaires exprimés — dans ce cas, explique-le clairement dans la justification. Si plusieurs compagnies favorites figurent parmi les devis, elles sont classées normalement entre elles selon l'adéquation aux besoins, sans réordonnancement forcé selon leur tier interne.",
     "- N'invente aucune garantie ni aucun tarif absent des devis fournis.",
     "- Si une information manque, dis-le explicitement dans la justification.",
     "- Tu classes et tu justifies : tu ne décides pas de l'offre retenue.",
@@ -69,6 +73,7 @@ function consigne(ctx: { branche: string | null; recueil: unknown; devis: unknow
     'Réponds STRICTEMENT en JSON : {"classement":[{"dossier_devis_id":"...","rang":1,"justification":"..."}]}',
   ].join("\n");
 }
+
 
 /**
  * Classement IA des devis comparés d'un dossier. Le résultat est enregistré en
@@ -92,7 +97,7 @@ export async function classerDevisDossier(
   const { data: devisRows, error: devErr } = await supabase
     .from("dossier_devis")
     .select(
-      "id, cotisation_mensuelle, garanties_resume, compagnies:compagnie_id(nom), produits:produit_id(nom), produit_formules:formule_id(nom)",
+      "id, cotisation_mensuelle, garanties_resume, compagnies:compagnie_id(nom, tier_favori), produits:produit_id(nom), produit_formules:formule_id(nom)",
     )
     .eq("dossier_id", dossierId)
     .order("created_at", { ascending: true });
@@ -104,11 +109,13 @@ export async function classerDevisDossier(
   const payload = devis.map((d) => ({
     id: d.id as string,
     compagnie: d.compagnies?.nom ?? null,
+    compagnie_tier_favori: d.compagnies?.tier_favori ?? null,
     produit: d.produits?.nom ?? null,
     formule: d.produit_formules?.nom ?? null,
     cotisation_mensuelle: d.cotisation_mensuelle,
     garanties_resume: d.garanties_resume,
   }));
+
 
   const { modele, brut } = await appelerIa(
     consigne({ branche: dos.type_assurance ?? null, recueil: dos.recueil_besoins ?? null, devis: payload }),

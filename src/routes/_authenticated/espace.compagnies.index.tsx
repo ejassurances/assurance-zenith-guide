@@ -14,11 +14,15 @@ type Compagnie = {
   slug: string;
   logo_url: string | null;
   statut: "actif" | "prospect" | "inactif";
+  tier_favori: number | null;
   api_active: boolean;
   site_web: string | null;
   contact_nom: string | null;
   created_at: string;
 };
+
+export const TIER_LABEL: Record<number, string> = { 1: "Top 1", 2: "Top 2", 3: "Top 3" };
+
 
 function slugify(s: string) {
   return s
@@ -43,7 +47,7 @@ function CompagniesIndex() {
     setLoading(true);
     const { data, error } = await supabase
       .from("compagnies")
-      .select("id,nom,slug,logo_url,statut,api_active,site_web,contact_nom,created_at")
+      .select("id,nom,slug,logo_url,statut,tier_favori,api_active,site_web,contact_nom,created_at")
       .order("nom");
     if (error) setError(error.message);
     setRows((data as Compagnie[]) ?? []);
@@ -68,6 +72,17 @@ function CompagniesIndex() {
     setNom("");
     load();
   }
+
+  /** Compagnie favorite du cabinet : priorise l'offre dans le classement IA des devis. */
+  async function setTier(id: string, tier: number | null) {
+    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, tier_favori: tier } : r)));
+    const { error } = await supabase.from("compagnies").update({ tier_favori: tier }).eq("id", id);
+    if (error) {
+      setError(error.message);
+      load();
+    }
+  }
+
 
   return (
     <div className="space-y-8">
@@ -128,8 +143,10 @@ function CompagniesIndex() {
                 <th className="px-4 py-3 text-left">Compagnie</th>
                 <th className="px-4 py-3 text-left">Contact</th>
                 <th className="px-4 py-3 text-left">Statut</th>
+                <th className="px-4 py-3 text-left">Favorite</th>
                 <th className="px-4 py-3 text-left">API</th>
                 <th className="px-4 py-3" />
+
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -170,6 +187,28 @@ function CompagniesIndex() {
                       {c.statut}
                     </span>
                   </td>
+                  <td className="px-4 py-3">
+                    {isAdmin ? (
+                      <select
+                        value={c.tier_favori ?? ""}
+                        onChange={(e) => setTier(c.id, e.target.value ? Number(e.target.value) : null)}
+                        className="rounded-md border border-line bg-background px-2 py-1 text-xs"
+                        title="Compagnie favorite du cabinet — priorisée dans le classement IA des devis"
+                      >
+                        <option value="">Aucun</option>
+                        <option value="1">Top 1</option>
+                        <option value="2">Top 2</option>
+                        <option value="3">Top 3</option>
+                      </select>
+                    ) : c.tier_favori ? (
+                      <span className="rounded-full bg-[color:var(--crm-gold)]/15 px-2 py-0.5 text-xs font-medium text-ink">
+                        {TIER_LABEL[c.tier_favori]}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-ink-muted">—</span>
+                    )}
+                  </td>
+
                   <td className="px-4 py-3 text-xs">
                     {c.api_active ? (
                       <span className="rounded-full bg-blue-50 px-2 py-0.5 text-blue-800">Connectée</span>

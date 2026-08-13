@@ -329,7 +329,7 @@ export function ProduitGarantiesTab({
                 </span>
               </div>
 
-              <div className="mt-2 grid gap-2 md:grid-cols-4">
+              <div className="mt-2 grid gap-2 md:grid-cols-5">
                 <select
                   value={v.couverture}
                   disabled={!isAdmin && false}
@@ -355,12 +355,19 @@ export function ProduitGarantiesTab({
                   className="rounded-md border border-line bg-background px-2 py-1.5 text-sm"
                 />
                 <input
+                  placeholder="Délai de carence"
+                  value={v.delai_carence ?? ""}
+                  onChange={(e) => setVal(g.code, { delai_carence: e.target.value || null })}
+                  className="rounded-md border border-line bg-background px-2 py-1.5 text-sm"
+                />
+                <input
                   placeholder="Conditions / limites"
                   value={v.conditions ?? ""}
                   onChange={(e) => setVal(g.code, { conditions: e.target.value || null })}
                   className="rounded-md border border-line bg-background px-2 py-1.5 text-sm"
                 />
               </div>
+
 
               {v.extrait && (
                 <p className="mt-2 border-l-2 border-line pl-2 text-xs italic text-ink-muted">« {v.extrait} »</p>
@@ -372,8 +379,10 @@ export function ProduitGarantiesTab({
                     Proposé : <strong>{COUVERTURE_LABEL[prop.couverture]}</strong>
                     {prop.plafond ? ` — plafond ${prop.plafond}` : ""}
                     {prop.franchise ? ` — franchise ${prop.franchise}` : ""}
+                    {prop.delai_carence ? ` — carence ${prop.delai_carence}` : ""}
                     {typeof prop.confiance === "number" ? ` (confiance ${Math.round(prop.confiance * 100)} %)` : ""}
                   </span>
+
                   {prop.extrait && <span className="text-xs italic text-amber-900">« {prop.extrait} »</span>}
                   <button
                     type="button"

@@ -15,6 +15,7 @@ import {
   POSTES_SOINS,
   REGIMES_OBLIGATOIRES,
 } from "@/lib/recueil-besoins-schemas";
+import type { LigneGarantie } from "@/lib/garanties-grille";
 
 
 
@@ -24,10 +25,13 @@ export type DevoirConseilContexte = {
   compagnie?: string | null;
   produit?: string | null;
   garanties?: string | null;
+  /** Grille validée du produit retenu (poste par poste) : sert aux mises en garde chiffrées. */
+  garanties_detail?: LigneGarantie[] | null;
   exigences?: string | null;
   cotisation_mensuelle?: number | null;
   economie_estimee?: number | null;
 };
+
 
 /** Statut qualitatif d'une offre comparée (aucun score chiffré : appréciation motivée). */
 export type StatutOffre = "retenue" | "equivalente" | "ecartee";
@@ -259,18 +263,68 @@ export function modeleDevoirConseil(branche: string): ModeleDevoirConseil {
   return MODELES.find((m) => m.branche === branche) ?? MODELE_GENERIQUE;
 }
 
+/**
+ * Mises en garde CHIFFRÉES issues de la grille validée du produit retenu :
+ * délais de carence réels poste par poste et plafonds de prise en charge.
+ * Ce bloc complète — sans remplacer — le texte réglementaire de la branche.
+ */
+export function misesEnGardeGrille(detail?: LigneGarantie[] | null): string {
+  if (!detail || detail.length === 0) return "";
+  const couvertes = detail.filter((l) => l.couverture === "oui" || l.couverture === "option");
+
+  const carences = couvertes
+    .filter((l) => l.delai_carence && l.delai_carence.trim())
+    .map((l) => `${l.libelle} : ${l.delai_carence!.trim()}`);
+  const plafonds = couvertes
+    .filter((l) => l.plafond && l.plafond.trim())
+    .map((l) => `${l.libelle} : ${l.plafond!.trim()}`);
+  const franchises = couvertes
+    .filter((l) => l.franchise && l.franchise.trim())
+    .map((l) => `${l.libelle} : ${l.franchise!.trim()}`);
+  const options = detail.filter((l) => l.couverture === "option").map((l) => l.libelle);
+  const indeterminees = detail.filter((l) => l.couverture === "inconnu").map((l) => l.libelle);
+
+  const blocs: string[] = [];
+  if (carences.length > 0) {
+    blocs.push(
+      `Délais de carence applicables au contrat proposé (aucune prestation n'est due avant leur expiration) — ${carences.join(" ; ")}.`,
+    );
+  } else {
+    blocs.push("Aucun délai de carence n'est mentionné pour les garanties retenues du contrat proposé.");
+  }
+  if (plafonds.length > 0) {
+    blocs.push(`Maximum de prise en charge par poste — ${plafonds.join(" ; ")}.`);
+  }
+  if (franchises.length > 0) {
+    blocs.push(`Franchises restant à votre charge — ${franchises.join(" ; ")}.`);
+  }
+  if (options.length > 0) {
+    blocs.push(
+      `Garanties disponibles uniquement EN OPTION (non acquises sans souscription expresse et cotisation supplémentaire) : ${options.join(" ; ")}.`,
+    );
+  }
+  if (indeterminees.length > 0) {
+    blocs.push(
+      `Postes non déterminés à ce stade dans la documentation du produit, à vérifier aux conditions générales avant souscription : ${indeterminees.join(" ; ")}.`,
+    );
+  }
+  return blocs.join("\n");
+}
+
 /** Zones dynamiques pré-rédigées à partir du modèle de la typologie. */
 export function prefillDevoirConseil(c: DevoirConseilContexte) {
   const m = modeleDevoirConseil(c.branche);
+  const chiffrees = misesEnGardeGrille(c.garanties_detail);
   return {
     modele: m.branche,
     mentions_legales: m.mentionsLegales,
     recommandation: m.recommandation(c),
     motifs: m.motifs(c),
-    mises_en_garde: m.misesEnGarde(c),
+    mises_en_garde: chiffrees ? `${chiffrees}\n\n${m.misesEnGarde(c)}` : m.misesEnGarde(c),
     exigences_client: c.exigences?.trim() || m.exigences(c),
   };
 }
+
 
 /**
  * Exigences et besoins générés automatiquement à partir du recueil des besoins.
