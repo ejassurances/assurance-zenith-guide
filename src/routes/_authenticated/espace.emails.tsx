@@ -16,6 +16,8 @@ import {
   archiverMessageCrm,
   supprimerMessageCrm,
   etiqueterMessageCrm,
+  scannerBoiteCrm,
+
 } from "@/lib/emails.functions";
 import { importerFactureDepuisEmail } from "@/lib/factures-achat.functions";
 import { toast } from "sonner";
@@ -100,6 +102,26 @@ function EmailsPage() {
   const supprimerFn = useServerFn(supprimerMessageCrm);
   const etiqueterFn = useServerFn(etiqueterMessageCrm);
   const importerFacture = useServerFn(importerFactureDepuisEmail);
+  const scanner = useServerFn(scannerBoiteCrm);
+  const [scanBusy, setScanBusy] = useState(false);
+
+  const lancerScan = async () => {
+    setScanBusy(true);
+    setError(null);
+    try {
+      const res = await scanner({ data: {} });
+      toast.success(
+        `${res.analyses} mails analysés — ${res.rattachesClient} rattachés à un client, ` +
+          `${res.rattachesCompagnie} à une compagnie (${res.deja} déjà liés).`,
+      );
+      await loadBoite();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Scan de la boîte impossible");
+    } finally {
+      setScanBusy(false);
+    }
+  };
+
 
   const [messages, setMessages] = useState<Resume[]>([]);
   const [liens, setLiens] = useState<Lien[]>([]);
@@ -273,14 +295,18 @@ function EmailsPage() {
             Boîte de réception principale du cabinet (onglet « Principal » de Gmail).
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button onClick={() => loadBoite()} disabled={loading} className={BTN_SECONDAIRE}>
             {loading ? "Synchronisation…" : "Synchroniser"}
+          </button>
+          <button onClick={lancerScan} disabled={scanBusy} className={BTN_SECONDAIRE}>
+            {scanBusy ? "Scan en cours…" : "Scanner les mails (lus inclus)"}
           </button>
           <button onClick={() => setCompose({ to: "", sujet: "", threadId: null })} className={BTN_PRIMAIRE}>
             Nouvel email
           </button>
         </div>
+
       </div>
 
       <form
