@@ -78,8 +78,8 @@ export async function sendTemplateEmail(
       sender: { name: SITE_NAME, email: FROM_EMAIL },
       to: [{ email: recipient }],
       subject,
-      htmlContent: html,
-      textContent: text,
+      htmlContent: withHtmlSignature(html),
+      textContent: withTextSignature(text),
       ...(options.brevoParams ? { params: options.brevoParams } : {}),
       ...(options.replyTo ? { replyTo: { email: options.replyTo } } : {}),
       tags: [templateName],
@@ -88,9 +88,53 @@ export async function sendTemplateEmail(
 
   if (!response.ok) {
     const body = await response.text()
-    console.error(`Brevo send failed [${response.status}] (${templateName}): ${body}`)
+    console.error(
+      `[email] ECHEC template=${templateName} destinataire=${recipient} status=${response.status} reponse=${body}`
+    )
     throw new Error(`Brevo send failed [${response.status}]: ${body}`)
   }
 
+  let messageId: string | null = null
+  try {
+    const payload = (await response.json()) as { messageId?: string }
+    messageId = payload.messageId ?? null
+  } catch {
+    messageId = null
+  }
+  console.log(
+    `[email] OK template=${templateName} destinataire=${recipient} messageId=${messageId ?? 'n/a'}`
+  )
+
   return { sent: true }
 }
+
+/**
+ * Signature réglementaire obligatoire, ajoutée automatiquement en pied de
+ * TOUS les e-mails sortants du cabinet (mentions ORIAS / ACPR).
+ */
+const SIGNATURE_LINES = [
+  `${SITE_NAME} — Courtier en assurances`,
+  `71 Rue du Docteur Roux, 95600 Eaubonne — 01 89 31 40 29 — ${FROM_EMAIL}`,
+  'SIRET 500 256 904 — ORIAS n° 25005811 (registre consultable sur www.orias.fr)',
+  "Activité soumise au contrôle de l'ACPR — 4 Place de Budapest, CS 92459, 75436 Paris Cedex 09 (acpr.banque-france.fr)",
+  'Ce message et ses pièces jointes sont confidentiels et destinés au seul destinataire.',
+]
+
+function signatureHtml(): string {
+  const lignes = SIGNATURE_LINES.map(
+    (l, i) =>
+      `<p style="margin:0 0 4px;font-size:11px;line-height:1.5;color:#6b7280;${i === 0 ? 'font-weight:600;color:#374151;' : ''}">${l}</p>`
+  ).join('')
+  return `<div style="margin-top:28px;padding-top:14px;border-top:1px solid #e5e7eb;font-family:Arial,sans-serif;">${lignes}</div>`
+}
+
+function withHtmlSignature(html: string): string {
+  const signature = signatureHtml()
+  if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, `${signature}</body>`)
+  return `${html}${signature}`
+}
+
+function withTextSignature(text: string): string {
+  return `${text}\n\n---------------------------------------------\n${SIGNATURE_LINES.join('\n')}\n`
+}
+

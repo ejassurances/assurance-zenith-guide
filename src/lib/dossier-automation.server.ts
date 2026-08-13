@@ -211,6 +211,62 @@ export async function lancerLcbAutomatique(
 }
 
 /**
+ * Envoie le DER au client et marque l'envoi correspondant comme « envoyé ».
+ * Ne lève jamais : retourne le motif d'échec pour journalisation.
+ */
+export async function envoyerDerAuClient(
+  admin: Admin,
+  params: { client_id: string; email: string; clientName: string },
+): Promise<{ sent: boolean; error?: string }> {
+  try {
+    const { data: modele } = await admin.from("der_modele").select("id").eq("actif", true).maybeSingle();
+    if (!modele) return { sent: false, error: "Aucun modèle DER actif" };
+
+    const { sendTemplateEmail } = await import("@/lib/email-templates/send-email");
+    const res = await sendTemplateEmail("der-envoi", params.email, {
+      templateData: {
+        clientName: params.clientName,
+        cabinetName: "EJ Partners Assurances",
+        link: appUrl("/espace/signer-der"),
+      },
+    });
+    if (!res.sent) return { sent: false, error: "Adresse en liste de suppression" };
+
+    const { data: existing } = await admin
+      .from("client_der_envois")
+      .select("id, statut")
+      .eq("client_id", params.client_id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!existing || existing.statut === "signe") {
+      await admin.from("client_der_envois").insert({
+        client_id: params.client_id,
+        der_modele_id: modele.id,
+        email_destinataire: params.email,
+        statut: "envoye",
+        envoye_le: new Date().toISOString(),
+      });
+    } else {
+      await admin
+        .from("client_der_envois")
+        .update({
+          statut: "envoye",
+          envoye_le: new Date().toISOString(),
+          email_destinataire: params.email,
+        })
+        .eq("id", existing.id);
+    }
+    return { sent: true };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Erreur inconnue";
+    console.error(`[email] DER non envoyé client=${params.client_id}: ${message}`);
+    return { sent: false, error: message };
+  }
+}
+
+/**
  * Crée l'espace client avec un mot de passe provisoire et envoie l'e-mail
  * d'accès. Le changement de mot de passe est ensuite obligatoire.
  */
@@ -222,7 +278,13 @@ export async function creerEspaceClient(
 
   if (existing) {
     await admin.from("clients").update({ user_id: existing.id }).eq("id", params.client_id).is("user_id", null);
-    return { created: false, email_sent: false, user_id: existing.id };
+    return {
+      created: false,
+      email_sent: false,
+      user_id: existing.id,
+      email_error: "Un compte existe déjà pour cette adresse : aucun accès provisoire renvoyé.",
+      der_sent: false,
+    };
   }
 
   const password = genererMotDePasseProvisoire();
@@ -232,17 +294,27 @@ export async function creerEspaceClient(
     email_confirm: true,
     user_metadata: { full_name: `${params.prenom ?? ""} ${params.nom}`.trim() },
   });
-  if (error || !created.user) return { created: false, email_sent: false, user_id: null };
+  if (error || !created.user) {
+    return {
+      created: false,
+      email_sent: false,
+      user_id: null,
+      email_error: error?.message ?? "Création du compte impossible",
+      der_sent: false,
+    };
+  }
 
   await admin.from("profiles").update({ must_change_password: true }).eq("id", created.user.id);
   await admin.from("clients").update({ user_id: created.user.id }).eq("id", params.client_id).is("user_id", null);
 
+  const clientName = `${params.prenom ?? ""} ${params.nom}`.trim();
   let emailSent = false;
+  let emailError: string | undefined;
   try {
     const { sendTemplateEmail } = await import("@/lib/email-templates/send-email");
     const res = await sendTemplateEmail("compte-client-cree", params.email, {
       templateData: {
-        clientName: `${params.prenom ?? ""} ${params.nom}`.trim(),
+        clientName,
         email: params.email,
         motDePasseProvisoire: password,
         link: appUrl("/auth"),
@@ -250,11 +322,28 @@ export async function creerEspaceClient(
       idempotencyKey: `compte-client-${created.user.id}`,
     });
     emailSent = res.sent;
-  } catch {
+    if (!res.sent) emailError = "Adresse en liste de suppression";
+  } catch (e) {
     emailSent = false;
+    emailError = e instanceof Error ? e.message : "Erreur d'envoi inconnue";
+    console.error(`[email] accès espace client non envoyé (${params.email}): ${emailError}`);
   }
 
-  return { created: true, email_sent: emailSent, user_id: created.user.id };
+  // Envoi réglementaire du DER dès la création de l'espace client.
+  const der = await envoyerDerAuClient(admin, {
+    client_id: params.client_id,
+    email: params.email,
+    clientName,
+  });
+
+  return {
+    created: true,
+    email_sent: emailSent,
+    email_error: emailError,
+    der_sent: der.sent,
+    der_error: der.error,
+    user_id: created.user.id,
+  };
 }
 
 /**
@@ -277,7 +366,7 @@ export async function reinitialiserAccesEspaceClient(
     password,
     email_confirm: true,
   });
-  if (error) return { email_sent: false };
+  if (error) return { email_sent: false, email_error: error.message };
 
   await admin.from("profiles").update({ must_change_password: true }).eq("id", params.user_id);
   await admin.from("clients").update({ user_id: params.user_id }).eq("id", params.client_id).is("user_id", null);
@@ -293,8 +382,11 @@ export async function reinitialiserAccesEspaceClient(
       },
       idempotencyKey: `acces-client-${params.user_id}-${Date.now()}`,
     });
-    return { email_sent: res.sent };
-  } catch {
-    return { email_sent: false };
+    return { email_sent: res.sent, email_error: res.sent ? undefined : "Adresse en liste de suppression" };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Erreur d'envoi inconnue";
+    console.error(`[email] réinitialisation accès non envoyée (${params.email}): ${message}`);
+    return { email_sent: false, email_error: message };
   }
 }
+

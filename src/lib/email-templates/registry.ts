@@ -190,7 +190,57 @@ function MotDePasseReinitialisationEmail(props: { prenom?: string; cabinetName?:
   return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
 }
 
+/**
+ * E-mail court de renvoi du lien de connexion : aucun rappel du DER ni
+ * presentation du cabinet, uniquement l'acces a l'espace client.
+ */
+function LienConnexionEmail(props: {
+  clientName?: string;
+  email?: string;
+  cabinetName?: string;
+  link?: string;
+  motDePasseProvisoire?: string;
+}) {
+  const nom = props.cabinetName || "EJ Partners Assurances";
+  const bloc = props.motDePasseProvisoire
+    ? "<p><strong>Identifiant :</strong> " +
+      (props.email || "") +
+      "<br/><strong>Nouveau mot de passe provisoire :</strong> " +
+      props.motDePasseProvisoire +
+      "</p>"
+    : "<p><strong>Identifiant :</strong> " + (props.email || "") + "</p>";
+  const html =
+    "<p>Bonjour " +
+    (props.clientName || "") +
+    ",</p>" +
+    "<p>Voici le lien de connexion a votre espace client " +
+    nom +
+    " :</p>" +
+    bloc +
+    "<p><a href='" +
+    (props.link || "") +
+    "'>Acceder a mon espace client</a></p>" +
+    "<p>Cordialement,<br/>L'equipe " +
+    nom +
+    "</p>";
+  const style = { fontFamily: "Arial, sans-serif", color: "#1a1a1a", fontSize: "15px", lineHeight: "1.6" };
+  return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
+}
+
 export const TEMPLATES: Record<string, TemplateEntry> = {
+  "lien-connexion": {
+    component: LienConnexionEmail,
+    subject: (data: Record<string, any>) =>
+      (data && data.cabinetName ? data.cabinetName : "EJ Partners Assurances") +
+      " - Votre lien de connexion a votre espace client",
+    displayName: "Espace client - Lien de connexion (renvoi)",
+    previewData: {
+      clientName: "Jean Dupont",
+      email: "jean.dupont@example.com",
+      cabinetName: "EJ Partners Assurances",
+      link: "https://ejpartners.fr/auth",
+    },
+  },
   "mot-de-passe-reinitialisation": {
     component: MotDePasseReinitialisationEmail,
     subject: (data: Record<string, any>) =>

@@ -101,7 +101,12 @@ export const creerAccesEspaceClient = createServerFn({ method: "POST" })
         prenom: client.prenom,
         origin: data.origin,
       });
-      return { ok: true as const, created: false, email_sent: res.email_sent };
+      return {
+        ok: true as const,
+        created: false,
+        email_sent: res.email_sent,
+        email_error: res.email_error ?? null,
+      };
     }
 
     const res = await creerEspaceClient(supabaseAdmin, {
@@ -111,8 +116,63 @@ export const creerAccesEspaceClient = createServerFn({ method: "POST" })
       prenom: client.prenom,
       origin: data.origin,
     });
-    if (!res.user_id) return { ok: false as const, error: "Création du compte impossible." };
-    return { ok: true as const, created: res.created, email_sent: res.email_sent };
+    if (!res.user_id) return { ok: false as const, error: res.email_error ?? "Création du compte impossible." };
+    return {
+      ok: true as const,
+      created: res.created,
+      email_sent: res.email_sent,
+      email_error: res.email_error ?? null,
+    };
+  });
+
+/**
+ * Renvoie uniquement le lien de connexion à un client qui a déjà reçu
+ * l'e-mail complet (DER + présentation). Aucun mot de passe n'est modifié.
+ */
+export const renvoyerLienConnexion = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ client_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: roles } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+    const allowed = (roles ?? []).some((r) => r.role === "admin" || r.role === "mandataire");
+    if (!allowed) return { ok: false as const, error: "Action réservée aux administrateurs et mandataires." };
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: client } = await supabaseAdmin
+      .from("clients")
+      .select("id, nom, prenom, email, user_id")
+      .eq("id", data.client_id)
+      .maybeSingle();
+
+    if (!client) return { ok: false as const, error: "Fiche client introuvable." };
+    if (!client.email) return { ok: false as const, error: "Cette fiche n'a pas d'adresse e-mail." };
+    if (!client.user_id) {
+      return {
+        ok: false as const,
+        error: "Aucun espace client existant : utilisez « Créer l'espace client ».",
+      };
+    }
+
+    const { appUrl } = await import("@/lib/app-url");
+    const { sendTemplateEmail } = await import("@/lib/email-templates/send-email");
+    try {
+      const res = await sendTemplateEmail("lien-connexion", client.email.toLowerCase(), {
+        templateData: {
+          clientName: `${client.prenom ?? ""} ${client.nom}`.trim(),
+          email: client.email.toLowerCase(),
+          cabinetName: "EJ Partners Assurances",
+          link: appUrl("/auth"),
+        },
+      });
+      if (!res.sent) return { ok: false as const, error: "Adresse en liste de suppression : envoi refusé." };
+      return { ok: true as const };
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Erreur d'envoi inconnue";
+      return { ok: false as const, error: `Envoi impossible : ${message}` };
+    }
   });
 
 /** Lève l'obligation de changement de mot de passe après un changement réussi. */
