@@ -97,6 +97,8 @@ const MODELES: ModeleDevoirConseil[] = [
       "La substitution du contrat groupe bancaire par un contrat individuel s'effectue en application des articles L. 313-30 et L. 313-31 du Code de la consommation (libre choix de l'assurance emprunteur) et de la loi n° 2022-270 du 28 février 2022 (loi Lemoine).",
       "Les garanties du contrat proposé sont au moins équivalentes à celles exigées par l'établissement prêteur : la banque ne peut refuser la délégation d'assurance dès lors que l'équivalence de niveau de garanties est respectée.",
       "Le questionnaire de santé est supprimé pour les prêts dont la part assurée est inférieure ou égale à 200 000 € par assuré et dont l'échéance de remboursement intervient avant le 60e anniversaire de l'emprunteur.",
+      "Trois offres au moins ont été comparées à garanties au moins équivalentes. Le classement des offres est exprimé par une appréciation qualitative motivée (offre retenue / équivalente non retenue / écartée) et non par une note chiffrée.",
+      "Les coûts d'assurance indiqués sont calculés soit sur le capital initial emprunté (tarification fixe, généralement celle du contrat groupe bancaire), soit sur le capital restant dû (tarification dégressive) : la base de calcul retenue est précisée pour chaque offre présentée.",
     ],
     recommandation: (c) =>
       `Au regard de vos exigences et besoins, nous vous recommandons de souscrire ${offre(c)} en substitution de votre contrat d'assurance emprunteur actuel.` +
