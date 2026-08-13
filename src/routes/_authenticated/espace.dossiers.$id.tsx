@@ -10,6 +10,7 @@ import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
 import { ProduitDocumentsLink } from "@/components/produit-documents-link";
 import { DossierPipeline } from "@/components/dossier-pipeline";
 import { DevoirConseilPanel } from "@/components/devoir-conseil-panel";
+import { DossierDevisPanel } from "@/components/dossier-devis-panel";
 import { etapeLabel } from "@/lib/pipeline-dossier";
 
 
@@ -129,6 +130,14 @@ function DossierDetail() {
 
       <RecueilPanel dossier={dossier} />
       {canEdit && <LettreMissionPanel dossierId={id} clientEmail={dossier.client_email} />}
+      {canEdit && (
+        <DossierDevisPanel
+          dossierId={id}
+          branche={labelForBranche(dossier.type_assurance)}
+          userId={user!.id}
+          onChanged={load}
+        />
+      )}
       {canEdit && (
         <DevoirConseilPanel
           dossierId={id}
