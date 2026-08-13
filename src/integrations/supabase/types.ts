@@ -94,11 +94,114 @@ export type Database = {
         }
         Relationships: []
       }
+      bordereau_lignes: {
+        Row: {
+          assiette: number | null
+          bordereau_id: string
+          brut: Json | null
+          client_id: string | null
+          client_nom_detecte: string | null
+          commission_id: string | null
+          confiance: number | null
+          contrat_id: string | null
+          created_at: string
+          dossier_id: string | null
+          id: string
+          montant: number
+          numero_contrat_detecte: string | null
+          periode_detectee: string | null
+          produit_detecte: string | null
+          statut: string
+          taux: number | null
+          updated_at: string
+        }
+        Insert: {
+          assiette?: number | null
+          bordereau_id: string
+          brut?: Json | null
+          client_id?: string | null
+          client_nom_detecte?: string | null
+          commission_id?: string | null
+          confiance?: number | null
+          contrat_id?: string | null
+          created_at?: string
+          dossier_id?: string | null
+          id?: string
+          montant?: number
+          numero_contrat_detecte?: string | null
+          periode_detectee?: string | null
+          produit_detecte?: string | null
+          statut?: string
+          taux?: number | null
+          updated_at?: string
+        }
+        Update: {
+          assiette?: number | null
+          bordereau_id?: string
+          brut?: Json | null
+          client_id?: string | null
+          client_nom_detecte?: string | null
+          commission_id?: string | null
+          confiance?: number | null
+          contrat_id?: string | null
+          created_at?: string
+          dossier_id?: string | null
+          id?: string
+          montant?: number
+          numero_contrat_detecte?: string | null
+          periode_detectee?: string | null
+          produit_detecte?: string | null
+          statut?: string
+          taux?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bordereau_lignes_bordereau_id_fkey"
+            columns: ["bordereau_id"]
+            isOneToOne: false
+            referencedRelation: "bordereaux_commissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bordereau_lignes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bordereau_lignes_commission_id_fkey"
+            columns: ["commission_id"]
+            isOneToOne: false
+            referencedRelation: "commissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bordereau_lignes_contrat_id_fkey"
+            columns: ["contrat_id"]
+            isOneToOne: false
+            referencedRelation: "contrats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bordereau_lignes_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bordereaux_commissions: {
         Row: {
+          analyse_avertissement: string | null
+          analyse_le: string | null
           assureur: string
           created_at: string
           created_by: string | null
+          fichier_nom: string | null
+          fichier_path: string | null
           fichier_source: string | null
           id: string
           montant_total: number
@@ -109,9 +212,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          analyse_avertissement?: string | null
+          analyse_le?: string | null
           assureur: string
           created_at?: string
           created_by?: string | null
+          fichier_nom?: string | null
+          fichier_path?: string | null
           fichier_source?: string | null
           id?: string
           montant_total?: number
@@ -122,9 +229,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          analyse_avertissement?: string | null
+          analyse_le?: string | null
           assureur?: string
           created_at?: string
           created_by?: string | null
+          fichier_nom?: string | null
+          fichier_path?: string | null
           fichier_source?: string | null
           id?: string
           montant_total?: number
