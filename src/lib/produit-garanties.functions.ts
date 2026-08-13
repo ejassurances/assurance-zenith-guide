@@ -6,6 +6,7 @@ const valeurSchema = z.object({
   couverture: z.enum(["oui", "non", "option", "inconnu"]),
   plafond: z.string().max(300).nullable().optional(),
   franchise: z.string().max(300).nullable().optional(),
+  delai_carence: z.string().max(300).nullable().optional(),
   conditions: z.string().max(800).nullable().optional(),
   extrait: z.string().max(1200).nullable().optional(),
   confiance: z.number().min(0).max(1).nullable().optional(),
