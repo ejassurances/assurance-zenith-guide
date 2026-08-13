@@ -309,3 +309,18 @@ export function synthetiserGaranties(grille: GrilleGaranties, valeurs: ValeursGr
   return { couvertes, optionnelles, nonCouvertes, indeterminees, detail };
 }
 
+
+/** Sections de la trame standardisée, dans l'ordre (une seule si la grille n'est pas sectionnée). */
+export function groupesGrille(grille: GrilleGaranties): { groupe: string | null; garanties: GarantieDef[] }[] {
+  const ordre: (string | null)[] = [];
+  const parGroupe = new Map<string | null, GarantieDef[]>();
+  for (const g of grille.garanties) {
+    const cle = g.groupe ?? null;
+    if (!parGroupe.has(cle)) {
+      parGroupe.set(cle, []);
+      ordre.push(cle);
+    }
+    parGroupe.get(cle)!.push(g);
+  }
+  return ordre.map((groupe) => ({ groupe, garanties: parGroupe.get(groupe)! }));
+}
