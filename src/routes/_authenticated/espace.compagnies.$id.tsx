@@ -810,7 +810,14 @@ function ProduitEditor({
         </div>
       )}
 
-      <DocumentsBlock produitId={p.id} docs={docs} isAdmin={isAdmin} onChange={loadDocs} />
+      <DocumentsBlock
+        produitId={p.id}
+        familleCode={famille?.code ?? null}
+        docs={docs}
+        isAdmin={isAdmin}
+        onChange={loadDocs}
+      />
+
 
       <ProduitGarantiesTab
         produitId={p.id}
