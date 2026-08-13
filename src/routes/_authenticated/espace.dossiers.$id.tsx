@@ -190,12 +190,24 @@ function DossierDetail() {
         </div>
       )}
       {canEdit && (
+        <DevoirConseilRefusAnalysePanel
+          dossierId={id}
+          userId={user!.id}
+          onContreProposition={(suggestion, motif) => {
+            setContreProposition({ suggestion, motif, key: Date.now() });
+            document.getElementById("section-devoir-conseil")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+          onChanged={load}
+        />
+      )}
+      {canEdit && (
         <div id="section-devoir-conseil">
           <DevoirConseilPanel
             dossierId={id}
             clientEmail={dossier.client_email}
             branche={dossier.type_assurance}
             onChanged={load}
+            contreProposition={contreProposition}
           />
         </div>
       )}
