@@ -800,7 +800,7 @@ export type Database = {
           contrat_id: string | null
           created_at: string
           date_versement: string | null
-          dossier_id: string
+          dossier_id: string | null
           id: string
           montant: number
           notes: string | null
@@ -813,7 +813,7 @@ export type Database = {
           contrat_id?: string | null
           created_at?: string
           date_versement?: string | null
-          dossier_id: string
+          dossier_id?: string | null
           id?: string
           montant: number
           notes?: string | null
@@ -826,7 +826,7 @@ export type Database = {
           contrat_id?: string | null
           created_at?: string
           date_versement?: string | null
-          dossier_id?: string
+          dossier_id?: string | null
           id?: string
           montant?: number
           notes?: string | null
