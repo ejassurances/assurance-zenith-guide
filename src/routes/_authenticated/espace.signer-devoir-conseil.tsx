@@ -163,7 +163,52 @@ function SignerDevoirConseil() {
             </div>
           </div>
         )}
-        {conseil.garanties && <Bloc titre="Garanties retenues">{conseil.garanties}</Bloc>}
+        {Array.isArray(c.garanties_produit?.detail) && c.garanties_produit.detail.length > 0 ? (
+          <div>
+            <p className="text-xs uppercase tracking-wide text-ink-muted">Garanties du contrat proposé</p>
+            <div className="mt-2 overflow-x-auto">
+              <table className="w-full min-w-[560px] border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-line text-left text-ink-muted">
+                    <th className="py-1 pr-3">Poste</th>
+                    <th className="py-1 pr-3">Couverture</th>
+                    <th className="py-1 pr-3">Maximum de prise en charge</th>
+                    <th className="py-1 pr-3">Délai de carence</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {c.garanties_produit.detail.map((l: any) => (
+                    <tr key={l.code} className="border-b border-line align-top">
+                      <td className="py-1 pr-3">{l.libelle}</td>
+                      <td
+                        className={
+                          "py-1 pr-3 font-medium " +
+                          (l.couverture === "oui"
+                            ? "text-emerald-700"
+                            : l.couverture === "non"
+                              ? "text-rose-700"
+                              : "text-ink-soft")
+                        }
+                      >
+                        {COUVERTURE_LABEL[l.couverture as Couverture] ?? l.couverture}
+                      </td>
+                      <td className="py-1 pr-3">{l.plafond ?? "—"}</td>
+                      <td className="py-1 pr-3">{l.delai_carence ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 text-xs text-ink-muted">
+              Relevé établi d'après les conditions générales et l'IPID du produit, vérifiés et validés par le
+              cabinet.
+            </p>
+          </div>
+        ) : (
+          conseil.garanties && <Bloc titre="Garanties retenues">{conseil.garanties}</Bloc>
+        )}
+
         {(conseil.assiette || conseil.capital_assure) && (
           <Bloc titre="Base de calcul du coût">
             {conseil.assiette === "capital_initial"
