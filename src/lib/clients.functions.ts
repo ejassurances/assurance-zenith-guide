@@ -1,0 +1,51 @@
+import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { z } from "zod";
+
+const creerClientSchema = z.object({
+  civilite: z.string().trim().max(20).optional().nullable(),
+  prenom: z.string().trim().max(120).optional().nullable(),
+  nom: z.string().trim().min(1).max(120),
+  email: z.string().trim().email().max(255).optional().nullable().or(z.literal("")),
+  mobile: z.string().trim().max(30).optional().nullable(),
+  ville: z.string().trim().max(120).optional().nullable(),
+  origine: z.enum(["internet", "assurlead", "telephone", "apporteur", "reseau", "autre"]),
+  marque: z.string().trim().max(60),
+});
+
+/**
+ * Création manuelle d'une fiche client depuis le CRM.
+ * Déclenche systématiquement le contrôle LCB-FT / OpenSanctions
+ * (la date de naissance n'est pas connue à ce stade : facultative).
+ */
+export const creerClientManuel = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => creerClientSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: cree, error } = await context.supabase
+      .from("clients")
+      .insert({
+        civilite: data.civilite || null,
+        prenom: data.prenom || null,
+        nom: data.nom,
+        email: data.email || null,
+        mobile: data.mobile || null,
+        ville: data.ville || null,
+        origine: data.origine,
+        marque: data.marque,
+        created_by: context.userId,
+      })
+      .select("id")
+      .single();
+    if (error || !cree) throw new Error(error?.message ?? "Création de la fiche impossible");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { lancerLcbAutomatique } = await import("@/lib/dossier-automation.server");
+    await lancerLcbAutomatique(supabaseAdmin, {
+      client_id: cree.id,
+      nom: data.nom,
+      prenom: data.prenom ?? null,
+    });
+
+    return { id: cree.id };
+  });
