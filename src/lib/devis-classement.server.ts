@@ -215,3 +215,103 @@ export async function retenirDevisDossier(
 
   return { dossier_id: c.dossier_id as string, devoir_id: res.id, envoye: false };
 }
+
+/**
+ * Produit à tarification FIXE : le devis est construit depuis la formule et les
+ * options du produit (aucun appel IA, une seule tarification connue), devient la
+ * seule offre du dossier, et le devoir de conseil est généré en BROUILLON.
+ */
+export async function creerDevisTarifFixe(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any, any, any>,
+  params: { dossierId: string; formuleId: string; optionIds: string[] },
+  userId: string,
+) {
+  const { data: dossier, error: dErr } = await supabase
+    .from("dossiers")
+    .select("id, produit_id, compagnie_id")
+    .eq("id", params.dossierId)
+    .maybeSingle();
+  if (dErr || !dossier) throw new Error("Dossier introuvable ou accès refusé");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dos = dossier as any;
+  if (!dos.produit_id) throw new Error("Sélectionnez d'abord le produit du dossier.");
+
+  const { data: produit, error: pErr } = await supabase
+    .from("produits")
+    .select("id, nom, compagnie_id, mode_tarification")
+    .eq("id", dos.produit_id)
+    .maybeSingle();
+  if (pErr || !produit) throw new Error("Produit introuvable");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const prod = produit as any;
+  if (prod.mode_tarification !== "fixe") throw new Error("Ce produit n'est pas en tarification fixe.");
+
+  const { data: formule, error: fErr } = await supabase
+    .from("produit_formules")
+    .select("id, nom, produit_id, tarif_fixe, actif")
+    .eq("id", params.formuleId)
+    .maybeSingle();
+  if (fErr || !formule) throw new Error("Formule introuvable");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const form = formule as any;
+  if (form.produit_id !== prod.id) throw new Error("Cette formule n'appartient pas au produit du dossier.");
+  if (form.tarif_fixe == null) throw new Error(`Aucun tarif fixe renseigné sur la formule ${form.nom}.`);
+
+  let options: { nom: string; tarif_fixe: number | null }[] = [];
+  if (params.optionIds.length > 0) {
+    const { data: opts, error: oErr } = await supabase
+      .from("produit_options")
+      .select("id, nom, tarif_fixe, produit_id, actif")
+      .in("id", params.optionIds)
+      .eq("produit_id", prod.id)
+      .eq("actif", true);
+    if (oErr) throw new Error(oErr.message);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    options = ((opts ?? []) as any[]).map((o) => ({ nom: o.nom as string, tarif_fixe: o.tarif_fixe }));
+  }
+
+  const total =
+    Number(form.tarif_fixe) + options.reduce((s, o) => s + (o.tarif_fixe == null ? 0 : Number(o.tarif_fixe)), 0);
+
+  const resume = [
+    `Formule ${form.nom} : ${Number(form.tarif_fixe).toLocaleString("fr-FR")} € / mois`,
+    ...options.map(
+      (o) =>
+        `Option ${o.nom} : ${o.tarif_fixe == null ? "tarif non renseigné" : `${Number(o.tarif_fixe).toLocaleString("fr-FR")} € / mois`}`,
+    ),
+    `Total : ${total.toLocaleString("fr-FR")} € / mois`,
+  ].join("\n");
+
+  // Tarif fixe : une seule tarification connue, donc une seule offre au dossier.
+  await supabase.from("dossier_devis").delete().eq("dossier_id", params.dossierId);
+
+  const { data: devis, error: iErr } = await supabase
+    .from("dossier_devis")
+    .insert({
+      dossier_id: params.dossierId,
+      compagnie_id: prod.compagnie_id,
+      produit_id: prod.id,
+      formule_id: form.id,
+      cotisation_mensuelle: total,
+      garanties_resume: resume,
+      source: "manuel",
+      saisi_par: userId,
+    })
+    .select("id")
+    .single();
+  if (iErr || !devis) throw new Error(iErr?.message ?? "Enregistrement du devis impossible");
+
+  if (dos.compagnie_id !== prod.compagnie_id) {
+    const { error: upErr } = await supabase
+      .from("dossiers")
+      .update({ compagnie_id: prod.compagnie_id, produit_id: prod.id })
+      .eq("id", params.dossierId);
+    if (upErr) throw new Error(upErr.message);
+  }
+
+  const { genererDevoirConseilAuto } = await import("./devoir-conseil.server");
+  const res = await genererDevoirConseilAuto(supabase, params.dossierId, userId, { sansEnvoi: true });
+
+  return { devis_id: devis.id as string, total, devoir_id: res.id, envoye: false };
+}
