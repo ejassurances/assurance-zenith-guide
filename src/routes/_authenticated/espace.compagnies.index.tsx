@@ -187,6 +187,28 @@ function CompagniesIndex() {
                       {c.statut}
                     </span>
                   </td>
+                  <td className="px-4 py-3">
+                    {isAdmin ? (
+                      <select
+                        value={c.tier_favori ?? ""}
+                        onChange={(e) => setTier(c.id, e.target.value ? Number(e.target.value) : null)}
+                        className="rounded-md border border-line bg-background px-2 py-1 text-xs"
+                        title="Compagnie favorite du cabinet — priorisée dans le classement IA des devis"
+                      >
+                        <option value="">Aucun</option>
+                        <option value="1">Top 1</option>
+                        <option value="2">Top 2</option>
+                        <option value="3">Top 3</option>
+                      </select>
+                    ) : c.tier_favori ? (
+                      <span className="rounded-full bg-[color:var(--crm-gold)]/15 px-2 py-0.5 text-xs font-medium text-ink">
+                        {TIER_LABEL[c.tier_favori]}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-ink-muted">—</span>
+                    )}
+                  </td>
+
                   <td className="px-4 py-3 text-xs">
                     {c.api_active ? (
                       <span className="rounded-full bg-blue-50 px-2 py-0.5 text-blue-800">Connectée</span>
