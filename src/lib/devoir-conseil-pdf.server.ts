@@ -435,24 +435,29 @@ export async function genererPdfDevoirConseil(input: DevoirPdfInput): Promise<Ui
   if (conseil.frais_souscription != null)
     kv("Frais de souscription", euro(Number(conseil.frais_souscription)));
   if (conseil.economie_estimee != null) kv("Economie estimee", euro(Number(conseil.economie_estimee)));
-  if (conseil.garanties) kv("Garanties retenues", String(conseil.garanties));
   y -= 4;
   para(String(input.recommandation ?? "-"), { gap: 4 });
 
   /* Garanties du produit issues de la grille validee */
   const gp = c.garanties_produit ?? null;
   if (gp) {
+    const detail: LigneGarantie[] = Array.isArray(gp.detail) ? gp.detail : [];
     const couvertes: string[] = Array.isArray(gp.couvertes) ? gp.couvertes : [];
     const optionnelles: string[] = Array.isArray(gp.optionnelles) ? gp.optionnelles : [];
     const nonCouvertes: string[] = Array.isArray(gp.non_couvertes) ? gp.non_couvertes : [];
     titreSection("Garanties du contrat propose");
-    if (couvertes.length) kv("Garanties couvertes", couvertes.join(" ; "));
-    if (optionnelles.length) kv("Garanties en option", optionnelles.join(" ; "));
-    if (nonCouvertes.length) kv("Garanties NON couvertes", nonCouvertes.join(" ; "));
+    if (detail.length > 0) {
+      tableauGaranties(detail);
+    } else {
+      if (couvertes.length) kv("Garanties couvertes", couvertes.join(" ; "));
+      if (optionnelles.length) kv("Garanties en option", optionnelles.join(" ; "));
+      if (nonCouvertes.length) kv("Garanties NON couvertes", nonCouvertes.join(" ; "));
+    }
     para(
       "Ce releve est etabli d'apres les conditions generales et l'IPID du produit, verifies et valides par le cabinet.",
       { size: 8.5, color: MUTED, gap: 4 },
     );
+
   }
 
   /* ---------------------- 6. Motifs ---------------------- */
