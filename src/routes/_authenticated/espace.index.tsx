@@ -77,6 +77,8 @@ function Dashboard() {
         )}
       </div>
 
+      {(role === "admin" || role === "mandataire") && <CommissionMoisCard />}
+
       {role !== "client" && <EconomiesEmprunteurCard scope={role === "admin" ? "cabinet" : "perso"} />}
 
 
