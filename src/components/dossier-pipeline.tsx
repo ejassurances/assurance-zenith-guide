@@ -77,8 +77,16 @@ export function DossierPipeline({
           {ETAPES.map((e, i) => {
             const passee = courant >= 0 && i < courant;
             const active = e.key === statut;
+            const cliquable = onStepClick != null && i <= courant;
             return (
-              <li key={e.key} className="relative flex w-[124px] shrink-0 flex-col items-center text-center">
+              <li
+                key={e.key}
+                onClick={() => cliquable && onStepClick(e.key)}
+                className={
+                  "relative flex w-[124px] shrink-0 flex-col items-center text-center " +
+                  (cliquable ? "cursor-pointer hover:opacity-80" : "cursor-default")
+                }
+              >
                 {i > 0 && (
                   <span
                     className={
