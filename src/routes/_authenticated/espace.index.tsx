@@ -274,16 +274,17 @@ function EconomiesEmprunteurCard({ scope }: { scope: "cabinet" | "perso" }) {
   const euro = (n: number) =>
     new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Number(n));
   return (
-    <div className="mt-6 rounded-2xl border border-line bg-surface-elevated p-5 shadow-sm">
+    <div className="mt-6 rounded-2xl border-2 border-[color:var(--crm-gold)] bg-[color:var(--crm-gold-soft)] p-7 shadow-sm">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
             Économies réalisées — assurance emprunteur {scope === "cabinet" ? "· tout le cabinet" : "· mes contrats"}
           </p>
-          <p className="mt-2 text-4xl font-bold tracking-tight text-[color:var(--crm-gold)]">
+          <p className="mt-3 font-serif text-5xl font-semibold tracking-tight text-[color:var(--crm-gold-muted)]">
             {euro(data.total_economies)}
           </p>
-          <p className="mt-1 text-xs text-ink-muted">
+          <p className="mt-2 text-xs text-ink-muted">
+
             {data.nb_contrats} contrat{data.nb_contrats > 1 ? "s" : ""} emprunteur signé
             {data.nb_contrats > 1 ? "s" : ""} · moyenne {euro(data.economie_moyenne)} par client · marque EJ Assurances
           </p>
