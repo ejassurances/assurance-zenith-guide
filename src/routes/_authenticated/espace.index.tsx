@@ -497,9 +497,9 @@ function ActiviteRecente({ isAdmin }: { isAdmin: boolean }) {
   const liste = (items ?? []).filter((i) => (filtre === "tous" ? true : i.auteurRole === filtre)).slice(0, 12);
 
   return (
-    <section className="rounded-2xl border border-line bg-surface-elevated p-6">
-      <div className="flex items-center justify-between">
-        <h2 className="font-serif text-lg font-medium">Activité récente</h2>
+    <section className="crm-card p-6">
+      <div className="flex items-center justify-between border-b border-line pb-4">
+        <h2 className="crm-eyebrow">Activité récente</h2>
         <Link to="/espace/clients" className="text-xs text-ink-muted hover:underline">
           Voir clients →
         </Link>
