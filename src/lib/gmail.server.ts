@@ -78,9 +78,12 @@ export interface EmailResume {
   snippet: string;
   date: string | null;
   non_lu: boolean;
+  etiquettes: string[];
 }
 
-function toResume(msg: GmailMessage): EmailResume {
+const LABELS_SYSTEME = /^(INBOX|SENT|DRAFT|SPAM|TRASH|UNREAD|STARRED|IMPORTANT|CATEGORY_.*|CHAT)$/;
+
+function toResume(msg: GmailMessage, nomsLabels?: Map<string, string>): EmailResume {
   const from = parseFrom(header(msg, "From"));
   const dateHeader = header(msg, "Date");
   const ts = msg.internalDate ? Number(msg.internalDate) : Date.parse(dateHeader);
@@ -94,6 +97,11 @@ function toResume(msg: GmailMessage): EmailResume {
     snippet: msg.snippet ?? "",
     date: Number.isFinite(ts) ? new Date(ts).toISOString() : null,
     non_lu: (msg.labelIds ?? []).includes("UNREAD"),
+    etiquettes: nomsLabels
+      ? (msg.labelIds ?? [])
+          .map((id) => nomsLabels.get(id))
+          .filter((n): n is string => !!n && !LABELS_SYSTEME.test(n.toUpperCase()))
+      : [],
   };
 }
 
@@ -124,8 +132,13 @@ export async function listerBoitePrincipale(params: {
     ),
   );
 
+  const { labels } = await gmailFetch<{ labels?: { id: string; name: string }[] }>("/users/me/labels").catch(
+    () => ({ labels: [] as { id: string; name: string }[] }),
+  );
+  const nomsLabels = new Map((labels ?? []).map((l) => [l.id, l.name] as const));
+
   return {
-    messages: details.filter((m): m is GmailMessage => !!m).map(toResume),
+    messages: details.filter((m): m is GmailMessage => !!m).map((m) => toResume(m, nomsLabels)),
     nextPageToken: list.nextPageToken ?? null,
   };
 }
@@ -205,4 +218,69 @@ export async function envoyerMessage(params: {
     method: "POST",
     body: JSON.stringify(body),
   });
+}
+
+/** Modifie les étiquettes Gmail d'un message. */
+export async function modifierLabels(
+  id: string,
+  params: { ajouter?: string[]; retirer?: string[] },
+): Promise<void> {
+  await gmailFetch(`/users/me/messages/${id}/modify`, {
+    method: "POST",
+    body: JSON.stringify({
+      addLabelIds: params.ajouter ?? [],
+      removeLabelIds: params.retirer ?? [],
+    }),
+  });
+}
+
+/** Met un message à la corbeille Gmail (purge automatique après 30 jours). */
+export async function mettreCorbeille(id: string): Promise<void> {
+  await gmailFetch(`/users/me/messages/${id}/trash`, { method: "POST", body: "{}" });
+}
+
+/** Archive un message (retire de la boîte de réception). */
+export async function archiverMessage(id: string): Promise<void> {
+  await modifierLabels(id, { retirer: ["INBOX"] });
+}
+
+/** Marque un message comme lu ou non lu. */
+export async function marquerLu(id: string, lu: boolean): Promise<void> {
+  await modifierLabels(id, lu ? { retirer: ["UNREAD"] } : { ajouter: ["UNREAD"] });
+}
+
+type GmailLabel = { id: string; name: string };
+
+/** Récupère (ou crée) une étiquette Gmail par nom, imbriquée avec « / ». */
+export async function assurerLabel(nom: string): Promise<string> {
+  const { labels } = await gmailFetch<{ labels?: GmailLabel[] }>("/users/me/labels");
+  const existant = (labels ?? []).find((l) => l.name.toLowerCase() === nom.toLowerCase());
+  if (existant) return existant.id;
+  const cree = await gmailFetch<GmailLabel>("/users/me/labels", {
+    method: "POST",
+    body: JSON.stringify({
+      name: nom,
+      labelListVisibility: "labelShow",
+      messageListVisibility: "show",
+    }),
+  });
+  return cree.id;
+}
+
+/** Applique une étiquette CRM (créée si besoin) à un message. */
+export async function etiqueterMessage(id: string, nom: string): Promise<void> {
+  const labelId = await assurerLabel(nom);
+  await modifierLabels(id, { ajouter: [labelId] });
+}
+
+/** Étiquettes lisibles d'un message (hors étiquettes système). */
+export async function etiquettesMessage(id: string): Promise<string[]> {
+  const [msg, { labels }] = await Promise.all([
+    gmailFetch<GmailMessage>(`/users/me/messages/${id}?format=minimal`),
+    gmailFetch<{ labels?: GmailLabel[] }>("/users/me/labels"),
+  ]);
+  const noms = new Map((labels ?? []).map((l) => [l.id, l.name] as const));
+  return (msg.labelIds ?? [])
+    .map((id2) => noms.get(id2))
+    .filter((n): n is string => !!n && !/^(INBOX|SENT|DRAFT|SPAM|TRASH|UNREAD|STARRED|IMPORTANT|CATEGORY_.*|CHAT)$/.test(n.toUpperCase()));
 }
