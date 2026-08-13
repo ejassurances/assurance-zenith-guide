@@ -263,7 +263,6 @@ export function modeleDevoirConseil(branche: string): ModeleDevoirConseil {
   return MODELES.find((m) => m.branche === branche) ?? MODELE_GENERIQUE;
 }
 
-/** Zones dynamiques pré-rédigées à partir du modèle de la typologie. */
 /**
  * Mises en garde CHIFFRÉES issues de la grille validée du produit retenu :
  * délais de carence réels poste par poste et plafonds de prise en charge.
