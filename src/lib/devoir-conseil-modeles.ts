@@ -15,6 +15,7 @@ import {
   POSTES_SOINS,
   REGIMES_OBLIGATOIRES,
 } from "@/lib/recueil-besoins-schemas";
+import type { LigneGarantie } from "@/lib/garanties-grille";
 
 
 
@@ -24,10 +25,13 @@ export type DevoirConseilContexte = {
   compagnie?: string | null;
   produit?: string | null;
   garanties?: string | null;
+  /** Grille validée du produit retenu (poste par poste) : sert aux mises en garde chiffrées. */
+  garanties_detail?: LigneGarantie[] | null;
   exigences?: string | null;
   cotisation_mensuelle?: number | null;
   economie_estimee?: number | null;
 };
+
 
 /** Statut qualitatif d'une offre comparée (aucun score chiffré : appréciation motivée). */
 export type StatutOffre = "retenue" | "equivalente" | "ecartee";
