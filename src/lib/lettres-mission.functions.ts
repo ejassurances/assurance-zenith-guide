@@ -115,7 +115,42 @@ export const creerEtEnvoyerLettreMission = createServerFn({ method: "POST" })
     });
     if (!result.sent) throw new Error("Adresse en liste de suppression — envoi refusé");
 
+    // Statut du dossier : lettre envoyée, en attente de signature
+    await supabase
+      .from("dossiers")
+      .update({ statut: "lettre_mission_envoyee" })
+      .eq("id", data.dossier_id);
+    if (d.client_id) {
+      await supabase.from("clients").update({ dda_statut: "en_attente_signature" }).eq("id", d.client_id);
+    }
+
     return { ok: true, id: lettreId };
+  });
+
+/**
+ * Déclenchement automatique après validation du recueil des besoins.
+ * Ne lève pas d'erreur bloquante : le dossier reste créé même si l'envoi échoue.
+ */
+export const declencherLettreMissionAuto = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => creerInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: dossier } = await supabase
+      .from("dossiers")
+      .select("client_email")
+      .eq("id", data.dossier_id)
+      .maybeSingle();
+    if (!dossier?.client_email) {
+      return { ok: false, raison: "Aucun email client : lettre de mission à envoyer manuellement." };
+    }
+    try {
+      const { envoyerLettreMission } = await import("./lettres-mission.server");
+      const res = await envoyerLettreMission(supabase, data.dossier_id, userId);
+      return { ok: true, id: res.id };
+    } catch (e) {
+      return { ok: false, raison: e instanceof Error ? e.message : "Erreur d'envoi" };
+    }
   });
 
 const signerInput = z.object({
