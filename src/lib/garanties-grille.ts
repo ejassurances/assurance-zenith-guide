@@ -35,7 +35,7 @@ export type GrilleGaranties = {
 export type ValeurGarantie = {
   couverture: Couverture;
   plafond?: string | null;
-  franchise?: string | null
+  franchise?: string | null;
   conditions?: string | null;
   /** Extrait des CG/IPID justifiant la valeur (traçabilité du conseil). */
   extrait?: string | null;
