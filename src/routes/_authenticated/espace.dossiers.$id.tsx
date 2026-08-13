@@ -60,7 +60,7 @@ function CompagnieProduitSection({
   };
 
   return (
-    <Section title="Compagnie et produit">
+    <Section id="section-compagnie-produit" title="Compagnie et produit">
       {canEdit ? (
         <div className="grid gap-3 sm:grid-cols-2">
           <CompagnieProduitPicker
