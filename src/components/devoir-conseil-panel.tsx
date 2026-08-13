@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { envoyerDevoirConseilFn } from "@/lib/devoir-conseil.functions";
+import { prefillDevoirConseil } from "@/lib/devoir-conseil-modeles";
 
 type Devoir = {
   id: string;
