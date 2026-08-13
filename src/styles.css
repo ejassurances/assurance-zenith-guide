@@ -82,6 +82,7 @@
 
   html {
     scroll-behavior: smooth;
+    overflow-x: clip;
   }
 
   body {
@@ -90,7 +91,10 @@
     font-family: var(--font-sans-family);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    max-width: 100%;
+    overflow-x: clip;
   }
+
 
   h1, h2, h3, h4 {
     font-family: var(--font-serif-family);
