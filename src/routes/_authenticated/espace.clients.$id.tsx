@@ -9,6 +9,7 @@ import { ConformiteClientTab } from "@/components/conformite-client-tab";
 import { DeleteClientButton } from "@/components/delete-client-button";
 import { AccesEspaceClientButton } from "@/components/acces-espace-client-button";
 import { CrmBrandPanel } from "@/components/crm-brand-panel";
+import { EmailsLiesPanel } from "@/components/emails-lies-panel";
 import { NewDossierForm } from "@/routes/_authenticated/espace.dossiers.index";
 
 export const Route = createFileRoute("/_authenticated/espace/clients/$id")({
@@ -102,6 +103,7 @@ type Tab =
   | "documents"
   | "dossiers"
   | "der"
+  | "emails"
   | "conformite";
 
 function ClientDetail() {
@@ -185,6 +187,7 @@ function ClientDetail() {
             ["documents", "Documents"],
             ["dossiers", "Dossiers"],
             ["der", "DER"],
+            ["emails", "Emails"],
             ["conformite", "Conformité"],
           ] as [Tab, string][]
         ).map(([key, label]) => (
@@ -212,6 +215,14 @@ function ClientDetail() {
         {tab === "documents" && <DocumentsTab clientId={client.id} canEdit={canEdit} />}
         {tab === "dossiers" && <DossiersTab client={client} />}
         {tab === "der" && <DerTab clientId={client.id} clientEmail={client.email} />}
+        {tab === "emails" && (
+          <EmailsLiesPanel
+            liens={{ client_id: client.id }}
+            destinataireParDefaut={client.email}
+            titre="Emails du client"
+            canEdit={canEdit}
+          />
+        )}
         {tab === "conformite" && (
           <ConformiteClientTab clientId={client.id} clientEmail={client.email} canEdit={canEdit} />
         )}

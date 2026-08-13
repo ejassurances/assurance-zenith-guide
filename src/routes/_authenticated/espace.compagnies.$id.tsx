@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CompagnieDocsTable, UploadCompagnieDocForm } from "./espace.conformite";
 import { ProduitGarantiesTab } from "@/components/produit-garanties-tab";
+import { EmailsLiesPanel } from "@/components/emails-lies-panel";
 
 type CompagnieDocRow = {
   id: string;
@@ -118,7 +119,7 @@ const DOC_TYPE_LABEL: Record<ProduitDoc["type"], string> = {
   autre: "Autre",
 };
 
-type Tab = "infos" | "produits" | "partenariats" | "api";
+type Tab = "infos" | "produits" | "partenariats" | "emails" | "api";
 
 function CompagnieDetail() {
   const { id } = Route.useParams();
@@ -193,7 +194,7 @@ function CompagnieDetail() {
       </div>
 
       <div className="flex gap-1 border-b border-line">
-        {(["infos", "produits", "partenariats", "api"] as Tab[]).map((t) => (
+        {(["infos", "produits", "partenariats", "emails", "api"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -208,7 +209,9 @@ function CompagnieDetail() {
                 ? "Produits"
                 : t === "partenariats"
                   ? "Partenariat"
-                  : "API compagnie"}
+                  : t === "emails"
+                    ? "Emails"
+                    : "API compagnie"}
           </button>
         ))}
       </div>
@@ -230,6 +233,13 @@ function CompagnieDetail() {
         />
       )}
       {tab === "partenariats" && <PartenariatsTab compagnieId={c.id} compagnieNom={c.nom} isAdmin={isAdmin} />}
+      {tab === "emails" && (
+        <EmailsLiesPanel
+          liens={{ compagnie_id: c.id }}
+          destinataireParDefaut={c.contact_email}
+          titre="Emails de la compagnie"
+        />
+      )}
       {tab === "api" && <ApiTab compagnieId={c.id} apiActive={c.api_active} isAdmin={isAdmin} onApiActiveChange={(v) => saveInfos({ api_active: v })} />}
     </div>
   );
