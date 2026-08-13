@@ -630,6 +630,13 @@ export function getBranche(value: string): BrancheConfig | undefined {
   return BRANCHES.find((b) => b.value === value);
 }
 
+/** Branches proposées à la création d'un nouveau dossier (hors branches historiques). */
+export const BRANCHES_CREATION: BrancheConfig[] = BRANCHES.filter((b) => !b.legacy);
+
+export function isBrancheLegacy(value: string): boolean {
+  return getBranche(value)?.legacy === true;
+}
+
 export function labelForBranche(value: string): string {
   return getBranche(value)?.label ?? value;
 }
@@ -638,12 +645,41 @@ export function isFieldVisible(field: FieldConfig, values: Record<string, unknow
   return field.showIf ? field.showIf(values) : true;
 }
 
+/** Personnes à couvrir saisies dans un champ de type « personnes ». */
+export function personnesAssurees(value: unknown): PersonneAssuree[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((p): p is Record<string, unknown> => !!p && typeof p === "object")
+    .map((p) => ({
+      lien: typeof p.lien === "string" ? p.lien : "",
+      date_naissance: typeof p.date_naissance === "string" ? p.date_naissance : "",
+      regime: typeof p.regime === "string" ? p.regime : "",
+    }));
+}
+
+/** Âge en années révolues à partir d'une date ISO (AAAA-MM-JJ). */
+export function ageDepuisDateNaissance(iso: string): number | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age -= 1;
+  return age >= 0 && age < 130 ? age : null;
+}
+
 /** Champs obligatoires non renseignés d'une étape */
 export function missingRequired(section: SectionConfig, values: Record<string, unknown>): FieldConfig[] {
   return section.fields.filter((f) => {
     if (!f.required || !isFieldVisible(f, values)) return false;
     const v = values[f.key];
     if (f.type === "checkbox") return v !== true;
+    if (f.type === "personnes") {
+      const list = personnesAssurees(v);
+      return list.length === 0 || list.some((p) => !p.date_naissance);
+    }
     return v === undefined || v === null || v === "";
   });
 }
+
