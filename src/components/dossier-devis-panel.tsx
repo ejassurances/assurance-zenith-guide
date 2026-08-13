@@ -218,6 +218,76 @@ export function DossierDevisPanel({
         })}
       </div>
 
+      <div className="mt-4 border-t border-line pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-medium text-ink">Classement IA des devis</h3>
+            <p className="mt-1 text-xs text-ink-muted">
+              L'IA classe les devis saisis au regard du recueil des besoins et justifie chaque rang. Elle ne décide
+              pas : vous retenez l'offre, ce qui génère le devoir de conseil en brouillon (aucun envoi au client).
+            </p>
+          </div>
+          <button
+            onClick={demanderClassement}
+            disabled={devis.length < 2 || iaEtat !== "idle"}
+            className="rounded-full border border-line px-4 py-2 text-sm text-ink disabled:opacity-50"
+          >
+            {iaEtat === "classement" ? "Analyse en cours…" : "Lancer le classement IA"}
+          </button>
+        </div>
+        {devis.length < 2 && (
+          <p className="mt-2 text-xs text-ink-muted">Saisissez au moins 2 devis pour activer le classement.</p>
+        )}
+        {iaMsg && <p className="mt-2 text-sm text-emerald-700">{iaMsg}</p>}
+
+        {classement && (
+          <div className="mt-3 space-y-2">
+            <p className="text-xs text-ink-muted">
+              Généré le {new Date(classement.genere_le).toLocaleString("fr-FR")}
+              {classement.modele_ia ? ` · ${classement.modele_ia}` : ""}
+            </p>
+            {[...classement.classement]
+              .sort((a, b) => a.rang - b.rang)
+              .map((l) => {
+                const d = devis.find((x) => x.id === l.dossier_devis_id);
+                return (
+                  <div
+                    key={l.dossier_devis_id}
+                    className="rounded-xl border border-[color:var(--crm-gold)]/40 bg-[color:var(--crm-gold)]/5 p-3 text-sm"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <p className="font-medium text-ink">
+                        <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-ink text-xs text-primary-foreground">
+                          {l.rang}
+                        </span>
+                        {d ? `${nomCompagnie(d.compagnie_id)} — ${nomProduit(d.produit_id)}` : "Devis supprimé"}
+                        {d?.formule_id && <FormuleNom formuleId={d.formule_id} />}
+                        {d?.cotisation_mensuelle != null && (
+                          <span className="ml-2 text-ink-soft">
+                            {Number(d.cotisation_mensuelle).toLocaleString("fr-FR")} € / mois
+                          </span>
+                        )}
+                      </p>
+                      {d && (
+                        <button
+                          onClick={() => retenir(d.id)}
+                          disabled={iaEtat !== "idle"}
+                          className="rounded-full bg-ink px-3 py-1.5 text-xs text-primary-foreground disabled:opacity-60"
+                        >
+                          {iaEtat === "selection" ? "Traitement…" : "Retenir cette offre"}
+                        </button>
+                      )}
+                    </div>
+                    <p className="mt-2 whitespace-pre-wrap text-xs text-ink-soft">{l.justification}</p>
+                  </div>
+                );
+              })}
+          </div>
+        )}
+      </div>
+
+
+
       <div className="mt-4 grid gap-3 border-t border-line pt-4 sm:grid-cols-2">
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Compagnie</span>
