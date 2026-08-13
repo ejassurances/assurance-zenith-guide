@@ -1,9 +1,79 @@
 // Configuration du recueil des besoins par branche d'assurance.
 // Chaque champ est stocké dans dossiers.recueil_besoins (jsonb) sous sa clé.
 
-export type BrancheAssurance = "emprunteur" | "prevoyance_sante" | "epargne_retraite" | "iard" | "trottinette";
+export type BrancheAssurance =
+  | "emprunteur"
+  | "sante"
+  | "prevoyance"
+  /** Ancienne branche combinée — conservée en lecture seule pour les dossiers existants. */
+  | "prevoyance_sante"
+  | "epargne_retraite"
+  | "iard"
+  | "trottinette";
 
-export type FieldType = "text" | "number" | "textarea" | "select" | "checkbox" | "cards" | "yesno";
+export type FieldType =
+  | "text"
+  | "number"
+  | "textarea"
+  | "select"
+  | "checkbox"
+  | "cards"
+  | "yesno"
+  /** Liste dynamique de personnes à couvrir (voir PersonneAssuree) */
+  | "personnes";
+
+/** Niveaux de couverture proposés poste par poste en complémentaire santé. */
+export const NIVEAUX_SOINS = [
+  { value: "minimal", label: "Minimal", description: "Couverture de base, reste à charge important" },
+  { value: "normal", label: "Normal", description: "Niveau courant du marché" },
+  { value: "fort", label: "Fort", description: "Remboursements renforcés" },
+  { value: "optimal", label: "Optimal", description: "Couverture maximale" },
+] as const;
+
+export type NiveauSoins = (typeof NIVEAUX_SOINS)[number]["value"];
+
+export function labelNiveauSoins(value: unknown): string | null {
+  return NIVEAUX_SOINS.find((n) => n.value === value)?.label ?? null;
+}
+
+/**
+ * Postes de soins du recueil santé — alignés sur la grille de garanties
+ * de la famille « sante » (voir src/lib/garanties-grille.ts).
+ */
+export const POSTES_SOINS = [
+  { key: "hospitalisation", label: "Hospitalisation" },
+  { key: "soins_courants", label: "Soins courants" },
+  { key: "optique", label: "Optique" },
+  { key: "dentaire", label: "Dentaire" },
+  { key: "aides_auditives", label: "Aides auditives" },
+  { key: "medecines_douces", label: "Médecines douces" },
+] as const;
+
+/** Liens de parenté possibles pour un assuré à couvrir. */
+export const LIENS_ASSURE = [
+  { value: "soi_meme", label: "Soi-même (assuré principal)" },
+  { value: "conjoint", label: "Conjoint" },
+  { value: "enfant", label: "Enfant" },
+  { value: "autre", label: "Autre ayant droit" },
+] as const;
+
+/** Régimes obligatoires proposés dans le recueil santé. */
+export const REGIMES_OBLIGATOIRES = [
+  { value: "salarie", label: "Salarié" },
+  { value: "tns", label: "Travailleur non salarié (TNS)" },
+  { value: "fonctionnaire", label: "Fonctionnaire" },
+  { value: "exploitant_agricole", label: "Exploitant agricole" },
+  { value: "etudiant", label: "Étudiant" },
+  { value: "sans_emploi", label: "Sans emploi" },
+  { value: "alsace_moselle", label: "Régime local Alsace-Moselle" },
+] as const;
+
+export type PersonneAssuree = {
+  lien: string;
+  date_naissance: string;
+  regime: string;
+};
+
 
 export interface FieldOption {
   value: string;
@@ -42,8 +112,11 @@ export interface BrancheConfig {
   value: BrancheAssurance;
   label: string;
   description: string;
+  /** Branche historique : lisible sur les dossiers existants, non proposée à la création. */
+  legacy?: boolean;
   sections: SectionConfig[];
 }
+
 
 export const BRANCHES: BrancheConfig[] = [
   {
@@ -125,7 +198,124 @@ export const BRANCHES: BrancheConfig[] = [
     ],
   },
   {
+    value: "sante",
+    label: "Complémentaire santé",
+    description: "Mutuelle / complémentaire santé : assurés à couvrir, postes de soins et budget.",
+    sections: [
+      {
+        title: "Assurés à couvrir",
+        intro:
+          "Listez toutes les personnes à couvrir : l'assuré principal et, le cas échéant, le conjoint, les enfants et autres ayants droit.",
+        fields: [
+          {
+            key: "assures",
+            label: "Personnes à couvrir",
+            question: "Qui doit être couvert par la complémentaire santé ?",
+            type: "personnes",
+            required: true,
+            help: "La date de naissance est obligatoire pour chaque personne : elle conditionne la tarification.",
+          },
+        ],
+      },
+      {
+        title: "Postes de soins",
+        intro:
+          "Pour chaque poste, indiquez le niveau de couverture souhaité par le client. Ces niveaux constituent ses exigences et besoins au sens du devoir de conseil.",
+        fields: POSTES_SOINS.map((p) => ({
+          key: `niveau_${p.key}`,
+          label: p.label,
+          question: `${p.label} : quel niveau souhaite-t-il ?`,
+          type: "cards" as FieldType,
+          options: NIVEAUX_SOINS.map((n) => ({ value: n.value, label: n.label, description: n.description })),
+        })),
+      },
+      {
+        title: "Budget",
+        fields: [
+          {
+            key: "budget_mensuel",
+            label: "Budget mensuel souhaité (montant choisi)",
+            question: "Quel budget mensuel le client souhaite-t-il consacrer à sa complémentaire santé ?",
+            type: "number",
+            suffix: "€/mois",
+            required: true,
+          },
+        ],
+      },
+      {
+        title: "Contrat actuel",
+        intro: "Facultatif : à renseigner si le client dispose déjà d'une complémentaire santé.",
+        fields: [
+          { key: "compagnie_actuelle", label: "Compagnie actuelle", type: "text" },
+          { key: "cotisation_actuelle", label: "Cotisation actuelle", type: "number", suffix: "€/mois" },
+          {
+            key: "motif_changement",
+            label: "Motif de changement",
+            type: "textarea",
+            placeholder: "Tarif, garanties insuffisantes, changement de situation…",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    value: "prevoyance",
+    label: "Prévoyance",
+    description: "Décès, incapacité de travail, invalidité, dépendance.",
+    sections: [
+      {
+        title: "Situation",
+        fields: [
+          {
+            key: "regime_social",
+            label: "Régime social",
+            type: "select",
+            options: [
+              { value: "salarie", label: "Salarié" },
+              { value: "tns", label: "Travailleur non salarié (TNS)" },
+              { value: "fonctionnaire", label: "Fonctionnaire" },
+              { value: "profession_liberale", label: "Profession libérale" },
+              { value: "retraite", label: "Retraité" },
+              { value: "autre", label: "Autre" },
+            ],
+          },
+          {
+            key: "composition_foyer",
+            label: "Composition du foyer",
+            type: "text",
+            placeholder: "Ex : couple + 2 enfants",
+          },
+          { key: "revenus_annuels", label: "Revenus nets annuels du foyer", type: "number", suffix: "€" },
+          { key: "budget_mensuel", label: "Budget mensuel envisagé", type: "number", suffix: "€/mois" },
+        ],
+      },
+      {
+        title: "Couverture actuelle",
+        fields: [
+          {
+            key: "prevoyance_actuelle",
+            label: "Prévoyance en place",
+            type: "textarea",
+            placeholder: "Contrats existants (compagnie, garanties)",
+          },
+        ],
+      },
+      {
+        title: "Besoins prioritaires",
+        fields: [
+          { key: "besoin_deces", label: "Prévoyance décès (capital / rente conjoint)", type: "checkbox" },
+          { key: "besoin_incapacite", label: "Incapacité de travail (indemnités journalières)", type: "checkbox" },
+          { key: "besoin_invalidite", label: "Invalidité (rente)", type: "checkbox" },
+          { key: "besoin_dependance", label: "Dépendance", type: "checkbox" },
+          { key: "objectifs", label: "Objectifs et attentes", type: "textarea" },
+        ],
+      },
+    ],
+  },
+  {
     value: "prevoyance_sante",
+    legacy: true,
+
     label: "Prévoyance & Santé",
     description: "Décès, incapacité, invalidité, complémentaire santé.",
     sections: [
@@ -440,6 +630,13 @@ export function getBranche(value: string): BrancheConfig | undefined {
   return BRANCHES.find((b) => b.value === value);
 }
 
+/** Branches proposées à la création d'un nouveau dossier (hors branches historiques). */
+export const BRANCHES_CREATION: BrancheConfig[] = BRANCHES.filter((b) => !b.legacy);
+
+export function isBrancheLegacy(value: string): boolean {
+  return getBranche(value)?.legacy === true;
+}
+
 export function labelForBranche(value: string): string {
   return getBranche(value)?.label ?? value;
 }
@@ -448,12 +645,41 @@ export function isFieldVisible(field: FieldConfig, values: Record<string, unknow
   return field.showIf ? field.showIf(values) : true;
 }
 
+/** Personnes à couvrir saisies dans un champ de type « personnes ». */
+export function personnesAssurees(value: unknown): PersonneAssuree[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((p): p is Record<string, unknown> => !!p && typeof p === "object")
+    .map((p) => ({
+      lien: typeof p.lien === "string" ? p.lien : "",
+      date_naissance: typeof p.date_naissance === "string" ? p.date_naissance : "",
+      regime: typeof p.regime === "string" ? p.regime : "",
+    }));
+}
+
+/** Âge en années révolues à partir d'une date ISO (AAAA-MM-JJ). */
+export function ageDepuisDateNaissance(iso: string): number | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age -= 1;
+  return age >= 0 && age < 130 ? age : null;
+}
+
 /** Champs obligatoires non renseignés d'une étape */
 export function missingRequired(section: SectionConfig, values: Record<string, unknown>): FieldConfig[] {
   return section.fields.filter((f) => {
     if (!f.required || !isFieldVisible(f, values)) return false;
     const v = values[f.key];
     if (f.type === "checkbox") return v !== true;
+    if (f.type === "personnes") {
+      const list = personnesAssurees(v);
+      return list.length === 0 || list.some((p) => !p.date_naissance);
+    }
     return v === undefined || v === null || v === "";
   });
 }
+

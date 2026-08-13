@@ -4,7 +4,16 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { creerEtEnvoyerLettreMission } from "@/lib/lettres-mission.functions";
-import { getBranche, labelForBranche } from "@/lib/recueil-besoins-schemas";
+import {
+  getBranche,
+  isBrancheLegacy,
+  labelForBranche,
+  personnesAssurees,
+  ageDepuisDateNaissance,
+  LIENS_ASSURE,
+  REGIMES_OBLIGATOIRES,
+} from "@/lib/recueil-besoins-schemas";
+
 import { DossierPiecesPanel } from "@/components/dossier-pieces-panel";
 import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
 import { ProduitDocumentsLink } from "@/components/produit-documents-link";
@@ -147,6 +156,12 @@ function DossierDetail() {
           Référence {dossier.reference} · {labelForBranche(dossier.type_assurance)}
         </p>
       </div>
+
+      {isBrancheLegacy(dossier.type_assurance) && (
+        <BrancheLegacyBanner dossierId={id} canEdit={canEdit} onReclassified={load} />
+      )}
+
+
 
       <DossierPipeline
         dossierId={id}
@@ -481,6 +496,60 @@ function DocumentsPanel({ dossierId, userId }: { dossierId: string; userId: stri
   );
 }
 
+function BrancheLegacyBanner({
+  dossierId,
+  canEdit,
+  onReclassified,
+}: {
+  dossierId: string;
+  canEdit: boolean;
+  onReclassified: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const reclassifier = async (type: "sante" | "prevoyance") => {
+    setBusy(true);
+    setError(null);
+    const { error } = await supabase.from("dossiers").update({ type_assurance: type }).eq("id", dossierId);
+    if (error) setError(error.message);
+    else onReclassified();
+    setBusy(false);
+  };
+
+  return (
+    <div className="rounded-2xl border border-amber-300 bg-amber-50 p-5">
+      <p className="font-serif text-base text-amber-950">
+        Ancienne branche combinée — à reclassifier en Santé ou Prévoyance avant de poursuivre le recueil ou le devoir
+        de conseil
+      </p>
+      <p className="mt-1 text-sm text-amber-900">
+        Le recueil déjà saisi est conservé tel quel : il restera lisible après reclassification et pourra être
+        complété par le staff dans le nouveau recueil dédié.
+      </p>
+      {canEdit && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            onClick={() => reclassifier("sante")}
+            disabled={busy}
+            className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+          >
+            Reclassifier en Complémentaire santé
+          </button>
+          <button
+            onClick={() => reclassifier("prevoyance")}
+            disabled={busy}
+            className="rounded-full border border-amber-400 px-4 py-2 text-sm font-medium text-amber-950 disabled:opacity-50"
+          >
+            Reclassifier en Prévoyance
+          </button>
+        </div>
+      )}
+      {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+    </div>
+  );
+}
+
 function RecueilPanel({ dossier }: { dossier: Dossier }) {
   const branche = getBranche(dossier.type_assurance);
   const r = dossier.recueil_besoins ?? {};
@@ -492,8 +561,30 @@ function RecueilPanel({ dossier }: { dossier: Dossier }) {
           .map((f) => {
             const v = (r as Record<string, unknown>)[f.key];
             if (v === undefined || v === null || v === "" || v === false) return null;
+            if (f.type === "personnes") {
+              const list = personnesAssurees(v);
+              if (list.length === 0) return null;
+              return (
+                <div key={f.key} className="border-b border-line py-1 text-sm">
+                  <span className="text-ink-muted">{f.label}</span>
+                  <ul className="mt-1 space-y-0.5">
+                    {list.map((p, i) => {
+                      const lien = LIENS_ASSURE.find((l) => l.value === p.lien)?.label ?? "Assuré";
+                      const age = ageDepuisDateNaissance(p.date_naissance);
+                      const regime = REGIMES_OBLIGATOIRES.find((rg) => rg.value === p.regime)?.label;
+                      return (
+                        <li key={i} className="font-medium">
+                          {[lien, age !== null ? `${age} ans` : null, regime].filter(Boolean).join(" · ")}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            }
             const val =
               typeof v === "boolean" ? "Oui" : (f.options?.find((o) => o.value === v)?.label ?? String(v));
+
             return (
               <div key={f.key} className="flex justify-between gap-4 border-b border-line py-1 text-sm">
                 <span className="text-ink-muted">{f.label}</span>

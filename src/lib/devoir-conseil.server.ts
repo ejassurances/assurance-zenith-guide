@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { sendTemplateEmail } from "@/lib/email-templates/send-email";
 import { SITE } from "@/lib/site";
 import { appUrl } from "@/lib/app-url";
-import { modeleDevoirConseil, prefillDevoirConseil } from "@/lib/devoir-conseil-modeles";
+import { exigencesDepuisRecueil, modeleDevoirConseil, prefillDevoirConseil } from "@/lib/devoir-conseil-modeles";
 import { grillePourFamille, synthetiserGaranties, type ValeursGrille } from "@/lib/garanties-grille";
 
 export type DevoirConseilSaisie = {
@@ -283,7 +283,7 @@ export async function genererDevoirConseilAuto(
     compagnie,
     produit,
     garanties: garantiesTexte || null,
-    exigences: typeof recueil.objectifs === "string" ? recueil.objectifs : undefined,
+    exigences: exigencesDepuisRecueil(d.type_assurance, recueil) ?? undefined,
     economie_estimee: typeof d.economie_estimee === "number" ? d.economie_estimee : null,
   });
 
