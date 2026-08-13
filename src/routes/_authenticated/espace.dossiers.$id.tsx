@@ -19,6 +19,7 @@ import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
 import { ProduitDocumentsLink } from "@/components/produit-documents-link";
 import { DossierPipeline } from "@/components/dossier-pipeline";
 import { DevoirConseilPanel } from "@/components/devoir-conseil-panel";
+import { DevoirConseilRefusAnalysePanel } from "@/components/devoir-conseil-refus-analyse-panel";
 import { DossierDevisPanel } from "@/components/dossier-devis-panel";
 import { etapeLabel } from "@/lib/pipeline-dossier";
 
@@ -102,6 +103,11 @@ function DossierDetail() {
   const [dossier, setDossier] = useState<Dossier | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [contreProposition, setContreProposition] = useState<{
+    suggestion: string;
+    motif: string;
+    key: number;
+  } | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -190,12 +196,24 @@ function DossierDetail() {
         </div>
       )}
       {canEdit && (
+        <DevoirConseilRefusAnalysePanel
+          dossierId={id}
+          userId={user!.id}
+          onContreProposition={(suggestion, motif) => {
+            setContreProposition({ suggestion, motif, key: Date.now() });
+            document.getElementById("section-devoir-conseil")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+          onChanged={load}
+        />
+      )}
+      {canEdit && (
         <div id="section-devoir-conseil">
           <DevoirConseilPanel
             dossierId={id}
             clientEmail={dossier.client_email}
             branche={dossier.type_assurance}
             onChanged={load}
+            contreProposition={contreProposition}
           />
         </div>
       )}

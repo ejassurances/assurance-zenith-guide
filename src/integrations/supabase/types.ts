@@ -1468,6 +1468,66 @@ export type Database = {
         }
         Relationships: []
       }
+      devoir_conseil_refus_analyses: {
+        Row: {
+          created_at: string
+          devoir_id: string
+          dossier_id: string
+          id: string
+          modele_ia: string | null
+          motif_client: string
+          recommandation_ia: string
+          statut: string
+          suggestion_contre_proposition: string | null
+          synthese: string
+          traite_le: string | null
+          traite_par: string | null
+        }
+        Insert: {
+          created_at?: string
+          devoir_id: string
+          dossier_id: string
+          id?: string
+          modele_ia?: string | null
+          motif_client: string
+          recommandation_ia: string
+          statut?: string
+          suggestion_contre_proposition?: string | null
+          synthese: string
+          traite_le?: string | null
+          traite_par?: string | null
+        }
+        Update: {
+          created_at?: string
+          devoir_id?: string
+          dossier_id?: string
+          id?: string
+          modele_ia?: string | null
+          motif_client?: string
+          recommandation_ia?: string
+          statut?: string
+          suggestion_contre_proposition?: string | null
+          synthese?: string
+          traite_le?: string | null
+          traite_par?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devoir_conseil_refus_analyses_devoir_id_fkey"
+            columns: ["devoir_id"]
+            isOneToOne: false
+            referencedRelation: "devoirs_conseil"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devoir_conseil_refus_analyses_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devoirs_conseil: {
         Row: {
           client_id: string | null

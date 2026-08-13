@@ -138,6 +138,15 @@ export const refuserDevoirConseil = createServerFn({ method: "POST" })
       // le refus reste enregistré même si l'archivage échoue
     }
 
+    // Analyse IA du motif de refus (contre-proposition ou clôture en perdu).
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { analyserRefusDevoirConseil } = await import("./devoir-conseil-refus-analyse.server");
+      await analyserRefusDevoirConseil(supabaseAdmin, data.devoir_id);
+    } catch (e) {
+      console.error("[refus] analyse IA non réalisée", e);
+    }
+
     return { ok: true };
   });
 
