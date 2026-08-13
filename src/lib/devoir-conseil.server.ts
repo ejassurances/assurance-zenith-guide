@@ -129,6 +129,14 @@ export async function envoyerDevoirConseil(
     devoirId = inserted.id;
   }
 
+  // PDF de présentation (mise en page réglementaire) archivé dès l'envoi.
+  try {
+    const { archiverDevoirConseil } = await import("./devoir-conseil-archive.server");
+    await archiverDevoirConseil(supabase, devoirId, userId);
+  } catch {
+    // l'archivage ne doit pas bloquer l'envoi au client
+  }
+
   const result = await sendTemplateEmail("devoir-conseil-envoi", d.client_email, {
     templateData: {
       clientName: d.client_nom,
