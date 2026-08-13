@@ -598,8 +598,11 @@ function RattachementPanel({
   };
 
   return (
-    <div className="space-y-5 rounded-2xl border border-line bg-surface-elevated p-5">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-muted">Traiter cet email</h3>
+    <div className={CARTE + " space-y-5 p-5"}>
+      <div>
+        <h3 className={TITRE_SECTION}>Traiter cet email</h3>
+        <span className="mt-1.5 block h-0.5 w-10 bg-[color:var(--crm-gold)]" aria-hidden />
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="text-sm">
@@ -611,7 +614,7 @@ function RattachementPanel({
               setDossierId("");
               setContratId("");
             }}
-            className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+            className={CHAMP}
           >
             <option value="">— Aucun —</option>
             {clients.map((c) => (
@@ -621,7 +624,7 @@ function RattachementPanel({
             ))}
           </select>
           {clientSuggere && clientId !== clientSuggere.id && (
-            <button onClick={() => setClientId(clientSuggere.id)} className="mt-1 text-xs underline">
+            <button onClick={() => setClientId(clientSuggere.id)} className="mt-1 text-xs text-[color:var(--crm-gold)] underline">
               Suggestion : {[clientSuggere.prenom, clientSuggere.nom].filter(Boolean).join(" ")}
             </button>
           )}
@@ -633,7 +636,7 @@ function RattachementPanel({
             value={dossierId}
             onChange={(e) => setDossierId(e.target.value)}
             disabled={!clientId}
-            className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm disabled:opacity-50"
+            className={CHAMP + " disabled:opacity-50"}
           >
             <option value="">— Aucun —</option>
             {dossiers.map((d) => (
@@ -650,7 +653,7 @@ function RattachementPanel({
             value={contratId}
             onChange={(e) => setContratId(e.target.value)}
             disabled={!clientId}
-            className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm disabled:opacity-50"
+            className={CHAMP + " disabled:opacity-50"}
           >
             <option value="">— Aucun —</option>
             {contrats.map((k) => (
@@ -665,7 +668,7 @@ function RattachementPanel({
           <button
             onClick={enregistrer}
             disabled={busy || !clientId}
-            className="rounded-full bg-ink px-5 py-2 text-sm text-primary-foreground disabled:opacity-60"
+            className={BTN_PRIMAIRE}
           >
             {busy ? "…" : "Rattacher au client"}
           </button>
@@ -673,12 +676,12 @@ function RattachementPanel({
       </div>
 
       <div className="border-t border-line pt-4">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">Email d'une compagnie</p>
+        <p className="mb-2 font-serif text-sm text-ink">Email d'une compagnie</p>
         <div className="flex flex-wrap items-end gap-3">
           <select
             value={compagnieId}
             onChange={(e) => setCompagnieId(e.target.value)}
-            className="rounded-md border border-line bg-background px-3 py-2 text-sm"
+            className={CHAMP}
           >
             <option value="">— Choisir une compagnie —</option>
             {compagnies.map((c) => (
@@ -699,7 +702,7 @@ function RattachementPanel({
               }
             }}
             disabled={busy || !compagnieId}
-            className="rounded-full border border-line px-4 py-2 text-sm disabled:opacity-60"
+            className={BTN_SECONDAIRE}
           >
             Rattacher à la compagnie
           </button>
@@ -710,7 +713,7 @@ function RattachementPanel({
             <Link
               to="/espace/compagnies/$id"
               params={{ id: compagnieId }}
-              className="text-xs underline underline-offset-4"
+              className="text-xs text-[color:var(--crm-gold)] underline underline-offset-4"
             >
               Ouvrir la fiche compagnie
             </Link>
@@ -720,7 +723,7 @@ function RattachementPanel({
 
       <div className="border-t border-line pt-4">
         {!creation ? (
-          <button onClick={() => setCreation(true)} className="rounded-full border border-line px-4 py-2 text-sm">
+          <button onClick={() => setCreation(true)} className={BTN_SECONDAIRE}>
             + Créer une fiche client (et un dossier)
           </button>
         ) : (
@@ -729,25 +732,25 @@ function RattachementPanel({
               placeholder="Prénom"
               value={form.prenom}
               onChange={(e) => setForm({ ...form, prenom: e.target.value })}
-              className="rounded-md border border-line bg-background px-3 py-2 text-sm"
+              className={CHAMP}
             />
             <input
               placeholder="Nom *"
               value={form.nom}
               onChange={(e) => setForm({ ...form, nom: e.target.value })}
-              className="rounded-md border border-line bg-background px-3 py-2 text-sm"
+              className={CHAMP}
             />
             <input
               placeholder="Email *"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="rounded-md border border-line bg-background px-3 py-2 text-sm"
+              className={CHAMP}
             />
             <input
               placeholder="Téléphone"
               value={form.telephone}
               onChange={(e) => setForm({ ...form, telephone: e.target.value })}
-              className="rounded-md border border-line bg-background px-3 py-2 text-sm"
+              className={CHAMP}
             />
             <label className="flex items-center gap-2 text-sm">
               <input
@@ -761,7 +764,7 @@ function RattachementPanel({
               value={form.type_assurance}
               onChange={(e) => setForm({ ...form, type_assurance: e.target.value })}
               disabled={!form.creer_dossier}
-              className="rounded-md border border-line bg-background px-3 py-2 text-sm disabled:opacity-50"
+              className={CHAMP + " disabled:opacity-50"}
             >
               {TYPES_ASSURANCE.map((t) => (
                 <option key={t} value={t}>
@@ -773,11 +776,11 @@ function RattachementPanel({
               <button
                 onClick={creer}
                 disabled={busy || !form.nom.trim() || !form.email.trim()}
-                className="rounded-full bg-ink px-5 py-2 text-sm text-primary-foreground disabled:opacity-60"
+                className={BTN_PRIMAIRE}
               >
                 {busy ? "…" : "Créer"}
               </button>
-              <button onClick={() => setCreation(false)} className="rounded-full border border-line px-4 py-2 text-sm">
+              <button onClick={() => setCreation(false)} className={BTN_SECONDAIRE}>
                 Annuler
               </button>
             </div>
@@ -787,7 +790,7 @@ function RattachementPanel({
 
       {msg && <p className="text-sm text-ink-soft">{msg}</p>}
       {clientId && (
-        <Link to="/espace/clients/$id" params={{ id: clientId }} className="text-xs underline underline-offset-4">
+        <Link to="/espace/clients/$id" params={{ id: clientId }} className="text-xs text-[color:var(--crm-gold)] underline underline-offset-4">
           Ouvrir la fiche client
         </Link>
       )}
@@ -820,8 +823,9 @@ function EtiquettesBloc({
       : [];
 
   return (
-    <div className="rounded-2xl border border-line bg-surface-elevated p-5">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-muted">Étiquettes Gmail</h3>
+    <div className={CARTE + " p-5"}>
+      <h3 className={TITRE_SECTION}>Étiquettes Gmail</h3>
+      <span className="mt-1.5 block h-0.5 w-10 bg-[color:var(--crm-gold)]" aria-hidden />
 
       {message.etiquettes.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1">
@@ -840,7 +844,7 @@ function EtiquettesBloc({
             setCategorie(e.target.value as typeof categorie);
             setCible("");
           }}
-          className="rounded-md border border-line bg-background px-3 py-2 text-sm"
+          className={CHAMP}
         >
           <option value="Clients">Clients</option>
           <option value="Partenaires">Partenaires</option>
@@ -851,7 +855,7 @@ function EtiquettesBloc({
           <select
             value={cible}
             onChange={(e) => setCible(e.target.value)}
-            className="min-w-40 rounded-md border border-line bg-background px-3 py-2 text-sm"
+            className={CHAMP + " min-w-40"}
           >
             <option value="">— sous-étiquette (facultatif) —</option>
             {options.map((o) => (
@@ -865,13 +869,13 @@ function EtiquettesBloc({
             value={cible}
             onChange={(e) => setCible(e.target.value)}
             placeholder="Nom (facultatif)"
-            className="rounded-md border border-line bg-background px-3 py-2 text-sm"
+            className={CHAMP}
           />
         )}
 
         <button
           onClick={() => onEtiqueter(`CRM/${categorie}${cible ? `/${cible.replace(/\//g, "-")}` : ""}`)}
-          className="rounded-full bg-ink px-4 py-1.5 text-sm text-primary-foreground"
+          className={BTN_PRIMAIRE}
         >
           Étiqueter
         </button>
@@ -882,7 +886,7 @@ function EtiquettesBloc({
           value={libre}
           onChange={(e) => setLibre(e.target.value)}
           placeholder="Étiquette libre (ex. À relancer)"
-          className="rounded-md border border-line bg-background px-3 py-2 text-sm"
+          className={CHAMP}
         />
         <button
           disabled={!libre.trim()}
@@ -890,7 +894,7 @@ function EtiquettesBloc({
             await onEtiqueter(libre.trim());
             setLibre("");
           }}
-          className="rounded-full border border-line px-4 py-1.5 text-sm disabled:opacity-50"
+          className={BTN_SECONDAIRE}
         >
           Ajouter
         </button>
