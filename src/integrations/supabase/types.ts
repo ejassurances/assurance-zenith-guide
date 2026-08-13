@@ -926,6 +926,7 @@ export type Database = {
           site_web: string | null
           slug: string
           statut: Database["public"]["Enums"]["compagnie_statut"]
+          tier_favori: number | null
           updated_at: string
         }
         Insert: {
@@ -943,6 +944,7 @@ export type Database = {
           site_web?: string | null
           slug: string
           statut?: Database["public"]["Enums"]["compagnie_statut"]
+          tier_favori?: number | null
           updated_at?: string
         }
         Update: {
@@ -960,6 +962,7 @@ export type Database = {
           site_web?: string | null
           slug?: string
           statut?: Database["public"]["Enums"]["compagnie_statut"]
+          tier_favori?: number | null
           updated_at?: string
         }
         Relationships: []
