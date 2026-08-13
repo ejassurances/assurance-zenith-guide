@@ -102,6 +102,7 @@ function CommissionsPage() {
       </div>
 
       {role === "admin" && <AddCommissionForm onCreated={load} />}
+      {role === "admin" && <CommissionBaremeConfig />}
     </div>
   );
 }
