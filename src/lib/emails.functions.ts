@@ -8,8 +8,10 @@ import { z } from "zod";
  * création de fiche + dossier depuis un email, et envoi depuis le CRM.
  */
 
-async function exigerStaff(supabase: { rpc: (fn: string, args?: unknown) => unknown }) {
-  const { data } = (await supabase.rpc("current_user_role")) as { data: unknown };
+type StaffClient = { rpc: (fn: "current_user_role") => PromiseLike<{ data: unknown }> };
+
+async function exigerStaff(supabase: unknown) {
+  const { data } = await (supabase as StaffClient).rpc("current_user_role");
   const role = typeof data === "string" ? data : null;
   if (role !== "admin" && role !== "mandataire") throw new Error("Accès réservé au cabinet.");
   return role;
