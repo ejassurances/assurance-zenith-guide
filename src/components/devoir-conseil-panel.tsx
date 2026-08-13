@@ -72,6 +72,8 @@ export function DevoirConseilPanel({
     garanties: "",
     exigences_client: "",
     cotisation_mensuelle: "",
+    frais_dossier: "",
+    frais_souscription: "",
     economie_estimee: "",
     assiette: "capital_restant_du" as "capital_initial" | "capital_restant_du",
     capital_assure: "",
