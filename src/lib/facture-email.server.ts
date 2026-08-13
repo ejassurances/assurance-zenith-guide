@@ -16,10 +16,11 @@ export type FactureLue = {
   montant_ttc: number | null;
   taux_tva: number | null;
   nature: string | null;
+  compte_charge: string | null;
   confiance: number | null;
 };
 
-const PROMPT = [
+const PROMPT_BASE = [
   "Tu lis une FACTURE D'ACHAT française (fournisseur d'un cabinet de courtage en assurances).",
   "Extrais les informations comptables sans jamais les inventer : si une donnée est absente, mets null.",
   "",
@@ -29,9 +30,10 @@ const PROMPT = [
   "- montants en nombres décimaux (point décimal), sans symbole ni espace.",
   "- taux_tva en pourcentage (ex. 20).",
   "- nature : courte description de la dépense (ex. « abonnement logiciel », « honoraires comptables »).",
+  "- compte_charge : numéro de compte du plan comptable français (classe 6) le plus adapté à la dépense, choisi dans la liste fournie si elle est présente.",
   "- confiance : nombre entre 0 et 1.",
   "",
-  'Réponds STRICTEMENT en JSON : {"fournisseur":"...","numero_facture":"...","date_facture":"2026-01-31","date_echeance":null,"montant_ht":100.0,"montant_tva":20.0,"montant_ttc":120.0,"taux_tva":20,"nature":"...","confiance":0.9}',
+  'Réponds STRICTEMENT en JSON : {"fournisseur":"...","numero_facture":"...","date_facture":"2026-01-31","date_echeance":null,"montant_ht":100.0,"montant_tva":20.0,"montant_ttc":120.0,"taux_tva":20,"nature":"...","compte_charge":"606300","confiance":0.9}',
 ].join("\n");
 
 function extraireJson(texte: string): Record<string, unknown> {
@@ -64,11 +66,24 @@ const dateIso = (v: unknown): string | null => {
 };
 
 /** Analyse le justificatif et renvoie les champs comptables détectés. */
-export async function lireFactureDepuisFichier(fichier: {
-  nom: string;
-  mime: string;
-  base64: string;
-}): Promise<FactureLue> {
+export async function lireFactureDepuisFichier(
+  fichier: {
+    nom: string;
+    mime: string;
+    base64: string;
+  },
+  comptesCharge?: { numero: string; libelle: string }[],
+): Promise<FactureLue> {
+  const PROMPT =
+    comptesCharge && comptesCharge.length > 0
+      ? [
+          PROMPT_BASE,
+          "",
+          "Plan comptable du cabinet — choisis compte_charge STRICTEMENT dans cette liste :",
+          ...comptesCharge.slice(0, 120).map((c) => `- ${c.numero} : ${c.libelle}`),
+        ].join("\n")
+      : PROMPT_BASE;
+
   const cle = process.env["LOVABLE_API_KEY"];
   if (!cle) throw new Error("Lecture automatique indisponible : clé IA absente du projet.");
 
@@ -120,6 +135,19 @@ export async function lireFactureDepuisFichier(fichier: {
       montant_ttc: ttc ?? (ht !== null && tva !== null ? Number((ht + tva).toFixed(2)) : null),
       taux_tva: nombre(brut["taux_tva"]),
       nature: texteCourt(brut["nature"], 200),
+      compte_charge: (() => {
+        const c = texteCourt(brut["compte_charge"], 20);
+        if (!c) return null;
+        const num = c.replace(/[^0-9]/g, "");
+        if (!num) return null;
+        if (comptesCharge && comptesCharge.length > 0) {
+          const exact = comptesCharge.find((x) => x.numero === num);
+          if (exact) return exact.numero;
+          const proche = comptesCharge.find((x) => x.numero.startsWith(num.slice(0, 4)));
+          return proche?.numero ?? null;
+        }
+        return num;
+      })(),
       confiance: nombre(brut["confiance"]),
     };
   }

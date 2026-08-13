@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { importerFactureFichier } from "@/lib/factures-achat.functions";
 
 type Compte = { numero: string; libelle: string; classe: number };
 type Exercice = { id: string; libelle: string; date_debut: string; date_fin: string; cloture: boolean };
@@ -197,6 +199,8 @@ export function FacturesAchatTab() {
         <Kpi label="Factures enregistrées" value={String(rows.length)} />
       </div>
 
+      <ImportPdfFactures onDone={load} />
+
       <NouvelleFacture
         comptes={comptes}
         userId={user?.id ?? null}
@@ -292,6 +296,93 @@ export function FacturesAchatTab() {
           </TableBody>
         </Table>
       </div>
+    </div>
+  );
+}
+
+/* --- Import multi-PDF avec lecture IA et affectation comptable --- */
+function ImportPdfFactures({ onDone }: { onDone: () => void }) {
+  const importer = useServerFn(importerFactureFichier);
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<{ fait: number; total: number }>({ fait: 0, total: 0 });
+  const [resultats, setResultats] = useState<
+    { nom: string; ok: boolean; message: string }[]
+  >([]);
+
+  const lireBase64 = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(String(fr.result).split(",")[1] ?? "");
+      fr.onerror = () => reject(new Error("Lecture du fichier impossible"));
+      fr.readAsDataURL(file);
+    });
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const liste = Array.from(files);
+    setBusy(true);
+    setResultats([]);
+    setProgress({ fait: 0, total: liste.length });
+    const out: { nom: string; ok: boolean; message: string }[] = [];
+    for (const file of liste) {
+      try {
+        if (file.size > 12 * 1024 * 1024) throw new Error("Fichier trop volumineux (max 12 Mo).");
+        const base64 = await lireBase64(file);
+        const r = await importer({
+          data: { nom_fichier: file.name, mime: file.type || "application/pdf", base64 },
+        });
+        out.push({
+          nom: file.name,
+          ok: true,
+          message: `${r.fournisseur} — ${fmt(Number(r.montant_ttc))}${r.compte_charge ? ` — compte ${r.compte_charge}` : " — compte à préciser"}${r.avertissement ? ` (${r.avertissement})` : ""}`,
+        });
+      } catch (e) {
+        out.push({ nom: file.name, ok: false, message: e instanceof Error ? e.message : "Import impossible" });
+      }
+      setProgress((p) => ({ ...p, fait: p.fait + 1 }));
+      setResultats([...out]);
+    }
+    setBusy(false);
+    const ok = out.filter((r) => r.ok).length;
+    if (ok > 0) toast.success(`${ok} facture(s) importée(s) et pré-affectée(s) au plan comptable.`);
+    if (ok < out.length) toast.error(`${out.length - ok} fichier(s) en échec.`);
+    onDone();
+  };
+
+  return (
+    <div className="crm-card p-5">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Import de factures PDF (lecture IA)</h3>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Déposez un ou plusieurs PDF : l'IA lit le fournisseur, les montants, la TVA et propose le compte de charge du
+        plan comptable. Les montants restent modifiables avant génération de l'écriture.
+      </p>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <Input
+          type="file"
+          multiple
+          accept="application/pdf,image/png,image/jpeg"
+          disabled={busy}
+          className="max-w-sm"
+          onChange={(e) => {
+            handleFiles(e.target.files);
+            e.target.value = "";
+          }}
+        />
+        {busy && (
+          <span className="text-sm text-muted-foreground">
+            Analyse en cours… {progress.fait}/{progress.total}
+          </span>
+        )}
+      </div>
+      {resultats.length > 0 && (
+        <ul className="mt-4 space-y-1 text-sm">
+          {resultats.map((r) => (
+            <li key={r.nom} className={r.ok ? "text-emerald-700" : "text-destructive"}>
+              <span className="font-medium">{r.nom}</span> — {r.message}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
