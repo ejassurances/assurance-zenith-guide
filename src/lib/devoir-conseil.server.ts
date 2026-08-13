@@ -245,7 +245,9 @@ export async function genererDevoirConseilAuto(
   supabase: SupabaseClient<any, any, any>,
   dossierId: string,
   userId: string,
+  options?: { sansEnvoi?: boolean },
 ) {
+
   const { data: dossier, error } = await supabase
     .from("dossiers")
     .select(
