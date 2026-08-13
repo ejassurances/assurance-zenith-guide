@@ -136,3 +136,64 @@ export async function envoyerDevoirConseil(
 
   return { id: devoirId, hash };
 }
+
+/**
+ * Génération automatique du devoir de conseil lors du passage à l'étape
+ * « Devoir de conseil envoyé ». Le contenu est pré-rédigé à partir du modèle
+ * de la typologie (défini dans le code, cf. devoir-conseil-modeles.ts) et
+ * complété avec la compagnie / le produit retenus sur le dossier.
+ */
+export async function genererDevoirConseilAuto(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any, any, any>,
+  dossierId: string,
+  userId: string,
+) {
+  const { data: dossier, error } = await supabase
+    .from("dossiers")
+    .select("id, type_assurance, client_nom, client_email, compagnie_id, produit_id, recueil_besoins, economie_estimee")
+    .eq("id", dossierId)
+    .maybeSingle();
+  if (error || !dossier) throw new Error("Dossier introuvable ou accès refusé");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const d = dossier as any;
+  if (!d.client_email) throw new Error("Le dossier n'a pas d'email client — renseignez-le d'abord.");
+
+  let compagnie: string | null = null;
+  let produit: string | null = null;
+  if (d.compagnie_id) {
+    const { data } = await supabase.from("compagnies").select("nom").eq("id", d.compagnie_id).maybeSingle();
+    compagnie = (data as { nom: string } | null)?.nom ?? null;
+  }
+  if (d.produit_id) {
+    const { data } = await supabase.from("produits").select("nom").eq("id", d.produit_id).maybeSingle();
+    produit = (data as { nom: string } | null)?.nom ?? null;
+  }
+  if (!compagnie || !produit) {
+    throw new Error(
+      "Sélectionnez la compagnie et le produit retenus sur le dossier avant de générer le devoir de conseil.",
+    );
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recueil = (d.recueil_besoins ?? {}) as Record<string, any>;
+  const pre = prefillDevoirConseil({
+    branche: d.type_assurance,
+    clientNom: d.client_nom,
+    compagnie,
+    produit,
+    garanties:
+      typeof recueil.garanties_souhaitees === "string" ? recueil.garanties_souhaitees : null,
+    exigences: typeof recueil.objectifs === "string" ? recueil.objectifs : undefined,
+    economie_estimee: typeof d.economie_estimee === "number" ? d.economie_estimee : null,
+  });
+
+  return envoyerDevoirConseil(supabase, dossierId, userId, {
+    recommandation: pre.recommandation,
+    motifs: pre.motifs,
+    mises_en_garde: pre.mises_en_garde,
+    exigences_client: pre.exigences_client,
+    compagnie,
+    produit,
+  });
+}
