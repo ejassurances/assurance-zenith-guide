@@ -339,9 +339,14 @@ export function ProduitGarantiesTab({
         </div>
       )}
 
-      {/* Grille */}
-      <div className="space-y-3">
-        {grille.garanties.map((g) => {
+      {/* Grille standardisée, section par section */}
+      <div className="space-y-5">
+        {groupesGrille(grille).map((sec) => (
+        <div key={sec.groupe ?? "_"} className="space-y-3">
+        {sec.groupe && (
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">{sec.groupe}</h4>
+        )}
+        {sec.garanties.map((g: GarantieDef) => {
           const v = valeurs[g.code] ?? valeurVide();
           const prop = proposition?.valeurs?.[g.code];
           return (
