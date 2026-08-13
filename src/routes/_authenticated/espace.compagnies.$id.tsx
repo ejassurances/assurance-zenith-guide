@@ -181,14 +181,22 @@ function CompagnieDetail() {
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <Link to="/espace/compagnies" className="text-xs text-ink-muted underline underline-offset-4">
-            ← Toutes les compagnies
-          </Link>
-          <h1 className="mt-2 font-serif text-3xl">{c.nom}</h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            {produits.length} produit{produits.length > 1 ? "s" : ""} référencé{produits.length > 1 ? "s" : ""}
-          </p>
+        <div className="flex items-start gap-4">
+          <StoredImage
+            bucket="compagnies-logos"
+            value={c.logo_url}
+            alt={c.nom}
+            className="size-16 rounded border border-line bg-background object-contain p-1"
+          />
+          <div>
+            <Link to="/espace/compagnies" className="text-xs text-ink-muted underline underline-offset-4">
+              ← Toutes les compagnies
+            </Link>
+            <h1 className="mt-2 font-serif text-3xl">{c.nom}</h1>
+            <p className="mt-1 text-sm text-ink-muted">
+              {produits.length} produit{produits.length > 1 ? "s" : ""} référencé{produits.length > 1 ? "s" : ""}
+            </p>
+          </div>
         </div>
         {isAdmin && (
           <button onClick={del} className="text-xs text-red-700 underline underline-offset-4">
