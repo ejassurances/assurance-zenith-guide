@@ -4,6 +4,7 @@ import { sendTemplateEmail } from "@/lib/email-templates/send-email";
 import { SITE } from "@/lib/site";
 import { appUrl } from "@/lib/app-url";
 import { modeleDevoirConseil, prefillDevoirConseil } from "@/lib/devoir-conseil-modeles";
+import { grillePourFamille, synthetiserGaranties, type ValeursGrille } from "@/lib/garanties-grille";
 
 export type DevoirConseilSaisie = {
   recommandation: string;
@@ -37,6 +38,53 @@ export type DevoirConseilSaisie = {
   der_remis?: boolean;
 };
 
+
+/**
+ * Garanties réellement couvertes par le produit retenu, depuis la grille
+ * VALIDÉE par un humain. Blocage strict : sans grille validée, aucun devoir de
+ * conseil ne peut être généré (le trigger SQL applique la même règle en base).
+ */
+export async function garantiesValideesProduit(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any, any, any>,
+  produitId: string | null,
+) {
+  if (!produitId) {
+    throw new Error(
+      "Sélectionnez le produit retenu sur le dossier : le devoir de conseil ne peut citer que les garanties validées de ce produit.",
+    );
+  }
+  const { data: produit } = await supabase
+    .from("produits")
+    .select("nom, produit_familles(code, nom)")
+    .eq("id", produitId)
+    .maybeSingle();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const familleCode = (produit as any)?.produit_familles?.code ?? null;
+
+  const { data: ligne } = await supabase
+    .from("produit_garanties")
+    .select("grille_version, valeurs, statut")
+    .eq("produit_id", produitId)
+    .maybeSingle();
+  const g = ligne as { grille_version: number; valeurs: ValeursGrille; statut: string } | null;
+
+  const grille = grillePourFamille(familleCode);
+  if (!grille) {
+    throw new Error(
+      "Aucune grille de garanties n'est définie pour la typologie de ce produit : génération du devoir de conseil bloquée.",
+    );
+  }
+  if (!g || g.statut !== "valide" || g.grille_version !== grille.version) {
+    throw new Error(
+      "Grille de garanties non validée pour ce produit : complétez et validez la grille (onglet Garanties de la fiche produit) avant de générer le devoir de conseil.",
+    );
+  }
+
+  const synthese = synthetiserGaranties(grille, g.valeurs ?? {});
+  return { grille, valeurs: g.valeurs ?? {}, synthese };
+}
+
 /**
  * Génère (ou met à jour) le devoir de conseil natif du dossier et l'envoie
  * au client pour acceptation ou refus.
@@ -60,7 +108,7 @@ export async function envoyerDevoirConseil(
   if (!d.client_email) throw new Error("Le dossier n'a pas d'email client — renseignez-le d'abord.");
 
   const modele = modeleDevoirConseil(d.type_assurance);
-
+  const garanties = await garantiesValideesProduit(supabase, d.produit_id ?? null);
 
   const contenu = {
     cabinet: {
@@ -83,6 +131,14 @@ export async function envoyerDevoirConseil(
     },
     recueil_besoins: d.recueil_besoins ?? {},
     conseil: saisie,
+    garanties_produit: {
+      famille_code: garanties.grille.familleCode,
+      grille_version: garanties.grille.version,
+      valeurs: garanties.valeurs,
+      couvertes: garanties.synthese.couvertes,
+      optionnelles: garanties.synthese.optionnelles,
+      non_couvertes: garanties.synthese.nonCouvertes,
+    },
     modele: modele.branche,
     modele_libelle: modele.libelle,
     mentions_legales: modele.mentionsLegales,
@@ -205,6 +261,17 @@ export async function genererDevoirConseilAuto(
     );
   }
 
+  const garanties = await garantiesValideesProduit(supabase, d.produit_id ?? null);
+  const garantiesTexte = [
+    garanties.synthese.couvertes.length ? garanties.synthese.couvertes.join(" ; ") : null,
+    garanties.synthese.optionnelles.length
+      ? `en option : ${garanties.synthese.optionnelles.join(" ; ")}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" — ");
+  const exclusions = garanties.synthese.nonCouvertes;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recueil = (d.recueil_besoins ?? {}) as Record<string, any>;
   const pre = prefillDevoirConseil({
@@ -212,8 +279,7 @@ export async function genererDevoirConseilAuto(
     clientNom: d.client_nom,
     compagnie,
     produit,
-    garanties:
-      typeof recueil.garanties_souhaitees === "string" ? recueil.garanties_souhaitees : null,
+    garanties: garantiesTexte || null,
     exigences: typeof recueil.objectifs === "string" ? recueil.objectifs : undefined,
     economie_estimee: typeof d.economie_estimee === "number" ? d.economie_estimee : null,
   });
@@ -223,7 +289,11 @@ export async function genererDevoirConseilAuto(
   return envoyerDevoirConseil(supabase, dossierId, userId, {
     recommandation: pre.recommandation,
     motifs: pre.motifs,
-    mises_en_garde: pre.mises_en_garde,
+    mises_en_garde:
+      exclusions.length > 0
+        ? `${pre.mises_en_garde}\n\nGaranties NON couvertes par le contrat proposé (à connaître avant souscription) : ${exclusions.join(" ; ")}.`
+        : pre.mises_en_garde,
+    garanties: garantiesTexte || undefined,
     exigences_client: pre.exigences_client,
     compagnie,
     produit,

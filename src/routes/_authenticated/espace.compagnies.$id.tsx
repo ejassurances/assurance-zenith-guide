@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CompagnieDocsTable, UploadCompagnieDocForm } from "./espace.conformite";
+import { ProduitGarantiesTab } from "@/components/produit-garanties-tab";
 
 type CompagnieDocRow = {
   id: string;
@@ -94,6 +95,8 @@ type Produit = {
   points_vigilance: string | null;
   cible: string | null;
   commission_taux: number | null;
+  produit_requis_id: string | null;
+  famille_requise_id: string | null;
 };
 type ProduitDoc = {
   id: string;
@@ -443,6 +446,8 @@ function ProduitsTab({
             key={active.id}
             produit={active}
             famille={familles.find((f) => f.id === active.famille_id)}
+            familles={familles}
+            autresProduits={produits.filter((x) => x.id !== active.id)}
             isAdmin={isAdmin}
             onChange={onChange}
             onDelete={() => onSelect(null)}
@@ -460,12 +465,16 @@ function ProduitsTab({
 function ProduitEditor({
   produit,
   famille,
+  familles,
+  autresProduits,
   isAdmin,
   onChange,
   onDelete,
 }: {
   produit: Produit;
   famille: Famille | undefined;
+  familles: Famille[];
+  autresProduits: Produit[];
   isAdmin: boolean;
   onChange: () => void;
   onDelete: () => void;
@@ -505,6 +514,8 @@ function ProduitEditor({
         cible: p.cible,
         commission_taux: p.commission_taux,
         famille_id: p.famille_id,
+        produit_requis_id: p.produit_requis_id,
+        famille_requise_id: p.famille_requise_id,
       })
       .eq("id", p.id);
     setSaving(false);
@@ -633,6 +644,52 @@ function ProduitEditor({
         </div>
       </section>
 
+      {/* Vente couplée */}
+      <section className="grid gap-4 rounded-lg border border-line bg-surface p-5 md:grid-cols-2">
+        <div className="md:col-span-2">
+          <h3 className="font-serif text-lg">Contrainte de vente couplée</h3>
+          <p className="text-xs text-ink-muted">
+            Ce produit ne peut pas être souscrit seul : le CRM bloque la création du contrat si le prérequis n'est pas
+            déjà présent sur le dossier ou le client.
+          </p>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-ink-muted">Produit requis</label>
+          <select
+            value={p.produit_requis_id ?? ""}
+            onChange={(e) => setP({ ...p, produit_requis_id: e.target.value || null })}
+            disabled={readOnly}
+            className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+          >
+            <option value="">— Aucun —</option>
+            {autresProduits.map((ap) => (
+              <option key={ap.id} value={ap.id}>
+                {ap.nom}
+                {ap.code_produit ? ` (${ap.code_produit})` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-ink-muted">
+            Ou famille de produits requise (toutes compagnies)
+          </label>
+          <select
+            value={p.famille_requise_id ?? ""}
+            onChange={(e) => setP({ ...p, famille_requise_id: e.target.value || null })}
+            disabled={readOnly}
+            className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+          >
+            <option value="">— Aucune —</option>
+            {familles.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.nom}
+              </option>
+            ))}
+          </select>
+        </div>
+      </section>
+
       {isAdmin && (
         <div className="flex justify-between">
           <button onClick={del} className="text-xs text-red-700 underline underline-offset-4">
@@ -649,6 +706,14 @@ function ProduitEditor({
       )}
 
       <DocumentsBlock produitId={p.id} docs={docs} isAdmin={isAdmin} onChange={loadDocs} />
+
+      <ProduitGarantiesTab
+        produitId={p.id}
+        familleCode={famille?.code ?? null}
+        familleNom={famille?.nom}
+        isAdmin={isAdmin}
+        docs={docs.map((d) => ({ id: d.id, nom: d.nom, type: d.type }))}
+      />
     </div>
   );
 }

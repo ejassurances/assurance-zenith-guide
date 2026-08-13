@@ -2168,6 +2168,135 @@ export type Database = {
         }
         Relationships: []
       }
+      produit_garanties: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          document_source_id: string | null
+          famille_code: string
+          grille_version: number
+          id: string
+          notes: string | null
+          produit_id: string
+          statut: string
+          updated_at: string
+          valeurs: Json
+          valide_le: string | null
+          valide_par: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          document_source_id?: string | null
+          famille_code: string
+          grille_version?: number
+          id?: string
+          notes?: string | null
+          produit_id: string
+          statut?: string
+          updated_at?: string
+          valeurs?: Json
+          valide_le?: string | null
+          valide_par?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          document_source_id?: string | null
+          famille_code?: string
+          grille_version?: number
+          id?: string
+          notes?: string | null
+          produit_id?: string
+          statut?: string
+          updated_at?: string
+          valeurs?: Json
+          valide_le?: string | null
+          valide_par?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produit_garanties_document_source_id_fkey"
+            columns: ["document_source_id"]
+            isOneToOne: false
+            referencedRelation: "produit_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produit_garanties_produit_id_fkey"
+            columns: ["produit_id"]
+            isOneToOne: true
+            referencedRelation: "produits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produit_garanties_propositions: {
+        Row: {
+          avertissements: string | null
+          created_at: string
+          created_by: string | null
+          document_id: string | null
+          famille_code: string
+          grille_version: number
+          id: string
+          modele_ia: string | null
+          produit_id: string
+          statut: string
+          traite_le: string | null
+          traite_par: string | null
+          updated_at: string
+          valeurs: Json
+        }
+        Insert: {
+          avertissements?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          famille_code: string
+          grille_version?: number
+          id?: string
+          modele_ia?: string | null
+          produit_id: string
+          statut?: string
+          traite_le?: string | null
+          traite_par?: string | null
+          updated_at?: string
+          valeurs?: Json
+        }
+        Update: {
+          avertissements?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          famille_code?: string
+          grille_version?: number
+          id?: string
+          modele_ia?: string | null
+          produit_id?: string
+          statut?: string
+          traite_le?: string | null
+          traite_par?: string | null
+          updated_at?: string
+          valeurs?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produit_garanties_propositions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "produit_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produit_garanties_propositions_produit_id_fkey"
+            columns: ["produit_id"]
+            isOneToOne: false
+            referencedRelation: "produits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       produits: {
         Row: {
           caracteristiques: Json
@@ -2175,14 +2304,17 @@ export type Database = {
           code_produit: string | null
           commission_taux: number | null
           compagnie_id: string
+          couplage_message: string | null
           created_at: string
           created_by: string | null
           description: string | null
           famille_id: string
+          famille_requise_id: string | null
           id: string
           nom: string
           points_forts: string | null
           points_vigilance: string | null
+          produit_requis_id: string | null
           statut: Database["public"]["Enums"]["produit_statut"]
           updated_at: string
         }
@@ -2192,14 +2324,17 @@ export type Database = {
           code_produit?: string | null
           commission_taux?: number | null
           compagnie_id: string
+          couplage_message?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           famille_id: string
+          famille_requise_id?: string | null
           id?: string
           nom: string
           points_forts?: string | null
           points_vigilance?: string | null
+          produit_requis_id?: string | null
           statut?: Database["public"]["Enums"]["produit_statut"]
           updated_at?: string
         }
@@ -2209,14 +2344,17 @@ export type Database = {
           code_produit?: string | null
           commission_taux?: number | null
           compagnie_id?: string
+          couplage_message?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           famille_id?: string
+          famille_requise_id?: string | null
           id?: string
           nom?: string
           points_forts?: string | null
           points_vigilance?: string | null
+          produit_requis_id?: string | null
           statut?: Database["public"]["Enums"]["produit_statut"]
           updated_at?: string
         }
@@ -2233,6 +2371,20 @@ export type Database = {
             columns: ["famille_id"]
             isOneToOne: false
             referencedRelation: "produit_familles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produits_famille_requise_id_fkey"
+            columns: ["famille_requise_id"]
+            isOneToOne: false
+            referencedRelation: "produit_familles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produits_produit_requis_id_fkey"
+            columns: ["produit_requis_id"]
+            isOneToOne: false
+            referencedRelation: "produits"
             referencedColumns: ["id"]
           },
         ]

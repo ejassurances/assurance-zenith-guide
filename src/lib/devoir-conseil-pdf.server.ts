@@ -362,6 +362,22 @@ export async function genererPdfDevoirConseil(input: DevoirPdfInput): Promise<Ui
   y -= 4;
   para(String(input.recommandation ?? "-"), { gap: 4 });
 
+  /* Garanties du produit issues de la grille validee */
+  const gp = c.garanties_produit ?? null;
+  if (gp) {
+    const couvertes: string[] = Array.isArray(gp.couvertes) ? gp.couvertes : [];
+    const optionnelles: string[] = Array.isArray(gp.optionnelles) ? gp.optionnelles : [];
+    const nonCouvertes: string[] = Array.isArray(gp.non_couvertes) ? gp.non_couvertes : [];
+    titreSection("Garanties du contrat propose");
+    if (couvertes.length) kv("Garanties couvertes", couvertes.join(" ; "));
+    if (optionnelles.length) kv("Garanties en option", optionnelles.join(" ; "));
+    if (nonCouvertes.length) kv("Garanties NON couvertes", nonCouvertes.join(" ; "));
+    para(
+      "Ce releve est etabli d'apres les conditions generales et l'IPID du produit, verifies et valides par le cabinet.",
+      { size: 8.5, color: MUTED, gap: 4 },
+    );
+  }
+
   /* ---------------------- 6. Motifs ---------------------- */
   titreSection("Motifs du conseil au regard de vos exigences (point 2)");
   para(String(input.motifs ?? "-"), { gap: 4 });
