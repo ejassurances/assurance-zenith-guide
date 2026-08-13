@@ -182,6 +182,14 @@ export function DevoirConseilPanel({
         >
           {open ? "Fermer" : devoir ? "Regénérer / renvoyer" : "Rédiger le devoir de conseil"}
         </button>
+        {open && (
+          <button
+            onClick={appliquerModele}
+            className="rounded-full border border-line px-4 py-2 text-sm hover:bg-surface"
+          >
+            Pré-remplir depuis le modèle
+          </button>
+        )}
       </div>
 
       {open && (
