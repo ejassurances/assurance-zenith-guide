@@ -59,13 +59,8 @@ export const signerDevoirConseil = createServerFn({ method: "POST" })
       .eq("id", data.devoir_id);
     if (upErr) throw new Error(upErr.message);
 
-    await supabase.from("dossiers").update({ statut: "devoir_conseil_signe" }).eq("id", devoir.dossier_id);
-    await supabase.from("dossier_etapes_historique").insert({
-      dossier_id: devoir.dossier_id,
-      nouvelle_etape: "devoir_conseil_signe",
-      commentaire: "Devoir de conseil accepté et signé par le client",
-      par: userId,
-    });
+    // Avancement du pipeline + historique : trigger SQL devoir_conseil_avance_dossier
+    // (le client signataire n'a pas les droits RLS sur la table dossiers).
 
     return { ok: true };
   });
@@ -102,13 +97,7 @@ export const refuserDevoirConseil = createServerFn({ method: "POST" })
       .eq("id", data.devoir_id);
     if (upErr) throw new Error(upErr.message);
 
-    await supabase.from("dossiers").update({ statut: "devoir_conseil_refuse" }).eq("id", devoir.dossier_id);
-    await supabase.from("dossier_etapes_historique").insert({
-      dossier_id: devoir.dossier_id,
-      nouvelle_etape: "devoir_conseil_refuse",
-      commentaire: `Refus du client : ${data.motif}`,
-      par: userId,
-    });
+    // Avancement du pipeline + historique : trigger SQL devoir_conseil_avance_dossier.
 
     return { ok: true };
   });
