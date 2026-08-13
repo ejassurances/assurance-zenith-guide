@@ -2,9 +2,15 @@ import { useMemo, useState } from "react";
 import {
   isFieldVisible,
   missingRequired,
+  personnesAssurees,
+  ageDepuisDateNaissance,
+  LIENS_ASSURE,
+  REGIMES_OBLIGATOIRES,
   type BrancheConfig,
   type FieldConfig,
+  type PersonneAssuree,
 } from "@/lib/recueil-besoins-schemas";
+
 import imgTrottinette from "@/assets/edpm-trottinette.png";
 import imgGyroroue from "@/assets/edpm-gyroroue.png";
 import imgMonoroue from "@/assets/edpm-monoroue.png";
