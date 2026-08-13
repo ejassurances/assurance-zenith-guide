@@ -73,6 +73,17 @@ function CompagniesIndex() {
     load();
   }
 
+  /** Compagnie favorite du cabinet : priorise l'offre dans le classement IA des devis. */
+  async function setTier(id: string, tier: number | null) {
+    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, tier_favori: tier } : r)));
+    const { error } = await supabase.from("compagnies").update({ tier_favori: tier }).eq("id", id);
+    if (error) {
+      setError(error.message);
+      load();
+    }
+  }
+
+
   return (
     <div className="space-y-8">
       <div className="flex items-end justify-between gap-4">
