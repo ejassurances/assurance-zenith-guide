@@ -1050,6 +1050,47 @@ export type Database = {
         }
         Relationships: []
       }
+      consentements_plateforme: {
+        Row: {
+          accepte_le: string
+          adresse_ip: string | null
+          client_id: string
+          created_at: string
+          id: string
+          type: string
+          updated_at: string
+          version_texte: string
+        }
+        Insert: {
+          accepte_le?: string
+          adresse_ip?: string | null
+          client_id: string
+          created_at?: string
+          id?: string
+          type: string
+          updated_at?: string
+          version_texte: string
+        }
+        Update: {
+          accepte_le?: string
+          adresse_ip?: string | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          type?: string
+          updated_at?: string
+          version_texte?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consentements_plateforme_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contrat_echeances: {
         Row: {
           annee: number
