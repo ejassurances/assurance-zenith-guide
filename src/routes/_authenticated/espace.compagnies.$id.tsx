@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CompagnieDocsTable, UploadCompagnieDocForm } from "./espace.conformite";
 import { ProduitGarantiesTab } from "@/components/produit-garanties-tab";
+import { EmailsLiesPanel } from "@/components/emails-lies-panel";
 
 type CompagnieDocRow = {
   id: string;
