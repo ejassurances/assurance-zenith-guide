@@ -25,6 +25,7 @@ import { Route as AuthenticatedEspaceSignerLettreMissionRouteImport } from './ro
 import { Route as AuthenticatedEspaceSignerDevoirConseilRouteImport } from './routes/_authenticated/espace.signer-devoir-conseil'
 import { Route as AuthenticatedEspaceSignerDerRouteImport } from './routes/_authenticated/espace.signer-der'
 import { Route as AuthenticatedEspaceParametresRouteImport } from './routes/_authenticated/espace.parametres'
+import { Route as AuthenticatedEspaceNeolianeRouteImport } from './routes/_authenticated/espace.neoliane'
 import { Route as AuthenticatedEspaceMonEspaceRouteImport } from './routes/_authenticated/espace.mon-espace'
 import { Route as AuthenticatedEspaceDerModeleRouteImport } from './routes/_authenticated/espace.der-modele'
 import { Route as AuthenticatedEspaceConformiteRouteImport } from './routes/_authenticated/espace.conformite'
@@ -128,6 +129,12 @@ const AuthenticatedEspaceParametresRoute =
   AuthenticatedEspaceParametresRouteImport.update({
     id: '/parametres',
     path: '/parametres',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
+const AuthenticatedEspaceNeolianeRoute =
+  AuthenticatedEspaceNeolianeRouteImport.update({
+    id: '/neoliane',
+    path: '/neoliane',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
 const AuthenticatedEspaceMonEspaceRoute =
@@ -241,6 +248,7 @@ export interface FileRoutesByFullPath {
   '/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
   '/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
+  '/espace/neoliane': typeof AuthenticatedEspaceNeolianeRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
   '/espace/signer-devoir-conseil': typeof AuthenticatedEspaceSignerDevoirConseilRoute
@@ -274,6 +282,7 @@ export interface FileRoutesByTo {
   '/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
   '/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
+  '/espace/neoliane': typeof AuthenticatedEspaceNeolianeRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
   '/espace/signer-devoir-conseil': typeof AuthenticatedEspaceSignerDevoirConseilRoute
@@ -310,6 +319,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/_authenticated/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
   '/_authenticated/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
+  '/_authenticated/espace/neoliane': typeof AuthenticatedEspaceNeolianeRoute
   '/_authenticated/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/_authenticated/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
   '/_authenticated/espace/signer-devoir-conseil': typeof AuthenticatedEspaceSignerDevoirConseilRoute
@@ -346,6 +356,7 @@ export interface FileRouteTypes {
     | '/espace/conformite'
     | '/espace/der-modele'
     | '/espace/mon-espace'
+    | '/espace/neoliane'
     | '/espace/parametres'
     | '/espace/signer-der'
     | '/espace/signer-devoir-conseil'
@@ -379,6 +390,7 @@ export interface FileRouteTypes {
     | '/espace/conformite'
     | '/espace/der-modele'
     | '/espace/mon-espace'
+    | '/espace/neoliane'
     | '/espace/parametres'
     | '/espace/signer-der'
     | '/espace/signer-devoir-conseil'
@@ -414,6 +426,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/conformite'
     | '/_authenticated/espace/der-modele'
     | '/_authenticated/espace/mon-espace'
+    | '/_authenticated/espace/neoliane'
     | '/_authenticated/espace/parametres'
     | '/_authenticated/espace/signer-der'
     | '/_authenticated/espace/signer-devoir-conseil'
@@ -567,6 +580,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceParametresRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/neoliane': {
+      id: '/_authenticated/espace/neoliane'
+      path: '/neoliane'
+      fullPath: '/espace/neoliane'
+      preLoaderRoute: typeof AuthenticatedEspaceNeolianeRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
     '/_authenticated/espace/mon-espace': {
       id: '/_authenticated/espace/mon-espace'
       path: '/mon-espace'
@@ -696,6 +716,7 @@ interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceConformiteRoute: typeof AuthenticatedEspaceConformiteRoute
   AuthenticatedEspaceDerModeleRoute: typeof AuthenticatedEspaceDerModeleRoute
   AuthenticatedEspaceMonEspaceRoute: typeof AuthenticatedEspaceMonEspaceRoute
+  AuthenticatedEspaceNeolianeRoute: typeof AuthenticatedEspaceNeolianeRoute
   AuthenticatedEspaceParametresRoute: typeof AuthenticatedEspaceParametresRoute
   AuthenticatedEspaceSignerDerRoute: typeof AuthenticatedEspaceSignerDerRoute
   AuthenticatedEspaceSignerDevoirConseilRoute: typeof AuthenticatedEspaceSignerDevoirConseilRoute
@@ -719,6 +740,7 @@ const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
   AuthenticatedEspaceConformiteRoute: AuthenticatedEspaceConformiteRoute,
   AuthenticatedEspaceDerModeleRoute: AuthenticatedEspaceDerModeleRoute,
   AuthenticatedEspaceMonEspaceRoute: AuthenticatedEspaceMonEspaceRoute,
+  AuthenticatedEspaceNeolianeRoute: AuthenticatedEspaceNeolianeRoute,
   AuthenticatedEspaceParametresRoute: AuthenticatedEspaceParametresRoute,
   AuthenticatedEspaceSignerDerRoute: AuthenticatedEspaceSignerDerRoute,
   AuthenticatedEspaceSignerDevoirConseilRoute:
