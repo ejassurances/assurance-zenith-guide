@@ -61,12 +61,15 @@ export function ProduitFormulesTab({
   familleNom,
   isAdmin,
   docs,
+  modeFixe = false,
 }: {
   produitId: string;
   familleCode: string | null;
   familleNom?: string;
   isAdmin: boolean;
   docs: DocAnalysable[];
+  /** Produit en mode_tarification = 'fixe' : cotisation fixe par formule + options payantes. */
+  modeFixe?: boolean;
 }) {
   const [formules, setFormules] = useState<Formule[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -76,7 +79,8 @@ export function ProduitFormulesTab({
   const load = useCallback(async () => {
     const { data, error } = await supabase
       .from("produit_formules")
-      .select("id,produit_id,nom,code,ordre,actif")
+      .select("id,produit_id,nom,code,ordre,actif,tarif_fixe")
+
       .eq("produit_id", produitId)
       .order("ordre")
       .order("nom");
