@@ -557,6 +557,7 @@ function ProduitEditor({
         famille_id: p.famille_id,
         produit_requis_id: p.produit_requis_id,
         famille_requise_id: p.famille_requise_id,
+        image_url: p.image_url,
       })
       .eq("id", p.id);
     setSaving(false);
