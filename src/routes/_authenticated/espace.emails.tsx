@@ -16,6 +16,8 @@ import {
   archiverMessageCrm,
   supprimerMessageCrm,
   etiqueterMessageCrm,
+  scannerBoiteCrm,
+
 } from "@/lib/emails.functions";
 import { importerFactureDepuisEmail } from "@/lib/factures-achat.functions";
 import { toast } from "sonner";
