@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { sendTemplateEmail } from "@/lib/email-templates/send-email";
 import { SITE } from "@/lib/site";
 import { appUrl } from "@/lib/app-url";
+import { modeleDevoirConseil, prefillDevoirConseil } from "@/lib/devoir-conseil-modeles";
 
 export type DevoirConseilSaisie = {
   recommandation: string;
