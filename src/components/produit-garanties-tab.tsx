@@ -234,8 +234,9 @@ export function ProduitGarantiesTab({
         </p>
       )}
 
-      {/* Extraction automatique */}
-      <div className="space-y-2 rounded-md border border-line bg-background p-3">
+      {/* Extraction automatique (grille produit uniquement) */}
+      <div className={`space-y-2 rounded-md border border-line bg-background p-3 ${modeFormule ? "hidden" : ""}`}>
+
         <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
           Extraction assistée depuis les CG / IPID
         </p>
