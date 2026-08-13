@@ -83,7 +83,8 @@ function DossiersList() {
         ) : items.length === 0 ? (
           <p className="p-6 text-sm text-ink-muted">Aucun dossier pour le moment.</p>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
             <thead className="border-b border-line bg-background/50 text-left text-xs uppercase tracking-wide text-ink-muted">
               <tr>
                 <th className="px-4 py-3">Référence</th>
@@ -111,6 +112,7 @@ function DossiersList() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

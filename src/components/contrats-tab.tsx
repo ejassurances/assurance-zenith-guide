@@ -112,7 +112,8 @@ export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: 
         </p>
       ) : (
         <div className="overflow-hidden rounded-lg border border-line">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
             <thead className="bg-surface text-xs uppercase tracking-wide text-ink-muted">
               <tr>
                 <th className="px-3 py-2 text-left">Produit</th>
@@ -163,6 +164,7 @@ export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: 
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>
