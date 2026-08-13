@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { declencherLettreMissionAuto } from "@/lib/lettres-mission.functions";
 import { useAuth } from "@/lib/auth-context";
 import { estimerEconomie } from "@/lib/insurance-rates";
 import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
