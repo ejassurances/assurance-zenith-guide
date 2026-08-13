@@ -160,7 +160,9 @@ function ClientsList() {
                 <th className="px-4 py-3">Marque</th>
                 <th className="px-4 py-3">Besoins</th>
                 <th className="px-4 py-3">Contact</th>
+                <th className="px-4 py-3">Conformité</th>
                 <th className="px-4 py-3">Statut</th>
+
                 {canDelete && <th className="px-4 py-3 text-right">Actions</th>}
               </tr>
             </thead>
