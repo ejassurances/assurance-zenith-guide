@@ -397,7 +397,13 @@ export function ProduitGarantiesTab({
         <button
           type="button"
           disabled={busy !== null}
-          onClick={() => run("brouillon", () => brouillon({ data: payload() }), "Brouillon enregistré.")}
+          onClick={() =>
+            run(
+              "brouillon",
+              () => (modeFormule ? enregistrerFormule("brouillon") : brouillon({ data: payload() })),
+              "Brouillon enregistré.",
+            )
+          }
           className="rounded-md border border-line px-4 py-2 text-sm"
         >
           Enregistrer en brouillon
@@ -409,8 +415,13 @@ export function ProduitGarantiesTab({
           onClick={() =>
             run(
               "valider",
-              () => valider({ data: { ...payload(), proposition_id: proposition?.id ?? null } }),
-              "Grille validée — le produit peut alimenter un devoir de conseil.",
+              () =>
+                modeFormule
+                  ? enregistrerFormule("valide")
+                  : valider({ data: { ...payload(), proposition_id: proposition?.id ?? null } }),
+              modeFormule
+                ? "Grille de la formule validée — elle peut alimenter un devoir de conseil."
+                : "Grille validée — le produit peut alimenter un devoir de conseil.",
             )
           }
           className="rounded-md bg-ink px-4 py-2 text-sm text-surface disabled:opacity-50"
@@ -418,6 +429,7 @@ export function ProduitGarantiesTab({
           Valider la grille
         </button>
       </div>
+
     </section>
   );
 }
