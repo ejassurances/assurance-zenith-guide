@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.trg_sinistre_gestion_staff_only() FROM anon, authenticated;
