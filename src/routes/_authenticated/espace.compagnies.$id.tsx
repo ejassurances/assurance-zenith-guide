@@ -273,7 +273,17 @@ function InfosTab({
     >
       <Field label="Nom" value={form.nom} onChange={(v) => setForm({ ...form, nom: v })} readOnly={readOnly} />
       <Field label="Site web" value={form.site_web ?? ""} onChange={(v) => setForm({ ...form, site_web: v })} readOnly={readOnly} />
-      <Field label="Logo (URL)" value={form.logo_url ?? ""} onChange={(v) => setForm({ ...form, logo_url: v })} readOnly={readOnly} />
+      <ImageUploadField
+        bucket="compagnies-logos"
+        prefix={c.id}
+        value={form.logo_url}
+        label="Logo de la compagnie"
+        canEdit={!readOnly}
+        onUploaded={async (path) => {
+          setForm({ ...form, logo_url: path });
+          onSave({ logo_url: path });
+        }}
+      />
       <div>
         <label className="mb-1 block text-xs font-medium text-ink-muted">Statut</label>
         <select
