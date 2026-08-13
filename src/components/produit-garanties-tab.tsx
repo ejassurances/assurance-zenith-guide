@@ -45,6 +45,14 @@ export type DocAnalysable = { id: string; nom: string; type: string };
 
 const COUVERTURES: Couverture[] = ["oui", "non", "option", "inconnu"];
 
+const DOC_LABEL: Record<string, string> = {
+  conditions_generales: "CG",
+  ipid: "IPID",
+  fiche_produit: "Fiche produit",
+  ccsf: "CCSF",
+  tableau_garanties: "Tableau de garanties",
+};
+
 const badge = (couv: Couverture) =>
   couv === "oui"
     ? "bg-emerald-50 text-emerald-800 border-emerald-200"
