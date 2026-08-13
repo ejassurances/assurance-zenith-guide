@@ -98,7 +98,10 @@ export async function envoyerDevoirConseil(
   dossierId: string,
   userId: string,
   saisie: DevoirConseilSaisie,
+  options?: { sansEnvoi?: boolean },
 ) {
+  const sansEnvoi = options?.sansEnvoi === true;
+
   const { data: dossier, error: dErr } = await supabase
     .from("dossiers")
     .select("*")
@@ -166,12 +169,13 @@ export async function envoyerDevoirConseil(
     recommandation: saisie.recommandation,
     motifs: saisie.motifs,
     mises_en_garde: saisie.mises_en_garde ?? null,
-    statut: "envoye",
+    statut: sansEnvoi ? "brouillon" : "envoye",
     email_destinataire: d.client_email,
-    envoye_le: new Date().toISOString(),
+    envoye_le: sansEnvoi ? null : new Date().toISOString(),
     refus_motif: null,
     refuse_le: null,
   };
+
 
   let devoirId: string;
   if (existing && existing.statut !== "signe") {
@@ -194,6 +198,11 @@ export async function envoyerDevoirConseil(
     await archiverDevoirConseil(supabase, devoirId, userId);
   } catch {
     // l'archivage ne doit pas bloquer l'envoi au client
+  }
+
+  if (sansEnvoi) {
+    // Brouillon : relecture staff obligatoire avant tout envoi au client.
+    return { id: devoirId, hash, envoye: false };
   }
 
   const result = await sendTemplateEmail("devoir-conseil-envoi", d.client_email, {
@@ -221,7 +230,8 @@ export async function envoyerDevoirConseil(
     par: userId,
   });
 
-  return { id: devoirId, hash };
+  return { id: devoirId, hash, envoye: true };
+
 }
 
 /**
@@ -235,7 +245,9 @@ export async function genererDevoirConseilAuto(
   supabase: SupabaseClient<any, any, any>,
   dossierId: string,
   userId: string,
+  options?: { sansEnvoi?: boolean },
 ) {
+
   const { data: dossier, error } = await supabase
     .from("dossiers")
     .select(
@@ -289,24 +301,31 @@ export async function genererDevoirConseilAuto(
 
   const emprunteur = d.type_assurance === "emprunteur";
 
-  return envoyerDevoirConseil(supabase, dossierId, userId, {
-    recommandation: pre.recommandation,
-    motifs: pre.motifs,
-    mises_en_garde:
-      exclusions.length > 0
-        ? `${pre.mises_en_garde}\n\nGaranties NON couvertes par le contrat proposé (à connaître avant souscription) : ${exclusions.join(" ; ")}.`
-        : pre.mises_en_garde,
-    garanties: garantiesTexte || undefined,
-    exigences_client: pre.exigences_client,
-    compagnie,
-    produit,
-    offres: [{ compagnie, produit, statut: "retenue", commentaire: "Meilleur rapport garanties / coût" }],
-    ...(emprunteur
-      ? {
-          assiette: "capital_restant_du" as const,
-          capital_assure: typeof d.capital === "number" ? d.capital : null,
-          duree_mois: typeof d.duree_mois === "number" ? d.duree_mois : null,
-        }
-      : {}),
-  });
+  return envoyerDevoirConseil(
+    supabase,
+    dossierId,
+    userId,
+    {
+      recommandation: pre.recommandation,
+      motifs: pre.motifs,
+      mises_en_garde:
+        exclusions.length > 0
+          ? `${pre.mises_en_garde}\n\nGaranties NON couvertes par le contrat proposé (à connaître avant souscription) : ${exclusions.join(" ; ")}.`
+          : pre.mises_en_garde,
+      garanties: garantiesTexte || undefined,
+      exigences_client: pre.exigences_client,
+      compagnie,
+      produit,
+      offres: [{ compagnie, produit, statut: "retenue", commentaire: "Meilleur rapport garanties / coût" }],
+      ...(emprunteur
+        ? {
+            assiette: "capital_restant_du" as const,
+            capital_assure: typeof d.capital === "number" ? d.capital : null,
+            duree_mois: typeof d.duree_mois === "number" ? d.duree_mois : null,
+          }
+        : {}),
+    },
+    options,
+  );
+
 }

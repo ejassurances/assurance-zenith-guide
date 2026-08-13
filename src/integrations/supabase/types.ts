@@ -1759,6 +1759,50 @@ export type Database = {
           },
         ]
       }
+      dossier_devis_classements: {
+        Row: {
+          classement: Json
+          created_at: string
+          created_by: string | null
+          dossier_id: string
+          genere_le: string
+          id: string
+          modele_ia: string | null
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          classement?: Json
+          created_at?: string
+          created_by?: string | null
+          dossier_id: string
+          genere_le?: string
+          id?: string
+          modele_ia?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          classement?: Json
+          created_at?: string
+          created_by?: string | null
+          dossier_id?: string
+          genere_le?: string
+          id?: string
+          modele_ia?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dossier_devis_classements_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dossier_etapes_historique: {
         Row: {
           ancienne_etape: string | null
