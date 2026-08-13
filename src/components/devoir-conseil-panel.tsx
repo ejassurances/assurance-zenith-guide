@@ -38,6 +38,7 @@ type OffreForm = {
 };
 
 const STATUT_LABEL: Record<string, string> = {
+  brouillon: "Brouillon — à relire puis envoyer",
   envoye: "Envoyé — en attente du client",
   signe: "Signé par le client",
   refuse: "Refusé par le client",
