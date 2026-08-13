@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { changerEtapeDossier } from "@/lib/devoir-conseil.functions";
-import { ETAPES, ETAPES_HORS_PARCOURS, etapeDef, etapeIndex, etapeSuivante } from "@/lib/pipeline-dossier";
+import { ETAPES, ETAPES_HORS_PARCOURS, etapeDef, etapeIndex, etapeSuivante, type EtapeKey } from "@/lib/pipeline-dossier";
 
 type HistoRow = {
   id: string;
