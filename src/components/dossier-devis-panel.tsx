@@ -234,13 +234,47 @@ export function DossierDevisPanel({
   };
 
 
+  const formuleFixeChoisie = formulesFixes.find((f) => f.id === fixeFormuleId) ?? null;
+  const totalFixe =
+    (formuleFixeChoisie?.tarif_fixe == null ? 0 : Number(formuleFixeChoisie.tarif_fixe)) +
+    optionsFixes
+      .filter((o) => fixeOptionIds.includes(o.id))
+      .reduce((s, o) => s + (o.tarif_fixe == null ? 0 : Number(o.tarif_fixe)), 0);
+
+  const genererDepuisTarifFixe = async () => {
+    if (!fixeFormuleId) return;
+    if (
+      !confirm(
+        "Créer ce devis comme seule offre du dossier et générer le devoir de conseil en brouillon (sans envoi au client) ?",
+      )
+    )
+      return;
+    setErr(null);
+    setIaMsg(null);
+    setFixeEtat("envoi");
+    try {
+      await creerFixe({ data: { dossier_id: dossierId, formule_id: fixeFormuleId, option_ids: fixeOptionIds } });
+      await load();
+      setIaMsg(
+        "Devis créé depuis le tarif fixe du produit et devoir de conseil généré en brouillon. L'envoi au client reste à déclencher manuellement.",
+      );
+      onChanged?.();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Génération impossible");
+    } finally {
+      setFixeEtat("idle");
+    }
+  };
+
   return (
     <div className="rounded-2xl border border-line bg-surface-elevated p-5">
       <h2 className="font-serif text-lg font-medium text-ink">Devis comparés</h2>
       <p className="mt-1 text-xs text-ink-muted">
-        Saisie manuelle des devis étudiés pour ce dossier{branche ? ` (${branche})` : ""}. Ils alimentent le tableau
-        des offres comparées du devoir de conseil.
+        {produitFixe
+          ? `Produit à tarification fixe (${produitFixe.nom}) : le devis est repris directement du tarif renseigné sur la fiche produit, sans ressaisie ni classement IA.`
+          : `Saisie manuelle des devis étudiés pour ce dossier${branche ? ` (${branche})` : ""}. Ils alimentent le tableau des offres comparées du devoir de conseil.`}
       </p>
+
 
       {err && <p className="mt-2 text-sm text-destructive">{err}</p>}
 
