@@ -964,6 +964,8 @@ function DocumentsBlock({
 }) {
   const typesDisponibles = docTypesPour(familleCode);
   const [type, setType] = useState<ProduitDoc["type"]>("conditions_generales");
+  /** Type retenu : le choix courant s'il est valide pour la branche, sinon le premier proposé. */
+  const typeEffectif = typesDisponibles.includes(type) ? type : typesDisponibles[0];
 
   const [version, setVersion] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -974,7 +976,7 @@ function DocumentsBlock({
     if (!file) return;
     setUploading(true);
     const ext = file.name.split(".").pop() ?? "bin";
-    const path = `${produitId}/${type}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+    const path = `${produitId}/${typeEffectif}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("produits-documents").upload(path, file, {
       contentType: file.type || undefined,
       upsert: false,
@@ -985,13 +987,13 @@ function DocumentsBlock({
     }
     const { error: insErr } = await supabase.from("produit_documents").insert({
       produit_id: produitId,
-      type,
+      type: typeEffectif,
       nom: file.name,
       version: version || null,
       storage_path: path,
       taille_bytes: file.size,
       mime_type: file.type,
-      interne: type === "fiche_produit",
+      interne: typeEffectif === "fiche_produit",
     });
     setUploading(false);
     if (insErr) return alert(insErr.message);
@@ -1028,7 +1030,7 @@ function DocumentsBlock({
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-muted">Type</label>
             <select
-              value={typesDisponibles.includes(type) ? type : typesDisponibles[0]}
+              value={typeEffectif}
               onChange={(e) => setType(e.target.value as ProduitDoc["type"])}
               className="rounded-md border border-line bg-background px-2 py-1.5 text-sm"
             >
