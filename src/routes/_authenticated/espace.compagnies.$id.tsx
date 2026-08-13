@@ -587,6 +587,22 @@ function ProduitEditor({
           onChange={(v) => setP({ ...p, code_produit: v })}
           readOnly={readOnly}
         />
+        <div className="md:col-span-2">
+          <ImageUploadField
+            bucket="produits-images"
+            prefix={produit.id}
+            value={p.image_url}
+            label="Image du produit"
+            canEdit={!readOnly}
+            onUploaded={async (path) => {
+              setP({ ...p, image_url: path });
+              const { error } = await supabase.from("produits").update({ image_url: path }).eq("id", p.id);
+              if (error) return alert(error.message);
+              onChange();
+            }}
+          />
+        </div>
+
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-muted">Statut</label>
           <select
