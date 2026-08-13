@@ -27,10 +27,12 @@ const STATUT_LABEL: Record<string, string> = {
 export function DevoirConseilPanel({
   dossierId,
   clientEmail,
+  branche = "",
   onChanged,
 }: {
   dossierId: string;
   clientEmail: string | null;
+  branche?: string;
   onChanged: () => void;
 }) {
   const envoyer = useServerFn(envoyerDevoirConseilFn);
