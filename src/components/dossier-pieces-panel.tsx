@@ -66,6 +66,25 @@ export function DossierPiecesPanel({
   const [choix, setChoix] = useState<Record<string, string>>({});
   const [precision, setPrecision] = useState<Record<string, string>>({});
   const inputs = useRef<Record<string, HTMLInputElement | null>>({});
+  const fichierUrl = useServerFn(monFichierUrl);
+  const [telechargement, setTelechargement] = useState<string | null>(null);
+
+  /** Ouvre le fichier déjà déposé (KYC ou document) via une URL signée. */
+  async function telecharger(piece: Piece) {
+    const source: "kyc" | "document" = piece.document_id ? "document" : "kyc";
+    const id = piece.document_id ?? piece.kyc_document_id;
+    if (!id) return;
+    setTelechargement(piece.id);
+    setError(null);
+    try {
+      const res = await fichierUrl({ data: { source, id } });
+      window.open(res.url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Téléchargement impossible");
+    }
+    setTelechargement(null);
+  }
+
 
   const load = useCallback(async () => {
     const { data, error: err } = await supabase
