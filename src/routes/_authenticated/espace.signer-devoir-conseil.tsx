@@ -100,6 +100,20 @@ function SignerDevoirConseil() {
           {SITE.shortName} · ORIAS {SITE.orias} · Dossier {c.dossier?.reference ?? ""} —{" "}
           {labelForBranche(devoir.type_assurance)}
         </p>
+        <button
+          onClick={async () => {
+            setError(null);
+            try {
+              const res = await getPdf({ data: { devoir_id: devoir.id } });
+              window.open(res.url, "_blank");
+            } catch (e) {
+              setError(e instanceof Error ? e.message : "PDF indisponible");
+            }
+          }}
+          className="mt-3 rounded-full border border-line px-4 py-1.5 text-xs hover:bg-surface"
+        >
+          Télécharger le document (PDF)
+        </button>
       </div>
 
       <div className="space-y-4 rounded-2xl border border-line bg-surface-elevated p-5 text-sm">
