@@ -112,8 +112,11 @@ export interface BrancheConfig {
   value: BrancheAssurance;
   label: string;
   description: string;
+  /** Branche historique : lisible sur les dossiers existants, non proposée à la création. */
+  legacy?: boolean;
   sections: SectionConfig[];
 }
+
 
 export const BRANCHES: BrancheConfig[] = [
   {
