@@ -101,7 +101,12 @@ export const creerAccesEspaceClient = createServerFn({ method: "POST" })
         prenom: client.prenom,
         origin: data.origin,
       });
-      return { ok: true as const, created: false, email_sent: res.email_sent };
+      return {
+        ok: true as const,
+        created: false,
+        email_sent: res.email_sent,
+        email_error: res.email_error ?? null,
+      };
     }
 
     const res = await creerEspaceClient(supabaseAdmin, {
@@ -111,8 +116,13 @@ export const creerAccesEspaceClient = createServerFn({ method: "POST" })
       prenom: client.prenom,
       origin: data.origin,
     });
-    if (!res.user_id) return { ok: false as const, error: "Création du compte impossible." };
-    return { ok: true as const, created: res.created, email_sent: res.email_sent };
+    if (!res.user_id) return { ok: false as const, error: res.email_error ?? "Création du compte impossible." };
+    return {
+      ok: true as const,
+      created: res.created,
+      email_sent: res.email_sent,
+      email_error: res.email_error ?? null,
+    };
   });
 
 /**
