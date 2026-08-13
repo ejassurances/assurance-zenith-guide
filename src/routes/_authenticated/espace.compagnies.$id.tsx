@@ -109,7 +109,7 @@ type Produit = {
 type ProduitDoc = {
   id: string;
   produit_id: string;
-  type: "conditions_generales" | "ipid" | "tableau_garanties" | "fiche_produit" | "tarifs" | "autre";
+  type: "conditions_generales" | "ipid" | "tableau_garanties" | "fiche_produit" | "tarifs" | "ccsf" | "autre";
   nom: string;
   version: string | null;
   date_effet: string | null;
@@ -124,8 +124,32 @@ const DOC_TYPE_LABEL: Record<ProduitDoc["type"], string> = {
   tableau_garanties: "Tableau de garanties",
   fiche_produit: "Fiche produit (interne)",
   tarifs: "Grille tarifaire",
+  ccsf: "CCSF (équivalence bancaire)",
   autre: "Autre",
 };
+
+/**
+ * Documents attendus par branche : la liste n'est pas identique partout
+ * (ex. CCSF uniquement en emprunteur, tableau de garanties en santé/prévoyance).
+ */
+const DOC_TYPES_PAR_FAMILLE: Record<string, ProduitDoc["type"][]> = {
+  emprunteur: ["conditions_generales", "ipid", "fiche_produit", "ccsf", "tarifs", "autre"],
+  sante: ["conditions_generales", "ipid", "tableau_garanties", "fiche_produit", "tarifs", "autre"],
+  prevoyance: ["conditions_generales", "ipid", "tableau_garanties", "fiche_produit", "tarifs", "autre"],
+};
+
+const DOC_TYPES_DEFAUT: ProduitDoc["type"][] = [
+  "conditions_generales",
+  "ipid",
+  "fiche_produit",
+  "tarifs",
+  "autre",
+];
+
+function docTypesPour(familleCode: string | null): ProduitDoc["type"][] {
+  return (familleCode && DOC_TYPES_PAR_FAMILLE[familleCode]) || DOC_TYPES_DEFAUT;
+}
+
 
 type Tab = "infos" | "produits" | "partenariats" | "emails" | "api";
 
