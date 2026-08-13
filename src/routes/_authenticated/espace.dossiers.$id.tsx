@@ -4,7 +4,16 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { creerEtEnvoyerLettreMission } from "@/lib/lettres-mission.functions";
-import { getBranche, labelForBranche } from "@/lib/recueil-besoins-schemas";
+import {
+  getBranche,
+  isBrancheLegacy,
+  labelForBranche,
+  personnesAssurees,
+  ageDepuisDateNaissance,
+  LIENS_ASSURE,
+  REGIMES_OBLIGATOIRES,
+} from "@/lib/recueil-besoins-schemas";
+
 import { DossierPiecesPanel } from "@/components/dossier-pieces-panel";
 import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
 import { ProduitDocumentsLink } from "@/components/produit-documents-link";
