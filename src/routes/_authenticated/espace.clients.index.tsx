@@ -48,7 +48,10 @@ function ClientsList() {
     setLoading(true);
     const { data } = await supabase
       .from("clients")
-      .select("id,reference,civilite,prenom,nom,email,mobile,ville,statut,origine,marque,besoins,created_at")
+      .select(
+        "id,reference,civilite,prenom,nom,email,mobile,ville,statut,origine,marque,besoins,conformite_score,conformite_niveau,created_at",
+      )
+
       .order("created_at", { ascending: false })
       .limit(200);
     setItems((data ?? []) as ClientRow[]);
