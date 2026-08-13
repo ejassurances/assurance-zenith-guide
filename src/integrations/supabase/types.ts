@@ -2243,6 +2243,93 @@ export type Database = {
         }
         Relationships: []
       }
+      factures_achat: {
+        Row: {
+          compte_charge: string
+          compte_tva: string
+          created_at: string
+          created_by: string
+          date_echeance: string | null
+          date_facture: string
+          date_paiement: string | null
+          ecriture_id: string | null
+          fichier_nom: string | null
+          fichier_path: string | null
+          fournisseur: string
+          id: string
+          montant_ht: number
+          montant_ttc: number
+          montant_tva: number
+          moyen_paiement: string | null
+          notes: string | null
+          numero_facture: string | null
+          statut: string
+          tiers_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          compte_charge?: string
+          compte_tva?: string
+          created_at?: string
+          created_by?: string
+          date_echeance?: string | null
+          date_facture?: string
+          date_paiement?: string | null
+          ecriture_id?: string | null
+          fichier_nom?: string | null
+          fichier_path?: string | null
+          fournisseur: string
+          id?: string
+          montant_ht?: number
+          montant_ttc?: number
+          montant_tva?: number
+          moyen_paiement?: string | null
+          notes?: string | null
+          numero_facture?: string | null
+          statut?: string
+          tiers_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          compte_charge?: string
+          compte_tva?: string
+          created_at?: string
+          created_by?: string
+          date_echeance?: string | null
+          date_facture?: string
+          date_paiement?: string | null
+          ecriture_id?: string | null
+          fichier_nom?: string | null
+          fichier_path?: string | null
+          fournisseur?: string
+          id?: string
+          montant_ht?: number
+          montant_ttc?: number
+          montant_tva?: number
+          moyen_paiement?: string | null
+          notes?: string | null
+          numero_facture?: string | null
+          statut?: string
+          tiers_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "factures_achat_ecriture_id_fkey"
+            columns: ["ecriture_id"]
+            isOneToOne: false
+            referencedRelation: "ecritures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_achat_tiers_id_fkey"
+            columns: ["tiers_id"]
+            isOneToOne: false
+            referencedRelation: "tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       formule_garanties: {
         Row: {
           created_at: string
