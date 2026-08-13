@@ -245,39 +245,59 @@ export function ProduitGarantiesTab({
       <div className={`space-y-2 rounded-md border border-line bg-background p-3 ${modeFormule ? "hidden" : ""}`}>
 
         <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
-          Extraction assistée depuis les CG / IPID
+          Standardisation assistée depuis les documents du contrat
         </p>
         {analysables.length === 0 ? (
           <p className="text-xs text-ink-muted">
-            Ajoutez d'abord des conditions générales ou un IPID dans les documents du produit.
+            Ajoutez d'abord des conditions générales, un IPID, une fiche produit ou une fiche CCSF dans les documents du
+            produit.
           </p>
         ) : (
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={docId}
-              onChange={(e) => setDocId(e.target.value)}
-              className="rounded-md border border-line bg-surface px-3 py-2 text-sm"
-            >
-              <option value="">— Document à analyser —</option>
-              {analysables.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.type === "ipid" ? "IPID" : "CG"} — {d.nom}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              disabled={!docId || busy !== null}
-              onClick={() =>
-                run("analyse", () => analyser({ data: { document_id: docId } }), "Proposition générée — à valider.")
-              }
-              className="rounded-md bg-ink px-3 py-2 text-sm text-surface disabled:opacity-50"
-            >
-              {busy === "analyse" ? "Analyse en cours…" : "Analyser ce document"}
-            </button>
-            <span className="text-xs text-ink-muted">
-              L'analyse ne produit qu'une proposition : rien n'est appliqué sans validation.
-            </span>
+          <div className="space-y-2">
+            <p className="text-xs text-ink-muted">
+              Sélectionnez les documents à croiser (4 maximum). Les conditions générales font foi en cas de
+              contradiction avec la fiche produit ou l'IPID.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {analysables.map((d) => {
+                const actif = docIds.includes(d.id);
+                return (
+                  <label
+                    key={d.id}
+                    className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-xs ${
+                      actif ? "border-ink bg-ink/5" : "border-line"
+                    }`}
+                  >
+                    <input type="checkbox" checked={actif} onChange={() => toggleDoc(d.id)} className="accent-ink" />
+                    <span>
+                      {DOC_LABEL[d.type] ?? d.type} — {d.nom}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                disabled={docIds.length === 0 || busy !== null}
+                onClick={() => {
+                  setDocId(docIds[0] ?? "");
+                  run(
+                    "analyse",
+                    () => analyser({ data: { document_ids: docIds } }),
+                    "Proposition générée — à valider.",
+                  );
+                }}
+                className="rounded-md bg-ink px-3 py-2 text-sm text-surface disabled:opacity-50"
+              >
+                {busy === "analyse"
+                  ? "Analyse en cours…"
+                  : `Analyser ${docIds.length > 1 ? `ces ${docIds.length} documents` : "ce document"}`}
+              </button>
+              <span className="text-xs text-ink-muted">
+                L'analyse ne produit qu'une proposition : rien n'est appliqué sans validation.
+              </span>
+            </div>
           </div>
         )}
       </div>
