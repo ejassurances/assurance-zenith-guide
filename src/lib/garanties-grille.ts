@@ -82,20 +82,50 @@ export const GRILLES: GrilleGaranties[] = [
   {
     familleCode: "emprunteur",
     libelle: "Assurance emprunteur",
-    version: 1,
+    /**
+     * Version 2 : trame standardisée complète (identique pour tous les
+     * contrats emprunteur), renseignée contrat par contrat à partir des CG,
+     * de l'IPID, de la fiche produit et de la fiche CCSF. Elle permet un
+     * comparatif poste à poste et un devoir de conseil sur données réelles.
+     */
+    version: 2,
     garanties: [
-      G("deces", "Décès", true),
-      G("ptia", "PTIA", true),
-      G("itt", "Incapacité temporaire de travail (ITT)"),
-      G("ipt", "Invalidité permanente totale (IPT)"),
-      G("ipp", "Invalidité permanente partielle (IPP)"),
-      G("mno", "Affections dorsales / psychiques (MNO)"),
-      G("perte_emploi", "Perte d'emploi"),
-      G("franchise_itt", "Franchise ITT"),
-      G("delai_carence", "Délai de carence"),
-      G("exclusions", "Exclusions et limitations notables"),
+      // 1. Garanties de base
+      GS("Garanties", "deces", "Décès", true),
+      GS("Garanties", "ptia", "PTIA — Perte totale et irréversible d'autonomie", true),
+      GS("Garanties", "itt", "Incapacité temporaire totale de travail (ITT)"),
+      GS("Garanties", "ipt", "Invalidité permanente totale (IPT)"),
+      GS("Garanties", "ipp", "Invalidité permanente partielle (IPP)"),
+      GS("Garanties", "mno", "Affections dorsales et psychiques (MNO / dos & psy)", false, "Couverture sans conditions, sous conditions (hospitalisation, intervention) ou exclue"),
+      GS("Garanties", "perte_emploi", "Perte d'emploi (chômage)"),
+
+      // 2. Modalités d'indemnisation — décisives pour le comparatif
+      GS("Indemnisation", "type_indemnisation", "Type d'indemnisation (forfaitaire ou indemnitaire)", true, "Forfaitaire = prise en charge de l'échéance quels que soient les revenus ; indemnitaire = perte de revenus réelle"),
+      GS("Indemnisation", "franchise_itt", "Franchise ITT (30 / 60 / 90 / 180 jours)", true),
+      GS("Indemnisation", "delai_carence", "Délai de carence / d'attente", true),
+      GS("Indemnisation", "duree_indemnisation", "Durée maximale d'indemnisation ITT"),
+      GS("Indemnisation", "seuil_ipp", "Seuil de prise en charge IPP / IPT (taux d'invalidité)"),
+      GS("Indemnisation", "temps_partiel_therapeutique", "Reprise à temps partiel thérapeutique"),
+      GS("Indemnisation", "prise_en_charge_prorata", "Prise en charge au prorata de la quotité assurée"),
+
+      // 3. Portée du contrat
+      GS("Portée", "quotites", "Quotités assurables (par emprunteur, total)"),
+      GS("Portée", "capital_max", "Capital maximum assurable"),
+      GS("Portée", "ages_limites", "Âges limites (adhésion et cessation des garanties)", true),
+      GS("Portée", "duree_max_pret", "Durée maximale du prêt couvert"),
+      GS("Portée", "base_calcul_cotisation", "Base de calcul de la cotisation (capital initial / CRD)", true),
+      GS("Portée", "equivalence_ccsf", "Équivalence de garanties CCSF (11 + 4 critères)", true, "Grille CCSF permettant l'acceptation par la banque au titre de la Loi Lemoine"),
+
+      // 4. Conditions et limites
+      GS("Limites", "formalites_medicales", "Formalités médicales (questionnaire, examens, Loi Lemoine)", true),
+      GS("Limites", "professions_a_risque", "Professions à risque : surprime ou exclusion"),
+      GS("Limites", "sports_loisirs", "Sports et loisirs à risque"),
+      GS("Limites", "deplacements_etranger", "Déplacements et séjours à l'étranger"),
+      GS("Limites", "exclusions", "Exclusions et limitations notables", true),
+      GS("Limites", "delai_renonciation_resiliation", "Renonciation / résiliation annuelle (Loi Lemoine)"),
     ],
   },
+
   {
     familleCode: "prevoyance",
     libelle: "Prévoyance",
