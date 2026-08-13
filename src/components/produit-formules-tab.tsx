@@ -163,13 +163,16 @@ export function ProduitFormulesTab({
         {formules.length === 0 && <p className="text-sm text-ink-muted">Aucune formule pour ce produit.</p>}
       </div>
 
-      <FormulePropositionsPanel
-        produitId={produitId}
-        familleCode={familleCode}
-        isAdmin={isAdmin}
-        docs={docs}
-        onChange={load}
-      />
+      {familleCode === "sante" && (
+        <FormulePropositionsPanel
+          produitId={produitId}
+          familleCode={familleCode}
+          isAdmin={isAdmin}
+          docs={docs}
+          onChange={load}
+        />
+      )}
+
 
       {isAdmin && (
         <div className="flex flex-wrap items-center gap-2">
