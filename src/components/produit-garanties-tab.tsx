@@ -78,15 +78,20 @@ export function ProduitGarantiesTab({
   const [ligne, setLigne] = useState<Grille | null>(null);
   const [proposition, setProposition] = useState<Proposition | null>(null);
   const [docId, setDocId] = useState<string>("");
+  const [docIds, setDocIds] = useState<string[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
-  const analyser = useServerFn(analyserDocumentGaranties);
+  const analyser = useServerFn(analyserDocumentsGaranties);
   const brouillon = useServerFn(enregistrerGrilleBrouillon);
   const valider = useServerFn(validerGrilleGaranties);
   const rejeter = useServerFn(rejeterPropositionGaranties);
 
-  const analysables = docs.filter((d) => d.type === "conditions_generales" || d.type === "ipid");
+  const analysables = docs.filter((d) =>
+    ["conditions_generales", "ipid", "fiche_produit", "ccsf", "tableau_garanties"].includes(d.type),
+  );
+  const toggleDoc = (id: string) =>
+    setDocIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : ids.length >= 4 ? ids : [...ids, id]));
 
   const load = useCallback(async () => {
     if (!grille) return;
