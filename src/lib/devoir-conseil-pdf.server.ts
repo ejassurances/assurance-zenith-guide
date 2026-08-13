@@ -1,6 +1,8 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import { labelForBranche } from "@/lib/recueil-besoins-schemas";
 import { OPTIONS_DECISION, STATUT_OFFRE_LABEL, type OffreComparee, type StatutOffre } from "@/lib/devoir-conseil-modeles";
+import { COUVERTURE_LABEL, type LigneGarantie } from "@/lib/garanties-grille";
+
 
 /**
  * Génération native du PDF du devoir de conseil (pdf-lib, JS pur — compatible
