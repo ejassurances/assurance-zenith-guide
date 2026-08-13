@@ -186,6 +186,7 @@ function ClientDetail() {
             ["documents", "Documents"],
             ["dossiers", "Dossiers"],
             ["der", "DER"],
+            ["emails", "Emails"],
             ["conformite", "Conformité"],
           ] as [Tab, string][]
         ).map(([key, label]) => (
