@@ -206,6 +206,26 @@ function ClientsList() {
                     <div className="text-xs text-ink-muted">{c.mobile ?? ""}</div>
                   </td>
                   <td className="px-4 py-3">
+                    {(() => {
+                      const sc = c.conformite_score ?? 0;
+                      const niv = ((c.conformite_niveau as NiveauConformite | null) ??
+                        niveauFromScore(sc)) as NiveauConformite;
+                      return (
+                        <span
+                          title={
+                            sc < 50
+                              ? "Conformité insuffisante : création de contrat bloquée"
+                              : "Conformité KYC / LCB-FT"
+                          }
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${NIVEAU_BADGE[niv]}`}
+                        >
+                          {sc}%{sc < 50 ? " ⛔" : ""}
+                        </span>
+                      );
+                    })()}
+                  </td>
+                  <td className="px-4 py-3">
+
                     <span className="rounded-full border border-line bg-background px-2 py-0.5 text-xs">{c.statut}</span>
                   </td>
                   {canDelete && (
