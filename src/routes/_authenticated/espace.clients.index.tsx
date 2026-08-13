@@ -250,6 +250,7 @@ function ClientsList() {
 }
 
 function NewClientForm({ onCreated }: { onCreated: (id: string) => void }) {
+  const creerClient = useServerFn(creerClientManuel);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     civilite: "M.",
