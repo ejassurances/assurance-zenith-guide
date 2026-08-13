@@ -348,6 +348,15 @@ export function DossierPiecesPanel({
                         >
                           {STATUT_PIECE_LABEL[p.statut] ?? p.statut}
                         </span>
+                        {(p.document_id || p.kyc_document_id) && (
+                          <button
+                            onClick={() => void telecharger(p)}
+                            disabled={telechargement === p.id}
+                            className="rounded-md border border-line px-2.5 py-1 text-xs hover:bg-background disabled:opacity-60"
+                          >
+                            {telechargement === p.id ? "Ouverture…" : "Télécharger"}
+                          </button>
+                        )}
                         {canValidate && p.statut === "recue" && (
                           <>
                             <button
