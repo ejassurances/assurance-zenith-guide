@@ -1364,35 +1364,56 @@ export type Database = {
       der_modele: {
         Row: {
           actif: boolean
+          contenu: Json | null
           created_at: string
           id: string
           nom: string
           notes: string | null
-          storage_path: string
+          obsolete: boolean
+          obsolete_le: string | null
+          obsolete_motif: string | null
+          statut: string
+          storage_path: string | null
           updated_at: string
           updated_by: string | null
+          valide_le: string | null
+          valide_par: string | null
           version: string
         }
         Insert: {
           actif?: boolean
+          contenu?: Json | null
           created_at?: string
           id?: string
           nom: string
           notes?: string | null
-          storage_path: string
+          obsolete?: boolean
+          obsolete_le?: string | null
+          obsolete_motif?: string | null
+          statut?: string
+          storage_path?: string | null
           updated_at?: string
           updated_by?: string | null
+          valide_le?: string | null
+          valide_par?: string | null
           version: string
         }
         Update: {
           actif?: boolean
+          contenu?: Json | null
           created_at?: string
           id?: string
           nom?: string
           notes?: string | null
-          storage_path?: string
+          obsolete?: boolean
+          obsolete_le?: string | null
+          obsolete_motif?: string | null
+          statut?: string
+          storage_path?: string | null
           updated_at?: string
           updated_by?: string | null
+          valide_le?: string | null
+          valide_par?: string | null
           version?: string
         }
         Relationships: []

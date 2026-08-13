@@ -214,6 +214,14 @@ export const creerFicheDepuisEmail = createServerFn({ method: "POST" })
         .single();
       if (error || !cree) throw new Error(error?.message ?? "Création de la fiche impossible");
       clientId = cree.id;
+
+      // Contrôle LCB-FT / OpenSanctions automatique sur toute nouvelle fiche.
+      const { lancerLcbAutomatique } = await import("@/lib/dossier-automation.server");
+      await lancerLcbAutomatique(supabaseAdmin, {
+        client_id: clientId,
+        nom: data.nom,
+        prenom: data.prenom ?? null,
+      });
     }
 
     let dossierId: string | null = null;

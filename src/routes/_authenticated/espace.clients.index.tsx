@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { creerClientManuel } from "@/lib/clients.functions";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -250,6 +252,7 @@ function ClientsList() {
 }
 
 function NewClientForm({ onCreated }: { onCreated: (id: string) => void }) {
+  const creerClient = useServerFn(creerClientManuel);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     civilite: "M.",
@@ -266,22 +269,26 @@ function NewClientForm({ onCreated }: { onCreated: (id: string) => void }) {
     e.preventDefault();
     if (!form.nom.trim()) return;
     setSaving(true);
-    const { data, error } = await supabase
-      .from("clients")
-      .insert({
-        civilite: form.civilite,
-        prenom: form.prenom || null,
-        nom: form.nom,
-        email: form.email || null,
-        mobile: form.mobile || null,
-        ville: form.ville || null,
-        origine: form.origine,
-        marque: form.marque,
-      })
-      .select("id")
-      .single();
-    setSaving(false);
-    if (!error && data) onCreated(data.id);
+    try {
+      // Passe par le server fn : insert + contrôle LCB-FT automatique.
+      const res = await creerClient({
+        data: {
+          civilite: form.civilite,
+          prenom: form.prenom || null,
+          nom: form.nom,
+          email: form.email || null,
+          mobile: form.mobile || null,
+          ville: form.ville || null,
+          origine: form.origine,
+          marque: form.marque,
+        },
+      });
+      onCreated(res.id);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Création impossible");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
