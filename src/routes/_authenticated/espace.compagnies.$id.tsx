@@ -1018,7 +1018,8 @@ function DocumentsBlock({
       <div>
         <h3 className="font-serif text-lg">Documents du produit</h3>
         <p className="text-xs text-ink-muted">
-          Conditions générales, IPID, fiche produit interne, grille tarifaire. Les fiches produit sont marquées internes.
+          Liste adaptée à la branche : {typesDisponibles.map((t) => DOC_TYPE_LABEL[t]).join(" · ")}. Les fiches produit
+          sont marquées internes.
         </p>
       </div>
 
@@ -1027,11 +1028,12 @@ function DocumentsBlock({
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-muted">Type</label>
             <select
-              value={type}
+              value={typesDisponibles.includes(type) ? type : typesDisponibles[0]}
               onChange={(e) => setType(e.target.value as ProduitDoc["type"])}
               className="rounded-md border border-line bg-background px-2 py-1.5 text-sm"
             >
-              {(Object.keys(DOC_TYPE_LABEL) as ProduitDoc["type"][]).map((k) => (
+              {typesDisponibles.map((k) => (
+
                 <option key={k} value={k}>
                   {DOC_TYPE_LABEL[k]}
                 </option>
