@@ -118,7 +118,7 @@ const DOC_TYPE_LABEL: Record<ProduitDoc["type"], string> = {
   autre: "Autre",
 };
 
-type Tab = "infos" | "produits" | "partenariats" | "api";
+type Tab = "infos" | "produits" | "partenariats" | "emails" | "api";
 
 function CompagnieDetail() {
   const { id } = Route.useParams();
