@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createHash } from "node:crypto";
 import { sendTemplateEmail } from "@/lib/email-templates/send-email";
 import { SITE } from "@/lib/site";
+import { appUrl } from "@/lib/app-url";
 
 /**
  * Création + envoi de la lettre de mission — logique partagée entre l'envoi
@@ -103,7 +104,7 @@ export async function envoyerLettreMission(
       clientName: d.client_nom,
       cabinetName: SITE.shortName,
       reference: d.reference,
-      link: `${origin}/espace/signer-lettre-mission`,
+      link: appUrl("/espace/signer-lettre-mission"),
     },
     replyTo: SITE.email,
   });
