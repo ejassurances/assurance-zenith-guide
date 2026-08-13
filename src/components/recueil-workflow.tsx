@@ -352,7 +352,7 @@ export function WorkflowField({
   error?: boolean;
 }) {
   const heading = field.question ?? field.label;
-  const isChoice = field.type === "cards" || field.type === "yesno";
+  const isChoice = field.type === "cards" || field.type === "yesno" || field.type === "personnes";
 
   return (
     <div className={isChoice ? "space-y-3" : "max-w-xl space-y-2"}>
