@@ -156,7 +156,7 @@ export interface EmailDetail extends EmailResume {
   cc: string;
   texte: string | null;
   html: string | null;
-  pieces_jointes: { nom: string; taille: number | null; mime: string | null }[];
+  pieces_jointes: { nom: string; taille: number | null; mime: string | null; attachment_id: string | null }[];
 }
 
 /** Contenu complet d'un message. */
@@ -168,7 +168,13 @@ export async function lireMessage(id: string): Promise<EmailDetail> {
   const pieces: EmailDetail["pieces_jointes"] = [];
   const walk = (p?: GmailPart) => {
     if (!p) return;
-    if (p.filename) pieces.push({ nom: p.filename, taille: p.body?.size ?? null, mime: p.mimeType ?? null });
+    if (p.filename)
+      pieces.push({
+        nom: p.filename,
+        taille: p.body?.size ?? null,
+        mime: p.mimeType ?? null,
+        attachment_id: p.body?.attachmentId ?? null,
+      });
     for (const c of p.parts ?? []) walk(c);
   };
   walk(msg.payload);
@@ -181,6 +187,19 @@ export async function lireMessage(id: string): Promise<EmailDetail> {
     pieces_jointes: pieces,
   };
 }
+
+/** Télécharge une pièce jointe (contenu en base64 standard). */
+export async function telechargerPieceJointe(
+  messageId: string,
+  attachmentId: string,
+): Promise<{ base64: string; taille: number }> {
+  const att = await gmailFetch<{ data?: string; size?: number }>(
+    `/users/me/messages/${messageId}/attachments/${attachmentId}`,
+  );
+  if (!att.data) throw new Error("Pièce jointe introuvable dans Gmail.");
+  return { base64: att.data.replace(/-/g, "+").replace(/_/g, "/"), taille: att.size ?? 0 };
+}
+
 
 function encodeB64Url(input: string): string {
   const bytes = new TextEncoder().encode(input);
