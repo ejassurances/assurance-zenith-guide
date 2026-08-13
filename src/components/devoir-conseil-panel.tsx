@@ -430,6 +430,22 @@ export function DevoirConseilPanel({
                 className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
               />
             </Field>
+            <Field label="Frais de dossier (€)">
+              <input
+                type="number"
+                value={form.frais_dossier}
+                onChange={(e) => setForm({ ...form, frais_dossier: e.target.value })}
+                className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+              />
+            </Field>
+            <Field label="Frais de souscription (€)">
+              <input
+                type="number"
+                value={form.frais_souscription}
+                onChange={(e) => setForm({ ...form, frais_souscription: e.target.value })}
+                className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+              />
+            </Field>
             <Field label="Économie estimée (€)">
               <input
                 type="number"
