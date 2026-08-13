@@ -59,10 +59,13 @@ function Dashboard() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold tracking-tight text-ink">Tableau de bord</h1>
-      <p className="mt-1 text-sm text-ink-muted">
-        Connecté en tant que <span className="font-medium text-ink">{user?.email}</span> — rôle {role ?? "…"}
-      </p>
+      <div className="border-b border-line pb-6">
+        <p className="crm-eyebrow">Cabinet EJ Partners Assurances</p>
+        <h1 className="mt-2 font-serif text-4xl font-semibold text-ink">Tableau de bord</h1>
+        <p className="mt-2 text-sm text-ink-muted">
+          Connecté en tant que <span className="font-medium text-ink">{user?.email}</span> — rôle {role ?? "…"}
+        </p>
+      </div>
 
       {role === "client" && <ClientDerBanner />}
       {(role === "admin" || role === "mandataire") && <ConformiteCabinetWidget />}
@@ -86,30 +89,35 @@ function Dashboard() {
 
 
 
-      <div className="mt-10 grid gap-6 lg:grid-cols-2">
-        <ActiviteRecente isAdmin={role === "admin"} />
+      <div className="mt-10 grid gap-8 lg:grid-cols-12">
+        <div className="lg:col-span-7">
+          <ActiviteRecente isAdmin={role === "admin"} />
+        </div>
 
-        <section className="rounded-2xl border border-line bg-surface-elevated p-6">
-          <div className="flex items-center justify-between">
-            <h2 className="font-serif text-lg font-medium">Tâches à faire</h2>
-            <Link to="/espace/taches" className="text-xs text-ink-muted hover:underline">
+        <section className="crm-panel-dark p-6 lg:col-span-5">
+          <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-[color:var(--crm-gold)]">
+              Tâches à faire
+            </h2>
+            <Link to="/espace/taches" className="text-[10px] font-bold uppercase tracking-widest text-white/50 hover:text-white">
               Toutes →
             </Link>
           </div>
-          <div className="mt-4 space-y-2">
+          <div className="mt-5 space-y-3">
             {taches.length === 0 ? (
-              <p className="text-sm text-ink-muted">Aucune tâche en attente.</p>
+              <p className="text-sm text-white/50">Aucune tâche en attente.</p>
             ) : (
               taches.map((t) => (
-                <div key={t.id} className="rounded-xl border border-line p-3">
+                <div
+                  key={t.id}
+                  className="rounded-sm border-l border-[color:var(--crm-gold)] bg-white/5 p-3 transition-colors hover:bg-white/10"
+                >
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-medium text-ink">{t.titre}</p>
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="rounded-full border border-line px-2 py-0.5">{t.priorite}</span>
+                    <p className="text-sm font-medium text-white">{t.titre}</p>
+                    <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider">
+                      <span className="rounded-full border border-white/15 px-2 py-0.5 text-white/70">{t.priorite}</span>
                       {t.echeance && (
-                        <span className="text-ink-muted">
-                          {new Date(t.echeance).toLocaleDateString("fr-FR")}
-                        </span>
+                        <span className="text-white/50">{new Date(t.echeance).toLocaleDateString("fr-FR")}</span>
                       )}
                     </div>
                   </div>
@@ -117,7 +125,7 @@ function Dashboard() {
                     <Link
                       to="/espace/clients/$id"
                       params={{ id: t.client_id }}
-                      className="mt-1 inline-block text-xs text-ink-muted hover:underline"
+                      className="mt-1 inline-block text-xs text-white/55 hover:text-[color:var(--crm-gold)]"
                     >
                       {[t.clients.prenom, t.clients.nom].filter(Boolean).join(" ")}
                     </Link>
@@ -144,12 +152,11 @@ function Card({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-line bg-surface-elevated p-7 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">{label}</p>
+    <div className={"crm-card p-6 " + (accent ? "crm-card-accent" : "")}>
+      <p className="crm-eyebrow">{label}</p>
       <p
         className={
-          "mt-3 font-serif text-4xl font-semibold tracking-tight " +
-          (accent ? "text-[color:var(--crm-gold)]" : "text-ink")
+          "crm-figure mt-3 text-3xl " + (accent ? "text-[color:var(--crm-gold-muted)]" : "text-ink")
         }
       >
         {value}
@@ -274,22 +281,21 @@ function EconomiesEmprunteurCard({ scope }: { scope: "cabinet" | "perso" }) {
   const euro = (n: number) =>
     new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Number(n));
   return (
-    <div className="mt-6 rounded-2xl border-2 border-[color:var(--crm-gold)] bg-[color:var(--crm-gold-soft)] p-7 shadow-sm">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="crm-band mt-6 p-8">
+      <div className="relative z-10 flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-85">
             Économies réalisées — assurance emprunteur {scope === "cabinet" ? "· tout le cabinet" : "· mes contrats"}
           </p>
-          <p className="mt-3 font-serif text-5xl font-semibold tracking-tight text-[color:var(--crm-gold-muted)]">
-            {euro(data.total_economies)}
-          </p>
-          <p className="mt-2 text-xs text-ink-muted">
-
+          <p className="mt-3 font-serif text-5xl font-semibold tracking-tight">{euro(data.total_economies)}</p>
+          <p className="mt-2 text-xs opacity-85">
             {data.nb_contrats} contrat{data.nb_contrats > 1 ? "s" : ""} emprunteur signé
             {data.nb_contrats > 1 ? "s" : ""} · moyenne {euro(data.economie_moyenne)} par client · marque EJ Assurances
           </p>
         </div>
-        <p className="text-xs text-ink-muted">Capital assuré : {euro(data.capital_total)}</p>
+        <p className="rounded-sm border border-white/30 px-4 py-2 text-xs font-medium uppercase tracking-widest">
+          Capital assuré : {euro(data.capital_total)}
+        </p>
       </div>
     </div>
   );
@@ -491,9 +497,9 @@ function ActiviteRecente({ isAdmin }: { isAdmin: boolean }) {
   const liste = (items ?? []).filter((i) => (filtre === "tous" ? true : i.auteurRole === filtre)).slice(0, 12);
 
   return (
-    <section className="rounded-2xl border border-line bg-surface-elevated p-6">
-      <div className="flex items-center justify-between">
-        <h2 className="font-serif text-lg font-medium">Activité récente</h2>
+    <section className="crm-card p-6">
+      <div className="flex items-center justify-between border-b border-line pb-4">
+        <h2 className="crm-eyebrow">Activité récente</h2>
         <Link to="/espace/clients" className="text-xs text-ink-muted hover:underline">
           Voir clients →
         </Link>
