@@ -70,40 +70,58 @@ export function DossierPipeline({
         </span>
       </div>
 
-      <ol className="mt-4 space-y-1">
-        {ETAPES.map((e, i) => {
-          const passee = courant >= 0 && i < courant;
-          const active = e.key === statut;
-          return (
-            <li
-              key={e.key}
-              className={
-                "flex items-start gap-3 rounded-lg px-3 py-2 " +
-                (active ? "bg-ink text-primary-foreground" : passee ? "bg-surface" : "")
-              }
-            >
-              <span
-                className={
-                  "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] " +
-                  (active
-                    ? "border-primary-foreground"
-                    : passee
-                      ? "border-ink bg-ink text-primary-foreground"
-                      : "border-line text-ink-muted")
-                }
-              >
-                {passee ? "✓" : i + 1}
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-medium">{e.label}</p>
-                <p className={"text-xs " + (active ? "text-primary-foreground/80" : "text-ink-muted")}>
-                  {e.description}
+      <div className="-mx-1 mt-5 overflow-x-auto pb-2">
+        <ol className="flex min-w-max items-start gap-0 px-1">
+          {ETAPES.map((e, i) => {
+            const passee = courant >= 0 && i < courant;
+            const active = e.key === statut;
+            return (
+              <li key={e.key} className="relative flex w-[124px] shrink-0 flex-col items-center text-center">
+                {i > 0 && (
+                  <span
+                    className={
+                      "absolute left-0 top-[13px] h-[2px] w-1/2 -translate-x-1/2 " +
+                      (passee || active ? "bg-ink" : "bg-line")
+                    }
+                  />
+                )}
+                {i < ETAPES.length - 1 && (
+                  <span
+                    className={
+                      "absolute right-0 top-[13px] h-[2px] w-1/2 translate-x-1/2 " + (passee ? "bg-ink" : "bg-line")
+                    }
+                  />
+                )}
+                <span
+                  title={e.description}
+                  className={
+                    "relative z-10 flex h-7 w-7 items-center justify-center rounded-full border text-[11px] font-medium " +
+                    (active
+                      ? "border-ink bg-ink text-primary-foreground ring-4 ring-ink/10"
+                      : passee
+                        ? "border-ink bg-ink text-primary-foreground"
+                        : "border-line bg-background text-ink-muted")
+                  }
+                >
+                  {passee ? "✓" : i + 1}
+                </span>
+                <p
+                  className={
+                    "mt-2 px-1 text-[11px] leading-tight " +
+                    (active ? "font-medium text-ink" : passee ? "text-ink-soft" : "text-ink-muted")
+                  }
+                >
+                  {e.label}
                 </p>
-              </div>
-            </li>
-          );
-        })}
-      </ol>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+
+      {def && !def.horsParcours && (
+        <p className="mt-1 text-xs text-ink-muted">{def.description}</p>
+      )}
 
       {def?.horsParcours && (
         <p className="mt-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
