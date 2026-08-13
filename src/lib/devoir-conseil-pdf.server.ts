@@ -264,6 +264,76 @@ export async function genererPdfDevoirConseil(input: DevoirPdfInput): Promise<Ui
     y -= 10;
   };
 
+  /** Tableau des garanties du produit retenu, poste par poste (grille validee). */
+  const tableauGaranties = (lignes: LigneGarantie[]) => {
+    const cols = [
+      { label: "Poste de garantie", w: 0.34 },
+      { label: "Couverture", w: 0.18 },
+      { label: "Maximum de prise en charge", w: 0.28 },
+      { label: "Delai de carence", w: 0.2 },
+    ];
+    const widths = cols.map((col) => col.w * CONTENT);
+    const headH = 20;
+    ensure(headH + 30);
+
+    page.drawRectangle({ x: MARGIN, y: y - headH, width: CONTENT, height: headH, color: INK });
+    let hx = MARGIN + 8;
+    cols.forEach((col, i) => {
+      page.drawText(safe(col.label), { x: hx, y: y - 13.5, size: 8, font: bold, color: WHITE });
+      hx += widths[i]!;
+    });
+    y -= headH;
+
+    lignes.forEach((l, idx) => {
+      const c1 = wrap(l.libelle, font, 8.5, widths[0]! - 12);
+      const c3 = wrap(l.plafond ?? "-", font, 8.5, widths[2]! - 12);
+      const c4 = wrap(l.delai_carence ?? "-", font, 8.5, widths[3]! - 12);
+      const rowH = Math.max(20, 12 + Math.max(c1.length, c3.length, c4.length) * 11);
+      ensure(rowH);
+      if (idx % 2 === 1) {
+        page.drawRectangle({ x: MARGIN, y: y - rowH, width: CONTENT, height: rowH, color: SOFT });
+      }
+      page.drawLine({
+        start: { x: MARGIN, y: y - rowH },
+        end: { x: A4[0] - MARGIN, y: y - rowH },
+        thickness: 0.5,
+        color: LINE,
+      });
+      c1.forEach((t, i) =>
+        page.drawText(t, { x: MARGIN + 8, y: y - 14 - i * 11, size: 8.5, font, color: INK }),
+      );
+      page.drawText(safe(COUVERTURE_LABEL[l.couverture] ?? String(l.couverture)), {
+        x: MARGIN + widths[0]! + 8,
+        y: y - 14,
+        size: 8.5,
+        font: bold,
+        color: l.couverture === "oui" ? OK : l.couverture === "non" ? BAD : INK,
+      });
+      c3.forEach((t, i) =>
+        page.drawText(t, {
+          x: MARGIN + widths[0]! + widths[1]! + 8,
+          y: y - 14 - i * 11,
+          size: 8.5,
+          font,
+          color: INK,
+        }),
+      );
+      c4.forEach((t, i) =>
+        page.drawText(t, {
+          x: MARGIN + widths[0]! + widths[1]! + widths[2]! + 8,
+          y: y - 14 - i * 11,
+          size: 8.5,
+          font,
+          color: INK,
+        }),
+      );
+      y -= rowH;
+    });
+    y -= 10;
+  };
+
+
+
   /* ---------------------- En-tête ---------------------- */
   const bandH = 74;
   page.drawRectangle({ x: 0, y: A4[1] - bandH, width: A4[0], height: bandH, color: INK });
