@@ -726,6 +726,17 @@ function ProduitEditor({
         isAdmin={isAdmin}
         docs={docs.map((d) => ({ id: d.id, nom: d.nom, type: d.type }))}
       />
+
+      {famille?.code === "sante" && (
+        <ProduitFormulesTab
+          produitId={p.id}
+          familleCode={famille?.code ?? null}
+          familleNom={famille?.nom}
+          isAdmin={isAdmin}
+          docs={docs.map((d) => ({ id: d.id, nom: d.nom, type: d.type }))}
+        />
+      )}
+
     </div>
   );
 }
