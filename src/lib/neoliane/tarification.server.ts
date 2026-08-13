@@ -36,6 +36,6 @@ export async function appelerTarification(input: TarificationInput) {
     ok: res.ok,
     status: res.status,
     authMode: res.authMode,
-    resultat: res.data,
+    resultat: JSON.stringify(res.data ?? null),
   }
 }

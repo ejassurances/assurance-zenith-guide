@@ -34,7 +34,7 @@ export async function lancerSouscription(input: SouscriptionInput) {
     payload: input.payload,
     withUserApiKey: input.withUserApiKey ?? true,
   })
-  return { ok: res.ok, status: res.status, authMode: res.authMode, resultat: res.data }
+  return { ok: res.ok, status: res.status, authMode: res.authMode, resultat: JSON.stringify(res.data ?? null) }
 }
 
 /** Déclenche la signature électronique d'une souscription en cours. */
@@ -45,5 +45,5 @@ export async function lancerSignature(input: SouscriptionInput) {
     payload: input.payload,
     withUserApiKey: input.withUserApiKey ?? true,
   })
-  return { ok: res.ok, status: res.status, authMode: res.authMode, resultat: res.data }
+  return { ok: res.ok, status: res.status, authMode: res.authMode, resultat: JSON.stringify(res.data ?? null) }
 }
