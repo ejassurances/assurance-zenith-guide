@@ -24,8 +24,11 @@ type ClientRow = {
   origine: string | null;
   marque: string;
   besoins: string[] | null;
+  conformite_score: number | null;
+  conformite_niveau: string | null;
   created_at: string;
 };
+
 
 const STATUTS = ["prospect", "actif", "inactif", "perdu", "ancien"] as const;
 
