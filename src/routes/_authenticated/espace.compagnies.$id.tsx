@@ -463,7 +463,15 @@ function ProduitsTab({
                   (isActive ? "bg-ink text-primary-foreground" : "hover:bg-surface")
                 }
               >
-                <div className="font-medium">{p.nom}</div>
+                <div className="flex items-center gap-2">
+                  <StoredImage
+                    bucket="produits-images"
+                    value={p.image_url}
+                    alt={p.nom}
+                    className="size-7 shrink-0 rounded bg-background object-contain"
+                  />
+                  <span className="font-medium">{p.nom}</span>
+                </div>
                 <div className={"text-xs " + (isActive ? "text-primary-foreground/70" : "text-ink-muted")}>
                   {f?.nom ?? "—"} · {p.statut}
                 </div>
