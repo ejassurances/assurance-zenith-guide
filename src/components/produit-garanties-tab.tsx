@@ -58,13 +58,19 @@ export function ProduitGarantiesTab({
   familleNom,
   isAdmin,
   docs,
+  formuleId = null,
+  titre,
 }: {
   produitId: string;
   familleCode: string | null;
   familleNom?: string;
   isAdmin: boolean;
   docs: DocAnalysable[];
+  /** Si renseigné, la grille est celle de la FORMULE (table formule_garanties). */
+  formuleId?: string | null;
+  titre?: string;
 }) {
+  const modeFormule = Boolean(formuleId);
   const grille = useMemo(() => grillePourFamille(familleCode), [familleCode]);
   const [valeurs, setValeurs] = useState<ValeursGrille>({});
   const [ligne, setLigne] = useState<Grille | null>(null);
@@ -82,6 +88,34 @@ export function ProduitGarantiesTab({
 
   const load = useCallback(async () => {
     if (!grille) return;
+    if (modeFormule) {
+      const { data } = await supabase
+        .from("formule_garanties")
+        .select("*")
+        .eq("formule_id", formuleId!)
+        .maybeSingle();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const fg = (data as any) ?? null;
+      const gl: Grille | null = fg
+        ? {
+            id: fg.id,
+            produit_id: produitId,
+            famille_code: familleCode ?? "",
+            grille_version: fg.grille_version,
+            valeurs: (fg.valeurs ?? {}) as ValeursGrille,
+            statut: fg.statut,
+            document_source_id: null,
+            valide_le: fg.valide_le ?? null,
+            notes: null,
+          }
+        : null;
+      setLigne(gl);
+      setProposition(null);
+      const base: ValeursGrille = {};
+      for (const item of grille.garanties) base[item.code] = gl?.valeurs?.[item.code] ?? valeurVide();
+      setValeurs(base);
+      return;
+    }
     const [g, p] = await Promise.all([
       supabase.from("produit_garanties").select("*").eq("produit_id", produitId).maybeSingle(),
       supabase
@@ -100,11 +134,12 @@ export function ProduitGarantiesTab({
     for (const item of grille.garanties) base[item.code] = gl?.valeurs?.[item.code] ?? valeurVide();
     setValeurs(base);
     if (gl?.document_source_id) setDocId(gl.document_source_id);
-  }, [grille, produitId]);
+  }, [grille, produitId, modeFormule, formuleId, familleCode]);
 
   useEffect(() => {
     load();
   }, [load]);
+
 
   if (!familleCode || !grille) {
     return (
