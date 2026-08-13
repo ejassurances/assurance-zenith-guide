@@ -36,12 +36,15 @@ export type ValeurGarantie = {
   couverture: Couverture;
   plafond?: string | null;
   franchise?: string | null;
+  /** Délai d'attente / de carence applicable à cette garantie (texte libre : « 3 mois »). */
+  delai_carence?: string | null;
   conditions?: string | null;
   /** Extrait des CG/IPID justifiant la valeur (traçabilité du conseil). */
   extrait?: string | null;
   /** Confiance de l'extraction automatique (0 → 1), absente si saisie humaine. */
   confiance?: number | null;
 };
+
 
 export type ValeursGrille = Record<string, ValeurGarantie>;
 
