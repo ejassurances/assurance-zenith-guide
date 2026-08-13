@@ -451,10 +451,11 @@ export function DossierDevisPanel({
           </div>
         )}
       </div>
+      )}
 
-
-
+      {!produitFixe && (
       <div className="mt-4 grid gap-3 border-t border-line pt-4 sm:grid-cols-2">
+
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Compagnie</span>
           <select
