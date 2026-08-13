@@ -389,10 +389,14 @@ export const envoyerEmailCrm = createServerFn({ method: "POST" })
     await exigerStaff(context.supabase, context.userId);
     const { envoyerMessage } = await import("@/lib/gmail.server");
 
-    const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.6">${data.message
+    const corps = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.6">${data.message
       .split("\n")
       .map((l) => l.replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c]!))
       .join("<br />")}</div>`;
+
+    // Signature réglementaire (ORIAS / ACPR) obligatoire aussi sur les envois manuels.
+    const { withHtmlSignature } = await import("@/lib/email-templates/send-email");
+    const html = withHtmlSignature(corps);
 
     const envoye = await envoyerMessage({
       to: data.to,

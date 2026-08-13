@@ -322,11 +322,15 @@ export async function creerEspaceClient(
       idempotencyKey: `compte-client-${created.user.id}`,
     });
     emailSent = res.sent;
-    if (!res.sent) emailError = "Adresse en liste de suppression";
+    if (!res.sent) {
+      emailError = "Adresse en liste de suppression";
+      await signalerEchecEmailAcces(admin, params.client_id, params.email, emailError);
+    }
   } catch (e) {
     emailSent = false;
     emailError = e instanceof Error ? e.message : "Erreur d'envoi inconnue";
     console.error(`[email] accès espace client non envoyé (${params.email}): ${emailError}`);
+    await signalerEchecEmailAcces(admin, params.client_id, params.email, emailError);
   }
 
   // Envoi réglementaire du DER dès la création de l'espace client.
@@ -373,7 +377,7 @@ export async function reinitialiserAccesEspaceClient(
 
   try {
     const { sendTemplateEmail } = await import("@/lib/email-templates/send-email");
-    const res = await sendTemplateEmail("compte-client-cree", params.email, {
+    const res = await sendTemplateEmail("lien-connexion", params.email, {
       templateData: {
         clientName: `${params.prenom ?? ""} ${params.nom}`.trim(),
         email: params.email,
@@ -382,11 +386,34 @@ export async function reinitialiserAccesEspaceClient(
       },
       idempotencyKey: `acces-client-${params.user_id}-${Date.now()}`,
     });
+    if (!res.sent) {
+      await signalerEchecEmailAcces(admin, params.client_id, params.email, "Adresse en liste de suppression Brevo");
+    }
     return { email_sent: res.sent, email_error: res.sent ? undefined : "Adresse en liste de suppression" };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Erreur d'envoi inconnue";
     console.error(`[email] réinitialisation accès non envoyée (${params.email}): ${message}`);
+    await signalerEchecEmailAcces(admin, params.client_id, params.email, message);
     return { email_sent: false, email_error: message };
   }
+}
+
+/**
+ * Trace visible dans le CRM (fil d'activité de la fiche client) lorsqu'un
+ * e-mail d'accès à l'espace client n'a pas pu être envoyé.
+ */
+async function signalerEchecEmailAcces(admin: Admin, clientId: string, email: string, raison: string) {
+  await admin
+    .from("activites")
+    .insert({
+      client_id: clientId,
+      type: "systeme",
+      titre: "⚠ E-mail d'accès à l'espace client NON envoyé",
+      contenu: `Destinataire : ${email}\nCause : ${raison}\nAction : vérifier l'adresse puis relancer « Renvoyer le lien de connexion ».`,
+    })
+    .then(
+      () => undefined,
+      (e: unknown) => console.error("[email] trace échec non enregistrée:", e),
+    );
 }
 

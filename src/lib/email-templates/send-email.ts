@@ -128,13 +128,13 @@ function signatureHtml(): string {
   return `<div style="margin-top:28px;padding-top:14px;border-top:1px solid #e5e7eb;font-family:Arial,sans-serif;">${lignes}</div>`
 }
 
-function withHtmlSignature(html: string): string {
+export function withHtmlSignature(html: string): string {
   const signature = signatureHtml()
   if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, `${signature}</body>`)
   return `${html}${signature}`
 }
 
-function withTextSignature(text: string): string {
+export function withTextSignature(text: string): string {
   return `${text}\n\n---------------------------------------------\n${SIGNATURE_LINES.join('\n')}\n`
 }
 
