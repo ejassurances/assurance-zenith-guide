@@ -18,9 +18,19 @@ type Devoir = {
   email_destinataire: string | null;
 };
 
+type DevisLigne = {
+  id: string;
+  compagnie: string;
+  produit: string;
+  formule: string;
+  cotisation_mensuelle: number | null;
+  garanties_resume: string | null;
+};
+
 type OffreForm = {
   compagnie: string;
   produit: string;
+  formule: string;
   cotisation_mensuelle: string;
   cout_total: string;
   statut: StatutOffre;
@@ -36,6 +46,7 @@ const STATUT_LABEL: Record<string, string> = {
 const offreVide = (statut: StatutOffre): OffreForm => ({
   compagnie: "",
   produit: "",
+  formule: "",
   cotisation_mensuelle: "",
   cout_total: "",
   statut,
@@ -56,6 +67,7 @@ export function DevoirConseilPanel({
   const envoyer = useServerFn(envoyerDevoirConseilFn);
   const getPdf = useServerFn(pdfDevoirConseil);
   const [devoir, setDevoir] = useState<Devoir | null>(null);
+  const [devisDossier, setDevisDossier] = useState<DevisLigne[]>([]);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -118,6 +130,44 @@ export function DevoirConseilPanel({
     load();
   }, [dossierId]);
 
+  // Devis saisis sur le dossier : base de pré-remplissage du tableau comparatif.
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("dossier_devis")
+        .select(
+          "id, cotisation_mensuelle, garanties_resume, compagnies:compagnie_id(nom), produits:produit_id(nom), produit_formules:formule_id(nom)",
+        )
+        .eq("dossier_id", dossierId)
+        .order("created_at", { ascending: true });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const list = ((data as any[]) ?? []).map((d) => ({
+        id: d.id as string,
+        compagnie: d.compagnies?.nom ?? "",
+        produit: d.produits?.nom ?? "",
+        formule: d.produit_formules?.nom ?? "",
+        cotisation_mensuelle: d.cotisation_mensuelle as number | null,
+        garanties_resume: (d.garanties_resume as string | null) ?? null,
+      }));
+      setDevisDossier(list);
+    })();
+  }, [dossierId]);
+
+  const prefillDepuisDevis = () => {
+    if (devisDossier.length === 0) return;
+    setOffres(
+      devisDossier.map((d, i) => ({
+        compagnie: d.compagnie,
+        produit: d.produit,
+        formule: d.formule,
+        cotisation_mensuelle: d.cotisation_mensuelle != null ? String(d.cotisation_mensuelle) : "",
+        cout_total: "",
+        statut: (i === 0 ? "retenue" : "equivalente") as StatutOffre,
+        commentaire: d.garanties_resume ?? "",
+      })),
+    );
+  };
+
   const offresRemplies = offres.filter((o) => o.compagnie.trim() && o.produit.trim());
 
   const submit = async () => {
@@ -144,6 +194,7 @@ export function DevoirConseilPanel({
               ? offresRemplies.map((o) => ({
                   compagnie: o.compagnie.trim(),
                   produit: o.produit.trim(),
+                  formule: o.formule.trim() || null,
                   cotisation_mensuelle: o.cotisation_mensuelle ? Number(o.cotisation_mensuelle) : null,
                   cout_total: o.cout_total ? Number(o.cout_total) : null,
                   statut: o.statut,
@@ -279,6 +330,14 @@ export function DevoirConseilPanel({
             Pré-remplir depuis le modèle
           </button>
         )}
+        {open && devisDossier.length > 0 && (
+          <button
+            onClick={prefillDepuisDevis}
+            className="rounded-full border border-line px-4 py-2 text-sm hover:bg-surface"
+          >
+            Reprendre les {devisDossier.length} devis du dossier
+          </button>
+        )}
       </div>
 
       {open && (
@@ -310,6 +369,12 @@ export function DevoirConseilPanel({
                     placeholder="Produit"
                     value={o.produit}
                     onChange={(e) => majOffre(i, { produit: e.target.value })}
+                    className="rounded-md border border-line bg-background px-2 py-1.5 text-sm sm:col-span-2"
+                  />
+                  <input
+                    placeholder="Formule (santé)"
+                    value={o.formule}
+                    onChange={(e) => majOffre(i, { formule: e.target.value })}
                     className="rounded-md border border-line bg-background px-2 py-1.5 text-sm sm:col-span-2"
                   />
                   <input
