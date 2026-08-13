@@ -308,7 +308,83 @@ export function DossierDevisPanel({
         })}
       </div>
 
+      {produitFixe && (
+        <div className="mt-4 space-y-3 border-t border-line pt-4">
+          <div>
+            <h3 className="text-sm font-medium text-ink">Tarif fixe du produit</h3>
+            <p className="mt-1 text-xs text-ink-muted">
+              Choisissez la formule et les options souhaitées : le total est calculé automatiquement et devient la
+              seule offre du dossier. Aucun classement IA n'est nécessaire.
+            </p>
+          </div>
+
+          {formulesFixes.length === 0 && (
+            <p className="text-sm text-ink-muted">
+              Aucune formule active avec tarif fixe sur ce produit — renseignez-les sur la fiche produit.
+            </p>
+          )}
+
+          {formulesFixes.length > 0 && (
+            <>
+              <label className="block sm:max-w-sm">
+                <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Formule</span>
+                <select value={fixeFormuleId} onChange={(e) => setFixeFormuleId(e.target.value)} className={inp}>
+                  <option value="">— Choisir —</option>
+                  {formulesFixes.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.nom}
+                      {f.tarif_fixe == null ? " (tarif non renseigné)" : ` — ${eur(Number(f.tarif_fixe))}`}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {optionsFixes.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">Options</p>
+                  {optionsFixes.map((o) => (
+                    <label key={o.id} className="flex items-start gap-2 text-sm text-ink">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={fixeOptionIds.includes(o.id)}
+                        onChange={(e) =>
+                          setFixeOptionIds((l) => (e.target.checked ? [...l, o.id] : l.filter((x) => x !== o.id)))
+                        }
+                      />
+                      <span>
+                        {o.nom}
+                        <span className="text-ink-soft">
+                          {" "}
+                          — {o.tarif_fixe == null ? "tarif non renseigné" : eur(Number(o.tarif_fixe))}
+                        </span>
+                        {o.description && <span className="block text-xs text-ink-muted">{o.description}</span>}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              <p className="text-sm font-medium text-ink">
+                Total calculé : <span className="text-ink-soft">{eur(totalFixe)}</span>
+              </p>
+
+              <button
+                onClick={genererDepuisTarifFixe}
+                disabled={!fixeFormuleId || fixeEtat !== "idle"}
+                className="rounded-full bg-ink px-4 py-2 text-sm text-primary-foreground disabled:opacity-60"
+              >
+                {fixeEtat === "envoi" ? "Génération…" : "Créer ce devis et générer le devoir de conseil"}
+              </button>
+              {iaMsg && <p className="text-sm text-emerald-700">{iaMsg}</p>}
+            </>
+          )}
+        </div>
+      )}
+
+      {!produitFixe && (
       <div className="mt-4 border-t border-line pt-4">
+
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h3 className="text-sm font-medium text-ink">Classement IA des devis</h3>
