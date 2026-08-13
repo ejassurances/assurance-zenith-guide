@@ -9,6 +9,7 @@ import { ConformiteClientTab } from "@/components/conformite-client-tab";
 import { DeleteClientButton } from "@/components/delete-client-button";
 import { AccesEspaceClientButton } from "@/components/acces-espace-client-button";
 import { CrmBrandPanel } from "@/components/crm-brand-panel";
+import { EmailsLiesPanel } from "@/components/emails-lies-panel";
 import { NewDossierForm } from "@/routes/_authenticated/espace.dossiers.index";
 
 export const Route = createFileRoute("/_authenticated/espace/clients/$id")({
