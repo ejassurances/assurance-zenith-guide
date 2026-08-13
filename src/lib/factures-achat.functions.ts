@@ -120,3 +120,105 @@ export const importerFactureDepuisEmail = createServerFn({ method: "POST" })
 
     return { id: creee.id, deja_importee: false, avertissement, lue };
   });
+
+/**
+ * Import manuel d'une facture PDF (ou image) déposée depuis l'espace comptabilité.
+ * L'IA lit les montants et propose le compte de charge du plan comptable.
+ */
+export const importerFactureFichier = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        nom_fichier: z.string().min(1).max(300),
+        mime: z.string().max(120).optional().nullable(),
+        base64: z.string().min(100),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await exigerStaff(context.supabase, context.userId);
+
+    const mime =
+      data.mime || (data.nom_fichier.toLowerCase().endsWith(".pdf") ? "application/pdf" : "application/octet-stream");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: comptes } = await supabaseAdmin
+      .from("plan_comptable")
+      .select("numero, libelle")
+      .eq("actif", true)
+      .gte("numero", "600000")
+      .lt("numero", "700000")
+      .order("numero");
+
+    let lue: Awaited<ReturnType<typeof import("@/lib/facture-email.server").lireFactureDepuisFichier>> | null = null;
+    let avertissement: string | null = null;
+    try {
+      const { lireFactureDepuisFichier } = await import("@/lib/facture-email.server");
+      lue = await lireFactureDepuisFichier(
+        { nom: data.nom_fichier, mime, base64: data.base64 },
+        (comptes ?? []) as { numero: string; libelle: string }[],
+      );
+    } catch (e) {
+      avertissement = e instanceof Error ? e.message : "Lecture automatique indisponible.";
+    }
+
+    const octets = Uint8Array.from(atob(data.base64), (c) => c.charCodeAt(0));
+    const nomNettoye = data.nom_fichier.replace(/[^\w.\-]+/g, "_").slice(-80);
+    const chemin = `imports/${context.userId}/${Date.now()}-${nomNettoye}`;
+    const { error: upErr } = await supabaseAdmin.storage
+      .from("factures-achat")
+      .upload(chemin, octets, { contentType: mime, upsert: false });
+    if (upErr) throw new Error(`Archivage du justificatif impossible : ${upErr.message}`);
+
+    const ht = lue?.montant_ht ?? 0;
+    const tva = lue?.montant_tva ?? 0;
+    const ttc = lue?.montant_ttc ?? Number((ht + tva).toFixed(2));
+
+    const notes = [
+      "Importée manuellement (PDF).",
+      lue?.nature ? `Nature : ${lue.nature}` : null,
+      lue?.compte_charge ? `Compte proposé par l'IA : ${lue.compte_charge}` : null,
+      lue?.confiance !== null && lue?.confiance !== undefined
+        ? `Lecture IA (confiance ${(lue.confiance * 100).toFixed(0)} %) — à vérifier avant génération de l'écriture.`
+        : avertissement,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const insertion: Record<string, unknown> = {
+      fournisseur: (lue?.fournisseur ?? "Fournisseur à préciser").slice(0, 160),
+      numero_facture: lue?.numero_facture ?? null,
+      date_facture: lue?.date_facture ?? new Date().toISOString().slice(0, 10),
+      date_echeance: lue?.date_echeance ?? null,
+      montant_ht: ht,
+      montant_tva: tva,
+      montant_ttc: ttc,
+      statut: "a_payer",
+      notes,
+      fichier_path: chemin,
+      fichier_nom: data.nom_fichier.slice(0, 300),
+      created_by: context.userId,
+    };
+    if (lue?.compte_charge) insertion["compte_charge"] = lue.compte_charge;
+
+    const { data: creee, error } = await supabaseAdmin
+      .from("factures_achat")
+      .insert(insertion as never)
+      .select("id")
+      .single();
+    if (error || !creee) {
+      await supabaseAdmin.storage.from("factures-achat").remove([chemin]);
+      throw new Error(error?.message ?? "Création de la facture impossible");
+    }
+
+    return {
+      id: creee.id,
+      avertissement,
+      fournisseur: insertion["fournisseur"] as string,
+      montant_ttc: ttc,
+      compte_charge: lue?.compte_charge ?? null,
+      nom_fichier: data.nom_fichier,
+    };
+  });
