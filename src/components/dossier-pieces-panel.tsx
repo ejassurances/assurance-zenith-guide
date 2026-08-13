@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { monFichierUrl } from "@/lib/espace-client.functions";
 import {
   CATEGORIE_LABEL,
   STATUT_PIECE_LABEL,
   toutesPiecesConnues,
   type CategoriePiece,
 } from "@/lib/pieces-requises";
+
 
 type Piece = {
   id: string;
@@ -63,6 +66,25 @@ export function DossierPiecesPanel({
   const [choix, setChoix] = useState<Record<string, string>>({});
   const [precision, setPrecision] = useState<Record<string, string>>({});
   const inputs = useRef<Record<string, HTMLInputElement | null>>({});
+  const fichierUrl = useServerFn(monFichierUrl);
+  const [telechargement, setTelechargement] = useState<string | null>(null);
+
+  /** Ouvre le fichier déjà déposé (KYC ou document) via une URL signée. */
+  async function telecharger(piece: Piece) {
+    const source: "kyc" | "document" = piece.document_id ? "document" : "kyc";
+    const id = piece.document_id ?? piece.kyc_document_id;
+    if (!id) return;
+    setTelechargement(piece.id);
+    setError(null);
+    try {
+      const res = await fichierUrl({ data: { source, id } });
+      window.open(res.url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Téléchargement impossible");
+    }
+    setTelechargement(null);
+  }
+
 
   const load = useCallback(async () => {
     const { data, error: err } = await supabase
@@ -326,6 +348,15 @@ export function DossierPiecesPanel({
                         >
                           {STATUT_PIECE_LABEL[p.statut] ?? p.statut}
                         </span>
+                        {(p.document_id || p.kyc_document_id) && (
+                          <button
+                            onClick={() => void telecharger(p)}
+                            disabled={telechargement === p.id}
+                            className="rounded-md border border-line px-2.5 py-1 text-xs hover:bg-background disabled:opacity-60"
+                          >
+                            {telechargement === p.id ? "Ouverture…" : "Télécharger"}
+                          </button>
+                        )}
                         {canValidate && p.statut === "recue" && (
                           <>
                             <button
