@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { SignaturePad } from "@/components/signature-pad";
-import { signerDevoirConseil, refuserDevoirConseil } from "@/lib/devoir-conseil.functions";
+import { signerDevoirConseil, refuserDevoirConseil, pdfDevoirConseil } from "@/lib/devoir-conseil.functions";
 import { labelForBranche } from "@/lib/recueil-besoins-schemas";
 import { STATUT_OFFRE_LABEL, type StatutOffre } from "@/lib/devoir-conseil-modeles";
 import { SITE } from "@/lib/site";
