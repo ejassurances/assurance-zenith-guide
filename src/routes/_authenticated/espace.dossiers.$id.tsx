@@ -124,10 +124,16 @@ function DossierDetail() {
         </p>
       </div>
 
+      <DossierPipeline dossierId={id} statut={dossier.statut} canEdit={canEdit} onChanged={load} />
+
       <CompagnieProduitSection dossier={dossier} canEdit={canEdit} onSaved={load} />
 
       <RecueilPanel dossier={dossier} />
       {canEdit && <LettreMissionPanel dossierId={id} clientEmail={dossier.client_email} />}
+      {canEdit && (
+        <DevoirConseilPanel dossierId={id} clientEmail={dossier.client_email} onChanged={load} />
+      )}
+
 
       <div className="grid gap-6 md:grid-cols-2">
         <Section title="Informations client">
