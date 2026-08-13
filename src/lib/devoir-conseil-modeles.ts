@@ -260,3 +260,88 @@ export function prefillDevoirConseil(c: DevoirConseilContexte) {
     exigences_client: c.exigences?.trim() || m.exigences(c),
   };
 }
+
+/**
+ * Exigences et besoins générés automatiquement à partir du recueil des besoins.
+ * Santé : postes de soins + niveaux souhaités, assurés (âges) et budget mensuel.
+ * Prévoyance : risques prioritaires, foyer, revenus et budget.
+ * Renvoie null si le recueil ne permet pas de rédiger d'exigences.
+ */
+export function exigencesDepuisRecueil(branche: string, recueil: Record<string, unknown>): string | null {
+  if (branche === "sante") {
+    const parts: string[] = [];
+
+    const assures = personnesAssurees(recueil.assures);
+    if (assures.length > 0) {
+      const details = assures.map((p) => {
+        const lien = LIENS_ASSURE.find((l) => l.value === p.lien)?.label ?? "Assuré";
+        const age = ageDepuisDateNaissance(p.date_naissance);
+        const regime = REGIMES_OBLIGATOIRES.find((r) => r.value === p.regime)?.label;
+        return [lien, age !== null ? `${age} ans` : null, regime].filter(Boolean).join(", ");
+      });
+      parts.push(
+        `Personnes à couvrir (${assures.length}) : ${details.join(" ; ")}.`,
+      );
+    }
+
+    const postes = POSTES_SOINS.map((p) => {
+      const niveau = labelNiveauSoins(recueil[`niveau_${p.key}`]);
+      return niveau ? `${p.label} : niveau ${niveau.toLowerCase()}` : null;
+    }).filter(Boolean) as string[];
+    if (postes.length > 0) {
+      parts.push(`Niveaux de remboursement souhaités poste par poste — ${postes.join(" ; ")}.`);
+    }
+
+    const budget = Number(recueil.budget_mensuel);
+    if (Number.isFinite(budget) && budget > 0) {
+      parts.push(`Budget mensuel choisi par le client : ${fmtEuro(budget)}.`);
+    }
+
+    const compagnieActuelle = typeof recueil.compagnie_actuelle === "string" ? recueil.compagnie_actuelle.trim() : "";
+    const cotisationActuelle = Number(recueil.cotisation_actuelle);
+    const motif = typeof recueil.motif_changement === "string" ? recueil.motif_changement.trim() : "";
+    if (compagnieActuelle || Number.isFinite(cotisationActuelle) || motif) {
+      parts.push(
+        `Contrat actuel : ${[
+          compagnieActuelle || null,
+          Number.isFinite(cotisationActuelle) && cotisationActuelle > 0
+            ? `cotisation ${fmtEuro(cotisationActuelle)} / mois`
+            : null,
+          motif ? `motif de changement : ${motif}` : null,
+        ]
+          .filter(Boolean)
+          .join(", ")}.`,
+      );
+    }
+
+    return parts.length > 0 ? parts.join("\n") : null;
+  }
+
+  if (branche === "prevoyance") {
+    const parts: string[] = [];
+    const besoins = [
+      recueil.besoin_deces ? "décès (capital / rente de conjoint)" : null,
+      recueil.besoin_incapacite ? "incapacité temporaire de travail (indemnités journalières)" : null,
+      recueil.besoin_invalidite ? "invalidité (rente)" : null,
+      recueil.besoin_dependance ? "dépendance" : null,
+    ].filter(Boolean) as string[];
+    if (besoins.length > 0) parts.push(`Risques à couvrir en priorité : ${besoins.join(" ; ")}.`);
+
+    const foyer = typeof recueil.composition_foyer === "string" ? recueil.composition_foyer.trim() : "";
+    if (foyer) parts.push(`Composition du foyer : ${foyer}.`);
+
+    const revenus = Number(recueil.revenus_annuels);
+    if (Number.isFinite(revenus) && revenus > 0) parts.push(`Revenus nets annuels du foyer : ${fmtEuro(revenus)}.`);
+
+    const budget = Number(recueil.budget_mensuel);
+    if (Number.isFinite(budget) && budget > 0) parts.push(`Budget mensuel envisagé : ${fmtEuro(budget)}.`);
+
+    const objectifs = typeof recueil.objectifs === "string" ? recueil.objectifs.trim() : "";
+    if (objectifs) parts.push(`Objectifs exprimés : ${objectifs}.`);
+
+    return parts.length > 0 ? parts.join("\n") : null;
+  }
+
+  const objectifs = typeof recueil.objectifs === "string" ? recueil.objectifs.trim() : "";
+  return objectifs || null;
+}
