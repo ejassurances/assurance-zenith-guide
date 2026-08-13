@@ -67,7 +67,7 @@ function Dashboard() {
       {role === "client" && <ClientDerBanner />}
       {(role === "admin" || role === "mandataire") && <ConformiteCabinetWidget />}
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {role !== "client" && (
           <Card label="Prospects" value={stats.prospects} sub={`${stats.clients} fiches au total`} accent />
         )}
@@ -77,6 +77,7 @@ function Dashboard() {
           <Card label="Commissions estimées" value={`${stats.commissions.toLocaleString("fr-FR")} €`} accent />
         )}
       </div>
+
 
       {(role === "admin" || role === "mandataire") && <CommissionMoisCard />}
 
@@ -143,18 +144,20 @@ function Card({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-line bg-surface-elevated p-5 shadow-sm">
+    <div className="rounded-2xl border border-line bg-surface-elevated p-7 shadow-sm">
       <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">{label}</p>
       <p
         className={
-          "mt-2 text-3xl font-bold tracking-tight " + (accent ? "text-[color:var(--crm-gold)]" : "text-ink")
+          "mt-3 font-serif text-4xl font-semibold tracking-tight " +
+          (accent ? "text-[color:var(--crm-gold)]" : "text-ink")
         }
       >
         {value}
       </p>
-      {sub && <p className="mt-1 text-xs text-ink-muted">{sub}</p>}
+      {sub && <p className="mt-2 text-xs text-ink-muted">{sub}</p>}
     </div>
   );
+
 }
 
 
