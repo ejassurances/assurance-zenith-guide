@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { classerPiece, piecesRequisesPour } from "@/lib/pieces-requises";
 import { executerRechercheLCB } from "@/lib/lcb-ft.server";
+import { appUrl } from "@/lib/app-url";
 
 /**
  * Automatisation complète du traitement d'un lead :
@@ -244,7 +245,7 @@ export async function creerEspaceClient(
         clientName: `${params.prenom ?? ""} ${params.nom}`.trim(),
         email: params.email,
         motDePasseProvisoire: password,
-        link: `${params.origin}/auth`,
+        link: appUrl("/auth"),
       },
       idempotencyKey: `compte-client-${created.user.id}`,
     });
@@ -288,7 +289,7 @@ export async function reinitialiserAccesEspaceClient(
         clientName: `${params.prenom ?? ""} ${params.nom}`.trim(),
         email: params.email,
         motDePasseProvisoire: password,
-        link: `${params.origin}/auth`,
+        link: appUrl("/auth"),
       },
       idempotencyKey: `acces-client-${params.user_id}-${Date.now()}`,
     });

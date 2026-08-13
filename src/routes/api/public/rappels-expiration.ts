@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { appUrl } from "@/lib/app-url";
 
 /**
  * Rappel automatique d'expiration des pièces justificatives.
@@ -102,7 +103,7 @@ export const Route = createFileRoute("/api/public/rappels-expiration")({
                   documents: items.map(
                     (i) => `${i.libelle} (valide jusqu'au ${new Date(i.date).toLocaleDateString("fr-FR")})`,
                   ),
-                  link: `${origin}/espace/mon-espace`,
+                  link: appUrl("/espace/mon-espace"),
                 },
                 idempotencyKey: `expiration-${c.id}-${new Date().toISOString().slice(0, 10)}`,
               });
