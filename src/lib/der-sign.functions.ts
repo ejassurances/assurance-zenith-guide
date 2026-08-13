@@ -1,10 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequestHeader, getRequestIP, getRequest } from "@tanstack/react-start/server";
+import { getRequestHeader, getRequestIP } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { createHash } from "node:crypto";
 import { sendTemplateEmail } from "@/lib/email-templates/send-email";
 import { SITE } from "@/lib/site";
+import { appUrl } from "@/lib/app-url";
 
 const inputSchema = z.object({
   envoi_id: z.string().uuid(),
@@ -86,8 +87,7 @@ export const envoyerDerEmail = createServerFn({ method: "POST" })
       .eq("actif", true)
       .maybeSingle();
     if (modErr || !modele) throw new Error("Aucun DER actif - l'admin doit d'abord activer un modele.");
-    const origin = new URL(getRequest().url).origin;
-    const link = `${origin}/espace/signer-der`;
+    const link = appUrl("/espace/signer-der");
     const clientAny = client as any;
     const clientName = [clientAny.prenom, clientAny.nom].filter(Boolean).join(" ");
     const result = await sendTemplateEmail("der-envoi", data.email, {

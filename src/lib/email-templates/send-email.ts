@@ -1,18 +1,13 @@
 import * as React from 'react'
 import { render } from '@react-email/render'
-import { EmailAPIError, sendLovableEmail } from '@lovable.dev/email-js'
 import { TEMPLATES } from './registry'
 
-// Server-only: reads LOVABLE_API_KEY. Never import from client components.
+// Server-only: reads LOVABLE_API_KEY / BREVO_API_KEY. Never import from client components.
 
-// Configuration baked in at scaffold time
-const SITE_NAME = "EJ Partners Assurances"
-// SENDER_DOMAIN is the verified sender subdomain FQDN (e.g., "notify.example.com").
-// It MUST match the subdomain delegated to Lovable's nameservers. NEVER use the root domain.
-const SENDER_DOMAIN = "notify.ej-assurances.fr"
-// FROM_DOMAIN is the domain shown in the From: header (e.g., "example.com").
-// Can be the root domain when display_from_root is enabled — this is cosmetic only.
-const FROM_DOMAIN = "ej-assurances.fr"
+const SITE_NAME = 'EJ Partners Assurances'
+/** Adresse expéditrice (doit être un expéditeur/domaine vérifié dans Brevo). */
+const FROM_EMAIL = 'contact@ej-assurances.fr'
+const GATEWAY_URL = 'https://connector-gateway.lovable.dev/brevo'
 
 export type SendTemplateEmailResult =
   | { sent: true }
@@ -20,26 +15,27 @@ export type SendTemplateEmailResult =
 
 export interface SendTemplateEmailOptions {
   templateData?: Record<string, any>
-  /** Dedupes retries of the same logical send; defaults to a random UUID (no dedupe). */
+  /** Conservé pour compatibilité des appels existants (dédoublonnage applicatif). */
   idempotencyKey?: string
   replyTo?: string
 }
 
 /**
- * Renders a registered template and sends it through Lovable's managed email
- * API. Suppression, retries, and rate limits are enforced by Lovable
- * server-side. A suppressed recipient is an expected outcome
- * ({ sent: false }); any other failure throws — EmailAPIError exposes
- * .code and .status for branching.
+ * Rend un template enregistré et l'envoie via le connecteur Brevo
+ * (passerelle Lovable). Toute erreur d'envoi lève une exception.
  */
 export async function sendTemplateEmail(
   templateName: string,
   to: string,
   options: SendTemplateEmailOptions = {}
 ): Promise<SendTemplateEmailResult> {
-  const apiKey = process.env.LOVABLE_API_KEY
-  if (!apiKey) {
+  const lovableApiKey = process.env['LOVABLE_API_KEY']
+  if (!lovableApiKey) {
     throw new Error('LOVABLE_API_KEY is not configured')
+  }
+  const brevoKey = process.env['BREVO_API_KEY']
+  if (!brevoKey) {
+    throw new Error('BREVO_API_KEY is not configured')
   }
 
   const template = TEMPLATES[templateName]
@@ -65,27 +61,28 @@ export async function sendTemplateEmail(
       ? template.subject(templateData)
       : template.subject
 
-  try {
-    await sendLovableEmail(
-      {
-        to: recipient,
-        from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
-        sender_domain: SENDER_DOMAIN,
-        subject,
-        html,
-        text,
-        purpose: 'transactional',
-        label: templateName,
-        idempotency_key: options.idempotencyKey || crypto.randomUUID(),
-        reply_to: options.replyTo,
-      },
-      { apiKey, sendUrl: process.env.LOVABLE_SEND_URL }
-    )
-  } catch (error) {
-    if (error instanceof EmailAPIError && error.code === 'recipient_suppressed') {
-      return { sent: false, reason: 'recipient_suppressed' }
-    }
-    throw error
+  const response = await fetch(`${GATEWAY_URL}/smtp/email`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${lovableApiKey}`,
+      'X-Connection-Api-Key': brevoKey,
+    },
+    body: JSON.stringify({
+      sender: { name: SITE_NAME, email: FROM_EMAIL },
+      to: [{ email: recipient }],
+      subject,
+      htmlContent: html,
+      textContent: text,
+      ...(options.replyTo ? { replyTo: { email: options.replyTo } } : {}),
+      tags: [templateName],
+    }),
+  })
+
+  if (!response.ok) {
+    const body = await response.text()
+    console.error(`Brevo send failed [${response.status}] (${templateName}): ${body}`)
+    throw new Error(`Brevo send failed [${response.status}]: ${body}`)
   }
 
   return { sent: true }

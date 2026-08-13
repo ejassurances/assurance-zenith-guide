@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { appUrl } from "@/lib/app-url";
 
 /**
  * Relance automatique J+2 : envoie un e-mail aux clients dont le dossier
@@ -19,7 +20,6 @@ export const Route = createFileRoute("/api/public/relance-pieces")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { sendTemplateEmail } = await import("@/lib/email-templates/send-email");
-        const origin = new URL(request.url).origin;
 
         const seuil = new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString();
 
@@ -54,7 +54,7 @@ export const Route = createFileRoute("/api/public/relance-pieces")({
                 clientName: d.client_nom,
                 reference: d.reference,
                 pieces: pieces.map((p) => p.libelle),
-                link: `${origin}/espace/mon-espace`,
+                link: appUrl("/espace/mon-espace"),
               },
               idempotencyKey: `relance-pieces-${d.id}-${new Date().toISOString().slice(0, 10)}`,
             });

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { appUrl } from "@/lib/app-url";
 
 /**
  * Rappel automatique d'expiration des pièces justificatives.
@@ -25,7 +26,6 @@ export const Route = createFileRoute("/api/public/rappels-expiration")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { sendTemplateEmail } = await import("@/lib/email-templates/send-email");
-        const origin = new URL(request.url).origin;
 
         const limite = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().slice(0, 10);
         const relanceSeuil = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
@@ -102,7 +102,7 @@ export const Route = createFileRoute("/api/public/rappels-expiration")({
                   documents: items.map(
                     (i) => `${i.libelle} (valide jusqu'au ${new Date(i.date).toLocaleDateString("fr-FR")})`,
                   ),
-                  link: `${origin}/espace/mon-espace`,
+                  link: appUrl("/espace/mon-espace"),
                 },
                 idempotencyKey: `expiration-${c.id}-${new Date().toISOString().slice(0, 10)}`,
               });
