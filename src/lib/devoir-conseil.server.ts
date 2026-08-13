@@ -116,6 +116,12 @@ export async function envoyerDevoirConseil(
       reference: d.reference,
       link: appUrl("/espace/signer-devoir-conseil"),
     },
+    brevoParams: {
+      PRENOM: String(d.client_nom ?? "").split(" ")[0] || d.client_nom,
+      LIEN_ACTION: appUrl("/espace/signer-devoir-conseil"),
+      TYPE_ASSURANCE: modele.libelle,
+      NOM_COMPAGNIE_RECOMMANDEE: saisie.compagnie ?? "",
+    },
     replyTo: SITE.email,
   });
   if (!result.sent) throw new Error("Adresse en liste de suppression — envoi refusé");
