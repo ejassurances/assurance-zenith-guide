@@ -143,8 +143,10 @@ function CompagniesIndex() {
                 <th className="px-4 py-3 text-left">Compagnie</th>
                 <th className="px-4 py-3 text-left">Contact</th>
                 <th className="px-4 py-3 text-left">Statut</th>
+                <th className="px-4 py-3 text-left">Favorite</th>
                 <th className="px-4 py-3 text-left">API</th>
                 <th className="px-4 py-3" />
+
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
