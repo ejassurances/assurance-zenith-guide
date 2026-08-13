@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { StoredImage } from "@/components/image-upload-field";
 
 export const Route = createFileRoute("/_authenticated/espace/compagnies/")({
   component: CompagniesIndex,
