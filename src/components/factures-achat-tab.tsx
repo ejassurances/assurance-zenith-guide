@@ -309,7 +309,7 @@ function NouvelleFacture({
 }: {
   comptes: Compte[];
   userId: string | null;
-  onCreated: () => void;
+  onCreated: (facture?: Facture | null) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
