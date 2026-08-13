@@ -309,12 +309,21 @@ export function ProduitGarantiesTab({
                   : `Analyser ${docIds.length > 1 ? `ces ${docIds.length} documents` : "ce document"}`}
               </button>
               <span className="text-xs text-ink-muted">
-                L'analyse ne produit qu'une proposition : rien n'est appliqué sans validation.
+                L'analyse ne produit qu'une proposition de grille produit : rien n'est appliqué sans validation.
               </span>
             </div>
           </div>
         )}
+        {estSante && nbTableaux > 0 && (
+          <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            {nbTableaux === 1 ? "Un tableau de garanties est présent" : `${nbTableaux} tableaux de garanties sont présents`}{" "}
+            sur ce produit. En santé, ce document couvre plusieurs formules : utilisez l'onglet « Formules » →
+            « Extraction assistée depuis un tableau de garanties », qui génère une proposition de grille par formule
+            détectée (une validation par formule).
+          </p>
+        )}
       </div>
+
 
       {proposition && (
         <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3">
