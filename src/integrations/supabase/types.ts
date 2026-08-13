@@ -1305,6 +1305,96 @@ export type Database = {
         }
         Relationships: []
       }
+      devoirs_conseil: {
+        Row: {
+          client_id: string | null
+          contenu: Json
+          created_at: string
+          created_by: string | null
+          dossier_id: string
+          email_destinataire: string | null
+          envoye_le: string | null
+          hash: string | null
+          id: string
+          mises_en_garde: string | null
+          motifs: string | null
+          pdf_path: string | null
+          recommandation: string | null
+          refus_motif: string | null
+          refuse_le: string | null
+          signature_png: string | null
+          signed_at: string | null
+          signed_ip: string | null
+          signed_ua: string | null
+          statut: string
+          type_assurance: string
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          contenu?: Json
+          created_at?: string
+          created_by?: string | null
+          dossier_id: string
+          email_destinataire?: string | null
+          envoye_le?: string | null
+          hash?: string | null
+          id?: string
+          mises_en_garde?: string | null
+          motifs?: string | null
+          pdf_path?: string | null
+          recommandation?: string | null
+          refus_motif?: string | null
+          refuse_le?: string | null
+          signature_png?: string | null
+          signed_at?: string | null
+          signed_ip?: string | null
+          signed_ua?: string | null
+          statut?: string
+          type_assurance?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          contenu?: Json
+          created_at?: string
+          created_by?: string | null
+          dossier_id?: string
+          email_destinataire?: string | null
+          envoye_le?: string | null
+          hash?: string | null
+          id?: string
+          mises_en_garde?: string | null
+          motifs?: string | null
+          pdf_path?: string | null
+          recommandation?: string | null
+          refus_motif?: string | null
+          refuse_le?: string | null
+          signature_png?: string | null
+          signed_at?: string | null
+          signed_ip?: string | null
+          signed_ua?: string | null
+          statut?: string
+          type_assurance?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devoirs_conseil_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devoirs_conseil_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           categorie: string
@@ -1358,6 +1448,44 @@ export type Database = {
           },
           {
             foreignKeyName: "documents_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dossier_etapes_historique: {
+        Row: {
+          ancienne_etape: string | null
+          commentaire: string | null
+          created_at: string
+          dossier_id: string
+          id: string
+          nouvelle_etape: string
+          par: string | null
+        }
+        Insert: {
+          ancienne_etape?: string | null
+          commentaire?: string | null
+          created_at?: string
+          dossier_id: string
+          id?: string
+          nouvelle_etape: string
+          par?: string | null
+        }
+        Update: {
+          ancienne_etape?: string | null
+          commentaire?: string | null
+          created_at?: string
+          dossier_id?: string
+          id?: string
+          nouvelle_etape?: string
+          par?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dossier_etapes_historique_dossier_id_fkey"
             columns: ["dossier_id"]
             isOneToOne: false
             referencedRelation: "dossiers"
@@ -2505,6 +2633,14 @@ export type Database = {
         | "perdu"
         | "lettre_mission_envoyee"
         | "dda_validee"
+        | "devis_en_cours"
+        | "devoir_conseil_envoye"
+        | "devoir_conseil_signe"
+        | "devoir_conseil_refuse"
+        | "souscription_envoyee"
+        | "contrat_valide"
+        | "contrat_actif"
+        | "cloture"
       produit_document_type:
         | "conditions_generales"
         | "ipid"
@@ -2679,6 +2815,14 @@ export const Constants = {
         "perdu",
         "lettre_mission_envoyee",
         "dda_validee",
+        "devis_en_cours",
+        "devoir_conseil_envoye",
+        "devoir_conseil_signe",
+        "devoir_conseil_refuse",
+        "souscription_envoyee",
+        "contrat_valide",
+        "contrat_actif",
+        "cloture",
       ],
       produit_document_type: [
         "conditions_generales",
