@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequestHeader, getRequestIP, getRequest } from "@tanstack/react-start/server";
+import { getRequestHeader, getRequestIP } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { createHash } from "node:crypto";
