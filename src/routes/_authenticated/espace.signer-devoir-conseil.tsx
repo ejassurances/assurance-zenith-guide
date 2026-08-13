@@ -6,6 +6,8 @@ import { SignaturePad } from "@/components/signature-pad";
 import { signerDevoirConseil, refuserDevoirConseil, pdfDevoirConseil } from "@/lib/devoir-conseil.functions";
 import { labelForBranche } from "@/lib/recueil-besoins-schemas";
 import { STATUT_OFFRE_LABEL, type StatutOffre } from "@/lib/devoir-conseil-modeles";
+import { COUVERTURE_LABEL, type Couverture } from "@/lib/garanties-grille";
+
 import { SITE } from "@/lib/site";
 
 export const Route = createFileRoute("/_authenticated/espace/signer-devoir-conseil")({
