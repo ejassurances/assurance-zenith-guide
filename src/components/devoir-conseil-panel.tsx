@@ -58,11 +58,14 @@ export function DevoirConseilPanel({
   clientEmail,
   branche = "",
   onChanged,
+  contreProposition = null,
 }: {
   dossierId: string;
   clientEmail: string | null;
   branche?: string;
   onChanged: () => void;
+  /** Pré-remplissage d'une nouvelle saisie après refus (analyse IA). */
+  contreProposition?: { suggestion: string; motif: string; key: number } | null;
 }) {
   const envoyer = useServerFn(envoyerDevoirConseilFn);
   const getPdf = useServerFn(pdfDevoirConseil);
