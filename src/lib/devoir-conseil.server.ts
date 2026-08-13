@@ -200,6 +200,11 @@ export async function envoyerDevoirConseil(
     // l'archivage ne doit pas bloquer l'envoi au client
   }
 
+  if (sansEnvoi) {
+    // Brouillon : relecture staff obligatoire avant tout envoi au client.
+    return { id: devoirId, hash, envoye: false };
+  }
+
   const result = await sendTemplateEmail("devoir-conseil-envoi", d.client_email, {
     templateData: {
       clientName: d.client_nom,
@@ -225,7 +230,8 @@ export async function envoyerDevoirConseil(
     par: userId,
   });
 
-  return { id: devoirId, hash };
+  return { id: devoirId, hash, envoye: true };
+
 }
 
 /**
