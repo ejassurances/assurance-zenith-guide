@@ -14,11 +14,15 @@ type Compagnie = {
   slug: string;
   logo_url: string | null;
   statut: "actif" | "prospect" | "inactif";
+  tier_favori: number | null;
   api_active: boolean;
   site_web: string | null;
   contact_nom: string | null;
   created_at: string;
 };
+
+export const TIER_LABEL: Record<number, string> = { 1: "Top 1", 2: "Top 2", 3: "Top 3" };
+
 
 function slugify(s: string) {
   return s
