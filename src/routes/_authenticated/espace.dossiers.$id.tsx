@@ -19,6 +19,7 @@ import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
 import { ProduitDocumentsLink } from "@/components/produit-documents-link";
 import { DossierPipeline } from "@/components/dossier-pipeline";
 import { DevoirConseilPanel } from "@/components/devoir-conseil-panel";
+import { DevoirConseilRefusAnalysePanel } from "@/components/devoir-conseil-refus-analyse-panel";
 import { DossierDevisPanel } from "@/components/dossier-devis-panel";
 import { etapeLabel } from "@/lib/pipeline-dossier";
 
