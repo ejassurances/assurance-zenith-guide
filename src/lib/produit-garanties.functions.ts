@@ -36,6 +36,21 @@ export const analyserDocumentGaranties = createServerFn({ method: "POST" })
     return analyserDocumentProduit(context.supabase, data.document_id, context.userId);
   });
 
+/**
+ * Standardisation du contrat : analyse croisée de plusieurs documents
+ * (CG + IPID + fiche produit + fiche CCSF) en une seule proposition.
+ */
+export const analyserDocumentsGaranties = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ document_ids: z.array(z.string().uuid()).min(1).max(4) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertStaff(context.supabase, context.userId);
+    const { analyserDocumentsProduit } = await import("./produit-garanties-extraction.server");
+    return analyserDocumentsProduit(context.supabase, data.document_ids, context.userId);
+  });
+
 /** Enregistre la grille comme brouillon (saisie humaine en cours). */
 export const enregistrerGrilleBrouillon = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
