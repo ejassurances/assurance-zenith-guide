@@ -12,6 +12,10 @@ import {
   rattacherCompagnie,
   detacherMessage,
   creerFicheDepuisEmail,
+  marquerLuMessage,
+  archiverMessageCrm,
+  supprimerMessageCrm,
+  etiqueterMessageCrm,
 } from "@/lib/emails.functions";
 
 export const Route = createFileRoute("/_authenticated/espace/emails")({
@@ -35,6 +39,7 @@ type Resume = {
   snippet: string;
   date: string | null;
   non_lu: boolean;
+  etiquettes: string[];
 };
 
 type Lien = {
@@ -77,6 +82,10 @@ function EmailsPage() {
   const rattacherCie = useServerFn(rattacherCompagnie);
   const detacher = useServerFn(detacherMessage);
   const creerFiche = useServerFn(creerFicheDepuisEmail);
+  const marquerLuFn = useServerFn(marquerLuMessage);
+  const archiverFn = useServerFn(archiverMessageCrm);
+  const supprimerFn = useServerFn(supprimerMessageCrm);
+  const etiqueterFn = useServerFn(etiqueterMessageCrm);
 
   const [messages, setMessages] = useState<Resume[]>([]);
   const [liens, setLiens] = useState<Lien[]>([]);
@@ -130,10 +139,47 @@ function EmailsPage() {
     try {
       const res = await lire({ data: { id: m.id } });
       setDetail(res.message as never);
+      if (m.non_lu) {
+        await marquerLuFn({ data: { id: m.id, lu: true } }).catch(() => {});
+        setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, non_lu: false } : x)));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Message illisible");
     } finally {
       setDetailBusy(false);
+    }
+  };
+
+  const agir = async (action: "archiver" | "supprimer" | "non_lu", m: Resume) => {
+    setError(null);
+    try {
+      if (action === "archiver") await archiverFn({ data: { id: m.id } });
+      if (action === "supprimer") await supprimerFn({ data: { id: m.id } });
+      if (action === "non_lu") await marquerLuFn({ data: { id: m.id, lu: false } });
+      if (action === "non_lu") {
+        setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, non_lu: true } : x)));
+      } else {
+        setMessages((prev) => prev.filter((x) => x.id !== m.id));
+        setSelected(null);
+        setDetail(null);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Action impossible");
+    }
+  };
+
+  const etiqueter = async (m: Resume, etiquette: string) => {
+    setError(null);
+    try {
+      await etiqueterFn({ data: { id: m.id, etiquette } });
+      setMessages((prev) =>
+        prev.map((x) => (x.id === m.id ? { ...x, etiquettes: [...new Set([...x.etiquettes, etiquette])] } : x)),
+      );
+      setSelected((prev) =>
+        prev && prev.id === m.id ? { ...prev, etiquettes: [...new Set([...prev.etiquettes, etiquette])] } : prev,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Étiquette impossible");
     }
   };
 
@@ -167,12 +213,21 @@ function EmailsPage() {
             Boîte de réception principale du cabinet (onglet « Principal » de Gmail).
           </p>
         </div>
-        <button
-          onClick={() => setCompose({ to: "", sujet: "", threadId: null })}
-          className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground"
-        >
-          Nouvel email
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => loadBoite()}
+            disabled={loading}
+            className="rounded-full border border-line px-4 py-2 text-sm disabled:opacity-60"
+          >
+            {loading ? "Synchronisation…" : "Synchroniser"}
+          </button>
+          <button
+            onClick={() => setCompose({ to: "", sujet: "", threadId: null })}
+            className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground"
+          >
+            Nouvel email
+          </button>
+        </div>
       </div>
 
       <form
@@ -222,6 +277,18 @@ function EmailsPage() {
                   </div>
                   <p className="truncate text-sm text-ink">{m.sujet}</p>
                   <p className="mt-1 line-clamp-2 text-xs text-ink-muted">{m.snippet}</p>
+                  {m.etiquettes.length > 0 && (
+                    <span className="mt-2 flex flex-wrap gap-1">
+                      {m.etiquettes.map((e) => (
+                        <span
+                          key={e}
+                          className="rounded-full bg-surface px-2 py-0.5 text-[10px] font-medium text-ink-soft"
+                        >
+                          {e}
+                        </span>
+                      ))}
+                    </span>
+                  )}
                   {lien && (
                     <p className="mt-2 text-[11px] font-medium text-[color:var(--crm-gold)]">
                       Rattaché ·{" "}
@@ -272,7 +339,34 @@ function EmailsPage() {
                       Retirer le rattachement
                     </button>
                   )}
+                  <button
+                    onClick={() => agir("non_lu", selected)}
+                    className="rounded-full border border-line px-4 py-1.5 text-sm"
+                  >
+                    Marquer non lu
+                  </button>
+                  <button
+                    onClick={() => agir("archiver", selected)}
+                    className="rounded-full border border-line px-4 py-1.5 text-sm"
+                  >
+                    Archiver
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm("Mettre ce message à la corbeille Gmail ?")) agir("supprimer", selected);
+                    }}
+                    className="rounded-full border border-red-300 px-4 py-1.5 text-sm text-red-700 hover:bg-red-50"
+                  >
+                    Supprimer
+                  </button>
                 </div>
+
+                <EtiquettesBloc
+                  message={selected}
+                  clients={clients}
+                  compagnies={compagnies}
+                  onEtiqueter={(e) => etiqueter(selected, e)}
+                />
                 <div className="mt-4 max-h-[420px] overflow-y-auto rounded-lg border border-line bg-background p-4 text-sm text-ink-soft">
                   {detailBusy ? (
                     "Chargement…"
@@ -680,6 +774,114 @@ function RattachementPanel({
           Ouvrir la fiche client
         </Link>
       )}
+    </div>
+  );
+}
+
+
+/** Étiquetage Gmail rapide : clients, partenaires, prescripteurs ou libellé libre. */
+function EtiquettesBloc({
+  message,
+  clients,
+  compagnies,
+  onEtiqueter,
+}: {
+  message: Resume;
+  clients: ClientLite[];
+  compagnies: CompagnieLite[];
+  onEtiqueter: (etiquette: string) => Promise<void>;
+}) {
+  const [libre, setLibre] = useState("");
+  const [categorie, setCategorie] = useState<"Clients" | "Partenaires" | "Prescripteurs">("Clients");
+  const [cible, setCible] = useState("");
+
+  const options =
+    categorie === "Partenaires"
+      ? compagnies.map((c) => c.nom)
+      : categorie === "Clients"
+      ? clients.map((c) => [c.prenom, c.nom].filter(Boolean).join(" "))
+      : [];
+
+  return (
+    <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-muted">Étiquettes Gmail</h3>
+
+      {message.etiquettes.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1">
+          {message.etiquettes.map((e) => (
+            <span key={e} className="rounded-full bg-surface px-2.5 py-1 text-xs text-ink-soft">
+              {e}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <select
+          value={categorie}
+          onChange={(e) => {
+            setCategorie(e.target.value as typeof categorie);
+            setCible("");
+          }}
+          className="rounded-md border border-line bg-background px-3 py-2 text-sm"
+        >
+          <option value="Clients">Clients</option>
+          <option value="Partenaires">Partenaires</option>
+          <option value="Prescripteurs">Prescripteurs</option>
+        </select>
+
+        {options.length > 0 ? (
+          <select
+            value={cible}
+            onChange={(e) => setCible(e.target.value)}
+            className="min-w-40 rounded-md border border-line bg-background px-3 py-2 text-sm"
+          >
+            <option value="">— sous-étiquette (facultatif) —</option>
+            {options.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            value={cible}
+            onChange={(e) => setCible(e.target.value)}
+            placeholder="Nom (facultatif)"
+            className="rounded-md border border-line bg-background px-3 py-2 text-sm"
+          />
+        )}
+
+        <button
+          onClick={() => onEtiqueter(`CRM/${categorie}${cible ? `/${cible.replace(/\//g, "-")}` : ""}`)}
+          className="rounded-full bg-ink px-4 py-1.5 text-sm text-primary-foreground"
+        >
+          Étiqueter
+        </button>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <input
+          value={libre}
+          onChange={(e) => setLibre(e.target.value)}
+          placeholder="Étiquette libre (ex. À relancer)"
+          className="rounded-md border border-line bg-background px-3 py-2 text-sm"
+        />
+        <button
+          disabled={!libre.trim()}
+          onClick={async () => {
+            await onEtiqueter(libre.trim());
+            setLibre("");
+          }}
+          className="rounded-full border border-line px-4 py-1.5 text-sm disabled:opacity-50"
+        >
+          Ajouter
+        </button>
+      </div>
+      <p className="mt-3 text-xs text-ink-muted">
+        Les étiquettes sont créées directement dans Gmail (arborescence « CRM / Clients », « CRM / Partenaires »,
+        « CRM / Prescripteurs ») et le rattachement à une fiche l'applique automatiquement.
+      </p>
     </div>
   );
 }
