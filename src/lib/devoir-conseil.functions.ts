@@ -127,7 +127,35 @@ export const refuserDevoirConseil = createServerFn({ method: "POST" })
 
     // Avancement du pipeline + historique : trigger SQL devoir_conseil_avance_dossier.
 
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { archiverDevoirConseil } = await import("./devoir-conseil-archive.server");
+      await archiverDevoirConseil(supabaseAdmin, data.devoir_id, userId);
+    } catch {
+      // le refus reste enregistré même si l'archivage échoue
+    }
+
     return { ok: true };
+  });
+
+/** URL signée du PDF du devoir de conseil (staff ou client concerné). */
+export const pdfDevoirConseil = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ devoir_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    // La lecture applique la RLS : si le devoir n'est pas visible, accès refusé.
+    const { data: devoir, error } = await context.supabase
+      .from("devoirs_conseil")
+      .select("id")
+      .eq("id", data.devoir_id)
+      .maybeSingle();
+    if (error || !devoir) throw new Error("Devoir de conseil introuvable ou accès refusé");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { urlPdfDevoirConseil } = await import("./devoir-conseil-archive.server");
+    const url = await urlPdfDevoirConseil(supabaseAdmin, data.devoir_id, context.userId);
+    if (!url) throw new Error("PDF indisponible");
+    return { url };
   });
 
 const etapeSchema = z.object({
