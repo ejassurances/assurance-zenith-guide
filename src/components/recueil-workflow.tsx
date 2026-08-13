@@ -228,10 +228,117 @@ function shortLabel(f: FieldConfig) {
 
 function formatValue(f: FieldConfig, v: unknown) {
   if (f.type === "checkbox") return v === true ? "Oui" : "Non";
+  if (f.type === "personnes") {
+    const list = personnesAssurees(v);
+    if (list.length === 0) return "—";
+    return list.map((p) => resumePersonne(p)).join(" · ");
+  }
   if (v === undefined || v === null || v === "") return "—";
   const opt = f.options?.find((o) => o.value === v);
   return `${opt?.label ?? String(v)}${f.suffix ? ` ${f.suffix}` : ""}`;
 }
+
+/** Résumé lisible d'un assuré : « Conjoint, 42 ans (Salarié) ». */
+export function resumePersonne(p: PersonneAssuree) {
+  const lien = LIENS_ASSURE.find((l) => l.value === p.lien)?.label ?? "Assuré";
+  const age = ageDepuisDateNaissance(p.date_naissance);
+  const regime = REGIMES_OBLIGATOIRES.find((r) => r.value === p.regime)?.label;
+  return [lien, age !== null ? `${age} ans` : null, regime ? `(${regime})` : null].filter(Boolean).join(", ");
+}
+
+function PersonnesField({
+  value,
+  onChange,
+  error,
+}: {
+  value: unknown;
+  onChange: (v: unknown) => void;
+  error?: boolean;
+}) {
+  const list = personnesAssurees(value);
+  const rows: PersonneAssuree[] =
+    list.length > 0 ? list : [{ lien: "soi_meme", date_naissance: "", regime: "" }];
+
+  const update = (i: number, patch: Partial<PersonneAssuree>) =>
+    onChange(rows.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
+
+  return (
+    <div className="space-y-3">
+      {rows.map((p, i) => {
+        const age = ageDepuisDateNaissance(p.date_naissance);
+        return (
+          <div
+            key={i}
+            className={`rounded-xl border p-4 ${error && !p.date_naissance ? "border-destructive" : "border-line"} bg-background/40`}
+          >
+            <div className="grid gap-3 sm:grid-cols-3">
+              <label className="block">
+                <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Lien</span>
+                <select
+                  value={p.lien}
+                  onChange={(e) => update(i, { lien: e.target.value })}
+                  className={inputCls}
+                >
+                  {LIENS_ASSURE.map((l) => (
+                    <option key={l.value} value={l.value}>
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+                  Date de naissance <span className="text-accent">*</span>
+                </span>
+                <input
+                  type="date"
+                  value={p.date_naissance}
+                  onChange={(e) => update(i, { date_naissance: e.target.value })}
+                  className={inputCls}
+                />
+                {age !== null && <span className="text-xs text-ink-muted">{age} ans</span>}
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+                  Régime obligatoire
+                </span>
+                <select
+                  value={p.regime}
+                  onChange={(e) => update(i, { regime: e.target.value })}
+                  className={inputCls}
+                >
+                  <option value="">—</option>
+                  {REGIMES_OBLIGATOIRES.map((r) => (
+                    <option key={r.value} value={r.value}>
+                      {r.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            {rows.length > 1 && (
+              <button
+                type="button"
+                onClick={() => onChange(rows.filter((_, idx) => idx !== i))}
+                className="mt-2 text-xs text-destructive underline"
+              >
+                Retirer cette personne
+              </button>
+            )}
+          </div>
+        );
+      })}
+      <button
+        type="button"
+        onClick={() => onChange([...rows, { lien: "conjoint", date_naissance: "", regime: "" }])}
+        className="rounded-full border border-line px-4 py-2 text-sm text-ink hover:bg-background"
+      >
+        + Ajouter une personne
+      </button>
+    </div>
+  );
+}
+
 
 export function WorkflowField({
   field,
