@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CompagnieDocsTable, UploadCompagnieDocForm } from "./espace.conformite";
+import { ProduitGarantiesTab } from "@/components/produit-garanties-tab";
 
 type CompagnieDocRow = {
   id: string;
@@ -94,6 +95,8 @@ type Produit = {
   points_vigilance: string | null;
   cible: string | null;
   commission_taux: number | null;
+  produit_requis_id: string | null;
+  famille_requise_id: string | null;
 };
 type ProduitDoc = {
   id: string;
@@ -443,6 +446,8 @@ function ProduitsTab({
             key={active.id}
             produit={active}
             famille={familles.find((f) => f.id === active.famille_id)}
+            familles={familles}
+            autresProduits={produits.filter((x) => x.id !== active.id)}
             isAdmin={isAdmin}
             onChange={onChange}
             onDelete={() => onSelect(null)}
@@ -460,12 +465,16 @@ function ProduitsTab({
 function ProduitEditor({
   produit,
   famille,
+  familles,
+  autresProduits,
   isAdmin,
   onChange,
   onDelete,
 }: {
   produit: Produit;
   famille: Famille | undefined;
+  familles: Famille[];
+  autresProduits: Produit[];
   isAdmin: boolean;
   onChange: () => void;
   onDelete: () => void;
@@ -505,6 +514,8 @@ function ProduitEditor({
         cible: p.cible,
         commission_taux: p.commission_taux,
         famille_id: p.famille_id,
+        produit_requis_id: p.produit_requis_id,
+        famille_requise_id: p.famille_requise_id,
       })
       .eq("id", p.id);
     setSaving(false);
