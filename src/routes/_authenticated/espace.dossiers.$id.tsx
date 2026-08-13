@@ -8,6 +8,9 @@ import { getBranche, labelForBranche } from "@/lib/recueil-besoins-schemas";
 import { DossierPiecesPanel } from "@/components/dossier-pieces-panel";
 import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
 import { ProduitDocumentsLink } from "@/components/produit-documents-link";
+import { DossierPipeline } from "@/components/dossier-pipeline";
+import { DevoirConseilPanel } from "@/components/devoir-conseil-panel";
+
 
 export const Route = createFileRoute("/_authenticated/espace/dossiers/$id")({
   component: DossierDetail,
