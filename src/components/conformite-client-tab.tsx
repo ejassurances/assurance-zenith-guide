@@ -49,6 +49,7 @@ const TYPES: { key: KycDoc["type"]; label: string }[] = [
   { key: "cni", label: "Carte d'identité / Passeport" },
   { key: "justificatif_domicile", label: "Justificatif de domicile (< 3 mois)" },
   { key: "rib", label: "RIB" },
+  { key: "kbis", label: "KBIS / avis Sirene (client professionnel)" },
 ];
 
 const NIVEAU_COLOR: Record<string, string> = {
