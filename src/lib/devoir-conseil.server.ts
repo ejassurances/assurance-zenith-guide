@@ -283,7 +283,7 @@ export async function genererDevoirConseilAuto(
     compagnie,
     produit,
     garanties: garantiesTexte || null,
-    exigences: typeof recueil.objectifs === "string" ? recueil.objectifs : undefined,
+    exigences: exigencesDepuisRecueil(d.type_assurance, recueil) ?? undefined,
     economie_estimee: typeof d.economie_estimee === "number" ? d.economie_estimee : null,
   });
 
