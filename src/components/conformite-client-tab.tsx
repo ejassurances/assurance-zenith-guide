@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { rechercherSanctionsPPE, marquerVerificationLCB } from "@/lib/lcb-ft.functions";
 import { DerStatusCard } from "@/components/der-status-card";
+import { detailConformite, NIVEAU_BAR, SEUIL_BLOCAGE_CONTRAT, type NiveauConformite } from "@/lib/conformite-score";
+
 
 /* Onglet Conformité client : KYC + LCB-FT + Score */
 
@@ -70,6 +72,7 @@ export function ConformiteClientTab({
   const [client, setClient] = useState<ClientMini | null>(null);
   const [docs, setDocs] = useState<KycDoc[]>([]);
   const [verifs, setVerifs] = useState<LCBVerif[]>([]);
+  const [estPro, setEstPro] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [searchResult, setSearchResult] = useState<Awaited<ReturnType<typeof rechercherSanctionsPPE>> | null>(null);
@@ -78,7 +81,7 @@ export function ConformiteClientTab({
   const marquer = useServerFn(marquerVerificationLCB);
 
   const load = async () => {
-    const [c, d, v] = await Promise.all([
+    const [c, d, v, e] = await Promise.all([
       supabase
         .from("clients")
         .select(
@@ -97,12 +100,20 @@ export function ConformiteClientTab({
         .eq("client_id", clientId)
         .order("verifie_le", { ascending: false })
         .limit(10),
+      supabase
+        .from("client_entreprise")
+        .select("siret,raison_sociale")
+        .eq("client_id", clientId)
+        .maybeSingle(),
     ]);
     setClient((c.data as ClientMini | null) ?? null);
     setDocs((d.data ?? []) as KycDoc[]);
     setVerifs((v.data ?? []) as LCBVerif[]);
+    const ent = e.data as { siret: string | null; raison_sociale: string | null } | null;
+    setEstPro(!!(ent && (ent.siret || ent.raison_sociale)));
     setLoading(false);
   };
+
 
   useEffect(() => {
     load();
@@ -197,8 +208,9 @@ export function ConformiteClientTab({
   if (loading) return <p className="text-sm text-ink-muted">Chargement…</p>;
   if (!client) return <p className="text-sm text-ink-muted">Client introuvable.</p>;
 
-  const score = client.conformite_score ?? 0;
-  const niveau = client.conformite_niveau ?? "rouge";
+  const detail = detailConformite(docs, verifs, estPro);
+  const score = client.conformite_score ?? detail.score;
+  const niveau = ((client.conformite_niveau as NiveauConformite | null) ?? detail.niveau) as NiveauConformite;
 
   return (
     <div className="space-y-6">
@@ -208,6 +220,9 @@ export function ConformiteClientTab({
           <div>
             <p className="text-xs font-medium uppercase tracking-wide opacity-70">Score de conformité</p>
             <p className="mt-1 font-serif text-4xl font-medium">{score}/100</p>
+            <p className="text-xs opacity-80">
+              {estPro ? "Barème professionnel (100 pts)" : "Barème particulier (80 pts ramenés sur 100)"}
+            </p>
           </div>
           <div className="text-right text-xs">
             <p>
@@ -225,12 +240,44 @@ export function ConformiteClientTab({
             <p className="mt-1 uppercase font-semibold">Niveau {niveau}</p>
           </div>
         </div>
+
+        {/* Jauge */}
+        <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-black/10">
+          <div className={`h-full rounded-full ${NIVEAU_BAR[niveau]}`} style={{ width: `${score}%` }} />
+        </div>
+
+        {/* Détail du barème */}
+        <ul className="mt-4 space-y-2">
+          {detail.criteres.map((c) => (
+            <li
+              key={c.code}
+              className={`flex items-start justify-between gap-3 rounded-xl border border-current/20 bg-white/50 px-3 py-2 text-xs ${
+                c.applicable ? "" : "opacity-50"
+              }`}
+            >
+              <span className="flex items-start gap-2">
+                <span aria-hidden className="mt-0.5">
+                  {!c.applicable ? "—" : c.acquis ? "✅" : "⬜"}
+                </span>
+                <span>
+                  <span className="font-semibold">{c.libelle}</span>
+                  <span className="block opacity-80">{c.detail}</span>
+                </span>
+              </span>
+              <span className="whitespace-nowrap font-semibold">
+                {c.applicable && c.acquis ? c.points : 0}/{c.applicable ? c.points : 0} pts
+              </span>
+            </li>
+          ))}
+        </ul>
+
         <p className="mt-3 text-xs opacity-80">
-          Barème : identité valide non expirée (30 pts) · RIB + justificatif de domicile &lt; 3 mois (30 pts) ·
-          KBIS / Sirene à jour si client professionnel (20 pts) · questionnaire LCB-FT validé &lt; 12 mois (20 pts).
-          Sous 50 % 🔴 la création de contrat est bloquée · 50-89 % 🟡 en attente · 90-100 % 🟢 conforme.
+          Sous {SEUIL_BLOCAGE_CONTRAT} % 🔴 la création de contrat est bloquée · {SEUIL_BLOCAGE_CONTRAT}-89 % 🟡 en
+          attente de pièces · 90-100 % 🟢 conforme. Le score est recalculé automatiquement à chaque pièce validée ou
+          vérification LCB-FT.
         </p>
       </div>
+
 
       <DerStatusCard clientId={clientId} clientEmail={clientEmail} canEdit={canEdit} />
 

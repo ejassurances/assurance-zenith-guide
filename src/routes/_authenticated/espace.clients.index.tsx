@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { MARQUES, MARQUE_KEYS, besoinLabel, marque } from "@/lib/crm-brands";
 import { DeleteClientButton } from "@/components/delete-client-button";
+import { NIVEAU_BADGE, niveauFromScore, type NiveauConformite } from "@/lib/conformite-score";
+
 
 export const Route = createFileRoute("/_authenticated/espace/clients/")({
   component: ClientsList,
@@ -22,8 +24,11 @@ type ClientRow = {
   origine: string | null;
   marque: string;
   besoins: string[] | null;
+  conformite_score: number | null;
+  conformite_niveau: string | null;
   created_at: string;
 };
+
 
 const STATUTS = ["prospect", "actif", "inactif", "perdu", "ancien"] as const;
 
@@ -43,7 +48,10 @@ function ClientsList() {
     setLoading(true);
     const { data } = await supabase
       .from("clients")
-      .select("id,reference,civilite,prenom,nom,email,mobile,ville,statut,origine,marque,besoins,created_at")
+      .select(
+        "id,reference,civilite,prenom,nom,email,mobile,ville,statut,origine,marque,besoins,conformite_score,conformite_niveau,created_at",
+      )
+
       .order("created_at", { ascending: false })
       .limit(200);
     setItems((data ?? []) as ClientRow[]);
@@ -152,7 +160,9 @@ function ClientsList() {
                 <th className="px-4 py-3">Marque</th>
                 <th className="px-4 py-3">Besoins</th>
                 <th className="px-4 py-3">Contact</th>
+                <th className="px-4 py-3">Conformité</th>
                 <th className="px-4 py-3">Statut</th>
+
                 {canDelete && <th className="px-4 py-3 text-right">Actions</th>}
               </tr>
             </thead>
@@ -196,6 +206,26 @@ function ClientsList() {
                     <div className="text-xs text-ink-muted">{c.mobile ?? ""}</div>
                   </td>
                   <td className="px-4 py-3">
+                    {(() => {
+                      const sc = c.conformite_score ?? 0;
+                      const niv = ((c.conformite_niveau as NiveauConformite | null) ??
+                        niveauFromScore(sc)) as NiveauConformite;
+                      return (
+                        <span
+                          title={
+                            sc < 50
+                              ? "Conformité insuffisante : création de contrat bloquée"
+                              : "Conformité KYC / LCB-FT"
+                          }
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${NIVEAU_BADGE[niv]}`}
+                        >
+                          {sc}%{sc < 50 ? " ⛔" : ""}
+                        </span>
+                      );
+                    })()}
+                  </td>
+                  <td className="px-4 py-3">
+
                     <span className="rounded-full border border-line bg-background px-2 py-0.5 text-xs">{c.statut}</span>
                   </td>
                   {canDelete && (
