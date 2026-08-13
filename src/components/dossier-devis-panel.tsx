@@ -532,6 +532,8 @@ export function DossierDevisPanel({
           </button>
         </div>
       </div>
+      )}
+
     </div>
   );
 }
