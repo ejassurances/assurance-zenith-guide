@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CommissionBaremeConfig } from "@/components/commission-bareme-config";
+import { BulletinCommissionsPanel } from "@/components/bulletin-commissions-panel";
 
 export const Route = createFileRoute("/_authenticated/espace/commissions")({
   component: CommissionsPage,
@@ -104,6 +105,7 @@ function CommissionsPage() {
         )}
       </div>
 
+      {role === "admin" && <BulletinCommissionsPanel onCommissionsCreees={load} />}
       {role === "admin" && <AddCommissionForm onCreated={load} />}
       {role === "admin" && <CommissionBaremeConfig />}
     </div>
