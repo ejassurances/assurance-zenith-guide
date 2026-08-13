@@ -47,7 +47,7 @@ function CompagniesIndex() {
     setLoading(true);
     const { data, error } = await supabase
       .from("compagnies")
-      .select("id,nom,slug,logo_url,statut,api_active,site_web,contact_nom,created_at")
+      .select("id,nom,slug,logo_url,statut,tier_favori,api_active,site_web,contact_nom,created_at")
       .order("nom");
     if (error) setError(error.message);
     setRows((data as Compagnie[]) ?? []);
