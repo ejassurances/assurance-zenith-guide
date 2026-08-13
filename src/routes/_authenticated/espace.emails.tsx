@@ -437,9 +437,33 @@ function EmailsPage() {
                     )}
                   </div>
                   {detail?.pieces_jointes?.length ? (
-                    <p className="mt-3 text-xs text-ink-muted">
-                      Pièces jointes : {detail.pieces_jointes.map((p) => p.nom).join(", ")}
-                    </p>
+                    <div className="mt-3 space-y-2">
+                      <p className="text-xs uppercase tracking-wider text-ink-muted">Pièces jointes</p>
+                      {detail.pieces_jointes.map((p) => {
+                        const facturable =
+                          !!p.attachment_id &&
+                          (/\.(pdf|jpe?g|png)$/i.test(p.nom) || (p.mime ?? "").startsWith("image/") || p.mime === "application/pdf");
+                        return (
+                          <div
+                            key={`${p.nom}-${p.attachment_id ?? ""}`}
+                            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-surface-elevated px-3 py-2"
+                          >
+                            <span className="text-xs text-ink">{p.nom}</span>
+                            {facturable ? (
+                              <button
+                                onClick={() => enregistrerFacture(selected, p)}
+                                disabled={factureBusy === p.attachment_id}
+                                className={BTN_SECONDAIRE}
+                              >
+                                {factureBusy === p.attachment_id
+                                  ? "Lecture de la facture…"
+                                  : "Enregistrer comme facture d'achat"}
+                              </button>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
                   ) : null}
                 </div>
               </div>
