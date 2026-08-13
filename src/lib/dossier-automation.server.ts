@@ -322,11 +322,15 @@ export async function creerEspaceClient(
       idempotencyKey: `compte-client-${created.user.id}`,
     });
     emailSent = res.sent;
-    if (!res.sent) emailError = "Adresse en liste de suppression";
+    if (!res.sent) {
+      emailError = "Adresse en liste de suppression";
+      await signalerEchecEmailAcces(admin, params.client_id, params.email, emailError);
+    }
   } catch (e) {
     emailSent = false;
     emailError = e instanceof Error ? e.message : "Erreur d'envoi inconnue";
     console.error(`[email] accès espace client non envoyé (${params.email}): ${emailError}`);
+    await signalerEchecEmailAcces(admin, params.client_id, params.email, emailError);
   }
 
   // Envoi réglementaire du DER dès la création de l'espace client.
