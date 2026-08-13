@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SITE } from "@/lib/site";
 import { useServerFn } from "@tanstack/react-start";
 import { autoInscriptionClient } from "@/lib/client-espace.functions";
+import { demanderReinitialisationMotDePasse } from "@/lib/auth-email.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
