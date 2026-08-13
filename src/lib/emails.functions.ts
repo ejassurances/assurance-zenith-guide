@@ -51,16 +51,63 @@ export const boiteReception = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const ids = messages.map((m) => m.id);
+    const selectLiens =
+      "id, gmail_message_id, client_id, dossier_id, contrat_id, compagnie_id, notes, clients(nom, prenom), compagnies(nom)";
     const { data: liens } = ids.length
-      ? await supabaseAdmin
-          .from("crm_emails")
-          .select(
-            "id, gmail_message_id, client_id, dossier_id, contrat_id, compagnie_id, notes, clients(nom, prenom), compagnies(nom)",
-          )
-          .in("gmail_message_id", ids)
+      ? await supabaseAdmin.from("crm_emails").select(selectLiens).in("gmail_message_id", ids)
       : { data: [] };
 
-    return { messages, nextPageToken, liens: liens ?? [] };
+    // Rattachement automatique : expéditeur = email d'un client existant.
+    const dejaLies = new Set((liens ?? []).map((l) => l.gmail_message_id));
+    const aTraiter = messages.filter(
+      (m) => !dejaLies.has(m.id) && !!m.expediteur_email && m.direction !== "sortant",
+    );
+    let nouveaux = 0;
+    if (aTraiter.length) {
+      const emails = [...new Set(aTraiter.map((m) => m.expediteur_email!.toLowerCase()))];
+      const { data: clients } = await supabaseAdmin.from("clients").select("id, email, nom, prenom").in("email", emails);
+      const parEmail = new Map((clients ?? []).map((c) => [(c.email ?? "").toLowerCase(), c]));
+      for (const m of aTraiter) {
+        const cl = parEmail.get(m.expediteur_email!.toLowerCase());
+        if (!cl) continue;
+        const { error } = await supabaseAdmin.from("crm_emails").upsert(
+          {
+            gmail_message_id: m.id,
+            gmail_thread_id: m.threadId ?? null,
+            direction: "entrant",
+            expediteur_nom: m.expediteur_nom ?? null,
+            expediteur_email: m.expediteur_email ?? null,
+            destinataires: m.destinataires ?? null,
+            sujet: m.sujet ?? null,
+            snippet: m.snippet ?? null,
+            recu_le: m.recu_le ?? null,
+            client_id: cl.id,
+            notes: "Rattaché automatiquement (email expéditeur connu)",
+            created_by: context.userId,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "gmail_message_id" },
+        );
+        if (error) {
+          console.error("Rattachement auto email:", error.message);
+          continue;
+        }
+        nouveaux++;
+        await supabaseAdmin.from("activites").insert({
+          client_id: cl.id,
+          type: "email",
+          titre: "Email rattaché automatiquement",
+          contenu: `De ${m.expediteur_email}\nObjet : ${m.sujet ?? "(sans objet)"}\n\n${m.snippet ?? ""}`,
+          created_by: context.userId,
+        });
+      }
+    }
+
+    const { data: liensFinaux } = nouveaux && ids.length
+      ? await supabaseAdmin.from("crm_emails").select(selectLiens).in("gmail_message_id", ids)
+      : { data: liens ?? [] };
+
+    return { messages, nextPageToken, liens: liensFinaux ?? [] };
   });
 
 /** Contenu complet d'un message + son rattachement éventuel. */
