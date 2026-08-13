@@ -23,9 +23,33 @@ export type CrmWebhookClient = {
   created_at: string;
 };
 
+/** Métadonnées de classement Drive pour un document signé transmis au webhook. */
+export type CrmWebhookDocument = {
+  /** Dossier Drive cible côté Apps Script. */
+  drive_folder: string;
+  type: string;
+  nom_fichier: string;
+  mime_type: string;
+  /** Contenu du PDF en base64 (sans préfixe data:). */
+  contenu_base64: string;
+  /** Lien signé de secours (valable 7 jours). */
+  url_signee: string | null;
+  signe_le: string | null;
+  empreinte_sha256: string | null;
+};
+
+export type CrmWebhookDossier = {
+  id: string;
+  reference: string;
+  type_assurance: string;
+  statut: string;
+};
+
 export type CrmWebhookPayload = {
   source: "ej-partners-crm";
   event: string;
   sent_at: string;
   client: CrmWebhookClient;
+  dossier?: CrmWebhookDossier;
+  document?: CrmWebhookDocument;
 };
