@@ -186,3 +186,36 @@ export const validerChangementMotDePasse = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/** Version du texte RGPD/CGU en vigueur. */
+export const VERSION_TEXTES_PLATEFORME = "2026-08-13";
+
+/** Enregistre l'acceptation RGPD + CGU du client (IP relevée côté serveur). */
+export const enregistrerConsentementsPlateforme = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { getRequestHeader, getRequestIP } = await import("@tanstack/react-start/server");
+    const ip =
+      getRequestIP({ xForwardedFor: true }) ??
+      getRequestHeader("x-forwarded-for")?.split(",")[0]?.trim() ??
+      null;
+
+    const { data: client, error: clientErr } = await context.supabase
+      .from("clients")
+      .select("id")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    if (clientErr) throw new Error(clientErr.message);
+    if (!client) throw new Error("Aucune fiche client rattachée à ce compte.");
+
+    const lignes = (["rgpd", "cgu"] as const).map((type) => ({
+      client_id: client.id,
+      type,
+      adresse_ip: ip,
+      version_texte: VERSION_TEXTES_PLATEFORME,
+    }));
+
+    const { error } = await context.supabase.from("consentements_plateforme").insert(lignes as never);
+    if (error) throw new Error(error.message);
+    return { ok: true as const };
+  });
