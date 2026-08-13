@@ -119,7 +119,16 @@ export function ProduitFormulesTab({
     await load();
   };
 
+  const majTarifFixe = async (f: Formule, tarif: number | null) => {
+    if (tarif === (f.tarif_fixe ?? null)) return;
+    setErr(null);
+    const { error } = await supabase.from("produit_formules").update({ tarif_fixe: tarif }).eq("id", f.id);
+    if (error) return setErr(error.message);
+    await load();
+  };
+
   const basculerActif = async (f: Formule) => {
+
     const { error } = await supabase.from("produit_formules").update({ actif: !f.actif }).eq("id", f.id);
     if (error) return setErr(error.message);
     await load();
