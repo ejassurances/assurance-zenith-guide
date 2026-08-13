@@ -102,6 +102,7 @@ type Tab =
   | "documents"
   | "dossiers"
   | "der"
+  | "emails"
   | "conformite";
 
 function ClientDetail() {
