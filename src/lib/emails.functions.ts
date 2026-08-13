@@ -131,6 +131,18 @@ export const rattacherMessage = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     if (data.client_id) {
+      const { data: cl } = await supabaseAdmin
+        .from("clients")
+        .select("nom, prenom")
+        .eq("id", data.client_id)
+        .maybeSingle();
+      if (cl) {
+        const { etiqueterMessage } = await import("@/lib/gmail.server");
+        await etiqueterMessage(
+          data.gmail_message_id,
+          `CRM/Clients/${[cl.prenom, cl.nom].filter(Boolean).join(" ").replace(/\//g, "-")}`,
+        ).catch((e) => console.error("Étiquette Gmail:", e));
+      }
       await supabaseAdmin.from("activites").insert({
         client_id: data.client_id,
         type: "email",
@@ -289,6 +301,18 @@ export const rattacherCompagnie = createServerFn({ method: "POST" })
       { onConflict: "gmail_message_id" },
     );
     if (error) throw new Error(error.message);
+
+    const { data: cie } = await supabaseAdmin
+      .from("compagnies")
+      .select("nom")
+      .eq("id", data.compagnie_id)
+      .maybeSingle();
+    if (cie) {
+      const { etiqueterMessage } = await import("@/lib/gmail.server");
+      await etiqueterMessage(data.gmail_message_id, `CRM/Partenaires/${cie.nom.replace(/\//g, "-")}`).catch((e) =>
+        console.error("Étiquette Gmail:", e),
+      );
+    }
     return { ok: true };
   });
 
@@ -354,4 +378,55 @@ export const envoyerEmailCrm = createServerFn({ method: "POST" })
     }
 
     return { id: envoye.id, thread_id: envoye.threadId };
+  });
+
+
+/** Marque un message comme lu ou non lu dans Gmail. */
+export const marquerLuMessage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ id: z.string().min(5).max(80), lu: z.boolean() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await exigerStaff(context.supabase, context.userId);
+    const { marquerLu } = await import("@/lib/gmail.server");
+    await marquerLu(data.id, data.lu);
+    return { ok: true };
+  });
+
+/** Archive un message (le retire de la boîte de réception Gmail). */
+export const archiverMessageCrm = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().min(5).max(80) }).parse(input))
+  .handler(async ({ data, context }) => {
+    await exigerStaff(context.supabase, context.userId);
+    const { archiverMessage } = await import("@/lib/gmail.server");
+    await archiverMessage(data.id);
+    return { ok: true };
+  });
+
+/** Met un message à la corbeille Gmail et supprime son rattachement CRM. */
+export const supprimerMessageCrm = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().min(5).max(80) }).parse(input))
+  .handler(async ({ data, context }) => {
+    await exigerStaff(context.supabase, context.userId);
+    const { mettreCorbeille } = await import("@/lib/gmail.server");
+    await mettreCorbeille(data.id);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("crm_emails").delete().eq("gmail_message_id", data.id);
+    return { ok: true };
+  });
+
+/** Applique une étiquette Gmail libre à un message. */
+export const etiqueterMessageCrm = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ id: z.string().min(5).max(80), etiquette: z.string().trim().min(1).max(120) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await exigerStaff(context.supabase, context.userId);
+    const { etiqueterMessage } = await import("@/lib/gmail.server");
+    await etiqueterMessage(data.id, data.etiquette);
+    return { ok: true };
   });
