@@ -23,7 +23,7 @@ type Dossier = {
   client_nom: string;
   client_email: string | null;
   client_phone: string | null;
-  statut: "nouveau" | "en_cours" | "signe" | "perdu";
+  statut: string;
   type_assurance: string;
   recueil_besoins: Record<string, unknown> | null;
   capital: number | null;
@@ -110,7 +110,7 @@ function DossierDetail() {
 
   const canEdit = role === "admin" || role === "mandataire" || role === "prescripteur";
 
-  const updateStatut = async (statut: Dossier["statut"]) => {
+  const updateStatut = async (statut: string) => {
     await supabase.from("dossiers").update({ statut }).eq("id", id);
     load();
   };
@@ -157,7 +157,7 @@ function DossierDetail() {
             {canEdit ? (
               <select
                 value={dossier.statut}
-                onChange={(e) => updateStatut(e.target.value as Dossier["statut"])}
+                onChange={(e) => updateStatut(e.target.value)}
                 className="rounded-md border border-line bg-background px-2 py-1 text-sm"
               >
                 <option value="nouveau">Nouveau</option>
