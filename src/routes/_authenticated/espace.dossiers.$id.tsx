@@ -157,6 +157,12 @@ function DossierDetail() {
         </p>
       </div>
 
+      {isBrancheLegacy(dossier.type_assurance) && (
+        <BrancheLegacyBanner dossierId={id} canEdit={canEdit} onReclassified={load} />
+      )}
+
+
+
       <DossierPipeline
         dossierId={id}
         statut={dossier.statut}
