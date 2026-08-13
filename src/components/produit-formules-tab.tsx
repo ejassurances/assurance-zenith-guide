@@ -10,7 +10,20 @@ export type Formule = {
   code: string;
   ordre: number;
   actif: boolean;
+  /** Cotisation fixe connue de la formule (mode de tarification « fixe »). */
+  tarif_fixe: number | null;
 };
+
+export type ProduitOption = {
+  id: string;
+  produit_id: string;
+  nom: string;
+  tarif_fixe: number | null;
+  description: string | null;
+  actif: boolean;
+  ordre: number;
+};
+
 
 type Tarif = {
   id: string;
@@ -48,12 +61,15 @@ export function ProduitFormulesTab({
   familleNom,
   isAdmin,
   docs,
+  modeFixe = false,
 }: {
   produitId: string;
   familleCode: string | null;
   familleNom?: string;
   isAdmin: boolean;
   docs: DocAnalysable[];
+  /** Produit en mode_tarification = 'fixe' : cotisation fixe par formule + options payantes. */
+  modeFixe?: boolean;
 }) {
   const [formules, setFormules] = useState<Formule[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -63,7 +79,8 @@ export function ProduitFormulesTab({
   const load = useCallback(async () => {
     const { data, error } = await supabase
       .from("produit_formules")
-      .select("id,produit_id,nom,code,ordre,actif")
+      .select("id,produit_id,nom,code,ordre,actif,tarif_fixe")
+
       .eq("produit_id", produitId)
       .order("ordre")
       .order("nom");
@@ -102,7 +119,16 @@ export function ProduitFormulesTab({
     await load();
   };
 
+  const majTarifFixe = async (f: Formule, tarif: number | null) => {
+    if (tarif === (f.tarif_fixe ?? null)) return;
+    setErr(null);
+    const { error } = await supabase.from("produit_formules").update({ tarif_fixe: tarif }).eq("id", f.id);
+    if (error) return setErr(error.message);
+    await load();
+  };
+
   const basculerActif = async (f: Formule) => {
+
     const { error } = await supabase.from("produit_formules").update({ actif: !f.actif }).eq("id", f.id);
     if (error) return setErr(error.message);
     await load();
@@ -146,13 +172,16 @@ export function ProduitFormulesTab({
         {formules.length === 0 && <p className="text-sm text-ink-muted">Aucune formule pour ce produit.</p>}
       </div>
 
-      <FormulePropositionsPanel
-        produitId={produitId}
-        familleCode={familleCode}
-        isAdmin={isAdmin}
-        docs={docs}
-        onChange={load}
-      />
+      {familleCode === "sante" && (
+        <FormulePropositionsPanel
+          produitId={produitId}
+          familleCode={familleCode}
+          isAdmin={isAdmin}
+          docs={docs}
+          onChange={load}
+        />
+      )}
+
 
       {isAdmin && (
         <div className="flex flex-wrap items-center gap-2">
@@ -207,6 +236,29 @@ export function ProduitFormulesTab({
             )}
           </div>
 
+          {modeFixe && (
+            <div className="space-y-1 rounded-md border border-line bg-background p-3">
+              <label className="block text-xs font-medium uppercase tracking-wide text-ink-muted">
+                Cotisation fixe de la formule (€ / mois)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                defaultValue={active.tarif_fixe ?? ""}
+                key={`tf-${active.id}`}
+                readOnly={!isAdmin}
+                onBlur={(e) =>
+                  majTarifFixe(active, e.target.value === "" ? null : Number(e.target.value))
+                }
+                className="w-40 rounded-md border border-line bg-surface px-2 py-1.5 text-sm"
+              />
+              <p className="text-[11px] text-ink-muted">
+                Tarif connu et stable, réutilisé tel quel sur les dossiers. Prioritaire sur la grille par tranche
+                d'âge ci-dessous si les deux sont renseignés.
+              </p>
+            </div>
+          )}
+
           <ProduitGarantiesTab
             produitId={produitId}
             formuleId={active.id}
@@ -220,7 +272,10 @@ export function ProduitFormulesTab({
           <FormuleTarifs formuleId={active.id} isAdmin={isAdmin} />
         </div>
       )}
+
+      {modeFixe && <ProduitOptionsBlock produitId={produitId} isAdmin={isAdmin} />}
     </section>
+
   );
 }
 
@@ -348,6 +403,139 @@ function FormuleTarifs({ formuleId, isAdmin }: { formuleId: string; isAdmin: boo
       <p className="text-[11px] text-ink-muted">
         Tarifs indicatifs, saisis manuellement — ils ne remplacent pas une tarification officielle de la compagnie.
       </p>
+    </div>
+  );
+}
+
+/**
+ * Options payantes à tarif fixe d'un produit (ex. « Assistance renforcée »).
+ * Reprises telles quelles sur le dossier lors de la génération du devis fixe.
+ */
+function ProduitOptionsBlock({ produitId, isAdmin }: { produitId: string; isAdmin: boolean }) {
+  const [options, setOptions] = useState<ProduitOption[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+  const [nouveau, setNouveau] = useState("");
+
+  const load = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("produit_options")
+      .select("id,produit_id,nom,tarif_fixe,description,actif,ordre")
+      .eq("produit_id", produitId)
+      .order("ordre")
+      .order("nom");
+    if (error) setErr(error.message);
+    setOptions((data as ProduitOption[]) ?? []);
+  }, [produitId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const ajouter = async () => {
+    const nom = nouveau.trim();
+    if (!nom) return;
+    setErr(null);
+    const { error } = await supabase
+      .from("produit_options")
+      .insert({ produit_id: produitId, nom, ordre: options.length + 1 });
+    if (error) return setErr(error.message);
+    setNouveau("");
+    await load();
+  };
+
+  const maj = async (o: ProduitOption, patch: Partial<ProduitOption>) => {
+    setOptions((l) => l.map((x) => (x.id === o.id ? { ...x, ...patch } : x)));
+    const { error } = await supabase.from("produit_options").update(patch).eq("id", o.id);
+    if (error) setErr(error.message);
+  };
+
+  const supprimer = async (o: ProduitOption) => {
+    if (!confirm(`Supprimer l'option « ${o.nom} » ?`)) return;
+    const { error } = await supabase.from("produit_options").delete().eq("id", o.id);
+    if (error) return setErr(error.message);
+    await load();
+  };
+
+  return (
+    <div className="space-y-2 rounded-md border border-line bg-background p-3">
+      <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">Options payantes (tarif fixe)</p>
+      {err && <p className="text-xs text-rose-700">{err}</p>}
+      {options.length === 0 && <p className="text-xs text-ink-muted">Aucune option pour ce produit.</p>}
+
+      {options.length > 0 && (
+        <div className="space-y-2">
+          <div className="hidden gap-2 text-[11px] uppercase tracking-wide text-ink-muted sm:grid sm:grid-cols-12">
+            <span className="sm:col-span-3">Nom</span>
+            <span className="sm:col-span-2">€ / mois</span>
+            <span className="sm:col-span-4">Description</span>
+            <span className="sm:col-span-2">Active</span>
+          </div>
+          {options.map((o) => (
+            <div key={o.id} className="grid gap-2 sm:grid-cols-12">
+              <input
+                defaultValue={o.nom}
+                readOnly={!isAdmin}
+                onBlur={(e) => {
+                  const v = e.target.value.trim();
+                  if (v && v !== o.nom) maj(o, { nom: v });
+                }}
+                className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm sm:col-span-3"
+              />
+              <input
+                type="number"
+                step="0.01"
+                value={o.tarif_fixe ?? ""}
+                readOnly={!isAdmin}
+                onChange={(e) => maj(o, { tarif_fixe: e.target.value === "" ? null : Number(e.target.value) })}
+                className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm sm:col-span-2"
+              />
+              <input
+                value={o.description ?? ""}
+                readOnly={!isAdmin}
+                onChange={(e) => maj(o, { description: e.target.value || null })}
+                className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm sm:col-span-4"
+              />
+              <label className="flex items-center gap-2 text-xs text-ink-soft sm:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={o.actif}
+                  disabled={!isAdmin}
+                  onChange={(e) => maj(o, { actif: e.target.checked })}
+                />
+                {o.actif ? "Active" : "Inactive"}
+              </label>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => supprimer(o)}
+                  className="text-xs text-red-700 underline underline-offset-4 sm:col-span-1"
+                >
+                  Suppr.
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {isAdmin && (
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <input
+            value={nouveau}
+            onChange={(e) => setNouveau(e.target.value)}
+            placeholder="Nom de l'option (ex. Assistance renforcée)"
+            className="rounded-md border border-line bg-surface px-3 py-2 text-sm"
+          />
+          <button
+            type="button"
+            onClick={ajouter}
+            disabled={!nouveau.trim()}
+            className="rounded-md bg-ink px-3 py-2 text-sm text-surface disabled:opacity-50"
+          >
+            Ajouter une option
+          </button>
+        </div>
+      )}
     </div>
   );
 }

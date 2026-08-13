@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
-import { classerDevisDossierFn, retenirDevisDossierFn } from "@/lib/devis-classement.functions";
+import {
+  classerDevisDossierFn,
+  retenirDevisDossierFn,
+  creerDevisTarifFixeFn,
+} from "@/lib/devis-classement.functions";
 
 export type DossierDevis = {
   id: string;
@@ -27,8 +31,12 @@ type Classement = {
 type Ref = { id: string; nom: string };
 type ProduitRef = { id: string; nom: string; compagnie_id: string; famille_id: string };
 type FormuleRef = { id: string; nom: string; produit_id: string; actif: boolean };
+type FormuleFixe = { id: string; nom: string; tarif_fixe: number | null; actif: boolean };
+type OptionFixe = { id: string; nom: string; tarif_fixe: number | null; description: string | null };
 
 const inp = "w-full rounded-md border border-line bg-background px-3 py-2 text-sm";
+const eur = (n: number) => `${n.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} € / mois`;
+
 
 
 /** Devis comparés saisis manuellement par le staff — base du comparatif du devoir de conseil. */
@@ -54,6 +62,15 @@ export function DossierDevisPanel({
   const [iaMsg, setIaMsg] = useState<string | null>(null);
   const lancerClassement = useServerFn(classerDevisDossierFn);
   const retenirOffre = useServerFn(retenirDevisDossierFn);
+  const creerFixe = useServerFn(creerDevisTarifFixeFn);
+
+  /** Produit du dossier en tarification fixe : formules et options à cotisation connue. */
+  const [produitFixe, setProduitFixe] = useState<{ id: string; nom: string } | null>(null);
+  const [formulesFixes, setFormulesFixes] = useState<FormuleFixe[]>([]);
+  const [optionsFixes, setOptionsFixes] = useState<OptionFixe[]>([]);
+  const [fixeFormuleId, setFixeFormuleId] = useState("");
+  const [fixeOptionIds, setFixeOptionIds] = useState<string[]>([]);
+  const [fixeEtat, setFixeEtat] = useState<"idle" | "envoi">("idle");
 
   const [form, setForm] = useState({
     compagnie_id: "",
@@ -64,7 +81,7 @@ export function DossierDevisPanel({
   });
 
   const load = useCallback(async () => {
-    const [d, c, p, cl] = await Promise.all([
+    const [d, c, p, cl, dos] = await Promise.all([
       supabase
         .from("dossier_devis")
         .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,source,garanties_resume,created_at")
@@ -80,13 +97,52 @@ export function DossierDevisPanel({
         .order("genere_le", { ascending: false })
         .limit(1)
         .maybeSingle(),
+      supabase.from("dossiers").select("produit_id").eq("id", dossierId).maybeSingle(),
     ]);
     if (d.error) setErr(d.error.message);
     setDevis((d.data as DossierDevis[]) ?? []);
     setCompagnies((c.data as Ref[]) ?? []);
     setProduits((p.data as ProduitRef[]) ?? []);
     setClassement((cl.data as Classement | null) ?? null);
+
+    const produitDossierId = (dos.data as { produit_id: string | null } | null)?.produit_id ?? null;
+    if (!produitDossierId) {
+      setProduitFixe(null);
+      setFormulesFixes([]);
+      setOptionsFixes([]);
+      return;
+    }
+    const { data: prod } = await supabase
+      .from("produits")
+      .select("id,nom,mode_tarification")
+      .eq("id", produitDossierId)
+      .maybeSingle();
+    const pr = prod as { id: string; nom: string; mode_tarification: string } | null;
+    if (!pr || pr.mode_tarification !== "fixe") {
+      setProduitFixe(null);
+      setFormulesFixes([]);
+      setOptionsFixes([]);
+      return;
+    }
+    setProduitFixe({ id: pr.id, nom: pr.nom });
+    const [fm, op] = await Promise.all([
+      supabase
+        .from("produit_formules")
+        .select("id,nom,tarif_fixe,actif")
+        .eq("produit_id", pr.id)
+        .eq("actif", true)
+        .order("ordre"),
+      supabase
+        .from("produit_options")
+        .select("id,nom,tarif_fixe,description")
+        .eq("produit_id", pr.id)
+        .eq("actif", true)
+        .order("ordre"),
+    ]);
+    setFormulesFixes((fm.data as FormuleFixe[]) ?? []);
+    setOptionsFixes((op.data as OptionFixe[]) ?? []);
   }, [dossierId]);
+
 
 
   useEffect(() => {
@@ -178,13 +234,47 @@ export function DossierDevisPanel({
   };
 
 
+  const formuleFixeChoisie = formulesFixes.find((f) => f.id === fixeFormuleId) ?? null;
+  const totalFixe =
+    (formuleFixeChoisie?.tarif_fixe == null ? 0 : Number(formuleFixeChoisie.tarif_fixe)) +
+    optionsFixes
+      .filter((o) => fixeOptionIds.includes(o.id))
+      .reduce((s, o) => s + (o.tarif_fixe == null ? 0 : Number(o.tarif_fixe)), 0);
+
+  const genererDepuisTarifFixe = async () => {
+    if (!fixeFormuleId) return;
+    if (
+      !confirm(
+        "Créer ce devis comme seule offre du dossier et générer le devoir de conseil en brouillon (sans envoi au client) ?",
+      )
+    )
+      return;
+    setErr(null);
+    setIaMsg(null);
+    setFixeEtat("envoi");
+    try {
+      await creerFixe({ data: { dossier_id: dossierId, formule_id: fixeFormuleId, option_ids: fixeOptionIds } });
+      await load();
+      setIaMsg(
+        "Devis créé depuis le tarif fixe du produit et devoir de conseil généré en brouillon. L'envoi au client reste à déclencher manuellement.",
+      );
+      onChanged?.();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Génération impossible");
+    } finally {
+      setFixeEtat("idle");
+    }
+  };
+
   return (
     <div className="rounded-2xl border border-line bg-surface-elevated p-5">
       <h2 className="font-serif text-lg font-medium text-ink">Devis comparés</h2>
       <p className="mt-1 text-xs text-ink-muted">
-        Saisie manuelle des devis étudiés pour ce dossier{branche ? ` (${branche})` : ""}. Ils alimentent le tableau
-        des offres comparées du devoir de conseil.
+        {produitFixe
+          ? `Produit à tarification fixe (${produitFixe.nom}) : le devis est repris directement du tarif renseigné sur la fiche produit, sans ressaisie ni classement IA.`
+          : `Saisie manuelle des devis étudiés pour ce dossier${branche ? ` (${branche})` : ""}. Ils alimentent le tableau des offres comparées du devoir de conseil.`}
       </p>
+
 
       {err && <p className="mt-2 text-sm text-destructive">{err}</p>}
 
@@ -218,7 +308,83 @@ export function DossierDevisPanel({
         })}
       </div>
 
+      {produitFixe && (
+        <div className="mt-4 space-y-3 border-t border-line pt-4">
+          <div>
+            <h3 className="text-sm font-medium text-ink">Tarif fixe du produit</h3>
+            <p className="mt-1 text-xs text-ink-muted">
+              Choisissez la formule et les options souhaitées : le total est calculé automatiquement et devient la
+              seule offre du dossier. Aucun classement IA n'est nécessaire.
+            </p>
+          </div>
+
+          {formulesFixes.length === 0 && (
+            <p className="text-sm text-ink-muted">
+              Aucune formule active avec tarif fixe sur ce produit — renseignez-les sur la fiche produit.
+            </p>
+          )}
+
+          {formulesFixes.length > 0 && (
+            <>
+              <label className="block sm:max-w-sm">
+                <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Formule</span>
+                <select value={fixeFormuleId} onChange={(e) => setFixeFormuleId(e.target.value)} className={inp}>
+                  <option value="">— Choisir —</option>
+                  {formulesFixes.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.nom}
+                      {f.tarif_fixe == null ? " (tarif non renseigné)" : ` — ${eur(Number(f.tarif_fixe))}`}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {optionsFixes.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">Options</p>
+                  {optionsFixes.map((o) => (
+                    <label key={o.id} className="flex items-start gap-2 text-sm text-ink">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={fixeOptionIds.includes(o.id)}
+                        onChange={(e) =>
+                          setFixeOptionIds((l) => (e.target.checked ? [...l, o.id] : l.filter((x) => x !== o.id)))
+                        }
+                      />
+                      <span>
+                        {o.nom}
+                        <span className="text-ink-soft">
+                          {" "}
+                          — {o.tarif_fixe == null ? "tarif non renseigné" : eur(Number(o.tarif_fixe))}
+                        </span>
+                        {o.description && <span className="block text-xs text-ink-muted">{o.description}</span>}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              <p className="text-sm font-medium text-ink">
+                Total calculé : <span className="text-ink-soft">{eur(totalFixe)}</span>
+              </p>
+
+              <button
+                onClick={genererDepuisTarifFixe}
+                disabled={!fixeFormuleId || fixeEtat !== "idle"}
+                className="rounded-full bg-ink px-4 py-2 text-sm text-primary-foreground disabled:opacity-60"
+              >
+                {fixeEtat === "envoi" ? "Génération…" : "Créer ce devis et générer le devoir de conseil"}
+              </button>
+              {iaMsg && <p className="text-sm text-emerald-700">{iaMsg}</p>}
+            </>
+          )}
+        </div>
+      )}
+
+      {!produitFixe && (
       <div className="mt-4 border-t border-line pt-4">
+
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h3 className="text-sm font-medium text-ink">Classement IA des devis</h3>
@@ -285,10 +451,11 @@ export function DossierDevisPanel({
           </div>
         )}
       </div>
+      )}
 
-
-
+      {!produitFixe && (
       <div className="mt-4 grid gap-3 border-t border-line pt-4 sm:grid-cols-2">
+
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Compagnie</span>
           <select
@@ -365,6 +532,8 @@ export function DossierDevisPanel({
           </button>
         </div>
       </div>
+      )}
+
     </div>
   );
 }
