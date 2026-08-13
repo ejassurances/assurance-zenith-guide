@@ -166,6 +166,7 @@ export function NewDossierForm({
   const [produitId, setProduitId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const lancerLettreMission = useServerFn(declencherLettreMissionAuto);
 
   useEffect(() => {
     (async () => {
