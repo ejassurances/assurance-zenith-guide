@@ -60,7 +60,7 @@ export const boiteReception = createServerFn({ method: "POST" })
     // Rattachement automatique : expéditeur = email d'un client existant.
     const dejaLies = new Set((liens ?? []).map((l) => l.gmail_message_id));
     const aTraiter = messages.filter(
-      (m) => !dejaLies.has(m.id) && !!m.expediteur_email && m.direction !== "sortant",
+      (m) => !dejaLies.has(m.id) && !!m.expediteur_email && !m.etiquettes.includes("SENT"),
     );
     let nouveaux = 0;
     if (aTraiter.length) {
@@ -73,14 +73,14 @@ export const boiteReception = createServerFn({ method: "POST" })
         const { error } = await supabaseAdmin.from("crm_emails").upsert(
           {
             gmail_message_id: m.id,
-            gmail_thread_id: m.threadId ?? null,
+            gmail_thread_id: m.thread_id ?? null,
             direction: "entrant",
             expediteur_nom: m.expediteur_nom ?? null,
             expediteur_email: m.expediteur_email ?? null,
             destinataires: m.destinataires ?? null,
             sujet: m.sujet ?? null,
             snippet: m.snippet ?? null,
-            recu_le: m.recu_le ?? null,
+            recu_le: m.date ?? null,
             client_id: cl.id,
             notes: "Rattaché automatiquement (email expéditeur connu)",
             created_by: context.userId,
