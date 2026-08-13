@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useCommissionBareme } from "@/hooks/use-commission-bareme";
+import { fmtEuros } from "@/lib/commissions-bareme";
 
 type Row = {
   id: string;
@@ -15,6 +17,7 @@ type Row = {
   taux_assurance_annuel: number | null;
   statut: string;
   economie_realisee: number | null;
+  compagnie_id: string | null;
 };
 
 export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: boolean }) {
