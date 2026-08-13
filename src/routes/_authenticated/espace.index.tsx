@@ -7,16 +7,6 @@ export const Route = createFileRoute("/_authenticated/espace/")({
   component: Dashboard,
 });
 
-type Activite = {
-  id: string;
-  type: string;
-  titre: string | null;
-  contenu: string | null;
-  created_at: string;
-  client_id: string;
-  clients: { reference: string; prenom: string | null; nom: string } | null;
-};
-
 type Tache = {
   id: string;
   titre: string;
@@ -35,23 +25,17 @@ function Dashboard() {
     if (role === "client") navigate({ to: "/espace/mon-espace", replace: true });
   }, [role, navigate]);
   const [stats, setStats] = useState({ clients: 0, prospects: 0, dossiers: 0, enCours: 0, signes: 0, commissions: 0 });
-  const [activites, setActivites] = useState<Activite[]>([]);
   const [taches, setTaches] = useState<Tache[]>([]);
 
   useEffect(() => {
     (async () => {
-      const [c, p, tot, ec, si, com, act, tch] = await Promise.all([
+      const [c, p, tot, ec, si, com, tch] = await Promise.all([
         supabase.from("clients").select("*", { count: "exact", head: true }),
         supabase.from("clients").select("*", { count: "exact", head: true }).eq("statut", "prospect"),
         supabase.from("dossiers").select("*", { count: "exact", head: true }),
         supabase.from("dossiers").select("*", { count: "exact", head: true }).eq("statut", "en_cours"),
         supabase.from("dossiers").select("*", { count: "exact", head: true }).eq("statut", "signe"),
         supabase.from("commissions").select("montant"),
-        supabase
-          .from("activites")
-          .select("id,type,titre,contenu,created_at,client_id,clients(reference,prenom,nom)")
-          .order("created_at", { ascending: false })
-          .limit(8),
         supabase
           .from("taches")
           .select("id,titre,echeance,priorite,client_id,clients(prenom,nom)")
@@ -68,7 +52,6 @@ function Dashboard() {
         signes: si.count ?? 0,
         commissions,
       });
-      setActivites((act.data ?? []) as unknown as Activite[]);
       setTaches((tch.data ?? []) as unknown as Tache[]);
     })();
   }, []);
@@ -100,39 +83,7 @@ function Dashboard() {
 
 
       <div className="mt-10 grid gap-6 lg:grid-cols-2">
-        <section className="rounded-2xl border border-line bg-surface-elevated p-6">
-          <div className="flex items-center justify-between">
-            <h2 className="font-serif text-lg font-medium">Activité récente</h2>
-            <Link to="/espace/clients" className="text-xs text-ink-muted hover:underline">
-              Voir clients →
-            </Link>
-          </div>
-          <div className="mt-4 space-y-3">
-            {activites.length === 0 ? (
-              <p className="text-sm text-ink-muted">Aucune activité récente.</p>
-            ) : (
-              activites.map((a) => (
-                <div key={a.id} className="border-b border-line pb-3 last:border-0">
-                  <div className="flex items-center justify-between text-xs text-ink-muted">
-                    <span className="rounded-full border border-line px-2 py-0.5 uppercase tracking-wide">{a.type}</span>
-                    <span>{new Date(a.created_at).toLocaleString("fr-FR")}</span>
-                  </div>
-                  {a.clients && (
-                    <Link
-                      to="/espace/clients/$id"
-                      params={{ id: a.client_id }}
-                      className="mt-1 block text-sm font-medium text-ink hover:underline"
-                    >
-                      {[a.clients.prenom, a.clients.nom].filter(Boolean).join(" ")}
-                    </Link>
-                  )}
-                  {a.titre && <p className="text-sm text-ink">{a.titre}</p>}
-                  {a.contenu && <p className="text-sm text-ink-soft line-clamp-2">{a.contenu}</p>}
-                </div>
-              ))
-            )}
-          </div>
-        </section>
+        <ActiviteRecente isAdmin={role === "admin"} />
 
         <section className="rounded-2xl border border-line bg-surface-elevated p-6">
           <div className="flex items-center justify-between">
@@ -334,5 +285,266 @@ function EconomiesEmprunteurCard({ scope }: { scope: "cabinet" | "perso" }) {
         <p className="text-xs text-ink-muted">Capital assuré : {euro(data.capital_total)}</p>
       </div>
     </div>
+  );
+}
+
+
+type FluxItem = {
+  id: string;
+  date: string;
+  type: string;
+  auteurRole: "client" | "mandataire" | "prescripteur" | "admin" | "systeme";
+  auteurNom: string | null;
+  titre: string;
+  detail: string | null;
+  clientId: string | null;
+  clientNom: string | null;
+};
+
+const ROLE_BADGE: Record<FluxItem["auteurRole"], string> = {
+  client: "bg-sky-100 text-sky-900",
+  mandataire: "bg-violet-100 text-violet-900",
+  prescripteur: "bg-amber-100 text-amber-900",
+  admin: "bg-emerald-100 text-emerald-900",
+  systeme: "bg-slate-100 text-slate-700",
+};
+
+const ROLE_LIBELLE: Record<FluxItem["auteurRole"], string> = {
+  client: "Client",
+  mandataire: "Mandataire",
+  prescripteur: "Prescripteur",
+  admin: "Cabinet",
+  systeme: "Automatique",
+};
+
+const FILTRES: { value: "tous" | FluxItem["auteurRole"]; label: string }[] = [
+  { value: "tous", label: "Tout" },
+  { value: "client", label: "Clients" },
+  { value: "mandataire", label: "Mandataires" },
+  { value: "prescripteur", label: "Prescripteurs" },
+];
+
+/** Flux d'activité consolidé : actions du cabinet, des mandataires, des prescripteurs et des clients. */
+function ActiviteRecente({ isAdmin }: { isAdmin: boolean }) {
+  const [items, setItems] = useState<FluxItem[] | null>(null);
+  const [filtre, setFiltre] = useState<"tous" | FluxItem["auteurRole"]>("tous");
+
+  useEffect(() => {
+    (async () => {
+      const [act, cli, dos, lm, dc] = await Promise.all([
+        supabase
+          .from("activites")
+          .select("id,type,titre,contenu,created_at,created_by,client_id,clients(prenom,nom)")
+          .order("created_at", { ascending: false })
+          .limit(15),
+        supabase
+          .from("clients")
+          .select("id,prenom,nom,reference,statut,created_at,created_by,apporteur_id,commercial_id")
+          .order("created_at", { ascending: false })
+          .limit(10),
+        supabase
+          .from("dossiers")
+          .select("id,reference,type_assurance,statut,created_at,created_by,apporteur_id,client_id,client_nom")
+          .order("created_at", { ascending: false })
+          .limit(10),
+        supabase
+          .from("lettres_mission")
+          .select("id,signed_at,client_id,type_assurance,clients(prenom,nom)")
+          .not("signed_at", "is", null)
+          .order("signed_at", { ascending: false })
+          .limit(8),
+        supabase
+          .from("devoirs_conseil")
+          .select("id,signed_at,refuse_le,client_id,type_assurance,clients(prenom,nom)")
+          .order("updated_at", { ascending: false })
+          .limit(8),
+      ]);
+
+      const auteurs = new Map<string, { nom: string | null; role: FluxItem["auteurRole"] }>();
+      const ids = new Set<string>();
+      for (const a of act.data ?? []) if (a.created_by) ids.add(a.created_by);
+      for (const c of cli.data ?? []) {
+        if (c.created_by) ids.add(c.created_by);
+        if (c.apporteur_id) ids.add(c.apporteur_id);
+      }
+      for (const d of dos.data ?? []) {
+        if (d.created_by) ids.add(d.created_by);
+        if (d.apporteur_id) ids.add(d.apporteur_id);
+      }
+      if (isAdmin && ids.size) {
+        const liste = Array.from(ids);
+        const [{ data: profs }, { data: roles }] = await Promise.all([
+          supabase.from("profiles").select("id,full_name,email").in("id", liste),
+          supabase.from("user_roles").select("user_id,role").in("user_id", liste),
+        ]);
+        for (const id of liste) {
+          const prof = (profs ?? []).find((p) => p.id === id);
+          const rs = (roles ?? []).filter((r) => r.user_id === id).map((r) => r.role as string);
+          const role: FluxItem["auteurRole"] = rs.includes("admin")
+            ? "admin"
+            : rs.includes("mandataire")
+            ? "mandataire"
+            : rs.includes("prescripteur")
+            ? "prescripteur"
+            : rs.includes("client")
+            ? "client"
+            : "systeme";
+          auteurs.set(id, { nom: prof?.full_name || prof?.email || null, role });
+        }
+      }
+
+      const auteur = (id: string | null): { nom: string | null; role: FluxItem["auteurRole"] } =>
+        (id && auteurs.get(id)) || { nom: null, role: id ? "admin" : "systeme" };
+
+      const flux: FluxItem[] = [];
+
+      for (const a of act.data ?? []) {
+        const who = auteur(a.created_by ?? null);
+        const c = a.clients as { prenom: string | null; nom: string } | null;
+        flux.push({
+          id: `act:${a.id}`,
+          date: a.created_at,
+          type: a.type,
+          auteurRole: who.role,
+          auteurNom: who.nom,
+          titre: a.titre || "Activité",
+          detail: a.contenu,
+          clientId: a.client_id,
+          clientNom: c ? [c.prenom, c.nom].filter(Boolean).join(" ") : null,
+        });
+      }
+
+      for (const c of cli.data ?? []) {
+        const who = auteur(c.apporteur_id ?? c.created_by ?? null);
+        flux.push({
+          id: `cli:${c.id}`,
+          date: c.created_at,
+          type: "fiche",
+          auteurRole: c.apporteur_id ? "prescripteur" : who.role,
+          auteurNom: who.nom,
+          titre: `Nouvelle fiche ${c.statut === "prospect" ? "prospect" : "client"} · ${c.reference}`,
+          detail: null,
+          clientId: c.id,
+          clientNom: [c.prenom, c.nom].filter(Boolean).join(" "),
+        });
+      }
+
+      for (const d of dos.data ?? []) {
+        const who = auteur(d.apporteur_id ?? d.created_by ?? null);
+        flux.push({
+          id: `dos:${d.id}`,
+          date: d.created_at,
+          type: "dossier",
+          auteurRole: d.apporteur_id ? "prescripteur" : who.role,
+          auteurNom: who.nom,
+          titre: `Nouveau dossier ${d.reference} · ${d.type_assurance}`,
+          detail: `Statut : ${d.statut}`,
+          clientId: d.client_id,
+          clientNom: d.client_nom,
+        });
+      }
+
+      for (const l of lm.data ?? []) {
+        const c = l.clients as { prenom: string | null; nom: string } | null;
+        flux.push({
+          id: `lm:${l.id}`,
+          date: l.signed_at!,
+          type: "signature",
+          auteurRole: "client",
+          auteurNom: c ? [c.prenom, c.nom].filter(Boolean).join(" ") : null,
+          titre: `Lettre de mission signée · ${l.type_assurance}`,
+          detail: null,
+          clientId: l.client_id,
+          clientNom: c ? [c.prenom, c.nom].filter(Boolean).join(" ") : null,
+        });
+      }
+
+      for (const d of dc.data ?? []) {
+        const date = d.signed_at ?? d.refuse_le;
+        if (!date) continue;
+        const c = d.clients as { prenom: string | null; nom: string } | null;
+        flux.push({
+          id: `dc:${d.id}`,
+          date,
+          type: "signature",
+          auteurRole: "client",
+          auteurNom: c ? [c.prenom, c.nom].filter(Boolean).join(" ") : null,
+          titre: `Devoir de conseil ${d.signed_at ? "signé" : "refusé"} · ${d.type_assurance}`,
+          detail: null,
+          clientId: d.client_id,
+          clientNom: c ? [c.prenom, c.nom].filter(Boolean).join(" ") : null,
+        });
+      }
+
+      flux.sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+      setItems(flux);
+    })();
+  }, [isAdmin]);
+
+  const liste = (items ?? []).filter((i) => (filtre === "tous" ? true : i.auteurRole === filtre)).slice(0, 12);
+
+  return (
+    <section className="rounded-2xl border border-line bg-surface-elevated p-6">
+      <div className="flex items-center justify-between">
+        <h2 className="font-serif text-lg font-medium">Activité récente</h2>
+        <Link to="/espace/clients" className="text-xs text-ink-muted hover:underline">
+          Voir clients →
+        </Link>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-1">
+        {FILTRES.map((f) => (
+          <button
+            key={f.value}
+            type="button"
+            onClick={() => setFiltre(f.value)}
+            className={
+              "rounded-full px-3 py-1 text-xs transition-colors " +
+              (filtre === f.value ? "bg-ink text-primary-foreground" : "border border-line text-ink-soft hover:bg-surface")
+            }
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-4 space-y-3">
+        {!items ? (
+          <p className="text-sm text-ink-muted">Chargement…</p>
+        ) : liste.length === 0 ? (
+          <p className="text-sm text-ink-muted">Aucune activité récente.</p>
+        ) : (
+          liste.map((a) => (
+            <div key={a.id} className="border-b border-line pb-3 last:border-0">
+              <div className="flex items-center justify-between gap-2 text-xs text-ink-muted">
+                <span className="flex items-center gap-2">
+                  <span className={`rounded-full px-2 py-0.5 font-medium ${ROLE_BADGE[a.auteurRole]}`}>
+                    {ROLE_LIBELLE[a.auteurRole]}
+                  </span>
+                  <span className="rounded-full border border-line px-2 py-0.5 uppercase tracking-wide">{a.type}</span>
+                </span>
+                <span>{new Date(a.date).toLocaleString("fr-FR")}</span>
+              </div>
+              {a.clientNom && a.clientId ? (
+                <Link
+                  to="/espace/clients/$id"
+                  params={{ id: a.clientId }}
+                  className="mt-1 block text-sm font-medium text-ink hover:underline"
+                >
+                  {a.clientNom}
+                </Link>
+              ) : (
+                a.clientNom && <p className="mt-1 text-sm font-medium text-ink">{a.clientNom}</p>
+              )}
+              <p className="text-sm text-ink">{a.titre}</p>
+              {a.auteurNom && a.auteurRole !== "client" && (
+                <p className="text-xs text-ink-muted">par {a.auteurNom}</p>
+              )}
+              {a.detail && <p className="text-sm text-ink-soft line-clamp-2">{a.detail}</p>}
+            </div>
+          ))
+        )}
+      </div>
+    </section>
   );
 }
