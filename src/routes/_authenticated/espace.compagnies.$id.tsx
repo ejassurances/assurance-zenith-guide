@@ -622,6 +622,23 @@ function ProduitEditor({
           </select>
         </div>
         <div>
+          <label className="mb-1 block text-xs font-medium text-ink-muted">Mode de tarification</label>
+          <select
+            value={p.mode_tarification ?? "manuel"}
+            onChange={(e) => setP({ ...p, mode_tarification: e.target.value as Produit["mode_tarification"] })}
+            disabled={readOnly}
+            className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+          >
+            <option value="manuel">Manuel — devis saisis dossier par dossier</option>
+            <option value="api">API compagnie — tarification à la demande</option>
+            <option value="fixe">Tarif fixe — cotisation connue par formule</option>
+          </select>
+          <p className="mt-1 text-[11px] text-ink-muted">
+            En mode « tarif fixe », le devis du dossier est généré depuis la formule et les options renseignées
+            ci-dessous, sans ressaisie ni classement IA.
+          </p>
+        </div>
+        <div>
           <label className="mb-1 block text-xs font-medium text-ink-muted">Commission (%)</label>
           <input
             type="number"
@@ -632,6 +649,7 @@ function ProduitEditor({
             className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
           />
         </div>
+
         <div className="md:col-span-2">
           <label className="mb-1 block text-xs font-medium text-ink-muted">Description</label>
           <textarea
