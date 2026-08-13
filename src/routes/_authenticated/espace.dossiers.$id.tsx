@@ -10,6 +10,7 @@ import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
 import { ProduitDocumentsLink } from "@/components/produit-documents-link";
 import { DossierPipeline } from "@/components/dossier-pipeline";
 import { DevoirConseilPanel } from "@/components/devoir-conseil-panel";
+import { etapeLabel } from "@/lib/pipeline-dossier";
 
 
 export const Route = createFileRoute("/_authenticated/espace/dossiers/$id")({
@@ -109,11 +110,6 @@ function DossierDetail() {
   if (!dossier) return <p className="text-sm text-ink-muted">Dossier introuvable ou accès refusé.</p>;
 
   const canEdit = role === "admin" || role === "mandataire" || role === "prescripteur";
-
-  const updateStatut = async (statut: string) => {
-    await supabase.from("dossiers").update({ statut }).eq("id", id);
-    load();
-  };
 
   return (
     <div className="space-y-8">
