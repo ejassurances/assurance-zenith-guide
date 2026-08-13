@@ -197,7 +197,14 @@ export function FacturesAchatTab() {
         <Kpi label="Factures enregistrées" value={String(rows.length)} />
       </div>
 
-      <NouvelleFacture comptes={comptes} userId={user?.id ?? null} onCreated={load} />
+      <NouvelleFacture
+        comptes={comptes}
+        userId={user?.id ?? null}
+        onCreated={async (facture) => {
+          if (facture) await genererEcriture(facture);
+          load();
+        }}
+      />
 
       <div className="flex flex-wrap items-center gap-3">
         <Select value={filtre} onValueChange={(v) => setFiltre(v as typeof filtre)}>
