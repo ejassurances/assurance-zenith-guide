@@ -114,7 +114,51 @@ function SignerDevoirConseil() {
               : ""}
           </Bloc>
         )}
+        {Array.isArray(conseil.offres) && conseil.offres.length > 0 && (
+          <div>
+            <p className="text-xs uppercase tracking-wide text-ink-muted">Offres comparées</p>
+            <div className="mt-2 overflow-x-auto">
+              <table className="w-full min-w-[520px] border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-line text-left text-ink-muted">
+                    <th className="py-1 pr-3">Compagnie</th>
+                    <th className="py-1 pr-3">Produit</th>
+                    <th className="py-1 pr-3">Cotisation</th>
+                    <th className="py-1 pr-3">Appréciation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {conseil.offres.map((o: any, i: number) => (
+                    <tr key={i} className="border-b border-line align-top">
+                      <td className="py-1 pr-3">{o.compagnie}</td>
+                      <td className="py-1 pr-3">{o.produit}</td>
+                      <td className="py-1 pr-3">
+                        {o.cotisation_mensuelle ? `${o.cotisation_mensuelle} €/mois` : "—"}
+                      </td>
+                      <td className="py-1 pr-3">
+                        {STATUT_OFFRE_LABEL[o.statut as StatutOffre] ?? o.statut}
+                        {o.commentaire ? ` · ${o.commentaire}` : ""}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
         {conseil.garanties && <Bloc titre="Garanties retenues">{conseil.garanties}</Bloc>}
+        {(conseil.assiette || conseil.capital_assure) && (
+          <Bloc titre="Base de calcul du coût">
+            {conseil.assiette === "capital_initial"
+              ? "Tarif calculé sur le capital initial (cotisation fixe)"
+              : "Tarif calculé sur le capital restant dû (cotisation dégressive)"}
+            {conseil.capital_assure
+              ? ` · capital assuré ${Number(conseil.capital_assure).toLocaleString("fr-FR")} €`
+              : ""}
+            {conseil.quotite ? ` · quotité ${conseil.quotite} %` : ""}
+          </Bloc>
+        )}
         <Bloc titre="Recommandation">{devoir.recommandation ?? "—"}</Bloc>
         <Bloc titre="Motifs du conseil">{devoir.motifs ?? "—"}</Bloc>
         {devoir.mises_en_garde && <Bloc titre="Mises en garde">{devoir.mises_en_garde}</Bloc>}
