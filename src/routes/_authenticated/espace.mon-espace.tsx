@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { DossierPiecesPanel } from "@/components/dossier-pieces-panel";
 import { DossierPipelineClient } from "@/components/dossier-pipeline-client";
+import { SinistresPanel } from "@/components/sinistres-panel";
 import { labelForBranche } from "@/lib/recueil-besoins-schemas";
 import { majMesCoordonnees, monFichierUrl } from "@/lib/espace-client.functions";
 
@@ -74,6 +75,7 @@ const KYC_LABEL: Record<string, string> = {
 const TABS = [
   { key: "projet", label: "Mon projet" },
   { key: "conformite", label: "Mes pièces" },
+  { key: "sinistres", label: "Mes sinistres" },
   { key: "compte", label: "Mon compte" },
 ] as const;
 
@@ -354,6 +356,10 @@ function MonEspace() {
             </div>
           ))}
         </div>
+      )}
+
+      {tab === "sinistres" && client && (
+        <SinistresPanel clientId={client.id} mode="client" canEdit />
       )}
 
       {tab === "compte" && (

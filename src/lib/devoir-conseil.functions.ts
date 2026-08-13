@@ -229,9 +229,26 @@ export const changerEtapeDossier = createServerFn({ method: "POST" })
       }
     }
 
+    // Passage à « Souscription envoyée » : transmission du dossier à la
+    // compagnie et armement des relances automatiques J+3 / J+7.
+    if (data.etape === "souscription_envoyee") {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { envoyerSouscriptionCompagnie } = await import("./souscription.server");
+      const res = await envoyerSouscriptionCompagnie(supabaseAdmin, data.dossier_id, userId, {
+        commentaire: data.commentaire ?? null,
+      });
+      return { ok: true, souscription_envoyee: true, destinataire: res.destinataire };
+    }
+
     const { error: upErr } = await supabase
       .from("dossiers")
-      .update({ statut: data.etape })
+      .update({
+        statut: data.etape,
+        // Un retour compagnie stoppe les relances automatiques.
+        ...(data.etape === "contrat_valide" || data.etape === "contrat_actif"
+          ? { souscription_retour_le: new Date().toISOString() }
+          : {}),
+      })
       .eq("id", data.dossier_id);
     if (upErr) throw new Error(upErr.message);
 

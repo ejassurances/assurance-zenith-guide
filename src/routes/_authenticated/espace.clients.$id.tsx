@@ -6,6 +6,7 @@ import { FamilleTab, EntrepriseTab, EquipementsTab } from "@/components/client-3
 import { ContratsTab } from "@/components/contrats-tab";
 import { DerTab } from "@/components/der-tab";
 import { ConformiteClientTab } from "@/components/conformite-client-tab";
+import { SinistresPanel } from "@/components/sinistres-panel";
 import { DeleteClientButton } from "@/components/delete-client-button";
 import { AccesEspaceClientButton } from "@/components/acces-espace-client-button";
 import { CrmBrandPanel } from "@/components/crm-brand-panel";
@@ -104,6 +105,7 @@ type Tab =
   | "dossiers"
   | "der"
   | "emails"
+  | "sinistres"
   | "conformite";
 
 function ClientDetail() {
@@ -188,6 +190,7 @@ function ClientDetail() {
             ["dossiers", "Dossiers"],
             ["der", "DER"],
             ["emails", "Emails"],
+            ["sinistres", "Sinistres"],
             ["conformite", "Conformité"],
           ] as [Tab, string][]
         ).map(([key, label]) => (
@@ -222,6 +225,9 @@ function ClientDetail() {
             titre="Emails du client"
             canEdit={canEdit}
           />
+        )}
+        {tab === "sinistres" && (
+          <SinistresPanel clientId={client.id} mode="staff" canEdit={canEdit} />
         )}
         {tab === "conformite" && (
           <ConformiteClientTab clientId={client.id} clientEmail={client.email} canEdit={canEdit} />
