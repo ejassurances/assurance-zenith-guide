@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { validerChangementMotDePasse } from "@/lib/client-espace.functions";
+import { validerChangementMotDePasse, enregistrerConsentementsPlateforme } from "@/lib/client-espace.functions";
+import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 
@@ -23,6 +24,9 @@ function Parametres() {
   const [pwdMsg, setPwdMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [mustChange, setMustChange] = useState(false);
   const validerMdp = useServerFn(validerChangementMotDePasse);
+  const enregistrerConsentements = useServerFn(enregistrerConsentementsPlateforme);
+  const [okRgpd, setOkRgpd] = useState(false);
+  const [okCgu, setOkCgu] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -59,6 +63,13 @@ function Parametres() {
       setPwdMsg({ type: "err", text: "Les deux mots de passe ne correspondent pas." });
       return;
     }
+    if (mustChange && (!okRgpd || !okCgu)) {
+      setPwdMsg({
+        type: "err",
+        text: "Vous devez accepter la politique de confidentialité (RGPD) et les conditions générales d'utilisation pour continuer.",
+      });
+      return;
+    }
     setSavingPwd(true);
     // Revérifie le mot de passe actuel via une tentative de connexion silencieuse.
     const verif = await supabase.auth.signInWithPassword({
@@ -81,6 +92,11 @@ function Parametres() {
     setConfirmPwd("");
     setPwdMsg({ type: "ok", text: "Mot de passe modifié avec succès." });
     if (mustChange) {
+      try {
+        await enregistrerConsentements({ data: undefined });
+      } catch {
+        // sans effet bloquant
+      }
       try {
         await validerMdp({ data: undefined });
       } catch {
@@ -184,13 +200,45 @@ function Parametres() {
             className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
           />
         </div>
+        {mustChange && (
+          <div className="space-y-3 rounded-md border border-line bg-surface-elevated p-4">
+            <label className="flex items-start gap-2 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={okRgpd}
+                onChange={(e) => setOkRgpd(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                J'ai lu et j'accepte la{" "}
+                <Link to="/espace/confidentialite" target="_blank" className="underline">
+                  politique de confidentialité (RGPD)
+                </Link>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={okCgu}
+                onChange={(e) => setOkCgu(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                J'ai lu et j'accepte les{" "}
+                <Link to="/espace/cgu" target="_blank" className="underline">
+                  conditions générales d'utilisation de la plateforme
+                </Link>
+              </span>
+            </label>
+          </div>
+        )}
         {pwdMsg && (
           <p className={`text-sm ${pwdMsg.type === "ok" ? "text-emerald-700" : "text-red-700"}`}>{pwdMsg.text}</p>
         )}
         <div className="flex justify-end">
           <button
             type="submit"
-            disabled={savingPwd}
+            disabled={savingPwd || (mustChange && (!okRgpd || !okCgu))}
             className="rounded-md bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
           >
             {savingPwd ? "Modification…" : "Modifier le mot de passe"}
