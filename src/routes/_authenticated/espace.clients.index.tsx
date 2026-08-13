@@ -266,22 +266,26 @@ function NewClientForm({ onCreated }: { onCreated: (id: string) => void }) {
     e.preventDefault();
     if (!form.nom.trim()) return;
     setSaving(true);
-    const { data, error } = await supabase
-      .from("clients")
-      .insert({
-        civilite: form.civilite,
-        prenom: form.prenom || null,
-        nom: form.nom,
-        email: form.email || null,
-        mobile: form.mobile || null,
-        ville: form.ville || null,
-        origine: form.origine,
-        marque: form.marque,
-      })
-      .select("id")
-      .single();
-    setSaving(false);
-    if (!error && data) onCreated(data.id);
+    try {
+      // Passe par le server fn : insert + contrôle LCB-FT automatique.
+      const res = await creerClient({
+        data: {
+          civilite: form.civilite,
+          prenom: form.prenom || null,
+          nom: form.nom,
+          email: form.email || null,
+          mobile: form.mobile || null,
+          ville: form.ville || null,
+          origine: form.origine,
+          marque: form.marque,
+        },
+      });
+      onCreated(res.id);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Création impossible");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
