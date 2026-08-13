@@ -207,8 +207,25 @@ export function grillePourFamille(familleCode: string | null | undefined): Grill
 }
 
 export function valeurVide(): ValeurGarantie {
-  return { couverture: "inconnu", plafond: null, franchise: null, conditions: null, extrait: null };
+  return {
+    couverture: "inconnu",
+    plafond: null,
+    franchise: null,
+    delai_carence: null,
+    conditions: null,
+    extrait: null,
+  };
 }
+
+/** Ligne de tableau destinée au devoir de conseil (un poste de garantie). */
+export type LigneGarantie = {
+  code: string;
+  libelle: string;
+  couverture: Couverture;
+  plafond: string | null;
+  franchise: string | null;
+  delai_carence: string | null;
+};
 
 /** Garanties confirmées couvertes (ou en option) et garanties exclues. */
 export function synthetiserGaranties(grille: GrilleGaranties, valeurs: ValeursGrille) {
@@ -216,17 +233,27 @@ export function synthetiserGaranties(grille: GrilleGaranties, valeurs: ValeursGr
   const optionnelles: string[] = [];
   const nonCouvertes: string[] = [];
   const indeterminees: string[] = [];
+  const detail: LigneGarantie[] = [];
 
   for (const g of grille.garanties) {
     const v = valeurs[g.code];
-    const detail = [
+    detail.push({
+      code: g.code,
+      libelle: g.libelle,
+      couverture: v?.couverture ?? "inconnu",
+      plafond: v?.plafond ?? null,
+      franchise: v?.franchise ?? null,
+      delai_carence: v?.delai_carence ?? null,
+    });
+    const detailTexte = [
       v?.plafond ? `plafond ${v.plafond}` : null,
       v?.franchise ? `franchise ${v.franchise}` : null,
+      v?.delai_carence ? `délai de carence ${v.delai_carence}` : null,
       v?.conditions ? v.conditions : null,
     ]
       .filter(Boolean)
       .join(", ");
-    const libelle = detail ? `${g.libelle} (${detail})` : g.libelle;
+    const libelle = detailTexte ? `${g.libelle} (${detailTexte})` : g.libelle;
     switch (v?.couverture) {
       case "oui":
         couvertes.push(libelle);
@@ -241,5 +268,6 @@ export function synthetiserGaranties(grille: GrilleGaranties, valeurs: ValeursGr
         indeterminees.push(g.libelle);
     }
   }
-  return { couvertes, optionnelles, nonCouvertes, indeterminees };
+  return { couvertes, optionnelles, nonCouvertes, indeterminees, detail };
 }
+
