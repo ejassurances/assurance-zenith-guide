@@ -9,7 +9,7 @@ import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
 import { ProduitDocumentsLink } from "@/components/produit-documents-link";
 import { RecueilWorkflow } from "@/components/recueil-workflow";
 import {
-  BRANCHES,
+  BRANCHES_CREATION,
   getBranche,
   labelForBranche,
   type BrancheAssurance,
@@ -261,7 +261,7 @@ export function NewDossierForm({
         <h2 className="font-serif text-lg">Étape 1 · Type d'assurance</h2>
         <p className="mt-1 text-sm text-ink-muted">Choisissez la branche concernée pour ce dossier.</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {BRANCHES.map((b) => (
+          {BRANCHES_CREATION.map((b) => (
             <button
               key={b.value}
               type="button"

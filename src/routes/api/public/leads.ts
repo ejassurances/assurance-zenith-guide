@@ -148,7 +148,8 @@ export const Route = createFileRoute("/api/public/leads")({
         const sujet = (d.sujet ?? "").toLowerCase();
         let typeAssurance = "emprunteur";
         if (d.source !== "simulateur") {
-          if (/prevoyance|pr[ée]voyance|sant[ée]|mutuelle/.test(sujet)) typeAssurance = "prevoyance_sante";
+          if (/sant[ée]|mutuelle|compl[ée]mentaire/.test(sujet)) typeAssurance = "sante";
+          else if (/prevoyance|pr[ée]voyance/.test(sujet)) typeAssurance = "prevoyance";
           else if (/epargne|[ée]pargne|retraite|transmission|coparent/.test(sujet)) typeAssurance = "epargne_retraite";
           else if (/auto|habitation|iard|mrh/.test(sujet)) typeAssurance = "iard";
           else if (/trottinette|edpm/.test(sujet)) typeAssurance = "trottinette";

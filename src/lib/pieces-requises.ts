@@ -35,6 +35,14 @@ const PAR_BRANCHE: Record<string, PieceRequise[]> = {
     { code: "contrat_groupe", libelle: "Contrat d'assurance groupe bancaire actuel", categorie: "contrat", obligatoire: false },
     { code: "questionnaire_sante", libelle: "Questionnaire de santé", categorie: "dossier", obligatoire: false },
   ],
+  sante: [
+    { code: "contrat_actuel", libelle: "Contrat de complémentaire santé actuel", categorie: "contrat", obligatoire: false },
+    { code: "attestation_vitale", libelle: "Attestation de droits (carte Vitale)", categorie: "dossier", obligatoire: false },
+  ],
+  prevoyance: [
+    { code: "contrat_actuel", libelle: "Contrat de prévoyance actuel", categorie: "contrat", obligatoire: false },
+    { code: "bulletin_salaire", libelle: "Dernier bulletin de salaire ou bilan (TNS)", categorie: "dossier", obligatoire: false },
+  ],
   prevoyance_sante: [
     { code: "contrat_actuel", libelle: "Contrat de prévoyance / santé actuel", categorie: "contrat", obligatoire: false },
     { code: "bulletin_salaire", libelle: "Dernier bulletin de salaire ou bilan (TNS)", categorie: "dossier", obligatoire: false },
