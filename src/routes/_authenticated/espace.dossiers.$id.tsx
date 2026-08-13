@@ -60,7 +60,7 @@ function CompagnieProduitSection({
   };
 
   return (
-    <Section title="Compagnie et produit">
+    <Section id="section-compagnie-produit" title="Compagnie et produit">
       {canEdit ? (
         <div className="grid gap-3 sm:grid-cols-2">
           <CompagnieProduitPicker
@@ -112,6 +112,30 @@ function DossierDetail() {
 
   const canEdit = role === "admin" || role === "mandataire" || role === "prescripteur";
 
+  const scrollToStep = (key: string) => {
+    const mapping: Record<string, string[]> = {
+      nouveau: ["section-recueil"],
+      en_cours: ["section-recueil"],
+      lettre_mission_envoyee: ["section-lettre-mission"],
+      dda_validee: ["section-lettre-mission"],
+      devis_en_cours: ["section-devis", "section-compagnie-produit"],
+      devoir_conseil_envoye: ["section-devoir-conseil"],
+      devoir_conseil_signe: ["section-devoir-conseil"],
+      souscription_envoyee: ["section-pieces"],
+      contrat_valide: ["section-pieces"],
+      contrat_actif: ["section-pieces"],
+    };
+    const ids = mapping[key] ?? [];
+    for (const sectionId of ids) {
+      const el = document.getElementById(sectionId);
+      if (!el) continue;
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      el.classList.add("ring-2", "ring-[#D4AF37]", "ring-offset-2");
+      window.setTimeout(() => el.classList.remove("ring-2", "ring-[#D4AF37]", "ring-offset-2"), 1500);
+      break;
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div>
@@ -124,27 +148,41 @@ function DossierDetail() {
         </p>
       </div>
 
-      <DossierPipeline dossierId={id} statut={dossier.statut} canEdit={canEdit} onChanged={load} />
+      <DossierPipeline
+        dossierId={id}
+        statut={dossier.statut}
+        canEdit={canEdit}
+        onChanged={load}
+        onStepClick={(key) => scrollToStep(key)}
+      />
 
       <CompagnieProduitSection dossier={dossier} canEdit={canEdit} onSaved={load} />
 
       <RecueilPanel dossier={dossier} />
-      {canEdit && <LettreMissionPanel dossierId={id} clientEmail={dossier.client_email} />}
       {canEdit && (
-        <DossierDevisPanel
-          dossierId={id}
-          branche={labelForBranche(dossier.type_assurance)}
-          userId={user!.id}
-          onChanged={load}
-        />
+        <div id="section-lettre-mission">
+          <LettreMissionPanel dossierId={id} clientEmail={dossier.client_email} />
+        </div>
       )}
       {canEdit && (
-        <DevoirConseilPanel
-          dossierId={id}
-          clientEmail={dossier.client_email}
-          branche={dossier.type_assurance}
-          onChanged={load}
-        />
+        <div id="section-devis">
+          <DossierDevisPanel
+            dossierId={id}
+            branche={labelForBranche(dossier.type_assurance)}
+            userId={user!.id}
+            onChanged={load}
+          />
+        </div>
+      )}
+      {canEdit && (
+        <div id="section-devoir-conseil">
+          <DevoirConseilPanel
+            dossierId={id}
+            clientEmail={dossier.client_email}
+            branche={dossier.type_assurance}
+            onChanged={load}
+          />
+        </div>
       )}
 
 
@@ -174,7 +212,9 @@ function DossierDetail() {
         </Section>
       )}
 
-      <PiecesSection dossierId={id} clientEmail={dossier.client_email} canValidate={canEdit} />
+      <div id="section-pieces">
+        <PiecesSection dossierId={id} clientEmail={dossier.client_email} canValidate={canEdit} />
+      </div>
 
       <MessagesPanel dossierId={id} userId={user!.id} />
       <DocumentsPanel dossierId={id} userId={user!.id} />
@@ -220,9 +260,9 @@ function PiecesSection({
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ id, title, children }: { id?: string; title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+    <div id={id} className="scroll-mt-6 rounded-2xl border border-line bg-surface-elevated p-5 transition-all">
       <h2 className="font-serif text-lg font-medium text-ink">{title}</h2>
       <div className="mt-3 space-y-2 text-sm">{children}</div>
     </div>
@@ -446,7 +486,7 @@ function RecueilPanel({ dossier }: { dossier: Dossier }) {
   const r = dossier.recueil_besoins ?? {};
   if (!branche) return null;
   return (
-    <Section title={`Recueil des besoins — ${branche.label}`}>
+    <Section id="section-recueil" title={`Recueil des besoins — ${branche.label}`}>
       {branche.sections.map((s) => {
         const rows = s.fields
           .map((f) => {

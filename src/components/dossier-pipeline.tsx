@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { changerEtapeDossier } from "@/lib/devoir-conseil.functions";
-import { ETAPES, ETAPES_HORS_PARCOURS, etapeDef, etapeIndex, etapeSuivante } from "@/lib/pipeline-dossier";
+import { ETAPES, ETAPES_HORS_PARCOURS, etapeDef, etapeIndex, etapeSuivante, type EtapeKey } from "@/lib/pipeline-dossier";
 
 type HistoRow = {
   id: string;
@@ -17,11 +17,13 @@ export function DossierPipeline({
   statut,
   canEdit,
   onChanged,
+  onStepClick,
 }: {
   dossierId: string;
   statut: string;
   canEdit: boolean;
   onChanged: () => void;
+  onStepClick?: (key: EtapeKey) => void;
 }) {
   const changer = useServerFn(changerEtapeDossier);
   const [histo, setHisto] = useState<HistoRow[]>([]);
@@ -75,8 +77,16 @@ export function DossierPipeline({
           {ETAPES.map((e, i) => {
             const passee = courant >= 0 && i < courant;
             const active = e.key === statut;
+            const cliquable = onStepClick != null && i <= courant;
             return (
-              <li key={e.key} className="relative flex w-[124px] shrink-0 flex-col items-center text-center">
+              <li
+                key={e.key}
+                onClick={() => cliquable && onStepClick(e.key)}
+                className={
+                  "relative flex w-[124px] shrink-0 flex-col items-center text-center " +
+                  (cliquable ? "cursor-pointer hover:opacity-80" : "cursor-default")
+                }
+              >
                 {i > 0 && (
                   <span
                     className={
