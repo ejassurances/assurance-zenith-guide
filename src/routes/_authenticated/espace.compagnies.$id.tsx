@@ -232,6 +232,13 @@ function CompagnieDetail() {
         />
       )}
       {tab === "partenariats" && <PartenariatsTab compagnieId={c.id} compagnieNom={c.nom} isAdmin={isAdmin} />}
+      {tab === "emails" && (
+        <EmailsLiesPanel
+          liens={{ compagnie_id: c.id }}
+          destinataireParDefaut={c.contact_email}
+          titre="Emails de la compagnie"
+        />
+      )}
       {tab === "api" && <ApiTab compagnieId={c.id} apiActive={c.api_active} isAdmin={isAdmin} onApiActiveChange={(v) => saveInfos({ api_active: v })} />}
     </div>
   );
