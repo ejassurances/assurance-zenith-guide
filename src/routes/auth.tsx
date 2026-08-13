@@ -102,18 +102,16 @@ function AuthPage() {
     e.preventDefault();
     setForgotMsg(null);
     setForgotLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
+    try {
+      await demanderReset({ data: { email: forgotEmail } });
+      setForgotMsg({
+        type: "ok",
+        text: "Si un compte existe pour cette adresse, un e-mail de réinitialisation vient d'être envoyé.",
+      });
+    } catch (err) {
+      setForgotMsg({ type: "err", text: err instanceof Error ? err.message : "Erreur d'envoi" });
+    }
     setForgotLoading(false);
-    setForgotMsg(
-      error
-        ? { type: "err", text: error.message }
-        : {
-            type: "ok",
-            text: "Si un compte existe pour cette adresse, un e-mail de réinitialisation vient d'être envoyé.",
-          },
-    );
   };
 
   const inputClass =
