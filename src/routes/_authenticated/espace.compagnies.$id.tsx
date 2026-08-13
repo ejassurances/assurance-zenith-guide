@@ -796,13 +796,15 @@ function ProduitEditor({
         docs={docs.map((d) => ({ id: d.id, nom: d.nom, type: d.type }))}
       />
 
-      {famille?.code === "sante" && (
+      {(famille?.code === "sante" || p.mode_tarification === "fixe") && (
         <ProduitFormulesTab
           produitId={p.id}
           familleCode={famille?.code ?? null}
           familleNom={famille?.nom}
           isAdmin={isAdmin}
+          modeFixe={p.mode_tarification === "fixe"}
           docs={docs.map((d) => ({ id: d.id, nom: d.nom, type: d.type }))}
+
         />
       )}
 
