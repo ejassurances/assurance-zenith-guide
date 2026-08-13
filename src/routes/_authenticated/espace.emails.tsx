@@ -320,17 +320,21 @@ function EmailsPage() {
 
         <div>
           {!selected ? (
-            <p className="text-sm text-ink-muted">Sélectionnez un message pour le lire et le rattacher.</p>
+            <div className={CARTE + " p-8 text-center"}>
+              <p className="text-sm text-ink-muted">Sélectionnez un message pour le lire et le rattacher.</p>
+            </div>
           ) : (
-            <div className="space-y-5">
-              <div className="rounded-2xl border border-line bg-surface-elevated p-5">
-                <h2 className="text-lg font-semibold text-ink">{selected.sujet}</h2>
-                <p className="mt-1 text-xs text-ink-muted">
-                  De {selected.expediteur_nom ?? ""} &lt;{selected.expediteur_email}&gt; ·{" "}
-                  {selected.date ? new Date(selected.date).toLocaleString("fr-FR") : ""}
-                </p>
-                <p className="text-xs text-ink-muted">À {selected.destinataires}</p>
-                <div className="mt-4 flex flex-wrap gap-2">
+            <div className="space-y-6">
+              <div className={CARTE + " overflow-hidden"}>
+                <div className="border-b border-line bg-surface px-5 py-4">
+                  <h2 className="font-serif text-xl text-ink">{selected.sujet}</h2>
+                  <p className="mt-1.5 text-xs text-ink-muted">
+                    De {selected.expediteur_nom ?? ""} &lt;{selected.expediteur_email}&gt; ·{" "}
+                    {selected.date ? new Date(selected.date).toLocaleString("fr-FR") : ""}
+                  </p>
+                  <p className="text-xs text-ink-muted">À {selected.destinataires}</p>
+                </div>
+                <div className="flex flex-wrap gap-2 border-b border-line px-5 py-3">
                   <button
                     onClick={() =>
                       setCompose({
@@ -339,7 +343,7 @@ function EmailsPage() {
                         threadId: selected.thread_id,
                       })
                     }
-                    className="rounded-full bg-ink px-4 py-1.5 text-sm text-primary-foreground"
+                    className={BTN_PRIMAIRE}
                   >
                     Répondre
                   </button>
@@ -349,58 +353,56 @@ function EmailsPage() {
                         await detacher({ data: { gmail_message_id: selected.id } });
                         loadBoite();
                       }}
-                      className="rounded-full border border-line px-4 py-1.5 text-sm"
+                      className={BTN_SECONDAIRE}
                     >
                       Retirer le rattachement
                     </button>
                   )}
-                  <button
-                    onClick={() => agir("non_lu", selected)}
-                    className="rounded-full border border-line px-4 py-1.5 text-sm"
-                  >
+                  <button onClick={() => agir("non_lu", selected)} className={BTN_SECONDAIRE}>
                     Marquer non lu
                   </button>
-                  <button
-                    onClick={() => agir("archiver", selected)}
-                    className="rounded-full border border-line px-4 py-1.5 text-sm"
-                  >
+                  <button onClick={() => agir("archiver", selected)} className={BTN_SECONDAIRE}>
                     Archiver
                   </button>
                   <button
                     onClick={() => {
                       if (confirm("Mettre ce message à la corbeille Gmail ?")) agir("supprimer", selected);
                     }}
-                    className="rounded-full border border-red-300 px-4 py-1.5 text-sm text-red-700 hover:bg-red-50"
+                    className="rounded-full border border-red-300 px-4 py-2 text-sm text-red-700 transition hover:bg-red-50"
                   >
                     Supprimer
                   </button>
                 </div>
 
-                <EtiquettesBloc
-                  message={selected}
-                  clients={clients}
-                  compagnies={compagnies}
-                  onEtiqueter={(e) => etiqueter(selected, e)}
-                />
-                <div className="mt-4 max-h-[420px] overflow-y-auto rounded-lg border border-line bg-background p-4 text-sm text-ink-soft">
-                  {detailBusy ? (
-                    "Chargement…"
-                  ) : detail?.texte ? (
-                    <pre className="whitespace-pre-wrap font-sans">{detail.texte}</pre>
-                  ) : detail?.html ? (
-                    <p className="text-xs italic text-ink-muted">
-                      Message au format HTML — extrait : {selected.snippet}
+                <div className="px-5 py-5">
+                  <div className="max-h-[420px] overflow-y-auto rounded-xl border border-line bg-background p-4 text-sm text-ink-soft">
+                    {detailBusy ? (
+                      "Chargement…"
+                    ) : detail?.texte ? (
+                      <pre className="whitespace-pre-wrap font-sans">{detail.texte}</pre>
+                    ) : detail?.html ? (
+                      <p className="text-xs italic text-ink-muted">
+                        Message au format HTML — extrait : {selected.snippet}
+                      </p>
+                    ) : (
+                      selected.snippet
+                    )}
+                  </div>
+                  {detail?.pieces_jointes?.length ? (
+                    <p className="mt-3 text-xs text-ink-muted">
+                      Pièces jointes : {detail.pieces_jointes.map((p) => p.nom).join(", ")}
                     </p>
-                  ) : (
-                    selected.snippet
-                  )}
+                  ) : null}
                 </div>
-                {detail?.pieces_jointes?.length ? (
-                  <p className="mt-3 text-xs text-ink-muted">
-                    Pièces jointes : {detail.pieces_jointes.map((p) => p.nom).join(", ")}
-                  </p>
-                ) : null}
               </div>
+
+              <EtiquettesBloc
+                message={selected}
+                clients={clients}
+                compagnies={compagnies}
+                onEtiqueter={(e) => etiqueter(selected, e)}
+              />
+
 
               <RattachementPanel
                 key={selected.id}
