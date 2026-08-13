@@ -17,11 +17,13 @@ export function DossierPipeline({
   statut,
   canEdit,
   onChanged,
+  onStepClick,
 }: {
   dossierId: string;
   statut: string;
   canEdit: boolean;
   onChanged: () => void;
+  onStepClick?: (key: EtapeKey) => void;
 }) {
   const changer = useServerFn(changerEtapeDossier);
   const [histo, setHisto] = useState<HistoRow[]>([]);
