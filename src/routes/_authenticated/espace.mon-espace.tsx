@@ -76,17 +76,20 @@ function MonEspace() {
         .maybeSingle();
       setClient((c as ClientRow) ?? null);
 
-      const filtre = [`client_id.eq.${user.id}`];
+      const filtre: string[] = [];
+      if (c) filtre.push(`client_id.eq.${(c as ClientRow).id}`);
       if (user.email) filtre.push(`client_email.eq.${user.email}`);
-      const { data: d } = await supabase
-        .from("dossiers")
-        .select("id,reference,statut,type_assurance,created_at,economie_estimee")
-        .or(filtre.join(","))
-        .order("created_at", { ascending: false });
-      setDossiers((d ?? []) as DossierRow[]);
+      if (filtre.length > 0) {
+        const { data: d } = await supabase
+          .from("dossiers")
+          .select("id,reference,statut,type_assurance,created_at,economie_estimee")
+          .or(filtre.join(","))
+          .order("created_at", { ascending: false });
+        setDossiers((d ?? []) as DossierRow[]);
+      }
 
       if (c) {
-        const [{ data: der }, { data: lm }] = await Promise.all([
+        const [{ data: der }, { data: lm }, { data: dc }] = await Promise.all([
           supabase
             .from("client_der_envois")
             .select("id")
@@ -99,10 +102,18 @@ function MonEspace() {
             .eq("client_id", (c as ClientRow).id)
             .is("signed_at", null)
             .limit(1),
+          supabase
+            .from("devoirs_conseil")
+            .select("id")
+            .eq("client_id", (c as ClientRow).id)
+            .eq("statut", "envoye")
+            .limit(1),
         ]);
         setDerAFaire((der ?? []).length > 0);
         setLettreAFaire((lm ?? []).length > 0);
+        setDevoirAFaire((dc ?? []).length > 0);
       }
+
       setLoading(false);
     })();
   }, [user]);
