@@ -80,11 +80,10 @@ export const signerLettreMission = createServerFn({ method: "POST" })
       .eq("id", data.lettre_id);
     if (upErr) throw new Error(upErr.message);
 
-    // DDA validée : statut dossier + client
-    await supabase.from("dossiers").update({ statut: "dda_validee" }).eq("id", lettre.dossier_id);
-    if (lettre.client_id) {
-      await supabase.from("clients").update({ dda_statut: "validee" }).eq("id", lettre.client_id);
-    }
+    // L'avancement du pipeline (dossier → « DDA validée », client → dda_statut
+    // « validee ») et la ligne d'historique sont assurés par le trigger SQL
+    // lettre_mission_avance_dossier : le client signataire n'a pas les droits
+    // RLS pour modifier le dossier, l'update côté client échouait en silence.
 
     // PDF signé : archivage + transmission au webhook (Drive 02_Conformite_DDA)
     let archive: { path: string; webhook: string } | null = null;
