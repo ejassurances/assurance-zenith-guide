@@ -102,6 +102,9 @@ type Produit = {
   produit_requis_id: string | null;
   famille_requise_id: string | null;
   image_url: string | null;
+  /** Origine du tarif : API compagnie, saisie manuelle de devis, ou tarif fixe connu. */
+  mode_tarification: "api" | "manuel" | "fixe";
+
 };
 type ProduitDoc = {
   id: string;
