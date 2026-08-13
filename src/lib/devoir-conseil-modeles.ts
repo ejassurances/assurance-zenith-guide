@@ -115,8 +115,47 @@ const MODELES: ModeleDevoirConseil[] = [
       "Réduire le coût de l'assurance de prêt à garanties au moins équivalentes, en conservant la même quotité assurée et la même couverture des risques exigés par l'établissement prêteur.",
   },
   {
+    branche: "sante",
+    libelle: "Complémentaire santé",
+    mentionsLegales: [
+      ...MENTIONS_COMMUNES,
+      "Les contrats de complémentaire santé peuvent comporter des délais d'attente et des exclusions précisés aux conditions générales.",
+      "Les prestations santé s'articulent avec les remboursements du régime obligatoire ; le contrat responsable respecte les plafonds et planchers réglementaires (100 % Santé).",
+      "Les niveaux de remboursement sont exprimés selon le tableau de garanties du contrat (pourcentage de la base de remboursement, forfaits ou frais réels) ; les postes optique, dentaire et aides auditives sont encadrés par la réforme 100 % Santé.",
+    ],
+    recommandation: (c) =>
+      `Au regard des personnes à couvrir, des niveaux de remboursement souhaités poste par poste et du budget mensuel que vous avez indiqué, nous vous recommandons ${offre(c)}.` +
+      (c.garanties ? ` Garanties retenues : ${c.garanties}.` : "") +
+      (fmtEuro(c.cotisation_mensuelle) ? ` Cotisation mensuelle : ${fmtEuro(c.cotisation_mensuelle)}.` : ""),
+    motifs: () =>
+      "Cette recommandation est motivée poste par poste : les niveaux de remboursement du contrat proposé (hospitalisation, soins courants, optique, dentaire, aides auditives, médecines douces) correspondent aux niveaux souhaités exprimés au point 1, pour l'ensemble des personnes à couvrir et leurs régimes obligatoires respectifs, tout en respectant le budget mensuel que vous avez choisi.",
+    misesEnGarde: () =>
+      "Vérifiez les délais d'attente applicables à certains postes (optique, dentaire, maternité), les plafonds annuels et les réseaux de soins partenaires. Les remboursements s'entendent dans la limite des frais réellement engagés et après intervention du régime obligatoire. Une déclaration inexacte de la situation des ayants droit peut entraîner la remise en cause des prestations.",
+    exigences: () =>
+      "Disposer d'une complémentaire santé couvrant l'ensemble des personnes du foyer aux niveaux de remboursement souhaités poste par poste, dans le budget mensuel choisi.",
+  },
+  {
+    branche: "prevoyance",
+    libelle: "Prévoyance",
+    mentionsLegales: [
+      ...MENTIONS_COMMUNES,
+      "Les contrats de prévoyance comportent des délais d'attente, des franchises en arrêt de travail, des exclusions et, le cas échéant, une sélection médicale précisée aux conditions générales.",
+      "Les définitions contractuelles d'incapacité, d'invalidité et de dépendance, ainsi que les modalités d'indemnisation (indemnitaire ou forfaitaire), figurent aux conditions générales.",
+    ],
+    recommandation: (c) =>
+      `Au regard de votre situation familiale et professionnelle et de vos objectifs de protection, nous vous recommandons ${offre(c)}.` +
+      (c.garanties ? ` Garanties retenues : ${c.garanties}.` : "") +
+      (fmtEuro(c.cotisation_mensuelle) ? ` Cotisation mensuelle : ${fmtEuro(c.cotisation_mensuelle)}.` : ""),
+    motifs: () =>
+      "Cette recommandation répond au niveau de couverture recherché sur les risques prioritaires exprimés (décès, incapacité de travail, invalidité, dépendance), à la composition de votre foyer, à vos revenus, à votre régime social et au budget mensuel que vous avez indiqué.",
+    misesEnGarde: () =>
+      "Vérifiez les délais de carence et d'attente, les franchises en arrêt de travail, les définitions contractuelles d'incapacité et d'invalidité, ainsi que les exclusions liées aux antécédents médicaux déclarés. Une déclaration inexacte de l'état de santé peut entraîner la réduction des prestations ou la nullité du contrat.",
+    exigences: () =>
+      "Disposer d'une protection adaptée en cas de décès, d'arrêt de travail, d'invalidité ou de dépendance, en cohérence avec les revenus du foyer et dans le budget mensuel indiqué.",
+  },
+  {
     branche: "prevoyance_sante",
-    libelle: "Prévoyance & Santé",
+    libelle: "Prévoyance & Santé (ancienne branche combinée)",
     mentionsLegales: [
       ...MENTIONS_COMMUNES,
       "Les contrats de prévoyance et de complémentaire santé comportent des délais d'attente, des exclusions et, le cas échéant, une sélection médicale précisée aux conditions générales.",
@@ -133,6 +172,7 @@ const MODELES: ModeleDevoirConseil[] = [
     exigences: () =>
       "Disposer d'une protection adaptée en cas de décès, d'arrêt de travail ou d'invalidité, et/ou d'une complémentaire santé couvrant les postes de dépenses prioritaires du foyer, dans le budget indiqué.",
   },
+
   {
     branche: "epargne_retraite",
     libelle: "Épargne & Retraite",
