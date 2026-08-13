@@ -130,7 +130,12 @@ function DossierDetail() {
       <RecueilPanel dossier={dossier} />
       {canEdit && <LettreMissionPanel dossierId={id} clientEmail={dossier.client_email} />}
       {canEdit && (
-        <DevoirConseilPanel dossierId={id} clientEmail={dossier.client_email} onChanged={load} />
+        <DevoirConseilPanel
+          dossierId={id}
+          clientEmail={dossier.client_email}
+          branche={dossier.type_assurance}
+          onChanged={load}
+        />
       )}
 
 

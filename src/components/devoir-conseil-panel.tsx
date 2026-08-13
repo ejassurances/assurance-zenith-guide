@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { envoyerDevoirConseilFn } from "@/lib/devoir-conseil.functions";
+import { prefillDevoirConseil } from "@/lib/devoir-conseil-modeles";
 
 type Devoir = {
   id: string;
@@ -26,10 +27,12 @@ const STATUT_LABEL: Record<string, string> = {
 export function DevoirConseilPanel({
   dossierId,
   clientEmail,
+  branche = "",
   onChanged,
 }: {
   dossierId: string;
   clientEmail: string | null;
+  branche?: string;
   onChanged: () => void;
 }) {
   const envoyer = useServerFn(envoyerDevoirConseilFn);
@@ -108,6 +111,25 @@ export function DevoirConseilPanel({
 
   const valide = form.recommandation.trim().length >= 10 && form.motifs.trim().length >= 10;
 
+  const appliquerModele = () => {
+    const pre = prefillDevoirConseil({
+      branche,
+      compagnie: form.compagnie || null,
+      produit: form.produit || null,
+      garanties: form.garanties || null,
+      exigences: form.exigences_client || undefined,
+      cotisation_mensuelle: form.cotisation_mensuelle ? Number(form.cotisation_mensuelle) : null,
+      economie_estimee: form.economie_estimee ? Number(form.economie_estimee) : null,
+    });
+    setForm((f) => ({
+      ...f,
+      recommandation: pre.recommandation,
+      motifs: pre.motifs,
+      mises_en_garde: pre.mises_en_garde,
+      exigences_client: pre.exigences_client,
+    }));
+  };
+
   return (
     <div className="rounded-2xl border border-line bg-surface-elevated p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -160,6 +182,14 @@ export function DevoirConseilPanel({
         >
           {open ? "Fermer" : devoir ? "Regénérer / renvoyer" : "Rédiger le devoir de conseil"}
         </button>
+        {open && (
+          <button
+            onClick={appliquerModele}
+            className="rounded-full border border-line px-4 py-2 text-sm hover:bg-surface"
+          >
+            Pré-remplir depuis le modèle
+          </button>
+        )}
       </div>
 
       {open && (

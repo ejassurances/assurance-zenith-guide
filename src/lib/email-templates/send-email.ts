@@ -15,6 +15,12 @@ export type SendTemplateEmailResult =
 
 export interface SendTemplateEmailOptions {
   templateData?: Record<string, any>
+  /**
+   * Variables transmises à Brevo (`params`) avec les noms canoniques en
+   * majuscules : PRENOM, LIEN_ACTION, TYPE_ASSURANCE, NOM_COMPAGNIE,
+   * NOM_COMPAGNIE_RECOMMANDEE, NOM_PRODUIT, PIECES_MANQUANTES.
+   */
+  brevoParams?: Record<string, any>
   /** Conservé pour compatibilité des appels existants (dédoublonnage applicatif). */
   idempotencyKey?: string
   replyTo?: string
@@ -74,6 +80,7 @@ export async function sendTemplateEmail(
       subject,
       htmlContent: html,
       textContent: text,
+      ...(options.brevoParams ? { params: options.brevoParams } : {}),
       ...(options.replyTo ? { replyTo: { email: options.replyTo } } : {}),
       tags: [templateName],
     }),
