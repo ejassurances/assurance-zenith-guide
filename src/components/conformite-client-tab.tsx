@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { rechercherSanctionsPPE, marquerVerificationLCB } from "@/lib/lcb-ft.functions";
 import { DerStatusCard } from "@/components/der-status-card";
+import { detailConformite, NIVEAU_BAR, SEUIL_BLOCAGE_CONTRAT, type NiveauConformite } from "@/lib/conformite-score";
+
 
 /* Onglet Conformité client : KYC + LCB-FT + Score */
 
