@@ -2117,6 +2117,79 @@ export type Database = {
           },
         ]
       }
+      formule_garanties_propositions: {
+        Row: {
+          avertissements: string | null
+          created_at: string
+          created_by: string | null
+          document_id: string | null
+          formule_id: string | null
+          formule_nom: string
+          grille_version: number
+          id: string
+          modele_ia: string | null
+          produit_id: string
+          statut: string
+          traite_le: string | null
+          traite_par: string | null
+          valeurs: Json
+        }
+        Insert: {
+          avertissements?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          formule_id?: string | null
+          formule_nom: string
+          grille_version?: number
+          id?: string
+          modele_ia?: string | null
+          produit_id: string
+          statut?: string
+          traite_le?: string | null
+          traite_par?: string | null
+          valeurs?: Json
+        }
+        Update: {
+          avertissements?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          formule_id?: string | null
+          formule_nom?: string
+          grille_version?: number
+          id?: string
+          modele_ia?: string | null
+          produit_id?: string
+          statut?: string
+          traite_le?: string | null
+          traite_par?: string | null
+          valeurs?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formule_garanties_propositions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "produit_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "formule_garanties_propositions_formule_id_fkey"
+            columns: ["formule_id"]
+            isOneToOne: false
+            referencedRelation: "produit_formules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "formule_garanties_propositions_produit_id_fkey"
+            columns: ["produit_id"]
+            isOneToOne: false
+            referencedRelation: "produits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       formule_tarifs: {
         Row: {
           age_max: number
@@ -3162,6 +3235,7 @@ export type Database = {
         | "fiche_produit"
         | "tarifs"
         | "autre"
+        | "tableau_garanties"
       produit_statut: "actif" | "en_test" | "retire"
       tache_priorite: "basse" | "normale" | "haute" | "urgente"
       tache_statut: "a_faire" | "en_cours" | "terminee" | "annulee"
@@ -3345,6 +3419,7 @@ export const Constants = {
         "fiche_produit",
         "tarifs",
         "autre",
+        "tableau_garanties",
       ],
       produit_statut: ["actif", "en_test", "retire"],
       tache_priorite: ["basse", "normale", "haute", "urgente"],

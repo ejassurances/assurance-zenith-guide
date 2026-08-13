@@ -142,3 +142,50 @@ export const rejeterPropositionGaranties = createServerFn({ method: "POST" })
     });
     return { ok: true };
   });
+
+/** Analyse un « tableau de garanties » santé : une PROPOSITION par formule détectée. */
+export const analyserTableauGaranties = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ document_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertStaff(context.supabase, context.userId);
+    const { analyserTableauGarantiesFormules } = await import("./formule-garanties-extraction.server");
+    return analyserTableauGarantiesFormules(context.supabase, data.document_id, context.userId);
+  });
+
+/** Accepte une proposition de formule : crée/retrouve la formule puis écrit sa grille. */
+export const accepterPropositionFormule = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        proposition_id: z.string().uuid(),
+        statut: z.enum(["brouillon", "valide"]),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertStaff(context.supabase, context.userId, data.statut === "valide");
+    const { traiterPropositionFormule } = await import("./formule-garanties.server");
+    return traiterPropositionFormule(context.supabase, data.proposition_id, data.statut, context.userId);
+  });
+
+/** Rejet d'une proposition de formule (aucune donnée reprise). */
+export const rejeterPropositionFormule = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ proposition_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertStaff(context.supabase, context.userId);
+    const { error } = await context.supabase
+      .from("formule_garanties_propositions")
+      .update({ statut: "rejetee", traite_par: context.userId, traite_le: new Date().toISOString() })
+      .eq("id", data.proposition_id);
+    if (error) throw new Error(error.message);
+    await context.supabase.rpc("log_audit", {
+      _action: "rejeter_proposition_formule",
+      _target_type: "formule_garanties_propositions",
+      _target_id: data.proposition_id,
+      _metadata: {},
+    });
+    return { ok: true };
+  });
