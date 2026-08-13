@@ -109,7 +109,7 @@ type Produit = {
 type ProduitDoc = {
   id: string;
   produit_id: string;
-  type: "conditions_generales" | "ipid" | "tableau_garanties" | "fiche_produit" | "tarifs" | "autre";
+  type: "conditions_generales" | "ipid" | "tableau_garanties" | "fiche_produit" | "tarifs" | "ccsf" | "autre";
   nom: string;
   version: string | null;
   date_effet: string | null;
@@ -124,8 +124,32 @@ const DOC_TYPE_LABEL: Record<ProduitDoc["type"], string> = {
   tableau_garanties: "Tableau de garanties",
   fiche_produit: "Fiche produit (interne)",
   tarifs: "Grille tarifaire",
+  ccsf: "CCSF (équivalence bancaire)",
   autre: "Autre",
 };
+
+/**
+ * Documents attendus par branche : la liste n'est pas identique partout
+ * (ex. CCSF uniquement en emprunteur, tableau de garanties en santé/prévoyance).
+ */
+const DOC_TYPES_PAR_FAMILLE: Record<string, ProduitDoc["type"][]> = {
+  emprunteur: ["conditions_generales", "ipid", "fiche_produit", "ccsf", "tarifs", "autre"],
+  sante: ["conditions_generales", "ipid", "tableau_garanties", "fiche_produit", "tarifs", "autre"],
+  prevoyance: ["conditions_generales", "ipid", "tableau_garanties", "fiche_produit", "tarifs", "autre"],
+};
+
+const DOC_TYPES_DEFAUT: ProduitDoc["type"][] = [
+  "conditions_generales",
+  "ipid",
+  "fiche_produit",
+  "tarifs",
+  "autre",
+];
+
+function docTypesPour(familleCode: string | null): ProduitDoc["type"][] {
+  return (familleCode && DOC_TYPES_PAR_FAMILLE[familleCode]) || DOC_TYPES_DEFAUT;
+}
+
 
 type Tab = "infos" | "produits" | "partenariats" | "emails" | "api";
 
@@ -786,7 +810,14 @@ function ProduitEditor({
         </div>
       )}
 
-      <DocumentsBlock produitId={p.id} docs={docs} isAdmin={isAdmin} onChange={loadDocs} />
+      <DocumentsBlock
+        produitId={p.id}
+        familleCode={famille?.code ?? null}
+        docs={docs}
+        isAdmin={isAdmin}
+        onChange={loadDocs}
+      />
+
 
       <ProduitGarantiesTab
         produitId={p.id}
@@ -796,7 +827,7 @@ function ProduitEditor({
         docs={docs.map((d) => ({ id: d.id, nom: d.nom, type: d.type }))}
       />
 
-      {(famille?.code === "sante" || p.mode_tarification === "fixe") && (
+      {(famille?.code === "sante" || famille?.code === "emprunteur" || p.mode_tarification === "fixe") && (
         <ProduitFormulesTab
           produitId={p.id}
           familleCode={famille?.code ?? null}
@@ -920,16 +951,22 @@ function ChampInput({
 // ============ Documents ============
 function DocumentsBlock({
   produitId,
+  familleCode,
   docs,
   isAdmin,
   onChange,
 }: {
   produitId: string;
+  familleCode: string | null;
   docs: ProduitDoc[];
   isAdmin: boolean;
   onChange: () => void;
 }) {
+  const typesDisponibles = docTypesPour(familleCode);
   const [type, setType] = useState<ProduitDoc["type"]>("conditions_generales");
+  /** Type retenu : le choix courant s'il est valide pour la branche, sinon le premier proposé. */
+  const typeEffectif = typesDisponibles.includes(type) ? type : typesDisponibles[0];
+
   const [version, setVersion] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -939,7 +976,7 @@ function DocumentsBlock({
     if (!file) return;
     setUploading(true);
     const ext = file.name.split(".").pop() ?? "bin";
-    const path = `${produitId}/${type}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+    const path = `${produitId}/${typeEffectif}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("produits-documents").upload(path, file, {
       contentType: file.type || undefined,
       upsert: false,
@@ -950,13 +987,13 @@ function DocumentsBlock({
     }
     const { error: insErr } = await supabase.from("produit_documents").insert({
       produit_id: produitId,
-      type,
+      type: typeEffectif,
       nom: file.name,
       version: version || null,
       storage_path: path,
       taille_bytes: file.size,
       mime_type: file.type,
-      interne: type === "fiche_produit",
+      interne: typeEffectif === "fiche_produit",
     });
     setUploading(false);
     if (insErr) return alert(insErr.message);
@@ -983,7 +1020,8 @@ function DocumentsBlock({
       <div>
         <h3 className="font-serif text-lg">Documents du produit</h3>
         <p className="text-xs text-ink-muted">
-          Conditions générales, IPID, fiche produit interne, grille tarifaire. Les fiches produit sont marquées internes.
+          Liste adaptée à la branche : {typesDisponibles.map((t) => DOC_TYPE_LABEL[t]).join(" · ")}. Les fiches produit
+          sont marquées internes.
         </p>
       </div>
 
@@ -992,11 +1030,12 @@ function DocumentsBlock({
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-muted">Type</label>
             <select
-              value={type}
+              value={typeEffectif}
               onChange={(e) => setType(e.target.value as ProduitDoc["type"])}
               className="rounded-md border border-line bg-background px-2 py-1.5 text-sm"
             >
-              {(Object.keys(DOC_TYPE_LABEL) as ProduitDoc["type"][]).map((k) => (
+              {typesDisponibles.map((k) => (
+
                 <option key={k} value={k}>
                   {DOC_TYPE_LABEL[k]}
                 </option>

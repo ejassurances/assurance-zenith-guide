@@ -2742,6 +2742,7 @@ export type Database = {
       produit_formules: {
         Row: {
           actif: boolean
+          base_calcul: string
           code: string
           created_at: string
           id: string
@@ -2752,6 +2753,7 @@ export type Database = {
         }
         Insert: {
           actif?: boolean
+          base_calcul?: string
           code: string
           created_at?: string
           id?: string
@@ -2762,6 +2764,7 @@ export type Database = {
         }
         Update: {
           actif?: boolean
+          base_calcul?: string
           code?: string
           created_at?: string
           id?: string
@@ -3587,6 +3590,7 @@ export type Database = {
         | "tarifs"
         | "autre"
         | "tableau_garanties"
+        | "ccsf"
       produit_statut: "actif" | "en_test" | "retire"
       tache_priorite: "basse" | "normale" | "haute" | "urgente"
       tache_statut: "a_faire" | "en_cours" | "terminee" | "annulee"
@@ -3771,6 +3775,7 @@ export const Constants = {
         "tarifs",
         "autre",
         "tableau_garanties",
+        "ccsf",
       ],
       produit_statut: ["actif", "en_test", "retire"],
       tache_priorite: ["basse", "normale", "haute", "urgente"],
