@@ -273,14 +273,18 @@ function EmailsPage() {
             Boîte de réception principale du cabinet (onglet « Principal » de Gmail).
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button onClick={() => loadBoite()} disabled={loading} className={BTN_SECONDAIRE}>
             {loading ? "Synchronisation…" : "Synchroniser"}
+          </button>
+          <button onClick={lancerScan} disabled={scanBusy} className={BTN_SECONDAIRE}>
+            {scanBusy ? "Scan en cours…" : "Scanner les mails (lus inclus)"}
           </button>
           <button onClick={() => setCompose({ to: "", sujet: "", threadId: null })} className={BTN_PRIMAIRE}>
             Nouvel email
           </button>
         </div>
+
       </div>
 
       <form
