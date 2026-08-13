@@ -284,8 +284,13 @@ export function ConformiteClientTab({
       {/* Documents KYC */}
       <div className="rounded-2xl border border-line bg-surface-elevated p-6">
         <h3 className="font-serif text-lg font-medium">Documents d'identification</h3>
+        {!estPro && (
+          <p className="mt-1 text-xs text-ink-muted">
+            Client particulier : le KBIS / avis Sirene n'est pas demandé (réservé aux clients professionnels).
+          </p>
+        )}
         <div className="mt-4 space-y-4">
-          {TYPES.map(({ key, label }) => {
+          {TYPES.filter(({ key }) => estPro || key !== "kbis").map(({ key, label }) => {
             const documents = docs.filter((d) => d.type === key);
             return (
               <div key={key} className="rounded-xl border border-line p-4">

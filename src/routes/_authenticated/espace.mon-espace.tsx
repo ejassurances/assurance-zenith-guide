@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-import { etapeLabel } from "@/lib/pipeline-dossier";
 import { DossierPiecesPanel } from "@/components/dossier-pieces-panel";
+import { DossierPipelineClient } from "@/components/dossier-pipeline-client";
 import { labelForBranche } from "@/lib/recueil-besoins-schemas";
+import { majMesCoordonnees, monFichierUrl } from "@/lib/espace-client.functions";
 
 export const Route = createFileRoute("/_authenticated/espace/mon-espace")({
   component: MonEspace,
@@ -30,10 +32,19 @@ export const Route = createFileRoute("/_authenticated/espace/mon-espace")({
 type ClientRow = {
   id: string;
   reference: string;
+  civilite: string | null;
   prenom: string | null;
   nom: string;
   email: string | null;
+  email2: string | null;
   mobile: string | null;
+  telephone: string | null;
+  adresse: string | null;
+  complement_adresse: string | null;
+  code_postal: string | null;
+  ville: string | null;
+  pays: string | null;
+  preference_contact: string | null;
 };
 
 type DossierRow = {
@@ -45,11 +56,19 @@ type DossierRow = {
   economie_estimee: number | null;
 };
 
-const STATUT_LABEL: Record<string, string> = {
-  nouveau: "Nouveau",
-  en_cours: "En cours d'étude",
-  signe: "Signé",
-  perdu: "Clôturé",
+type KycRow = {
+  id: string;
+  type: string;
+  nom: string;
+  statut: string;
+  created_at: string;
+};
+
+const KYC_LABEL: Record<string, string> = {
+  cni: "Pièce d'identité",
+  justificatif_domicile: "Justificatif de domicile",
+  rib: "RIB",
+  kbis: "KBIS / avis Sirene",
 };
 
 const TABS = [
@@ -60,67 +79,146 @@ const TABS = [
 
 function MonEspace() {
   const { user } = useAuth();
+  const majCoordonnees = useServerFn(majMesCoordonnees);
+  const fichierUrl = useServerFn(monFichierUrl);
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("projet");
   const [client, setClient] = useState<ClientRow | null>(null);
   const [dossiers, setDossiers] = useState<DossierRow[]>([]);
+  const [kyc, setKyc] = useState<KycRow[]>([]);
+  const [estPro, setEstPro] = useState(false);
   const [derAFaire, setDerAFaire] = useState(false);
   const [lettreAFaire, setLettreAFaire] = useState(false);
   const [devoirAFaire, setDevoirAFaire] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const [edit, setEdit] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedMsg, setSavedMsg] = useState<string | null>(null);
+  const [saveErr, setSaveErr] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    civilite: "",
+    prenom: "",
+    nom: "",
+    email2: "",
+    mobile: "",
+    telephone: "",
+    adresse: "",
+    complement_adresse: "",
+    code_postal: "",
+    ville: "",
+    pays: "",
+    preference_contact: "",
+  });
+
+  const load = async () => {
     if (!user) return;
-    (async () => {
-      const { data: c } = await supabase
-        .from("clients")
-        .select("id,reference,prenom,nom,email,mobile")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      setClient((c as ClientRow) ?? null);
+    const { data: c } = await supabase
+      .from("clients")
+      .select(
+        "id,reference,civilite,prenom,nom,email,email2,mobile,telephone,adresse,complement_adresse,code_postal,ville,pays,preference_contact",
+      )
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const cl = (c as ClientRow) ?? null;
+    setClient(cl);
+    if (cl) {
+      setForm({
+        civilite: cl.civilite ?? "",
+        prenom: cl.prenom ?? "",
+        nom: cl.nom ?? "",
+        email2: cl.email2 ?? "",
+        mobile: cl.mobile ?? "",
+        telephone: cl.telephone ?? "",
+        adresse: cl.adresse ?? "",
+        complement_adresse: cl.complement_adresse ?? "",
+        code_postal: cl.code_postal ?? "",
+        ville: cl.ville ?? "",
+        pays: cl.pays ?? "",
+        preference_contact: cl.preference_contact ?? "",
+      });
+    }
 
-      const filtre: string[] = [];
-      if (c) filtre.push(`client_id.eq.${(c as ClientRow).id}`);
-      if (user.email) filtre.push(`client_email.eq.${user.email}`);
-      if (filtre.length > 0) {
-        const { data: d } = await supabase
-          .from("dossiers")
-          .select("id,reference,statut,type_assurance,created_at,economie_estimee")
-          .or(filtre.join(","))
-          .order("created_at", { ascending: false });
-        setDossiers((d ?? []) as DossierRow[]);
-      }
+    const filtre: string[] = [];
+    if (cl) filtre.push(`client_id.eq.${cl.id}`);
+    if (user.email) filtre.push(`client_email.eq.${user.email}`);
+    if (filtre.length > 0) {
+      const { data: d } = await supabase
+        .from("dossiers")
+        .select("id,reference,statut,type_assurance,created_at,economie_estimee")
+        .or(filtre.join(","))
+        .order("created_at", { ascending: false });
+      setDossiers((d ?? []) as DossierRow[]);
+    }
 
-      if (c) {
-        const [{ data: der }, { data: lm }, { data: dc }] = await Promise.all([
-          supabase
-            .from("client_der_envois")
-            .select("id")
-            .eq("client_id", (c as ClientRow).id)
-            .is("signed_at", null)
-            .limit(1),
-          supabase
-            .from("lettres_mission")
-            .select("id")
-            .eq("client_id", (c as ClientRow).id)
-            .is("signed_at", null)
-            .limit(1),
-          supabase
-            .from("devoirs_conseil")
-            .select("id")
-            .eq("client_id", (c as ClientRow).id)
-            .eq("statut", "envoye")
-            .limit(1),
-        ]);
-        setDerAFaire((der ?? []).length > 0);
-        setLettreAFaire((lm ?? []).length > 0);
-        setDevoirAFaire((dc ?? []).length > 0);
-      }
+    if (cl) {
+      const [{ data: der }, { data: lm }, { data: dc }, { data: docs }, { data: entreprise }] = await Promise.all([
+        supabase.from("client_der_envois").select("id").eq("client_id", cl.id).is("signed_at", null).limit(1),
+        supabase.from("lettres_mission").select("id").eq("client_id", cl.id).is("signed_at", null).limit(1),
+        supabase.from("devoirs_conseil").select("id").eq("client_id", cl.id).eq("statut", "envoye").limit(1),
+        supabase
+          .from("client_kyc_documents")
+          .select("id,type,nom,statut,created_at")
+          .eq("client_id", cl.id)
+          .order("created_at", { ascending: false }),
+        supabase.from("client_entreprise").select("id,siret,raison_sociale").eq("client_id", cl.id).maybeSingle(),
+      ]);
+      setDerAFaire((der ?? []).length > 0);
+      setLettreAFaire((lm ?? []).length > 0);
+      setDevoirAFaire((dc ?? []).length > 0);
+      setKyc((docs ?? []) as KycRow[]);
+      const ent = entreprise as { siret: string | null; raison_sociale: string | null } | null;
+      setEstPro(Boolean(ent && (ent.siret || ent.raison_sociale)));
+    }
 
-      setLoading(false);
-    })();
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    load();
   }, [user]);
 
+  const enregistrer = async () => {
+    setSaving(true);
+    setSaveErr(null);
+    setSavedMsg(null);
+    try {
+      await majCoordonnees({
+        data: {
+          civilite: form.civilite,
+          prenom: form.prenom,
+          nom: form.nom,
+          email2: form.email2,
+          mobile: form.mobile,
+          telephone: form.telephone,
+          adresse: form.adresse,
+          complement_adresse: form.complement_adresse,
+          code_postal: form.code_postal,
+          ville: form.ville,
+          pays: form.pays,
+          preference_contact: form.preference_contact,
+        },
+      });
+      setSavedMsg("Vos informations ont été mises à jour.");
+      setEdit(false);
+      await load();
+    } catch (e) {
+      setSaveErr(e instanceof Error ? e.message : "Erreur d'enregistrement");
+    }
+    setSaving(false);
+  };
+
+  const telecharger = async (id: string) => {
+    try {
+      const res = await fichierUrl({ data: { source: "kyc", id } });
+      window.open(res.url, "_blank");
+    } catch (e) {
+      setSaveErr(e instanceof Error ? e.message : "Téléchargement impossible");
+    }
+  };
+
   if (loading) return <p className="text-sm text-ink-muted">Chargement…</p>;
+
+  const kycVisible = kyc.filter((k) => estPro || k.type !== "kbis");
 
   return (
     <div className="space-y-6">
@@ -178,32 +276,31 @@ function MonEspace() {
       </div>
 
       {tab === "projet" && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {dossiers.length === 0 && (
             <p className="rounded-lg border border-line bg-surface p-5 text-sm text-ink-muted">
               Aucun projet en cours pour le moment. Notre équipe revient vers vous très rapidement.
             </p>
           )}
           {dossiers.map((d) => (
-            <div key={d.id} className="rounded-lg border border-line bg-surface p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="font-medium text-ink">{labelForBranche(d.type_assurance)}</p>
-                  <p className="text-xs text-ink-muted">
-                    Référence {d.reference} · ouvert le {new Date(d.created_at).toLocaleDateString("fr-FR")}
-                  </p>
+            <div key={d.id} className="space-y-3">
+              <div className="rounded-lg border border-line bg-surface p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="font-medium text-ink">{labelForBranche(d.type_assurance)}</p>
+                    <p className="text-xs text-ink-muted">
+                      Référence {d.reference} · ouvert le {new Date(d.created_at).toLocaleDateString("fr-FR")}
+                    </p>
+                  </div>
                 </div>
-                <span className="rounded-full border border-line bg-background px-2.5 py-0.5 text-xs">
-                  {STATUT_LABEL[d.statut] ?? etapeLabel(d.statut)}
-                </span>
+                {d.economie_estimee != null && (
+                  <p className="mt-3 text-sm text-ink-soft">
+                    Économie estimée : <strong>{d.economie_estimee.toLocaleString("fr-FR")} €</strong> sur la durée du
+                    prêt (estimation provisoire, une étude complémentaire peut être nécessaire).
+                  </p>
+                )}
               </div>
-              {d.economie_estimee != null && (
-                <p className="mt-3 text-sm text-ink-soft">
-                  Économie estimée :{" "}
-                  <strong>{d.economie_estimee.toLocaleString("fr-FR")} €</strong> sur la durée du prêt (estimation
-                  provisoire, une étude complémentaire peut être nécessaire).
-                </p>
-              )}
+              <DossierPipelineClient statut={d.statut} />
             </div>
           ))}
         </div>
@@ -211,6 +308,38 @@ function MonEspace() {
 
       {tab === "conformite" && (
         <div className="space-y-8">
+          <div className="rounded-lg border border-line bg-surface p-5">
+            <h2 className="font-serif text-lg">Mes documents déposés</h2>
+            {kycVisible.length === 0 ? (
+              <p className="mt-2 text-sm text-ink-muted">Aucun document déposé pour le moment.</p>
+            ) : (
+              <ul className="mt-3 space-y-2 text-sm">
+                {kycVisible.map((k) => (
+                  <li key={k.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-2">
+                    <span>
+                      <strong>{KYC_LABEL[k.type] ?? k.type}</strong> · {k.nom}
+                      <span className="ml-2 text-xs text-ink-muted">
+                        déposé le {new Date(k.created_at).toLocaleDateString("fr-FR")} · {k.statut}
+                      </span>
+                    </span>
+                    <button
+                      onClick={() => telecharger(k.id)}
+                      className="rounded-full border border-line px-3 py-1 text-xs hover:bg-background"
+                    >
+                      Télécharger
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {!estPro && (
+              <p className="mt-3 text-xs text-ink-muted">
+                Vous êtes enregistré comme particulier : aucun document d'entreprise (KBIS / Sirene) ne vous est
+                demandé.
+              </p>
+            )}
+          </div>
+
           {dossiers.length === 0 && (
             <p className="rounded-lg border border-line bg-surface p-5 text-sm text-ink-muted">
               Aucune pièce demandée pour l'instant.
@@ -229,28 +358,95 @@ function MonEspace() {
 
       {tab === "compte" && (
         <div className="space-y-4 rounded-lg border border-line bg-surface p-5">
-          <h2 className="font-serif text-lg">Mes informations</h2>
-          <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="text-xs text-ink-muted">Nom</dt>
-              <dd>{client ? `${client.prenom ?? ""} ${client.nom}`.trim() : "—"}</dd>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-serif text-lg">Mes informations</h2>
+            {client && (
+              <button
+                onClick={() => setEdit((v) => !v)}
+                className="rounded-full border border-line px-4 py-1.5 text-sm hover:bg-background"
+              >
+                {edit ? "Annuler" : "Modifier mes informations"}
+              </button>
+            )}
+          </div>
+
+          {!edit ? (
+            <dl className="grid gap-3 text-sm sm:grid-cols-2">
+              <Info label="Nom">{client ? `${client.prenom ?? ""} ${client.nom}`.trim() : "—"}</Info>
+              <Info label="Référence client">{client?.reference ?? "—"}</Info>
+              <Info label="E-mail de connexion">{user?.email}</Info>
+              <Info label="E-mail secondaire">{client?.email2 ?? "—"}</Info>
+              <Info label="Mobile">{client?.mobile ?? "—"}</Info>
+              <Info label="Téléphone fixe">{client?.telephone ?? "—"}</Info>
+              <Info label="Adresse">
+                {[client?.adresse, client?.complement_adresse, client?.code_postal, client?.ville, client?.pays]
+                  .filter(Boolean)
+                  .join(", ") || "—"}
+              </Info>
+              <Info label="Préférence de contact">{client?.preference_contact ?? "—"}</Info>
+            </dl>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Champ label="Civilité" value={form.civilite} onChange={(v) => setForm({ ...form, civilite: v })} />
+              <Champ label="Prénom" value={form.prenom} onChange={(v) => setForm({ ...form, prenom: v })} />
+              <Champ label="Nom" value={form.nom} onChange={(v) => setForm({ ...form, nom: v })} />
+              <Champ
+                label="E-mail secondaire"
+                value={form.email2}
+                onChange={(v) => setForm({ ...form, email2: v })}
+              />
+              <Champ label="Mobile" value={form.mobile} onChange={(v) => setForm({ ...form, mobile: v })} />
+              <Champ
+                label="Téléphone fixe"
+                value={form.telephone}
+                onChange={(v) => setForm({ ...form, telephone: v })}
+              />
+              <Champ label="Adresse" value={form.adresse} onChange={(v) => setForm({ ...form, adresse: v })} />
+              <Champ
+                label="Complément d'adresse"
+                value={form.complement_adresse}
+                onChange={(v) => setForm({ ...form, complement_adresse: v })}
+              />
+              <Champ
+                label="Code postal"
+                value={form.code_postal}
+                onChange={(v) => setForm({ ...form, code_postal: v })}
+              />
+              <Champ label="Ville" value={form.ville} onChange={(v) => setForm({ ...form, ville: v })} />
+              <Champ label="Pays" value={form.pays} onChange={(v) => setForm({ ...form, pays: v })} />
+              <label className="block">
+                <span className="mb-1 block text-xs uppercase tracking-wide text-ink-muted">
+                  Préférence de contact
+                </span>
+                <select
+                  value={form.preference_contact}
+                  onChange={(e) => setForm({ ...form, preference_contact: e.target.value })}
+                  className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">—</option>
+                  <option value="email">E-mail</option>
+                  <option value="telephone">Téléphone</option>
+                  <option value="sms">SMS</option>
+                </select>
+              </label>
+              <div className="sm:col-span-2">
+                <button
+                  onClick={enregistrer}
+                  disabled={saving || form.nom.trim().length === 0}
+                  className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                >
+                  {saving ? "Enregistrement…" : "Enregistrer"}
+                </button>
+              </div>
             </div>
-            <div>
-              <dt className="text-xs text-ink-muted">Référence client</dt>
-              <dd>{client?.reference ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-ink-muted">E-mail</dt>
-              <dd>{user?.email}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-ink-muted">Téléphone</dt>
-              <dd>{client?.mobile ?? "—"}</dd>
-            </div>
-          </dl>
+          )}
+
+          {savedMsg && <p className="text-xs text-emerald-700">{savedMsg}</p>}
+          {saveErr && <p className="text-xs text-destructive">{saveErr}</p>}
+
           <p className="text-xs text-ink-muted">
-            Pour modifier vos coordonnées, contactez votre conseiller. La sécurité de votre compte (mot de passe) se
-            gère dans les paramètres.
+            Votre e-mail de connexion et votre date de naissance ne sont pas modifiables ici : contactez votre
+            conseiller.
           </p>
           <Link
             to="/espace/parametres"
@@ -261,5 +457,35 @@ function MonEspace() {
         </div>
       )}
     </div>
+  );
+}
+
+function Info({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <dt className="text-xs text-ink-muted">{label}</dt>
+      <dd>{children}</dd>
+    </div>
+  );
+}
+
+function Champ({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs uppercase tracking-wide text-ink-muted">{label}</span>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+      />
+    </label>
   );
 }

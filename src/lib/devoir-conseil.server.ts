@@ -15,6 +15,26 @@ export type DevoirConseilSaisie = {
   economie_estimee?: number | null;
   garanties?: string;
   exigences_client?: string;
+  /** Offres comparées (3 minimum en emprunteur), appréciation qualitative. */
+  offres?: {
+    compagnie: string;
+    produit: string;
+    cotisation_mensuelle?: number | null;
+    cout_total?: number | null;
+    statut: "retenue" | "equivalente" | "ecartee";
+    commentaire?: string | null;
+  }[];
+  /** Base de calcul du coût (bloc conditionnel emprunteur). */
+  assiette?: "capital_initial" | "capital_restant_du";
+  capital_assure?: number | null;
+  capital_restant_du?: number | null;
+  quotite?: number | null;
+  duree_mois?: number | null;
+  /** Accusé de remise des documents précontractuels. */
+  ipid_remis?: boolean;
+  cg_remis?: boolean;
+  tarifs_remis?: boolean;
+  der_remis?: boolean;
 };
 
 /**
@@ -109,6 +129,14 @@ export async function envoyerDevoirConseil(
     devoirId = inserted.id;
   }
 
+  // PDF de présentation (mise en page réglementaire) archivé dès l'envoi.
+  try {
+    const { archiverDevoirConseil } = await import("./devoir-conseil-archive.server");
+    await archiverDevoirConseil(supabase, devoirId, userId);
+  } catch {
+    // l'archivage ne doit pas bloquer l'envoi au client
+  }
+
   const result = await sendTemplateEmail("devoir-conseil-envoi", d.client_email, {
     templateData: {
       clientName: d.client_nom,
@@ -151,7 +179,9 @@ export async function genererDevoirConseilAuto(
 ) {
   const { data: dossier, error } = await supabase
     .from("dossiers")
-    .select("id, type_assurance, client_nom, client_email, compagnie_id, produit_id, recueil_besoins, economie_estimee")
+    .select(
+      "id, type_assurance, client_nom, client_email, compagnie_id, produit_id, recueil_besoins, economie_estimee, capital, duree_mois",
+    )
     .eq("id", dossierId)
     .maybeSingle();
   if (error || !dossier) throw new Error("Dossier introuvable ou accès refusé");
@@ -188,6 +218,8 @@ export async function genererDevoirConseilAuto(
     economie_estimee: typeof d.economie_estimee === "number" ? d.economie_estimee : null,
   });
 
+  const emprunteur = d.type_assurance === "emprunteur";
+
   return envoyerDevoirConseil(supabase, dossierId, userId, {
     recommandation: pre.recommandation,
     motifs: pre.motifs,
@@ -195,5 +227,13 @@ export async function genererDevoirConseilAuto(
     exigences_client: pre.exigences_client,
     compagnie,
     produit,
+    offres: [{ compagnie, produit, statut: "retenue", commentaire: "Meilleur rapport garanties / coût" }],
+    ...(emprunteur
+      ? {
+          assiette: "capital_restant_du" as const,
+          capital_assure: typeof d.capital === "number" ? d.capital : null,
+          duree_mois: typeof d.duree_mois === "number" ? d.duree_mois : null,
+        }
+      : {}),
   });
 }

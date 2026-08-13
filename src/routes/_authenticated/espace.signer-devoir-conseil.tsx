@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { SignaturePad } from "@/components/signature-pad";
-import { signerDevoirConseil, refuserDevoirConseil } from "@/lib/devoir-conseil.functions";
+import { signerDevoirConseil, refuserDevoirConseil, pdfDevoirConseil } from "@/lib/devoir-conseil.functions";
 import { labelForBranche } from "@/lib/recueil-besoins-schemas";
+import { STATUT_OFFRE_LABEL, type StatutOffre } from "@/lib/devoir-conseil-modeles";
 import { SITE } from "@/lib/site";
 
 export const Route = createFileRoute("/_authenticated/espace/signer-devoir-conseil")({
@@ -26,6 +27,7 @@ function SignerDevoirConseil() {
   const navigate = useNavigate();
   const signer = useServerFn(signerDevoirConseil);
   const refuser = useServerFn(refuserDevoirConseil);
+  const getPdf = useServerFn(pdfDevoirConseil);
   const [devoir, setDevoir] = useState<Devoir | null>(null);
   const [loading, setLoading] = useState(true);
   const [accepte, setAccepte] = useState(false);
@@ -99,6 +101,20 @@ function SignerDevoirConseil() {
           {SITE.shortName} · ORIAS {SITE.orias} · Dossier {c.dossier?.reference ?? ""} —{" "}
           {labelForBranche(devoir.type_assurance)}
         </p>
+        <button
+          onClick={async () => {
+            setError(null);
+            try {
+              const res = await getPdf({ data: { devoir_id: devoir.id } });
+              window.open(res.url, "_blank");
+            } catch (e) {
+              setError(e instanceof Error ? e.message : "PDF indisponible");
+            }
+          }}
+          className="mt-3 rounded-full border border-line px-4 py-1.5 text-xs hover:bg-surface"
+        >
+          Télécharger le document (PDF)
+        </button>
       </div>
 
       <div className="space-y-4 rounded-2xl border border-line bg-surface-elevated p-5 text-sm">
@@ -114,7 +130,51 @@ function SignerDevoirConseil() {
               : ""}
           </Bloc>
         )}
+        {Array.isArray(conseil.offres) && conseil.offres.length > 0 && (
+          <div>
+            <p className="text-xs uppercase tracking-wide text-ink-muted">Offres comparées</p>
+            <div className="mt-2 overflow-x-auto">
+              <table className="w-full min-w-[520px] border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-line text-left text-ink-muted">
+                    <th className="py-1 pr-3">Compagnie</th>
+                    <th className="py-1 pr-3">Produit</th>
+                    <th className="py-1 pr-3">Cotisation</th>
+                    <th className="py-1 pr-3">Appréciation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {conseil.offres.map((o: any, i: number) => (
+                    <tr key={i} className="border-b border-line align-top">
+                      <td className="py-1 pr-3">{o.compagnie}</td>
+                      <td className="py-1 pr-3">{o.produit}</td>
+                      <td className="py-1 pr-3">
+                        {o.cotisation_mensuelle ? `${o.cotisation_mensuelle} €/mois` : "—"}
+                      </td>
+                      <td className="py-1 pr-3">
+                        {STATUT_OFFRE_LABEL[o.statut as StatutOffre] ?? o.statut}
+                        {o.commentaire ? ` · ${o.commentaire}` : ""}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
         {conseil.garanties && <Bloc titre="Garanties retenues">{conseil.garanties}</Bloc>}
+        {(conseil.assiette || conseil.capital_assure) && (
+          <Bloc titre="Base de calcul du coût">
+            {conseil.assiette === "capital_initial"
+              ? "Tarif calculé sur le capital initial (cotisation fixe)"
+              : "Tarif calculé sur le capital restant dû (cotisation dégressive)"}
+            {conseil.capital_assure
+              ? ` · capital assuré ${Number(conseil.capital_assure).toLocaleString("fr-FR")} €`
+              : ""}
+            {conseil.quotite ? ` · quotité ${conseil.quotite} %` : ""}
+          </Bloc>
+        )}
         <Bloc titre="Recommandation">{devoir.recommandation ?? "—"}</Bloc>
         <Bloc titre="Motifs du conseil">{devoir.motifs ?? "—"}</Bloc>
         {devoir.mises_en_garde && <Bloc titre="Mises en garde">{devoir.mises_en_garde}</Bloc>}

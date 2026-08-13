@@ -3,6 +3,15 @@ import { getRequestHeader, getRequestIP } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
+const offreSchema = z.object({
+  compagnie: z.string().max(200),
+  produit: z.string().max(200),
+  cotisation_mensuelle: z.number().nullable().optional(),
+  cout_total: z.number().nullable().optional(),
+  statut: z.enum(["retenue", "equivalente", "ecartee"]),
+  commentaire: z.string().max(500).nullable().optional(),
+});
+
 const saisieSchema = z.object({
   dossier_id: z.string().uuid(),
   recommandation: z.string().min(10).max(5000),
@@ -14,6 +23,16 @@ const saisieSchema = z.object({
   economie_estimee: z.number().nullable().optional(),
   garanties: z.string().max(5000).optional(),
   exigences_client: z.string().max(5000).optional(),
+  offres: z.array(offreSchema).max(6).optional(),
+  assiette: z.enum(["capital_initial", "capital_restant_du"]).optional(),
+  capital_assure: z.number().nullable().optional(),
+  capital_restant_du: z.number().nullable().optional(),
+  quotite: z.number().nullable().optional(),
+  duree_mois: z.number().nullable().optional(),
+  ipid_remis: z.boolean().optional(),
+  cg_remis: z.boolean().optional(),
+  tarifs_remis: z.boolean().optional(),
+  der_remis: z.boolean().optional(),
 });
 
 /** Génération native + envoi du devoir de conseil au client. */
@@ -62,6 +81,15 @@ export const signerDevoirConseil = createServerFn({ method: "POST" })
     // Avancement du pipeline + historique : trigger SQL devoir_conseil_avance_dossier
     // (le client signataire n'a pas les droits RLS sur la table dossiers).
 
+    // Archivage du PDF signé (le client n'a pas de droit d'écriture sur le stockage).
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { archiverDevoirConseil } = await import("./devoir-conseil-archive.server");
+      await archiverDevoirConseil(supabaseAdmin, data.devoir_id, userId);
+    } catch {
+      // la signature reste valide même si l'archivage échoue
+    }
+
     return { ok: true };
   });
 
@@ -99,7 +127,35 @@ export const refuserDevoirConseil = createServerFn({ method: "POST" })
 
     // Avancement du pipeline + historique : trigger SQL devoir_conseil_avance_dossier.
 
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { archiverDevoirConseil } = await import("./devoir-conseil-archive.server");
+      await archiverDevoirConseil(supabaseAdmin, data.devoir_id, userId);
+    } catch {
+      // le refus reste enregistré même si l'archivage échoue
+    }
+
     return { ok: true };
+  });
+
+/** URL signée du PDF du devoir de conseil (staff ou client concerné). */
+export const pdfDevoirConseil = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ devoir_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    // La lecture applique la RLS : si le devoir n'est pas visible, accès refusé.
+    const { data: devoir, error } = await context.supabase
+      .from("devoirs_conseil")
+      .select("id")
+      .eq("id", data.devoir_id)
+      .maybeSingle();
+    if (error || !devoir) throw new Error("Devoir de conseil introuvable ou accès refusé");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { urlPdfDevoirConseil } = await import("./devoir-conseil-archive.server");
+    const url = await urlPdfDevoirConseil(supabaseAdmin, data.devoir_id, context.userId);
+    if (!url) throw new Error("PDF indisponible");
+    return { url };
   });
 
 const etapeSchema = z.object({

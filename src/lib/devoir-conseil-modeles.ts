@@ -18,6 +18,46 @@ export type DevoirConseilContexte = {
   economie_estimee?: number | null;
 };
 
+/** Statut qualitatif d'une offre comparée (aucun score chiffré : appréciation motivée). */
+export type StatutOffre = "retenue" | "equivalente" | "ecartee";
+
+export const STATUT_OFFRE_LABEL: Record<StatutOffre, string> = {
+  retenue: "Offre retenue",
+  equivalente: "Équivalente — non retenue",
+  ecartee: "Écartée",
+};
+
+export type OffreComparee = {
+  compagnie: string;
+  produit: string;
+  cotisation_mensuelle?: number | null;
+  cout_total?: number | null;
+  statut: StatutOffre;
+  commentaire?: string | null;
+};
+
+/** Options de décision du client (l'option C impose un motif de refus). */
+export const OPTIONS_DECISION = [
+  {
+    code: "A",
+    titre: "Option A — J'accepte la recommandation",
+    texte:
+      "Je reconnais avoir reçu et compris le présent devoir de conseil et j'accepte la solution recommandée par le cabinet.",
+  },
+  {
+    code: "B",
+    titre: "Option B — Je retiens une autre offre présentée",
+    texte:
+      "Je choisis une autre offre parmi celles présentées, en connaissance des différences de garanties et de tarif exposées ci-dessus.",
+  },
+  {
+    code: "C",
+    titre: "Option C — Je refuse la recommandation",
+    texte:
+      "Je refuse la solution recommandée. Conformément à l'article L. 521-4 du Code des assurances, j'indique ci-dessous le motif de mon refus (mention obligatoire).",
+  },
+] as const;
+
 export type ModeleDevoirConseil = {
   branche: string;
   libelle: string;
@@ -57,6 +97,8 @@ const MODELES: ModeleDevoirConseil[] = [
       "La substitution du contrat groupe bancaire par un contrat individuel s'effectue en application des articles L. 313-30 et L. 313-31 du Code de la consommation (libre choix de l'assurance emprunteur) et de la loi n° 2022-270 du 28 février 2022 (loi Lemoine).",
       "Les garanties du contrat proposé sont au moins équivalentes à celles exigées par l'établissement prêteur : la banque ne peut refuser la délégation d'assurance dès lors que l'équivalence de niveau de garanties est respectée.",
       "Le questionnaire de santé est supprimé pour les prêts dont la part assurée est inférieure ou égale à 200 000 € par assuré et dont l'échéance de remboursement intervient avant le 60e anniversaire de l'emprunteur.",
+      "Trois offres au moins ont été comparées à garanties au moins équivalentes. Le classement des offres est exprimé par une appréciation qualitative motivée (offre retenue / équivalente non retenue / écartée) et non par une note chiffrée.",
+      "Les coûts d'assurance indiqués sont calculés soit sur le capital initial emprunté (tarification fixe, généralement celle du contrat groupe bancaire), soit sur le capital restant dû (tarification dégressive) : la base de calcul retenue est précisée pour chaque offre présentée.",
     ],
     recommandation: (c) =>
       `Au regard de vos exigences et besoins, nous vous recommandons de souscrire ${offre(c)} en substitution de votre contrat d'assurance emprunteur actuel.` +
@@ -65,7 +107,7 @@ const MODELES: ModeleDevoirConseil[] = [
         ? ` Économie estimée sur la durée résiduelle du prêt : ${fmtEuro(c.economie_estimee)}.`
         : ""),
     motifs: (c) =>
-      `Cette recommandation est motivée par l'équivalence de niveau de garanties avec le contrat groupe de l'établissement prêteur (décès, PTIA, IPT/IPP et incapacité de travail avec la même quotité assurée), par un tarif individualisé plus favorable que le tarif mutualisé de la banque, et par l'adéquation du contrat à votre situation personnelle et professionnelle telle que recueillie${c.clientNom ? ` auprès de vous (${c.clientNom})` : ""}.`,
+      `Cette recommandation répond point par point aux exigences et besoins que vous avez exprimés au point 1 du présent document : (i) exigence d'équivalence de niveau de garanties avec le contrat groupe de l'établissement prêteur — les garanties décès, PTIA, IPT/IPP et incapacité de travail sont couvertes avec la même quotité assurée ; (ii) exigence de réduction du coût de l'assurance — le tarif individualisé retenu est plus favorable que le tarif mutualisé de la banque sur la durée résiduelle du prêt ; (iii) exigence d'adéquation à votre situation personnelle et professionnelle telle que recueillie${c.clientNom ? ` auprès de vous (${c.clientNom})` : ""} — âge, statut tabagique, profession et modalités de remboursement ont été pris en compte. Les autres offres comparées ont été écartées ou jugées équivalentes sans avantage déterminant, pour les motifs indiqués au point 2.`,
     misesEnGarde: () =>
       "La mise en place de la délégation d'assurance est subordonnée à l'acceptation de l'équivalence de garanties par la banque et à l'acceptation du risque par l'assureur (éventuelles exclusions, surprimes ou ajournements après examen médical). Ne résiliez pas votre contrat actuel avant réception de l'accord écrit de la banque et de la prise d'effet du nouveau contrat. Les déclarations inexactes en matière de santé ou de profession peuvent entraîner la nullité du contrat (articles L. 113-8 et L. 113-9 du Code des assurances).",
     exigences: () =>
