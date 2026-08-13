@@ -57,7 +57,7 @@ export function FormulePropositionsPanel({
       .eq("produit_id", produitId)
       .eq("statut", "proposee")
       .order("created_at", { ascending: false });
-    setProps(((data ?? []) as unknown as Proposition[]) ?? []);
+    setProps((data ?? []) as unknown as Proposition[]);
   }, [produitId]);
 
   useEffect(() => {
