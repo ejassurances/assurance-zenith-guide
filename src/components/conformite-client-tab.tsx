@@ -9,7 +9,7 @@ import { DerStatusCard } from "@/components/der-status-card";
 type KycDoc = {
   id: string;
   client_id: string;
-  type: "cni" | "justificatif_domicile" | "rib";
+  type: "cni" | "justificatif_domicile" | "rib" | "kbis";
   nom: string;
   storage_path: string;
   drive_url: string | null;
