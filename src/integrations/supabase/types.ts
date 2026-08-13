@@ -2832,6 +2832,7 @@ export type Database = {
           famille_id: string
           famille_requise_id: string | null
           id: string
+          image_url: string | null
           nom: string
           points_forts: string | null
           points_vigilance: string | null
@@ -2852,6 +2853,7 @@ export type Database = {
           famille_id: string
           famille_requise_id?: string | null
           id?: string
+          image_url?: string | null
           nom: string
           points_forts?: string | null
           points_vigilance?: string | null
@@ -2872,6 +2874,7 @@ export type Database = {
           famille_id?: string
           famille_requise_id?: string | null
           id?: string
+          image_url?: string | null
           nom?: string
           points_forts?: string | null
           points_vigilance?: string | null
