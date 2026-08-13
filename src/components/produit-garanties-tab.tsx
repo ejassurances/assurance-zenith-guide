@@ -1,0 +1,369 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  COUVERTURE_LABEL,
+  grillePourFamille,
+  valeurVide,
+  type Couverture,
+  type ValeurGarantie,
+  type ValeursGrille,
+} from "@/lib/garanties-grille";
+import {
+  analyserDocumentGaranties,
+  enregistrerGrilleBrouillon,
+  rejeterPropositionGaranties,
+  validerGrilleGaranties,
+} from "@/lib/produit-garanties.functions";
+
+type Grille = {
+  id: string;
+  produit_id: string;
+  famille_code: string;
+  grille_version: number;
+  valeurs: ValeursGrille;
+  statut: "brouillon" | "valide" | "a_revoir";
+  document_source_id: string | null;
+  valide_le: string | null;
+  notes: string | null;
+};
+
+type Proposition = {
+  id: string;
+  document_id: string | null;
+  grille_version: number;
+  modele_ia: string | null;
+  valeurs: ValeursGrille;
+  avertissements: string | null;
+  statut: "proposee" | "acceptee" | "rejetee";
+  created_at: string;
+};
+
+export type DocAnalysable = { id: string; nom: string; type: string };
+
+const COUVERTURES: Couverture[] = ["oui", "non", "option", "inconnu"];
+
+const badge = (couv: Couverture) =>
+  couv === "oui"
+    ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+    : couv === "non"
+      ? "bg-rose-50 text-rose-800 border-rose-200"
+      : couv === "option"
+        ? "bg-amber-50 text-amber-800 border-amber-200"
+        : "bg-neutral-100 text-neutral-600 border-neutral-200";
+
+export function ProduitGarantiesTab({
+  produitId,
+  familleCode,
+  familleNom,
+  isAdmin,
+  docs,
+}: {
+  produitId: string;
+  familleCode: string | null;
+  familleNom?: string;
+  isAdmin: boolean;
+  docs: DocAnalysable[];
+}) {
+  const grille = useMemo(() => grillePourFamille(familleCode), [familleCode]);
+  const [valeurs, setValeurs] = useState<ValeursGrille>({});
+  const [ligne, setLigne] = useState<Grille | null>(null);
+  const [proposition, setProposition] = useState<Proposition | null>(null);
+  const [docId, setDocId] = useState<string>("");
+  const [busy, setBusy] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  const analyser = useServerFn(analyserDocumentGaranties);
+  const brouillon = useServerFn(enregistrerGrilleBrouillon);
+  const valider = useServerFn(validerGrilleGaranties);
+  const rejeter = useServerFn(rejeterPropositionGaranties);
+
+  const analysables = docs.filter((d) => d.type === "conditions_generales" || d.type === "ipid");
+
+  const load = useCallback(async () => {
+    if (!grille) return;
+    const [g, p] = await Promise.all([
+      supabase.from("produit_garanties").select("*").eq("produit_id", produitId).maybeSingle(),
+      supabase
+        .from("produit_garanties_propositions")
+        .select("*")
+        .eq("produit_id", produitId)
+        .eq("statut", "proposee")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+    const gl = (g.data as Grille | null) ?? null;
+    setLigne(gl);
+    setProposition((p.data as Proposition | null) ?? null);
+    const base: ValeursGrille = {};
+    for (const item of grille.garanties) base[item.code] = gl?.valeurs?.[item.code] ?? valeurVide();
+    setValeurs(base);
+    if (gl?.document_source_id) setDocId(gl.document_source_id);
+  }, [grille, produitId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (!familleCode || !grille) {
+    return (
+      <section className="rounded-lg border border-line bg-surface p-5 text-sm text-ink-muted">
+        Aucune grille de garanties n'est définie pour cette famille de produits.
+      </section>
+    );
+  }
+
+  const setVal = (code: string, patch: Partial<ValeurGarantie>) =>
+    setValeurs((v) => ({ ...v, [code]: { ...(v[code] ?? valeurVide()), ...patch } }));
+
+  const appliquerProposition = (code?: string) => {
+    if (!proposition) return;
+    setValeurs((v) => {
+      const next = { ...v };
+      for (const g of grille.garanties) {
+        if (code && g.code !== code) continue;
+        const prop = proposition.valeurs?.[g.code];
+        if (prop) next[g.code] = { ...prop };
+      }
+      return next;
+    });
+  };
+
+  async function run(key: string, fn: () => Promise<unknown>, okText: string) {
+    setBusy(key);
+    setMsg(null);
+    try {
+      await fn();
+      setMsg({ type: "ok", text: okText });
+      await load();
+    } catch (e) {
+      setMsg({ type: "err", text: e instanceof Error ? e.message : "Erreur" });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const payload = () => ({
+    produit_id: produitId,
+    famille_code: grille.familleCode,
+    grille_version: grille.version,
+    valeurs,
+    document_source_id: docId || null,
+  });
+
+  const validee = ligne?.statut === "valide" && ligne.grille_version === grille.version;
+
+  return (
+    <section className="space-y-5 rounded-lg border border-line bg-surface p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="font-serif text-lg">Grille de garanties — {familleNom ?? grille.libelle}</h3>
+          <p className="text-xs text-ink-muted">
+            Structure standardisée (version {grille.version}) commune à toutes les compagnies de cette typologie.
+          </p>
+        </div>
+        <span className={`rounded-full border px-3 py-1 text-xs font-medium ${validee ? badge("oui") : badge("non")}`}>
+          {validee
+            ? `Grille validée${ligne?.valide_le ? ` le ${new Date(ligne.valide_le).toLocaleDateString("fr-FR")}` : ""}`
+            : ligne?.statut === "a_revoir"
+              ? "À revoir (structure mise à jour)"
+              : ligne
+                ? "Brouillon non validé"
+                : "Aucune grille"}
+        </span>
+      </div>
+
+      {!validee && (
+        <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+          Grille non validée — la génération du devoir de conseil est bloquée pour ce produit jusqu'à validation
+          humaine de la grille.
+        </p>
+      )}
+
+      {/* Extraction automatique */}
+      <div className="space-y-2 rounded-md border border-line bg-background p-3">
+        <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+          Extraction assistée depuis les CG / IPID
+        </p>
+        {analysables.length === 0 ? (
+          <p className="text-xs text-ink-muted">
+            Ajoutez d'abord des conditions générales ou un IPID dans les documents du produit.
+          </p>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={docId}
+              onChange={(e) => setDocId(e.target.value)}
+              className="rounded-md border border-line bg-surface px-3 py-2 text-sm"
+            >
+              <option value="">— Document à analyser —</option>
+              {analysables.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.type === "ipid" ? "IPID" : "CG"} — {d.nom}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              disabled={!docId || busy !== null}
+              onClick={() =>
+                run("analyse", () => analyser({ data: { document_id: docId } }), "Proposition générée — à valider.")
+              }
+              className="rounded-md bg-ink px-3 py-2 text-sm text-surface disabled:opacity-50"
+            >
+              {busy === "analyse" ? "Analyse en cours…" : "Analyser ce document"}
+            </button>
+            <span className="text-xs text-ink-muted">
+              L'analyse ne produit qu'une proposition : rien n'est appliqué sans validation.
+            </span>
+          </div>
+        )}
+      </div>
+
+      {proposition && (
+        <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-amber-900">
+              Proposition du {new Date(proposition.created_at).toLocaleString("fr-FR")}
+              {proposition.modele_ia ? ` — ${proposition.modele_ia}` : ""} — à confirmer ligne par ligne.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => appliquerProposition()}
+                className="rounded-md border border-amber-300 bg-surface px-3 py-1.5 text-xs"
+              >
+                Reprendre toutes les propositions
+              </button>
+              <button
+                type="button"
+                disabled={busy !== null}
+                onClick={() =>
+                  run(
+                    "rejet",
+                    () => rejeter({ data: { proposition_id: proposition.id } }),
+                    "Proposition rejetée.",
+                  )
+                }
+                className="rounded-md border border-amber-300 bg-surface px-3 py-1.5 text-xs"
+              >
+                Rejeter la proposition
+              </button>
+            </div>
+          </div>
+          {proposition.avertissements && (
+            <p className="text-xs text-amber-900">Remarques de l'analyse : {proposition.avertissements}</p>
+          )}
+        </div>
+      )}
+
+      {/* Grille */}
+      <div className="space-y-3">
+        {grille.garanties.map((g) => {
+          const v = valeurs[g.code] ?? valeurVide();
+          const prop = proposition?.valeurs?.[g.code];
+          return (
+            <div key={g.code} className="rounded-md border border-line p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-medium">
+                  {g.libelle}
+                  {g.obligatoire && <span className="ml-2 text-xs text-ink-muted">(attendue)</span>}
+                </p>
+                <span className={`rounded-full border px-2 py-0.5 text-xs ${badge(v.couverture)}`}>
+                  {COUVERTURE_LABEL[v.couverture]}
+                </span>
+              </div>
+
+              <div className="mt-2 grid gap-2 md:grid-cols-4">
+                <select
+                  value={v.couverture}
+                  disabled={!isAdmin && false}
+                  onChange={(e) => setVal(g.code, { couverture: e.target.value as Couverture })}
+                  className="rounded-md border border-line bg-background px-2 py-1.5 text-sm"
+                >
+                  {COUVERTURES.map((c) => (
+                    <option key={c} value={c}>
+                      {COUVERTURE_LABEL[c]}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  placeholder="Plafond"
+                  value={v.plafond ?? ""}
+                  onChange={(e) => setVal(g.code, { plafond: e.target.value || null })}
+                  className="rounded-md border border-line bg-background px-2 py-1.5 text-sm"
+                />
+                <input
+                  placeholder="Franchise"
+                  value={v.franchise ?? ""}
+                  onChange={(e) => setVal(g.code, { franchise: e.target.value || null })}
+                  className="rounded-md border border-line bg-background px-2 py-1.5 text-sm"
+                />
+                <input
+                  placeholder="Conditions / limites"
+                  value={v.conditions ?? ""}
+                  onChange={(e) => setVal(g.code, { conditions: e.target.value || null })}
+                  className="rounded-md border border-line bg-background px-2 py-1.5 text-sm"
+                />
+              </div>
+
+              {v.extrait && (
+                <p className="mt-2 border-l-2 border-line pl-2 text-xs italic text-ink-muted">« {v.extrait} »</p>
+              )}
+
+              {prop && (
+                <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md bg-amber-50/60 px-2 py-1.5">
+                  <span className="text-xs text-amber-900">
+                    Proposé : <strong>{COUVERTURE_LABEL[prop.couverture]}</strong>
+                    {prop.plafond ? ` — plafond ${prop.plafond}` : ""}
+                    {prop.franchise ? ` — franchise ${prop.franchise}` : ""}
+                    {typeof prop.confiance === "number" ? ` (confiance ${Math.round(prop.confiance * 100)} %)` : ""}
+                  </span>
+                  {prop.extrait && <span className="text-xs italic text-amber-900">« {prop.extrait} »</span>}
+                  <button
+                    type="button"
+                    onClick={() => appliquerProposition(g.code)}
+                    className="rounded border border-amber-300 bg-surface px-2 py-0.5 text-xs"
+                  >
+                    Reprendre
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {msg && (
+        <p className={`text-sm ${msg.type === "ok" ? "text-emerald-700" : "text-rose-700"}`}>{msg.text}</p>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={busy !== null}
+          onClick={() => run("brouillon", () => brouillon({ data: payload() }), "Brouillon enregistré.")}
+          className="rounded-md border border-line px-4 py-2 text-sm"
+        >
+          Enregistrer en brouillon
+        </button>
+        <button
+          type="button"
+          disabled={busy !== null || !isAdmin}
+          title={isAdmin ? undefined : "Validation réservée à l'administrateur du cabinet"}
+          onClick={() =>
+            run(
+              "valider",
+              () => valider({ data: { ...payload(), proposition_id: proposition?.id ?? null } }),
+              "Grille validée — le produit peut alimenter un devoir de conseil.",
+            )
+          }
+          className="rounded-md bg-ink px-4 py-2 text-sm text-surface disabled:opacity-50"
+        >
+          Valider la grille
+        </button>
+      </div>
+    </section>
+  );
+}
