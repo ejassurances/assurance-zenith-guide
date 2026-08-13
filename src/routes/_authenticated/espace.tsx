@@ -110,43 +110,64 @@ function EspaceLayout() {
 
   return (
     <div className="crm-theme min-h-screen bg-background md:flex">
-      {/* Navigation — colonne marine pleine hauteur */}
-      <aside className="shrink-0 border-b border-[color:var(--crm-gold)]/20 bg-[color:var(--crm-navy)] text-white md:sticky md:top-0 md:flex md:h-screen md:w-72 md:flex-col md:border-b-0 md:border-r">
-        <div className="px-6 py-6 md:px-8 md:py-8">
-          <Link to="/" className="flex items-center gap-3">
+      {/* Voile mobile */}
+      {menuOuvert && (
+        <button
+          type="button"
+          aria-label="Fermer le menu"
+          onClick={() => setMenuOuvert(false)}
+          className="fixed inset-0 z-30 bg-ink/50 md:hidden"
+        />
+      )}
+
+      {/* Navigation — colonne marine pleine hauteur (tiroir sur mobile) */}
+      <aside
+        className={
+          "fixed inset-y-0 left-0 z-40 w-72 max-w-[85vw] shrink-0 overflow-y-auto border-r border-[color:var(--crm-gold)]/20 bg-[color:var(--crm-navy)] text-white transition-transform duration-200 md:sticky md:top-0 md:z-auto md:flex md:h-screen md:w-72 md:max-w-none md:translate-x-0 md:flex-col " +
+          (menuOuvert ? "translate-x-0" : "-translate-x-full")
+        }
+      >
+        <div className="flex items-center justify-between px-6 py-6 md:px-8 md:py-8">
+          <Link to="/espace" className="flex min-w-0 items-center gap-3" onClick={() => setMenuOuvert(false)}>
             <img
               src="/logo-ej-partners.png"
               alt=""
-              className="size-10 rounded-sm object-cover ring-1 ring-[color:var(--crm-gold)]/40"
+              className="size-10 shrink-0 rounded-sm object-cover ring-1 ring-[color:var(--crm-gold)]/40"
             />
-            <span className="leading-tight">
-              <span className="block text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--crm-gold)]">
+            <span className="min-w-0 leading-tight">
+              <span className="block truncate text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--crm-gold)]">
                 EJ Partners
               </span>
               <span className="block text-[10px] uppercase tracking-[0.22em] text-white/40">Assurances</span>
             </span>
           </Link>
+          <button
+            type="button"
+            onClick={() => setMenuOuvert(false)}
+            aria-label="Fermer le menu"
+            className="shrink-0 rounded-sm border border-white/15 px-2 py-1 text-xs text-white/70 md:hidden"
+          >
+            ✕
+          </button>
         </div>
 
-        <nav className="flex flex-row gap-1 overflow-x-auto px-4 pb-4 md:flex-1 md:flex-col md:gap-0 md:overflow-y-auto md:pb-6">
+        <nav className="flex flex-col px-4 pb-6 md:flex-1 md:overflow-y-auto">
           {solo.map((n) => {
             const active = n.exact ? pathname === n.to : pathname.startsWith(n.to);
             return (
-              <Link key={n.to} to={n.to} className={itemClass(active)}>
+              <Link key={n.to} to={n.to} className={itemClass(active)} onClick={() => setMenuOuvert(false)}>
                 {n.label}
               </Link>
             );
           })}
           {groupes.map((g) => (
-            <div key={g.titre} className="shrink-0 md:mt-7">
-              <p className="hidden px-4 pb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-white/35 md:block">
-                {g.titre}
-              </p>
-              <div className="flex flex-row gap-1 md:flex-col md:gap-0.5">
+            <div key={g.titre} className="mt-6 md:mt-7">
+              <p className="px-4 pb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-white/35">{g.titre}</p>
+              <div className="flex flex-col gap-0.5">
                 {g.items.map((n) => {
                   const active = pathname.startsWith(n.to);
                   return (
-                    <Link key={n.to} to={n.to} className={itemClass(active)}>
+                    <Link key={n.to} to={n.to} className={itemClass(active)} onClick={() => setMenuOuvert(false)}>
                       {n.label}
                     </Link>
                   );
@@ -156,9 +177,9 @@ function EspaceLayout() {
           ))}
         </nav>
 
-        <div className="hidden border-t border-white/5 px-6 py-5 md:block">
+        <div className="border-t border-white/5 px-6 py-5">
           <div className="flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-full border border-[color:var(--crm-gold)]/40 bg-[color:var(--crm-gold)]/15 text-xs font-bold text-[color:var(--crm-gold)]">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-[color:var(--crm-gold)]/40 bg-[color:var(--crm-gold)]/15 text-xs font-bold text-[color:var(--crm-gold)]">
               {initiales || "EJ"}
             </span>
             <span className="min-w-0 flex-1 leading-tight">
@@ -173,13 +194,22 @@ function EspaceLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="border-b border-line bg-surface-elevated">
-          <div className="flex h-16 items-center justify-between gap-4 px-6 md:px-10">
+          <div className="grid h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 sm:px-6 md:px-10">
+            <button
+              type="button"
+              onClick={() => setMenuOuvert(true)}
+              aria-label="Ouvrir le menu"
+              className="rounded-sm border border-line px-3 py-2 text-ink-soft md:hidden"
+            >
+              <span aria-hidden="true">☰</span>
+            </button>
+            <span className="hidden md:block" />
             <p className="crm-eyebrow truncate">Espace {role ? ROLE_LABEL[role] : ""}</p>
-            <div className="flex items-center gap-4 text-sm">
-              <span className="hidden text-ink-muted sm:inline">{user?.email}</span>
+            <div className="flex items-center gap-3 text-sm">
+              <span className="hidden text-ink-muted lg:inline">{user?.email}</span>
               <button
                 onClick={signOut}
-                className="rounded-sm border border-line px-4 py-2 text-xs font-semibold uppercase tracking-wider text-ink-soft transition-colors hover:border-[color:var(--crm-gold)]/50 hover:text-ink"
+                className="rounded-sm border border-line px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-ink-soft transition-colors hover:border-[color:var(--crm-gold)]/50 hover:text-ink sm:px-4 sm:text-xs"
               >
                 Déconnexion
               </button>
@@ -187,7 +217,7 @@ function EspaceLayout() {
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 px-6 py-8 md:px-10">
+        <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 sm:py-8 md:px-10">
           <div className="mx-auto min-w-0 max-w-6xl">
             <Outlet />
           </div>
@@ -196,3 +226,4 @@ function EspaceLayout() {
     </div>
   );
 }
+
