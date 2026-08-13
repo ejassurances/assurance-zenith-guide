@@ -97,7 +97,7 @@ export async function classerDevisDossier(
   const { data: devisRows, error: devErr } = await supabase
     .from("dossier_devis")
     .select(
-      "id, cotisation_mensuelle, garanties_resume, compagnies:compagnie_id(nom), produits:produit_id(nom), produit_formules:formule_id(nom)",
+      "id, cotisation_mensuelle, garanties_resume, compagnies:compagnie_id(nom, tier_favori), produits:produit_id(nom), produit_formules:formule_id(nom)",
     )
     .eq("dossier_id", dossierId)
     .order("created_at", { ascending: true });
@@ -109,11 +109,13 @@ export async function classerDevisDossier(
   const payload = devis.map((d) => ({
     id: d.id as string,
     compagnie: d.compagnies?.nom ?? null,
+    compagnie_tier_favori: d.compagnies?.tier_favori ?? null,
     produit: d.produits?.nom ?? null,
     formule: d.produit_formules?.nom ?? null,
     cotisation_mensuelle: d.cotisation_mensuelle,
     garanties_resume: d.garanties_resume,
   }));
+
 
   const { modele, brut } = await appelerIa(
     consigne({ branche: dos.type_assurance ?? null, recueil: dos.recueil_besoins ?? null, devis: payload }),
