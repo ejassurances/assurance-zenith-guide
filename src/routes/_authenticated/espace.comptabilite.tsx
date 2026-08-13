@@ -15,6 +15,7 @@ import {
   PlanComptableTab,
   NotesDeFraisTab,
 } from "@/components/comptabilite-ecritures";
+import { FacturesAchatTab } from "@/components/factures-achat-tab";
 import { CommissionMoisCard } from "@/components/commission-mois-card";
 
 export const Route = createFileRoute("/_authenticated/espace/comptabilite")({
@@ -108,6 +109,7 @@ function AdminView() {
         <TabsTrigger value="retrocessions">Rétrocessions</TabsTrigger>
         <TabsTrigger value="prescripteurs">Prescripteurs</TabsTrigger>
         <TabsTrigger value="regles">Règles</TabsTrigger>
+        <TabsTrigger value="factures">Factures d'achat</TabsTrigger>
         <TabsTrigger value="ecritures">Écritures</TabsTrigger>
         <TabsTrigger value="grand-livre">Grand livre</TabsTrigger>
         <TabsTrigger value="balance">Balance</TabsTrigger>
@@ -121,6 +123,7 @@ function AdminView() {
       <TabsContent value="retrocessions" className="mt-6"><Retrocessions portee="mandataire" /></TabsContent>
       <TabsContent value="prescripteurs" className="mt-6"><Retrocessions portee="prescripteur" /></TabsContent>
       <TabsContent value="regles" className="mt-6"><ReglesCommission /></TabsContent>
+      <TabsContent value="factures" className="mt-6"><FacturesAchatTab /></TabsContent>
       <TabsContent value="ecritures" className="mt-6"><EcrituresTab /></TabsContent>
       <TabsContent value="grand-livre" className="mt-6"><GrandLivreTab /></TabsContent>
       <TabsContent value="balance" className="mt-6"><BalanceTab /></TabsContent>
