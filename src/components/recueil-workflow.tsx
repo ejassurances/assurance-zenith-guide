@@ -375,7 +375,10 @@ export function WorkflowField({
         </div>
       )}
 
+      {field.type === "personnes" && <PersonnesField value={value} onChange={onChange} error={error} />}
+
       {field.type === "cards" && (
+
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {field.options?.map((o) => {
             const img = o.imageKey ? IMAGES[o.imageKey] : undefined;
