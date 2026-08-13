@@ -49,6 +49,11 @@ export function DossierDevisPanel({
   const [formules, setFormules] = useState<FormuleRef[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [classement, setClassement] = useState<Classement | null>(null);
+  const [iaEtat, setIaEtat] = useState<"idle" | "classement" | "selection">("idle");
+  const [iaMsg, setIaMsg] = useState<string | null>(null);
+  const lancerClassement = useServerFn(classerDevisDossierFn);
+  const retenirOffre = useServerFn(retenirDevisDossierFn);
 
   const [form, setForm] = useState({
     compagnie_id: "",
@@ -59,7 +64,7 @@ export function DossierDevisPanel({
   });
 
   const load = useCallback(async () => {
-    const [d, c, p] = await Promise.all([
+    const [d, c, p, cl] = await Promise.all([
       supabase
         .from("dossier_devis")
         .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,source,garanties_resume,created_at")
@@ -67,12 +72,22 @@ export function DossierDevisPanel({
         .order("created_at", { ascending: true }),
       supabase.from("compagnies").select("id,nom").order("nom"),
       supabase.from("produits").select("id,nom,compagnie_id,famille_id").order("nom"),
+      supabase
+        .from("dossier_devis_classements")
+        .select("id,genere_le,modele_ia,classement,statut")
+        .eq("dossier_id", dossierId)
+        .eq("statut", "propose")
+        .order("genere_le", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     ]);
     if (d.error) setErr(d.error.message);
     setDevis((d.data as DossierDevis[]) ?? []);
     setCompagnies((c.data as Ref[]) ?? []);
     setProduits((p.data as ProduitRef[]) ?? []);
+    setClassement((cl.data as Classement | null) ?? null);
   }, [dossierId]);
+
 
   useEffect(() => {
     load();
