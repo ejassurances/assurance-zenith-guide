@@ -95,9 +95,15 @@ export function ProduitGarantiesTab({
   const valider = useServerFn(validerGrilleGaranties);
   const rejeter = useServerFn(rejeterPropositionGaranties);
 
-  const analysables = docs.filter((d) =>
-    ["conditions_generales", "ipid", "fiche_produit", "ccsf", "tableau_garanties"].includes(d.type),
-  );
+  // En santé, un « tableau de garanties » couvre en général plusieurs formules :
+  // il relève de l'extraction multi-formules (onglet Formules), pas de la grille produit unique.
+  const estSante = familleCode === "sante";
+  const typesAnalysables = estSante
+    ? ["conditions_generales", "ipid", "fiche_produit", "ccsf"]
+    : ["conditions_generales", "ipid", "fiche_produit", "ccsf", "tableau_garanties"];
+  const analysables = docs.filter((d) => typesAnalysables.includes(d.type));
+  const nbTableaux = docs.filter((d) => d.type === "tableau_garanties").length;
+
   const toggleDoc = (id: string) =>
     setDocIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : ids.length >= 4 ? ids : [...ids, id]));
 
