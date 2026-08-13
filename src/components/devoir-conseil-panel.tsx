@@ -136,6 +136,8 @@ export function DevoirConseilPanel({
           garanties: form.garanties.trim() || undefined,
           exigences_client: form.exigences_client.trim() || undefined,
           cotisation_mensuelle: form.cotisation_mensuelle ? Number(form.cotisation_mensuelle) : null,
+          frais_dossier: form.frais_dossier ? Number(form.frais_dossier) : null,
+          frais_souscription: form.frais_souscription ? Number(form.frais_souscription) : null,
           economie_estimee: form.economie_estimee ? Number(form.economie_estimee) : null,
           offres:
             offresRemplies.length > 0
