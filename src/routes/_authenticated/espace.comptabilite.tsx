@@ -15,6 +15,7 @@ import {
   PlanComptableTab,
   NotesDeFraisTab,
 } from "@/components/comptabilite-ecritures";
+import { FacturesAchatTab } from "@/components/factures-achat-tab";
 import { CommissionMoisCard } from "@/components/commission-mois-card";
 
 export const Route = createFileRoute("/_authenticated/espace/comptabilite")({
