@@ -102,6 +102,11 @@ function DossierDetail() {
   const [dossier, setDossier] = useState<Dossier | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [contreProposition, setContreProposition] = useState<{
+    suggestion: string;
+    motif: string;
+    key: number;
+  } | null>(null);
 
   const load = async () => {
     setLoading(true);
