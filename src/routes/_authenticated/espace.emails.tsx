@@ -104,7 +104,13 @@ function EmailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Resume | null>(null);
-  const [detail, setDetail] = useState<{ texte: string | null; html: string | null; cc: string; pieces_jointes: { nom: string }[] } | null>(null);
+  const [detail, setDetail] = useState<{
+    texte: string | null;
+    html: string | null;
+    cc: string;
+    pieces_jointes: { nom: string; mime: string | null; attachment_id: string | null }[];
+  } | null>(null);
+  const [factureBusy, setFactureBusy] = useState<string | null>(null);
   const [detailBusy, setDetailBusy] = useState(false);
   const [compose, setCompose] = useState<{ to: string; sujet: string; threadId: string | null } | null>(null);
 
