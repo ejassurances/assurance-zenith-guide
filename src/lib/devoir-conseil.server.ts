@@ -144,7 +144,10 @@ export async function envoyerDevoirConseil(
       couvertes: garanties.synthese.couvertes,
       optionnelles: garanties.synthese.optionnelles,
       non_couvertes: garanties.synthese.nonCouvertes,
+      /** Tableau poste par poste (Poste / Couverture / Plafond / Délai de carence). */
+      detail: garanties.synthese.detail,
     },
+
     modele: modele.branche,
     modele_libelle: modele.libelle,
     mentions_legales: modele.mentionsLegales,
