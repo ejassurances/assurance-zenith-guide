@@ -3,6 +3,15 @@ import { getRequestHeader, getRequestIP } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
+const offreSchema = z.object({
+  compagnie: z.string().max(200),
+  produit: z.string().max(200),
+  cotisation_mensuelle: z.number().nullable().optional(),
+  cout_total: z.number().nullable().optional(),
+  statut: z.enum(["retenue", "equivalente", "ecartee"]),
+  commentaire: z.string().max(500).nullable().optional(),
+});
+
 const saisieSchema = z.object({
   dossier_id: z.string().uuid(),
   recommandation: z.string().min(10).max(5000),
@@ -14,6 +23,16 @@ const saisieSchema = z.object({
   economie_estimee: z.number().nullable().optional(),
   garanties: z.string().max(5000).optional(),
   exigences_client: z.string().max(5000).optional(),
+  offres: z.array(offreSchema).max(6).optional(),
+  assiette: z.enum(["capital_initial", "capital_restant_du"]).optional(),
+  capital_assure: z.number().nullable().optional(),
+  capital_restant_du: z.number().nullable().optional(),
+  quotite: z.number().nullable().optional(),
+  duree_mois: z.number().nullable().optional(),
+  ipid_remis: z.boolean().optional(),
+  cg_remis: z.boolean().optional(),
+  tarifs_remis: z.boolean().optional(),
+  der_remis: z.boolean().optional(),
 });
 
 /** Génération native + envoi du devoir de conseil au client. */
