@@ -17,6 +17,8 @@ import {
   supprimerMessageCrm,
   etiqueterMessageCrm,
 } from "@/lib/emails.functions";
+import { importerFactureDepuisEmail } from "@/lib/factures-achat.functions";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/espace/emails")({
   component: EmailsPage,
@@ -97,6 +99,7 @@ function EmailsPage() {
   const archiverFn = useServerFn(archiverMessageCrm);
   const supprimerFn = useServerFn(supprimerMessageCrm);
   const etiqueterFn = useServerFn(etiqueterMessageCrm);
+  const importerFacture = useServerFn(importerFactureDepuisEmail);
 
   const [messages, setMessages] = useState<Resume[]>([]);
   const [liens, setLiens] = useState<Lien[]>([]);
@@ -104,7 +107,13 @@ function EmailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Resume | null>(null);
-  const [detail, setDetail] = useState<{ texte: string | null; html: string | null; cc: string; pieces_jointes: { nom: string }[] } | null>(null);
+  const [detail, setDetail] = useState<{
+    texte: string | null;
+    html: string | null;
+    cc: string;
+    pieces_jointes: { nom: string; mime: string | null; attachment_id: string | null }[];
+  } | null>(null);
+  const [factureBusy, setFactureBusy] = useState<string | null>(null);
   const [detailBusy, setDetailBusy] = useState(false);
   const [compose, setCompose] = useState<{ to: string; sujet: string; threadId: string | null } | null>(null);
 
@@ -193,6 +202,45 @@ function EmailsPage() {
       setError(err instanceof Error ? err.message : "Étiquette impossible");
     }
   };
+
+  /** Enregistre une pièce jointe comme facture d'achat (lecture IA des montants). */
+  const enregistrerFacture = async (
+    m: Resume,
+    piece: { nom: string; mime: string | null; attachment_id: string | null },
+  ) => {
+    if (!piece.attachment_id) return;
+    setFactureBusy(piece.attachment_id);
+    try {
+      const res = await importerFacture({
+        data: {
+          gmail_message_id: m.id,
+          attachment_id: piece.attachment_id,
+          nom_fichier: piece.nom,
+          mime: piece.mime,
+          expediteur_nom: m.expediteur_nom,
+          expediteur_email: m.expediteur_email,
+          sujet: m.sujet,
+          recu_le: m.date,
+        },
+      });
+      if (res.deja_importee) {
+        toast.info("Cette pièce jointe a déjà été importée en facture d'achat.");
+      } else if (res.lue?.montant_ttc) {
+        toast.success(
+          `Facture enregistrée : ${res.lue.fournisseur ?? "fournisseur"} — ${res.lue.montant_ttc.toFixed(2)} € TTC. À vérifier dans Comptabilité › Factures d'achat.`,
+        );
+      } else {
+        toast.success("Facture créée dans Comptabilité › Factures d'achat — montants à compléter.");
+      }
+      if (res.avertissement) toast.warning(res.avertissement);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Import de la facture impossible");
+    } finally {
+      setFactureBusy(null);
+    }
+  };
+
+
 
   /** Compagnie suggérée d'après le domaine de l'expéditeur. */
   const compagnieSuggeree = useMemo(() => {
@@ -389,9 +437,33 @@ function EmailsPage() {
                     )}
                   </div>
                   {detail?.pieces_jointes?.length ? (
-                    <p className="mt-3 text-xs text-ink-muted">
-                      Pièces jointes : {detail.pieces_jointes.map((p) => p.nom).join(", ")}
-                    </p>
+                    <div className="mt-3 space-y-2">
+                      <p className="text-xs uppercase tracking-wider text-ink-muted">Pièces jointes</p>
+                      {detail.pieces_jointes.map((p) => {
+                        const facturable =
+                          !!p.attachment_id &&
+                          (/\.(pdf|jpe?g|png)$/i.test(p.nom) || (p.mime ?? "").startsWith("image/") || p.mime === "application/pdf");
+                        return (
+                          <div
+                            key={`${p.nom}-${p.attachment_id ?? ""}`}
+                            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-surface-elevated px-3 py-2"
+                          >
+                            <span className="text-xs text-ink">{p.nom}</span>
+                            {facturable ? (
+                              <button
+                                onClick={() => enregistrerFacture(selected, p)}
+                                disabled={factureBusy === p.attachment_id}
+                                className={BTN_SECONDAIRE}
+                              >
+                                {factureBusy === p.attachment_id
+                                  ? "Lecture de la facture…"
+                                  : "Enregistrer comme facture d'achat"}
+                              </button>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
                   ) : null}
                 </div>
               </div>
