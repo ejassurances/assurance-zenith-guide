@@ -72,6 +72,7 @@ export function ConformiteClientTab({
   const [client, setClient] = useState<ClientMini | null>(null);
   const [docs, setDocs] = useState<KycDoc[]>([]);
   const [verifs, setVerifs] = useState<LCBVerif[]>([]);
+  const [estPro, setEstPro] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [searchResult, setSearchResult] = useState<Awaited<ReturnType<typeof rechercherSanctionsPPE>> | null>(null);
@@ -80,7 +81,7 @@ export function ConformiteClientTab({
   const marquer = useServerFn(marquerVerificationLCB);
 
   const load = async () => {
-    const [c, d, v] = await Promise.all([
+    const [c, d, v, e] = await Promise.all([
       supabase
         .from("clients")
         .select(
@@ -99,12 +100,20 @@ export function ConformiteClientTab({
         .eq("client_id", clientId)
         .order("verifie_le", { ascending: false })
         .limit(10),
+      supabase
+        .from("client_entreprise")
+        .select("siret,raison_sociale")
+        .eq("client_id", clientId)
+        .maybeSingle(),
     ]);
     setClient((c.data as ClientMini | null) ?? null);
     setDocs((d.data ?? []) as KycDoc[]);
     setVerifs((v.data ?? []) as LCBVerif[]);
+    const ent = e.data as { siret: string | null; raison_sociale: string | null } | null;
+    setEstPro(!!(ent && (ent.siret || ent.raison_sociale)));
     setLoading(false);
   };
+
 
   useEffect(() => {
     load();
