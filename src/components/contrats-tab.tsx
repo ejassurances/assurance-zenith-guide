@@ -88,6 +88,22 @@ export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: 
         )}
       </div>
 
+      {staff && rows.length > 0 && (
+        <div className="flex items-center justify-between rounded-lg border border-line bg-surface px-4 py-3">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+              Commissions générées (cumul)
+            </p>
+            <p className="text-[11px] text-ink-muted">Information interne — non visible par le client.</p>
+          </div>
+          <p className="font-serif text-xl font-medium text-ink">
+            {fmtEuros(rows.reduce((s, r) => s + commissionContrat(r).montant, 0))}
+          </p>
+        </div>
+      )}
+
+
+
       {loading ? (
         <p className="text-sm text-ink-muted">Chargement…</p>
       ) : rows.length === 0 ? (
