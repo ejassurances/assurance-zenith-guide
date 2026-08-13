@@ -72,6 +72,17 @@ const TYPES_ASSURANCE = [
   "autre",
 ];
 
+/* Charte CRM : bleu nuit, accent doré, cartes détachées. */
+const CARTE = "rounded-2xl border border-line bg-surface-elevated shadow-sm";
+const BTN_PRIMAIRE =
+  "rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:brightness-110 disabled:opacity-60";
+const BTN_SECONDAIRE =
+  "rounded-full border border-line bg-surface-elevated px-4 py-2 text-sm text-ink transition hover:border-[color:var(--crm-gold)] hover:text-ink disabled:opacity-60";
+const CHAMP =
+  "w-full rounded-md border border-line bg-background px-3 py-2 text-sm text-ink outline-none focus:border-[color:var(--crm-gold)] focus:ring-1 focus:ring-[color:var(--crm-gold)]";
+const TITRE_SECTION = "font-serif text-base text-ink";
+
+
 function EmailsPage() {
   const { role } = useAuth();
   const staff = role === "admin" || role === "mandataire";
