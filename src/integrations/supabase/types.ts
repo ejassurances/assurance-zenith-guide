@@ -1269,6 +1269,98 @@ export type Database = {
           },
         ]
       }
+      crm_emails: {
+        Row: {
+          client_id: string | null
+          compagnie_id: string | null
+          contrat_id: string | null
+          created_at: string
+          created_by: string | null
+          destinataires: string | null
+          direction: string
+          dossier_id: string | null
+          expediteur_email: string | null
+          expediteur_nom: string | null
+          gmail_message_id: string
+          gmail_thread_id: string | null
+          id: string
+          notes: string | null
+          recu_le: string | null
+          snippet: string | null
+          sujet: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          compagnie_id?: string | null
+          contrat_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          destinataires?: string | null
+          direction?: string
+          dossier_id?: string | null
+          expediteur_email?: string | null
+          expediteur_nom?: string | null
+          gmail_message_id: string
+          gmail_thread_id?: string | null
+          id?: string
+          notes?: string | null
+          recu_le?: string | null
+          snippet?: string | null
+          sujet?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          compagnie_id?: string | null
+          contrat_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          destinataires?: string | null
+          direction?: string
+          dossier_id?: string | null
+          expediteur_email?: string | null
+          expediteur_nom?: string | null
+          gmail_message_id?: string
+          gmail_thread_id?: string | null
+          id?: string
+          notes?: string | null
+          recu_le?: string | null
+          snippet?: string | null
+          sujet?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_emails_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_emails_compagnie_id_fkey"
+            columns: ["compagnie_id"]
+            isOneToOne: false
+            referencedRelation: "compagnies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_emails_contrat_id_fkey"
+            columns: ["contrat_id"]
+            isOneToOne: false
+            referencedRelation: "contrats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_emails_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       der_modele: {
         Row: {
           actif: boolean
