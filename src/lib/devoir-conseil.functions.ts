@@ -6,6 +6,7 @@ import { z } from "zod";
 const offreSchema = z.object({
   compagnie: z.string().max(200),
   produit: z.string().max(200),
+  formule: z.string().max(200).nullable().optional(),
   cotisation_mensuelle: z.number().nullable().optional(),
   cout_total: z.number().nullable().optional(),
   statut: z.enum(["retenue", "equivalente", "ecartee"]),
