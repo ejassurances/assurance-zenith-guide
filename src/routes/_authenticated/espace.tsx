@@ -46,23 +46,60 @@ function EspaceLayout() {
     return <div className="flex min-h-screen items-center justify-center text-ink-muted">Chargement…</div>;
   }
 
-  const nav = [
+  const solo = [
     { to: "/espace", label: "Tableau de bord", exact: true, hide: role === "client" },
     { to: "/espace/mon-espace", label: "Mon espace", hide: role !== "client" },
-    { to: "/espace/clients", label: "Clients", hide: role === "client" },
-    { to: "/espace/dossiers", label: "Dossiers", hide: role === "client" },
-    { to: "/espace/emails", label: "Emails", hide: role !== "admin" && role !== "mandataire" },
-    { to: "/espace/taches", label: "Tâches", hide: role === "client" },
-    { to: "/espace/compagnies", label: "Compagnies", hide: role !== "admin" && role !== "mandataire" },
-    { to: "/espace/neoliane", label: "Néoliane (API)", hide: role !== "admin" && role !== "mandataire" },
-    { to: "/espace/commissions", label: "Commissions", hide: role === "client" },
-    { to: "/espace/comptabilite", label: "Comptabilité", hide: role === "client" },
-    { to: "/espace/conformite", label: "Conformité", hide: role === "client" || role === "prescripteur" },
-    { to: "/espace/der-modele", label: "DER (modèle)", hide: role === "client" },
-    { to: "/espace/audit-logs", label: "Audit", hide: role !== "admin" },
-    { to: "/espace/utilisateurs", label: "Utilisateurs", hide: role !== "admin" },
-    { to: "/espace/parametres", label: "Paramètres" },
   ].filter((n) => !n.hide);
+
+  const groupes = [
+    {
+      titre: "Relation client",
+      items: [
+        { to: "/espace/clients", label: "Clients", hide: role === "client" },
+        { to: "/espace/dossiers", label: "Dossiers", hide: role === "client" },
+        { to: "/espace/emails", label: "Emails", hide: role !== "admin" && role !== "mandataire" },
+        { to: "/espace/taches", label: "Tâches", hide: role === "client" },
+      ],
+    },
+    {
+      titre: "Marché & Produits",
+      items: [
+        { to: "/espace/compagnies", label: "Compagnies", hide: role !== "admin" && role !== "mandataire" },
+        { to: "/espace/neoliane", label: "Néoliane (API)", hide: role !== "admin" && role !== "mandataire" },
+      ],
+    },
+    {
+      titre: "Finance",
+      items: [
+        { to: "/espace/commissions", label: "Commissions", hide: role === "client" },
+        { to: "/espace/comptabilite", label: "Comptabilité", hide: role === "client" },
+      ],
+    },
+    {
+      titre: "Conformité",
+      items: [
+        { to: "/espace/conformite", label: "Conformité", hide: role === "client" || role === "prescripteur" },
+        { to: "/espace/der-modele", label: "DER (modèle)", hide: role === "client" },
+        { to: "/espace/audit-logs", label: "Audit", hide: role !== "admin" },
+      ],
+    },
+    {
+      titre: "Administration",
+      items: [
+        { to: "/espace/utilisateurs", label: "Utilisateurs", hide: role !== "admin" },
+        { to: "/espace/parametres", label: "Paramètres", hide: false },
+      ],
+    },
+  ]
+    .map((g) => ({ ...g, items: g.items.filter((i) => !i.hide) }))
+    .filter((g) => g.items.length > 0);
+
+  const itemClass = (active: boolean) =>
+    "shrink-0 rounded-md border-l-2 px-3 py-2 text-sm transition-colors " +
+    (active
+      ? "border-[color:var(--crm-gold)] bg-ink text-primary-foreground"
+      : "border-transparent text-ink-soft hover:bg-surface");
+
 
 
   return (
@@ -89,23 +126,34 @@ function EspaceLayout() {
 
       <div className="container-page grid gap-8 py-8 md:grid-cols-[220px_1fr]">
         <aside className="md:sticky md:top-8 md:self-start">
-          <nav className="flex flex-row gap-1 overflow-x-auto md:flex-col">
-            {nav.map((n) => {
+          <nav className="flex flex-row gap-1 overflow-x-auto md:flex-col md:gap-0">
+            {solo.map((n) => {
               const active = n.exact ? pathname === n.to : pathname.startsWith(n.to);
               return (
-                <Link
-                  key={n.to}
-                  to={n.to}
-                  className={
-                    "shrink-0 rounded-md px-3 py-2 text-sm transition-colors " +
-                    (active ? "bg-ink text-primary-foreground" : "text-ink-soft hover:bg-surface")
-                  }
-                >
+                <Link key={n.to} to={n.to} className={itemClass(active)}>
                   {n.label}
                 </Link>
               );
             })}
+            {groupes.map((g) => (
+              <div key={g.titre} className="shrink-0 md:mt-5">
+                <p className="hidden px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-muted md:block">
+                  {g.titre}
+                </p>
+                <div className="flex flex-row gap-1 md:flex-col">
+                  {g.items.map((n) => {
+                    const active = pathname.startsWith(n.to);
+                    return (
+                      <Link key={n.to} to={n.to} className={itemClass(active)}>
+                        {n.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </nav>
+
         </aside>
         <main>
           <Outlet />
