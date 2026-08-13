@@ -1,125 +1,65 @@
-# Feuille de route CRM — LCB-FT, pipeline projet & DDA, scoring, emails
+# Grille de garanties produit — extraction IA des CG/IPID avec validation humaine
 
-Tout est faisable. Découpage en 6 lots livrés dans l'ordre de priorité, chaque lot testable seul.
+Objectif : que le devoir de conseil ne cite que les garanties réellement couvertes par le produit sélectionné (cas E-Trottinette April/Allianz : ni vol ni dommages), à partir d'une grille standardisée par typologie, alimentée par une proposition IA issue des CG/IPID et **validée à la main** avant tout usage.
 
-## Lot 1 — Correctif LCB-FT / PPE (bloquant, en premier)
+## 1. La grille standardisée (structure) vit dans le code
 
-Constat vérifié : `src/lib/lcb-ft.functions.ts` et `src/lib/lcb-ft.server.ts` appellent
-`https://api.opensanctions.org/search/default` sans en-tête d'authentification — d'où le 401.
+Nouveau fichier `src/lib/garanties-grille.ts` : pour chaque famille de produit (emprunteur, auto, moto, MRH, santé, prévoyance, pro, épargne, EDPM/trottinette), la liste ordonnée des garanties attendues avec un code stable, un libellé, une nature (garantie / franchise / plafond global) et un caractère obligatoire ou non.
 
-- Clé lue côté serveur uniquement (`OPENSANCTIONS_API_KEY`), en-tête `Authorization: ApiKey <clé>`.
-- Passage à `POST /match/default` : envoi d'une entité (nom, prénom, date de naissance, pays) au lieu d'une
-  requête texte — c'est le mode prévu pour le screening réglementaire, avec un score de correspondance par entité.
-- L'historique reste écrit dans `client_lcb_verifications` (même format de résultats, `fournisseur` inchangé).
-- Message d'erreur explicite dans l'écran conformité si la clé manque ou si l'API répond en erreur
-  (aujourd'hui l'échec est silencieux et enregistré comme « clair »).
+Exemple EDPM/trottinette (grille de référence du chantier) : `rc_obligatoire`, `vol`, `dommages_bris`, `defense_penale_recours`, `garantie_mobilite`, `protection_corporelle_conducteur`, `assistance`, `franchise`.
 
-Prérequis : ajoutez la clé dans Réglages du projet → Secrets sous le nom `OPENSANCTIONS_API_KEY`.
+Pourquoi le code et non la base : la structure doit être identique pour toutes les compagnies d'une même branche, versionnée avec l'application, et une modification de structure doit passer par une revue. Chaque grille porte un numéro de version (`grille_version`) pour savoir sur quelle structure une validation a été faite.
 
-## Lot 2 — Scoring KYC & conformité 0-100 %
+Pour chaque garantie, les valeurs saisies/validées sont : couverture (`oui` / `non` / `option` / `inconnu`), plafond, franchise, conditions ou limites, et un extrait justificatif tiré des CG/IPID.
 
-- Barème : CNI valide non expirée 30 pts · RIB + justificatif de domicile de moins de 3 mois 30 pts ·
-  KBIS/Sirene à jour si client pro 20 pts · questionnaire LCB-FT (PPE + gel des avoirs) validé 20 pts.
-- Client non pro : les 20 pts KBIS sont neutralisés et le score ramené sur 100 (pas de plafond à 80).
-- Seuils : rouge < 50 %, orange 50-89 %, vert 90-100 %.
-- Badge en haut de la fiche client, avec le détail des points manquants.
-- Recalcul automatique à chaque ajout, validation, suppression de pièce ou changement de date d'expiration.
-- Blocage réel sous 50 % : impossible de générer un devis ou un devoir de conseil, et impossible de créer un
-  contrat — refus côté serveur, pas seulement bouton grisé.
+## 2. Stockage des valeurs : validé d'un côté, proposé de l'autre
 
-## Lot 3 — Pipeline projet & générateur de devoir de conseil natif
+Deux tables, strictement séparées, pour qu'aucune proposition IA ne puisse être lue comme une donnée validée :
 
-### Étapes portées par le dossier
+- `produit_garanties` — la grille **validée** d'un produit (une ligne par produit) : famille, version de grille, valeurs, statut (`brouillon` / `valide` / `a_revoir`), qui a validé et quand, document source de référence.
+- `produit_garanties_propositions` — les propositions **IA** : produit, document source (`produit_documents`), modèle IA utilisé, valeurs proposées avec extraits justificatifs, niveau de confiance par ligne, statut (`proposee` / `acceptee` / `rejetee`), horodatage.
 
-```text
-1  lettre de mission à signer      client : voit + signe
-2  lettre de mission signée        document signé visible dans l'onglet Projet
-3  devis                           STAFF UNIQUEMENT
-4  devoir de conseil pré-rempli    STAFF UNIQUEMENT
-5  devoir de conseil validé staff  STAFF UNIQUEMENT
-6  devoir de conseil à signer      client : signe / refuse / demande une modification
-7  souscription envoyée            lien envoyé par mail + trace d'envoi
-8  en traitement auprès de l'assureur
-9  contrat validé                  accès direct au contrat
-10 contrat actif
-```
+Accès : lecture/écriture réservées au staff (admin, mandataire) ; validation réservée à l'admin. Aucun accès client, aucun accès anonyme.
 
-Étapes 3 à 5 : le client voit « Étude en cours par votre conseiller », jamais les devis. Masquage appliqué en
-base (règles de lecture), pas seulement à l'écran.
+## 3. Extraction côté serveur
 
-### Traçabilité ACPR
+Déclenchement **explicite**, jamais silencieux : bouton « Analyser ce document » sur un CG ou un IPID de la fiche produit (et proposition automatique d'analyse juste après un upload, à confirmer d'un clic).
 
-Journal `dossier_etapes` en ajout seul : statut atteint, auteur, rôle, horodatage, commentaire. Aucune
-suppression ni modification possible, pour personne. Un retour à l'étape 4 crée une nouvelle version du devoir
-de conseil au lieu d'écraser la précédente. Export « dossier de preuve » depuis le back-office.
+Chaîne côté serveur (server function protégée, exécutée après vérification du rôle) :
 
-### Devoir de conseil
+1. téléchargement du PDF depuis le bucket `produits-documents` ;
+2. envoi du PDF à un modèle Gemini via la passerelle IA de Lovable, en pièce jointe PDF, avec la grille de la famille en schéma de sortie attendu (JSON strict) et une consigne clé : **ne rien inférer** — toute garantie non explicitement couverte par le texte est renvoyée `non` ou `inconnu`, avec l'extrait qui le justifie ;
+3. pour un PDF trop volumineux, extraction de texte préalable (dépendance `unpdf`, compatible runtime serveur) puis analyse du texte, découpé si nécessaire ;
+4. enregistrement du résultat comme proposition, jamais dans la grille validée.
 
-- Modèles fixes par typologie (emprunteur, santé/prévoyance, MRH, auto, pro, épargne/retraite, trottinette) :
-  mentions légales identiques par branche, et zones dynamiques cadrées remplies par l'IA — pas de rédaction libre.
-- Jusqu'à 3 devis comparés (moins s'il y a moins de partenaires), classés par prix parmi les offres adaptées.
-- Compagnies favorites classées top 1/2/3 **par branche** (référentiel à saisir dans l'espace admin). Si une
-  favorite est retenue alors qu'elle est légèrement plus chère, aucun devis moins cher qu'elle n'est affiché.
-- Recommandation toujours justifiée par un lien de causalité explicite avec les besoins exprimés dans le recueil.
-- Emprunteur : Capital Initial retenu par défaut, Capital Restant Dû seulement s'il est moins cher, avec
-  explication obligatoire du mécanisme CI/CRD dans le document.
-- Génération native dans l'application, signature avec le pavé de signature existant (pas de Yousign).
-  Le PDF signé est archivé sur Drive dans `02_Conformite_DDA` comme copie de preuve.
+Aucune écriture dans `produit_garanties` par ce flux.
 
-### Refus du devoir de conseil
+## 4. Validation humaine (écran)
 
-Motif obligatoire côté client. Une analyse IA du motif produit soit une contre-proposition présentée au
-mandataire/admin, soit une proposition de clôture en « perdu ». La décision finale reste humaine.
+Nouvel onglet « Garanties » sur la fiche produit (dans l'écran compagnie/produit existant) :
 
-### Fin de parcours
+- la grille de la famille affichée ligne par ligne, avec l'état validé actuel ;
+- si une proposition IA existe : colonne « proposé » à côté de « validé », l'extrait des CG cliquable, un indicateur de confiance, et acceptation ligne par ligne ou en bloc, chaque valeur restant modifiable à la main avant validation ;
+- bouton final « Valider la grille » (admin) qui écrit la grille validée, la version de grille, l'auteur et la date, et marque la proposition acceptée ; bouton « Rejeter la proposition » ;
+- bandeau d'avertissement tant que le produit n'a pas de grille validée : « Grille non validée — ce produit ne peut pas alimenter un devoir de conseil » ;
+- toute validation et tout rejet sont tracés dans le journal d'audit existant.
 
-Au passage en contrat actif : le projet disparaît de l'espace client, reste consultable en back-office, et le
-lien Projet ↔ Contrat est navigable dans les deux sens. Les documents signés restent accessibles au client
-depuis son contrat.
+Une modification de la version de grille (ajout d'une garantie) repasse le produit en `a_revoir` : la grille reste consultable mais signalée comme incomplète.
 
-## Lot 4 — Co-emprunteur
+## 5. Branchement sur le devoir de conseil (Lot 3)
 
-Le recueil emprunteur accepte un second emprunteur (identité, date de naissance, statut fumeur, quotité).
-Deux devis distincts sont générés, un par emprunteur, jamais un devis combiné. Aucun questionnaire de santé
-n'est intégré : il relève de la relation directe assureur ↔ client.
+Le pré-remplissage du devoir de conseil lit la grille **validée** du produit sélectionné sur le dossier, et remplace le texte générique par branche :
 
-## Lot 5 — Migration email Gmail + Brevo
+- liste des garanties **couvertes** (avec plafonds et franchises réels) ;
+- liste explicite des garanties **non couvertes** de la typologie, reprise en mise en garde (cas trottinette : « le vol et les dommages/bris de votre engin ne sont pas couverts par ce contrat ») ;
+- les garanties `inconnu` ne sont jamais présentées comme couvertes.
 
-- **Gmail (réception)** : remplacement du webhook Apps Script par le connecteur Gmail, en connexion partagée
-  unique. Les mails entrants sont rattachés automatiquement au client/dossier correspondant (adresse, puis
-  référence de dossier) ; si aucun client ne correspond, une fiche est créée avec le mail en pièce d'origine.
-- **Brevo (envois)** : tous les envois automatisés à sens unique — lettre de mission, devoir de conseil,
-  relances de pièces manquantes, demande d'avis Google — avec suivi délivré/ouvert conservé comme trace.
-- Le script Apps Script / Gemini actuel reste actif tant que la réception Gmail n'est pas vérifiée en
-  conditions réelles ; bascule ensuite, en une étape explicite.
-
-## Lot 6 — Avis Google
-
-Mail Brevo déclenché au passage du contrat au statut **actif** (pas à la signature), après un délai de
-3 jours ouvrés (lundi-vendredi, jours fériés non pris en compte sauf demande).
-
-## Hors lots (notés, pas d'action maintenant)
-
-- Domaine `ejpartners.fr` : vérification d'affichage à faire en fin de chantier.
-- Charte graphique CRM (menu regroupé par logique métier, cartes KPI) : finition, en dernier.
-- Deux API compagnies supplémentaires : en attente de documentation.
+Le texte reste modifiable par le staff avant envoi. Si le produit n'a pas de grille validée, le panneau affiche un avertissement bloquant à l'endroit de la génération : le texte générique actuel reste utilisable mais le rédacteur est averti qu'aucune garantie produit n'est certifiée. Choix par défaut retenu : avertissement fort, sans blocage dur de l'envoi — dis-moi si tu préfères un blocage strict comme pour le score KYC.
 
 ## Détails techniques
 
-- Lot 1 : `src/lib/lcb-ft.server.ts` devient l'unique point d'appel (le server fn authentifié et
-  l'automatisation des leads partagent la même logique). Clé lue dans le handler, jamais au niveau module.
-- Lot 2 : barème dans une fonction `SECURITY DEFINER` déjà existante (`calculer_score_conformite_client`)
-  réécrite, déclenchée par trigger sur `client_kyc_documents`, `documents` et `client_lcb_verifications`.
-  Blocage < 50 % appliqué dans les server functions de génération de devis/DDA/contrat.
-- Lot 3 : nouvelles tables `dossier_etapes` (append-only), `devoirs_conseil` (versionné, mêmes colonnes de
-  preuve que `lettres_mission`), `devis`, `souscription_envois`, `compagnie_favoris` (compagnie, branche, rang).
-  Enum `dossier_statut` étendu, anciens statuts conservés et rattachés au pipeline. Transitions validées côté
-  serveur (statut de départ attendu + rôle requis + prérequis).
-- Lot 3 : génération PDF côté serveur en JS pur (contrainte du runtime serverless : pas de binaire natif).
-- Lot 5 : appels Gmail et Brevo via la passerelle de connecteurs, exclusivement côté serveur ; réception Gmail
-  par une route planifiée sous `src/routes/api/public/` avec vérification de l'appelant.
-
-## Ordre d'exécution proposé
-
-Lot 1 dès validation (rapide, débloque la conformité), puis Lot 2, puis Lot 3 (le plus gros, livré en
-sous-étapes : pipeline et traces d'abord, générateur DDA ensuite), puis Lots 4, 5, 6.
+- Nouveaux fichiers : `src/lib/garanties-grille.ts` (structure + versions), `src/lib/produit-garanties.functions.ts` (server functions : analyser un document, lire propositions, valider/rejeter), `src/lib/produit-garanties-extraction.server.ts` (téléchargement PDF, appel IA, parsing JSON strict), `src/components/produit-garanties-tab.tsx` (écran de validation).
+- Migration : tables `produit_garanties` et `produit_garanties_propositions`, avec GRANT, RLS et policies staff/admin, plus index sur `produit_id`.
+- IA : passerelle Lovable (`LOVABLE_API_KEY`), modèle Gemini avec entrée PDF, sortie JSON validée par Zod ; aucune écriture si le JSON ne respecte pas le schéma.
+- Dépendance ajoutée seulement si nécessaire : `unpdf` pour l'extraction texte de repli.
+- Modifications : `src/lib/devoir-conseil.server.ts` et `src/lib/devoir-conseil-modeles.ts` (garanties couvertes/non couvertes issues de la grille), `src/components/devoir-conseil-panel.tsx` (affichage de la source et avertissement), fiche produit de `espace.compagnies.$id.tsx` (onglet Garanties).
