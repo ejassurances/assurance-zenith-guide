@@ -255,3 +255,45 @@ export async function creerEspaceClient(
 
   return { created: true, email_sent: emailSent, user_id: created.user.id };
 }
+
+/**
+ * Réinitialise l'accès d'un espace client existant : nouveau mot de passe
+ * provisoire, changement obligatoire à la prochaine connexion, e-mail d'accès.
+ */
+export async function reinitialiserAccesEspaceClient(
+  admin: Admin,
+  params: {
+    client_id: string;
+    user_id: string;
+    email: string;
+    nom: string;
+    prenom?: string | null;
+    origin: string;
+  },
+) {
+  const password = genererMotDePasseProvisoire();
+  const { error } = await admin.auth.admin.updateUserById(params.user_id, {
+    password,
+    email_confirm: true,
+  });
+  if (error) return { email_sent: false };
+
+  await admin.from("profiles").update({ must_change_password: true }).eq("id", params.user_id);
+  await admin.from("clients").update({ user_id: params.user_id }).eq("id", params.client_id).is("user_id", null);
+
+  try {
+    const { sendTemplateEmail } = await import("@/lib/email-templates/send-email");
+    const res = await sendTemplateEmail("compte-client-cree", params.email, {
+      templateData: {
+        clientName: `${params.prenom ?? ""} ${params.nom}`.trim(),
+        email: params.email,
+        motDePasseProvisoire: password,
+        link: `${params.origin}/auth`,
+      },
+      idempotencyKey: `acces-client-${params.user_id}-${Date.now()}`,
+    });
+    return { email_sent: res.sent };
+  } catch {
+    return { email_sent: false };
+  }
+}

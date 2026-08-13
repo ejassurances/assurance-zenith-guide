@@ -59,6 +59,62 @@ export const autoInscriptionClient = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+/**
+ * Action back-office : crée (ou réinitialise) l'accès espace client et envoie
+ * un mot de passe provisoire par e-mail. Réservé admin / mandataire.
+ */
+export const creerAccesEspaceClient = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ client_id: z.string().uuid(), origin: z.string().url() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: roles } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+    const allowed = (roles ?? []).some((r) => r.role === "admin" || r.role === "mandataire");
+    if (!allowed) return { ok: false as const, error: "Action réservée aux administrateurs et mandataires." };
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: client } = await supabaseAdmin
+      .from("clients")
+      .select("id, nom, prenom, email")
+      .eq("id", data.client_id)
+      .maybeSingle();
+
+    if (!client) return { ok: false as const, error: "Fiche client introuvable." };
+    if (!client.email) return { ok: false as const, error: "Cette fiche n'a pas d'adresse e-mail." };
+
+    const email = client.email.toLowerCase();
+    const { creerEspaceClient, reinitialiserAccesEspaceClient } = await import("@/lib/dossier-automation.server");
+
+    const { data: existing } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const compte = existing?.users.find((u) => u.email?.toLowerCase() === email);
+
+    if (compte) {
+      const res = await reinitialiserAccesEspaceClient(supabaseAdmin, {
+        client_id: client.id,
+        user_id: compte.id,
+        email,
+        nom: client.nom,
+        prenom: client.prenom,
+        origin: data.origin,
+      });
+      return { ok: true as const, created: false, email_sent: res.email_sent };
+    }
+
+    const res = await creerEspaceClient(supabaseAdmin, {
+      client_id: client.id,
+      email,
+      nom: client.nom,
+      prenom: client.prenom,
+      origin: data.origin,
+    });
+    if (!res.user_id) return { ok: false as const, error: "Création du compte impossible." };
+    return { ok: true as const, created: res.created, email_sent: res.email_sent };
+  });
+
 /** Lève l'obligation de changement de mot de passe après un changement réussi. */
 export const validerChangementMotDePasse = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

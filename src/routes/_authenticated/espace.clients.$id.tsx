@@ -7,6 +7,7 @@ import { ContratsTab } from "@/components/contrats-tab";
 import { DerTab } from "@/components/der-tab";
 import { ConformiteClientTab } from "@/components/conformite-client-tab";
 import { DeleteClientButton } from "@/components/delete-client-button";
+import { AccesEspaceClientButton } from "@/components/acces-espace-client-button";
 import { CrmBrandPanel } from "@/components/crm-brand-panel";
 import { NewDossierForm } from "@/routes/_authenticated/espace.dossiers.index";
 
@@ -51,6 +52,7 @@ type Client = {
   ppe: boolean | null;
   ppe_fonction: string | null;
   ppe_pays: string | null;
+  user_id: string | null;
   created_at: string;
 };
 
@@ -151,6 +153,9 @@ function ClientDetail() {
           <span className="rounded-full border border-line bg-surface-elevated px-3 py-1 text-xs font-medium">
             {client.statut}
           </span>
+          {canEdit && client.email && (
+            <AccesEspaceClientButton clientId={client.id} hasAccount={!!client.user_id} />
+          )}
           {role === "admin" && (
             <DeleteClientButton
               clientId={client.id}
