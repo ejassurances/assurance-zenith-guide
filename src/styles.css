@@ -108,40 +108,42 @@
   padding-inline: 1.5rem;
 }
 
-/* ---- Thème CRM : bleu nuit, doré, fond clair ---- */
+/* ---- Thème CRM « Classic prestige » : marine profond, doré, papier crème ---- */
 .crm-theme {
-  --font-sans-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
-  --font-serif-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+  --radius: 0.25rem;
+  --font-sans-family: "Inter", system-ui, sans-serif;
+  --font-serif-family: "Playfair Display", "Newsreader", Georgia, serif;
 
-  --background: #f8fafc;
-  --foreground: #0a192f;
-  --surface: #f1f5f9;
+  --background: #faf9f6;
+  --foreground: #0a1229;
+  --surface: #f3f1ec;
   --surface-elevated: #ffffff;
-  --ink: #0a192f;
-  --ink-soft: #33475f;
-  --ink-muted: #64748b;
-  --line: rgb(10 25 47 / 0.1);
+  --ink: #0a1229;
+  --ink-soft: #38415c;
+  --ink-muted: #6c7488;
+  --line: rgb(10 18 41 / 0.09);
 
   --card: #ffffff;
-  --card-foreground: #0a192f;
-  --primary: #0a192f;
-  --primary-foreground: #f8fafc;
-  --secondary: #e2e8f0;
-  --secondary-foreground: #0a192f;
-  --muted: #eef2f7;
-  --muted-foreground: #64748b;
-  --accent: #d4af37;
-  --accent-foreground: #0a192f;
-  --border: rgb(10 25 47 / 0.1);
-  --input: rgb(10 25 47 / 0.18);
-  --ring: #d4af37;
+  --card-foreground: #0a1229;
+  --primary: #0a1229;
+  --primary-foreground: #faf9f6;
+  --secondary: #ece9e2;
+  --secondary-foreground: #0a1229;
+  --muted: #f3f1ec;
+  --muted-foreground: #6c7488;
+  --accent: #b88e2f;
+  --accent-foreground: #ffffff;
+  --border: rgb(10 18 41 / 0.09);
+  --input: rgb(10 18 41 / 0.16);
+  --ring: #b88e2f;
 
-  --crm-gold: #d4af37;
-  --crm-gold-soft: rgb(212 175 55 / 0.12);
-  --crm-gold-muted: #b99b3f;
-  --crm-slate: #8296ad;
+  --crm-navy: #0a1229;
+  --crm-navy-soft: #152345;
+  --crm-gold: #b88e2f;
+  --crm-gold-soft: rgb(184 142 47 / 0.1);
+  --crm-gold-muted: #9a742a;
+  --crm-slate: #8b93a7;
   --crm-brand-blue: #1d4ed8;
-
 
   background-color: var(--background);
   color: var(--foreground);
@@ -152,6 +154,65 @@
 .crm-theme h2,
 .crm-theme h3,
 .crm-theme h4 {
-  font-family: var(--font-sans-family);
-  letter-spacing: -0.02em;
+  font-family: var(--font-serif-family);
+  letter-spacing: -0.01em;
 }
+
+/* Surfaces : filets fins et ombres discrètes plutôt que grandes cartes arrondies. */
+.crm-theme .crm-card {
+  background-color: var(--surface-elevated);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 2px rgb(10 18 41 / 0.04);
+}
+
+.crm-theme .crm-card-accent {
+  border-color: rgb(184 142 47 / 0.35);
+  box-shadow: 0 1px 2px rgb(10 18 41 / 0.05);
+}
+
+.crm-theme .crm-eyebrow {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink-muted);
+}
+
+.crm-theme .crm-figure {
+  font-family: var(--font-serif-family);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+/* Bandeau doré plein (performance / économies réalisées). */
+.crm-theme .crm-band {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--crm-gold);
+  color: #ffffff;
+  border-radius: var(--radius);
+  box-shadow: 0 12px 30px -14px rgb(184 142 47 / 0.7);
+}
+
+.crm-theme .crm-band::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 16rem;
+  height: 100%;
+  background-color: rgb(255 255 255 / 0.07);
+  transform: skewX(-12deg) translateX(8rem);
+  pointer-events: none;
+}
+
+/* Panneau marine (tâches, blocs de mise en avant). */
+.crm-theme .crm-panel-dark {
+  background-color: var(--crm-navy);
+  color: #ffffff;
+  border-radius: var(--radius);
+  box-shadow: 0 12px 30px -18px rgb(10 18 41 / 0.6);
+}
+
