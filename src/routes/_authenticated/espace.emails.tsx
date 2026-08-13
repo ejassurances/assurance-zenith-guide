@@ -275,7 +275,7 @@ function EmailsPage() {
                       className={
                         "w-full border-l-2 px-4 py-3 text-left transition-colors " +
                         (actif
-                          ? "border-l-[color:var(--crm-gold)] bg-[color:var(--crm-gold)]/8"
+                          ? "border-l-[color:var(--crm-gold)] bg-[rgb(212_175_55_/_0.08)]"
                           : "border-l-transparent hover:bg-surface")
                       }
                     >
