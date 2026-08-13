@@ -220,9 +220,9 @@ function PiecesSection({
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ id, title, children }: { id?: string; title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+    <div id={id} className="scroll-mt-6 rounded-2xl border border-line bg-surface-elevated p-5 transition-all">
       <h2 className="font-serif text-lg font-medium text-ink">{title}</h2>
       <div className="mt-3 space-y-2 text-sm">{children}</div>
     </div>
