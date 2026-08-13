@@ -2707,6 +2707,7 @@ export type Database = {
           nom: string
           ordre: number
           produit_id: string
+          tarif_fixe: number | null
         }
         Insert: {
           actif?: boolean
@@ -2716,6 +2717,7 @@ export type Database = {
           nom: string
           ordre?: number
           produit_id: string
+          tarif_fixe?: number | null
         }
         Update: {
           actif?: boolean
@@ -2725,6 +2727,7 @@ export type Database = {
           nom?: string
           ordre?: number
           produit_id?: string
+          tarif_fixe?: number | null
         }
         Relationships: [
           {
@@ -2865,6 +2868,50 @@ export type Database = {
           },
         ]
       }
+      produit_options: {
+        Row: {
+          actif: boolean
+          created_at: string
+          description: string | null
+          id: string
+          nom: string
+          ordre: number
+          produit_id: string
+          tarif_fixe: number | null
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom: string
+          ordre?: number
+          produit_id: string
+          tarif_fixe?: number | null
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom?: string
+          ordre?: number
+          produit_id?: string
+          tarif_fixe?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produit_options_produit_id_fkey"
+            columns: ["produit_id"]
+            isOneToOne: false
+            referencedRelation: "produits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       produits: {
         Row: {
           caracteristiques: Json
@@ -2880,6 +2927,7 @@ export type Database = {
           famille_requise_id: string | null
           id: string
           image_url: string | null
+          mode_tarification: string
           nom: string
           points_forts: string | null
           points_vigilance: string | null
@@ -2901,6 +2949,7 @@ export type Database = {
           famille_requise_id?: string | null
           id?: string
           image_url?: string | null
+          mode_tarification?: string
           nom: string
           points_forts?: string | null
           points_vigilance?: string | null
@@ -2922,6 +2971,7 @@ export type Database = {
           famille_requise_id?: string | null
           id?: string
           image_url?: string | null
+          mode_tarification?: string
           nom?: string
           points_forts?: string | null
           points_vigilance?: string | null
