@@ -22,6 +22,7 @@ import { Route as ApiPublicBootstrapAdminRouteImport } from './routes/api/public
 import { Route as AuthenticatedEspaceUtilisateursRouteImport } from './routes/_authenticated/espace.utilisateurs'
 import { Route as AuthenticatedEspaceTachesRouteImport } from './routes/_authenticated/espace.taches'
 import { Route as AuthenticatedEspaceSignerLettreMissionRouteImport } from './routes/_authenticated/espace.signer-lettre-mission'
+import { Route as AuthenticatedEspaceSignerDevoirConseilRouteImport } from './routes/_authenticated/espace.signer-devoir-conseil'
 import { Route as AuthenticatedEspaceSignerDerRouteImport } from './routes/_authenticated/espace.signer-der'
 import { Route as AuthenticatedEspaceParametresRouteImport } from './routes/_authenticated/espace.parametres'
 import { Route as AuthenticatedEspaceMonEspaceRouteImport } from './routes/_authenticated/espace.mon-espace'
@@ -109,6 +110,12 @@ const AuthenticatedEspaceSignerLettreMissionRoute =
   AuthenticatedEspaceSignerLettreMissionRouteImport.update({
     id: '/signer-lettre-mission',
     path: '/signer-lettre-mission',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
+const AuthenticatedEspaceSignerDevoirConseilRoute =
+  AuthenticatedEspaceSignerDevoirConseilRouteImport.update({
+    id: '/signer-devoir-conseil',
+    path: '/signer-devoir-conseil',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
 const AuthenticatedEspaceSignerDerRoute =
@@ -236,6 +243,7 @@ export interface FileRoutesByFullPath {
   '/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
+  '/espace/signer-devoir-conseil': typeof AuthenticatedEspaceSignerDevoirConseilRoute
   '/espace/signer-lettre-mission': typeof AuthenticatedEspaceSignerLettreMissionRoute
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
@@ -268,6 +276,7 @@ export interface FileRoutesByTo {
   '/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
+  '/espace/signer-devoir-conseil': typeof AuthenticatedEspaceSignerDevoirConseilRoute
   '/espace/signer-lettre-mission': typeof AuthenticatedEspaceSignerLettreMissionRoute
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
@@ -303,6 +312,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
   '/_authenticated/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/_authenticated/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
+  '/_authenticated/espace/signer-devoir-conseil': typeof AuthenticatedEspaceSignerDevoirConseilRoute
   '/_authenticated/espace/signer-lettre-mission': typeof AuthenticatedEspaceSignerLettreMissionRoute
   '/_authenticated/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/_authenticated/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
@@ -338,6 +348,7 @@ export interface FileRouteTypes {
     | '/espace/mon-espace'
     | '/espace/parametres'
     | '/espace/signer-der'
+    | '/espace/signer-devoir-conseil'
     | '/espace/signer-lettre-mission'
     | '/espace/taches'
     | '/espace/utilisateurs'
@@ -370,6 +381,7 @@ export interface FileRouteTypes {
     | '/espace/mon-espace'
     | '/espace/parametres'
     | '/espace/signer-der'
+    | '/espace/signer-devoir-conseil'
     | '/espace/signer-lettre-mission'
     | '/espace/taches'
     | '/espace/utilisateurs'
@@ -404,6 +416,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/mon-espace'
     | '/_authenticated/espace/parametres'
     | '/_authenticated/espace/signer-der'
+    | '/_authenticated/espace/signer-devoir-conseil'
     | '/_authenticated/espace/signer-lettre-mission'
     | '/_authenticated/espace/taches'
     | '/_authenticated/espace/utilisateurs'
@@ -531,6 +544,13 @@ declare module '@tanstack/react-router' {
       path: '/signer-lettre-mission'
       fullPath: '/espace/signer-lettre-mission'
       preLoaderRoute: typeof AuthenticatedEspaceSignerLettreMissionRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
+    '/_authenticated/espace/signer-devoir-conseil': {
+      id: '/_authenticated/espace/signer-devoir-conseil'
+      path: '/signer-devoir-conseil'
+      fullPath: '/espace/signer-devoir-conseil'
+      preLoaderRoute: typeof AuthenticatedEspaceSignerDevoirConseilRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
     '/_authenticated/espace/signer-der': {
@@ -678,6 +698,7 @@ interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceMonEspaceRoute: typeof AuthenticatedEspaceMonEspaceRoute
   AuthenticatedEspaceParametresRoute: typeof AuthenticatedEspaceParametresRoute
   AuthenticatedEspaceSignerDerRoute: typeof AuthenticatedEspaceSignerDerRoute
+  AuthenticatedEspaceSignerDevoirConseilRoute: typeof AuthenticatedEspaceSignerDevoirConseilRoute
   AuthenticatedEspaceSignerLettreMissionRoute: typeof AuthenticatedEspaceSignerLettreMissionRoute
   AuthenticatedEspaceTachesRoute: typeof AuthenticatedEspaceTachesRoute
   AuthenticatedEspaceUtilisateursRoute: typeof AuthenticatedEspaceUtilisateursRoute
@@ -700,6 +721,8 @@ const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
   AuthenticatedEspaceMonEspaceRoute: AuthenticatedEspaceMonEspaceRoute,
   AuthenticatedEspaceParametresRoute: AuthenticatedEspaceParametresRoute,
   AuthenticatedEspaceSignerDerRoute: AuthenticatedEspaceSignerDerRoute,
+  AuthenticatedEspaceSignerDevoirConseilRoute:
+    AuthenticatedEspaceSignerDevoirConseilRoute,
   AuthenticatedEspaceSignerLettreMissionRoute:
     AuthenticatedEspaceSignerLettreMissionRoute,
   AuthenticatedEspaceTachesRoute: AuthenticatedEspaceTachesRoute,

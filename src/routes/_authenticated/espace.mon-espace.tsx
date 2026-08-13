@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { etapeLabel } from "@/lib/pipeline-dossier";
 import { DossierPiecesPanel } from "@/components/dossier-pieces-panel";
 import { labelForBranche } from "@/lib/recueil-besoins-schemas";
 
@@ -64,6 +65,7 @@ function MonEspace() {
   const [dossiers, setDossiers] = useState<DossierRow[]>([]);
   const [derAFaire, setDerAFaire] = useState(false);
   const [lettreAFaire, setLettreAFaire] = useState(false);
+  const [devoirAFaire, setDevoirAFaire] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -76,17 +78,20 @@ function MonEspace() {
         .maybeSingle();
       setClient((c as ClientRow) ?? null);
 
-      const filtre = [`client_id.eq.${user.id}`];
+      const filtre: string[] = [];
+      if (c) filtre.push(`client_id.eq.${(c as ClientRow).id}`);
       if (user.email) filtre.push(`client_email.eq.${user.email}`);
-      const { data: d } = await supabase
-        .from("dossiers")
-        .select("id,reference,statut,type_assurance,created_at,economie_estimee")
-        .or(filtre.join(","))
-        .order("created_at", { ascending: false });
-      setDossiers((d ?? []) as DossierRow[]);
+      if (filtre.length > 0) {
+        const { data: d } = await supabase
+          .from("dossiers")
+          .select("id,reference,statut,type_assurance,created_at,economie_estimee")
+          .or(filtre.join(","))
+          .order("created_at", { ascending: false });
+        setDossiers((d ?? []) as DossierRow[]);
+      }
 
       if (c) {
-        const [{ data: der }, { data: lm }] = await Promise.all([
+        const [{ data: der }, { data: lm }, { data: dc }] = await Promise.all([
           supabase
             .from("client_der_envois")
             .select("id")
@@ -99,10 +104,18 @@ function MonEspace() {
             .eq("client_id", (c as ClientRow).id)
             .is("signed_at", null)
             .limit(1),
+          supabase
+            .from("devoirs_conseil")
+            .select("id")
+            .eq("client_id", (c as ClientRow).id)
+            .eq("statut", "envoye")
+            .limit(1),
         ]);
         setDerAFaire((der ?? []).length > 0);
         setLettreAFaire((lm ?? []).length > 0);
+        setDevoirAFaire((dc ?? []).length > 0);
       }
+
       setLoading(false);
     })();
   }, [user]);
@@ -120,7 +133,7 @@ function MonEspace() {
         </p>
       </div>
 
-      {(derAFaire || lettreAFaire) && (
+      {(derAFaire || lettreAFaire || devoirAFaire) && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
           <p className="font-medium">Documents à signer</p>
           <div className="mt-2 flex flex-wrap gap-3">
@@ -135,6 +148,14 @@ function MonEspace() {
                 className="rounded-md border border-amber-400 bg-white px-3 py-1.5"
               >
                 Signer la lettre de mission
+              </Link>
+            )}
+            {devoirAFaire && (
+              <Link
+                to="/espace/signer-devoir-conseil"
+                className="rounded-md border border-amber-400 bg-white px-3 py-1.5"
+              >
+                Valider le devoir de conseil
               </Link>
             )}
           </div>
@@ -173,7 +194,7 @@ function MonEspace() {
                   </p>
                 </div>
                 <span className="rounded-full border border-line bg-background px-2.5 py-0.5 text-xs">
-                  {STATUT_LABEL[d.statut] ?? d.statut}
+                  {STATUT_LABEL[d.statut] ?? etapeLabel(d.statut)}
                 </span>
               </div>
               {d.economie_estimee != null && (

@@ -8,6 +8,10 @@ import { getBranche, labelForBranche } from "@/lib/recueil-besoins-schemas";
 import { DossierPiecesPanel } from "@/components/dossier-pieces-panel";
 import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
 import { ProduitDocumentsLink } from "@/components/produit-documents-link";
+import { DossierPipeline } from "@/components/dossier-pipeline";
+import { DevoirConseilPanel } from "@/components/devoir-conseil-panel";
+import { etapeLabel } from "@/lib/pipeline-dossier";
+
 
 export const Route = createFileRoute("/_authenticated/espace/dossiers/$id")({
   component: DossierDetail,
@@ -20,7 +24,7 @@ type Dossier = {
   client_nom: string;
   client_email: string | null;
   client_phone: string | null;
-  statut: "nouveau" | "en_cours" | "signe" | "perdu";
+  statut: string;
   type_assurance: string;
   recueil_besoins: Record<string, unknown> | null;
   capital: number | null;
@@ -107,11 +111,6 @@ function DossierDetail() {
 
   const canEdit = role === "admin" || role === "mandataire" || role === "prescripteur";
 
-  const updateStatut = async (statut: Dossier["statut"]) => {
-    await supabase.from("dossiers").update({ statut }).eq("id", id);
-    load();
-  };
-
   return (
     <div className="space-y-8">
       <div>
@@ -124,10 +123,16 @@ function DossierDetail() {
         </p>
       </div>
 
+      <DossierPipeline dossierId={id} statut={dossier.statut} canEdit={canEdit} onChanged={load} />
+
       <CompagnieProduitSection dossier={dossier} canEdit={canEdit} onSaved={load} />
 
       <RecueilPanel dossier={dossier} />
       {canEdit && <LettreMissionPanel dossierId={id} clientEmail={dossier.client_email} />}
+      {canEdit && (
+        <DevoirConseilPanel dossierId={id} clientEmail={dossier.client_email} onChanged={load} />
+      )}
+
 
       <div className="grid gap-6 md:grid-cols-2">
         <Section title="Informations client">
@@ -144,22 +149,8 @@ function DossierDetail() {
           <Row label="Économie estimée">
             {dossier.economie_estimee ? `${Number(dossier.economie_estimee).toLocaleString("fr-FR")} €` : "—"}
           </Row>
-          <Row label="Statut">
-            {canEdit ? (
-              <select
-                value={dossier.statut}
-                onChange={(e) => updateStatut(e.target.value as Dossier["statut"])}
-                className="rounded-md border border-line bg-background px-2 py-1 text-sm"
-              >
-                <option value="nouveau">Nouveau</option>
-                <option value="en_cours">En cours</option>
-                <option value="signe">Signé</option>
-                <option value="perdu">Perdu</option>
-              </select>
-            ) : (
-              dossier.statut
-            )}
-          </Row>
+          <Row label="Étape">{etapeLabel(dossier.statut)}</Row>
+
         </Section>
       </div>
 

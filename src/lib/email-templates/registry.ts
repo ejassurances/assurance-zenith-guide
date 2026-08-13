@@ -56,6 +56,32 @@ function LettreMissionEnvoiEmail(props: {
   return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
 }
 
+function DevoirConseilEnvoiEmail(props: {
+  clientName?: string;
+  cabinetName?: string;
+  reference?: string;
+  link?: string;
+}) {
+  const nom = props.cabinetName || "EJ Partners Assurances";
+  const html =
+    "<p>Bonjour " +
+    (props.clientName || "") +
+    ",</p>" +
+    "<p>Votre devoir de conseil relatif au dossier " +
+    (props.reference || "") +
+    " est disponible dans votre espace client. Il presente la solution recommandee et les motifs de ce conseil.</p>" +
+    "<p><a href='" +
+    (props.link || "") +
+    "'>Consulter, accepter ou refuser la recommandation</a></p>" +
+    "<p>Votre reponse est necessaire avant toute souscription.</p>" +
+    "<p>Cordialement,<br/>L'equipe " +
+    nom +
+    "</p>";
+  const style = { fontFamily: "Arial, sans-serif", color: "#1a1a1a", fontSize: "15px", lineHeight: "1.6" };
+  return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
+}
+
+
 function CompteClientCreeEmail(props: {
   clientName?: string;
   email?: string;
@@ -204,4 +230,18 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
       link: "https://example.com/signer",
     },
   },
+  "devoir-conseil-envoi": {
+    component: DevoirConseilEnvoiEmail,
+    subject: (data: Record<string, any>) =>
+      (data && data.cabinetName ? data.cabinetName : "EJ Partners Assurances") +
+      " - Votre devoir de conseil",
+    displayName: "Devoir de conseil - Envoi client",
+    previewData: {
+      clientName: "Jean Dupont",
+      cabinetName: "EJ Partners Assurances",
+      reference: "DOSS-2025-001",
+      link: "https://example.com/signer-devoir-conseil",
+    },
+  },
 };
+
