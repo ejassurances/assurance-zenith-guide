@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CompagnieDocsTable, UploadCompagnieDocForm } from "./espace.conformite";
 import { ProduitGarantiesTab } from "@/components/produit-garanties-tab";
+import { ProduitFormulesTab } from "@/components/produit-formules-tab";
+
 import { EmailsLiesPanel } from "@/components/emails-lies-panel";
 
 type CompagnieDocRow = {
@@ -724,6 +726,17 @@ function ProduitEditor({
         isAdmin={isAdmin}
         docs={docs.map((d) => ({ id: d.id, nom: d.nom, type: d.type }))}
       />
+
+      {famille?.code === "sante" && (
+        <ProduitFormulesTab
+          produitId={p.id}
+          familleCode={famille?.code ?? null}
+          familleNom={famille?.nom}
+          isAdmin={isAdmin}
+          docs={docs.map((d) => ({ id: d.id, nom: d.nom, type: d.type }))}
+        />
+      )}
+
     </div>
   );
 }

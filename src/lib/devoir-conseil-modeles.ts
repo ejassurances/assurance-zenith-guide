@@ -30,6 +30,7 @@ export const STATUT_OFFRE_LABEL: Record<StatutOffre, string> = {
 export type OffreComparee = {
   compagnie: string;
   produit: string;
+  formule?: string | null;
   cotisation_mensuelle?: number | null;
   cout_total?: number | null;
   statut: StatutOffre;

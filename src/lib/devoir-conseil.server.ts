@@ -22,6 +22,7 @@ export type DevoirConseilSaisie = {
   offres?: {
     compagnie: string;
     produit: string;
+    formule?: string | null;
     cotisation_mensuelle?: number | null;
     cout_total?: number | null;
     statut: "retenue" | "equivalente" | "ecartee";

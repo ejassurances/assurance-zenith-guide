@@ -203,7 +203,9 @@ export async function genererPdfDevoirConseil(input: DevoirPdfInput): Promise<Ui
     y -= headH;
 
     offres.forEach((o, idx) => {
-      const nom = [o.compagnie, o.produit].filter(Boolean).join(" - ") || "-";
+      const nom =
+        [o.compagnie, o.produit].filter(Boolean).join(" - ") +
+        (o.formule ? ` (formule ${o.formule})` : "") || "-";
       const appreciation = STATUT_OFFRE_LABEL[o.statut as StatutOffre] ?? o.statut;
       const cell1 = wrap(nom, font, 8.5, widths[0]! - 12);
       const cell4 = wrap(

@@ -58,13 +58,19 @@ export function ProduitGarantiesTab({
   familleNom,
   isAdmin,
   docs,
+  formuleId = null,
+  titre,
 }: {
   produitId: string;
   familleCode: string | null;
   familleNom?: string;
   isAdmin: boolean;
   docs: DocAnalysable[];
+  /** Si renseigné, la grille est celle de la FORMULE (table formule_garanties). */
+  formuleId?: string | null;
+  titre?: string;
 }) {
+  const modeFormule = Boolean(formuleId);
   const grille = useMemo(() => grillePourFamille(familleCode), [familleCode]);
   const [valeurs, setValeurs] = useState<ValeursGrille>({});
   const [ligne, setLigne] = useState<Grille | null>(null);
@@ -82,6 +88,34 @@ export function ProduitGarantiesTab({
 
   const load = useCallback(async () => {
     if (!grille) return;
+    if (modeFormule) {
+      const { data } = await supabase
+        .from("formule_garanties")
+        .select("*")
+        .eq("formule_id", formuleId!)
+        .maybeSingle();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const fg = (data as any) ?? null;
+      const gl: Grille | null = fg
+        ? {
+            id: fg.id,
+            produit_id: produitId,
+            famille_code: familleCode ?? "",
+            grille_version: fg.grille_version,
+            valeurs: (fg.valeurs ?? {}) as ValeursGrille,
+            statut: fg.statut,
+            document_source_id: null,
+            valide_le: fg.valide_le ?? null,
+            notes: null,
+          }
+        : null;
+      setLigne(gl);
+      setProposition(null);
+      const base: ValeursGrille = {};
+      for (const item of grille.garanties) base[item.code] = gl?.valeurs?.[item.code] ?? valeurVide();
+      setValeurs(base);
+      return;
+    }
     const [g, p] = await Promise.all([
       supabase.from("produit_garanties").select("*").eq("produit_id", produitId).maybeSingle(),
       supabase
@@ -100,11 +134,12 @@ export function ProduitGarantiesTab({
     for (const item of grille.garanties) base[item.code] = gl?.valeurs?.[item.code] ?? valeurVide();
     setValeurs(base);
     if (gl?.document_source_id) setDocId(gl.document_source_id);
-  }, [grille, produitId]);
+  }, [grille, produitId, modeFormule, formuleId, familleCode]);
 
   useEffect(() => {
     load();
   }, [load]);
+
 
   if (!familleCode || !grille) {
     return (
@@ -152,17 +187,35 @@ export function ProduitGarantiesTab({
     document_source_id: docId || null,
   });
 
+  /** Écriture de la grille d'une formule (RLS + trigger imposent la validation admin). */
+  const enregistrerFormule = async (statut: "brouillon" | "valide") => {
+    const { data: session } = await supabase.auth.getUser();
+    const { error } = await supabase.from("formule_garanties").upsert(
+      {
+        formule_id: formuleId!,
+        grille_version: grille.version,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        valeurs: valeurs as any,
+        statut,
+        updated_by: session.user?.id ?? null,
+      },
+      { onConflict: "formule_id" },
+    );
+    if (error) throw new Error(error.message);
+  };
+
   const validee = ligne?.statut === "valide" && ligne.grille_version === grille.version;
 
   return (
     <section className="space-y-5 rounded-lg border border-line bg-surface p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="font-serif text-lg">Grille de garanties — {familleNom ?? grille.libelle}</h3>
+          <h3 className="font-serif text-lg">{titre ?? `Grille de garanties — ${familleNom ?? grille.libelle}`}</h3>
           <p className="text-xs text-ink-muted">
             Structure standardisée (version {grille.version}) commune à toutes les compagnies de cette typologie.
           </p>
         </div>
+
         <span className={`rounded-full border px-3 py-1 text-xs font-medium ${validee ? badge("oui") : badge("non")}`}>
           {validee
             ? `Grille validée${ligne?.valide_le ? ` le ${new Date(ligne.valide_le).toLocaleDateString("fr-FR")}` : ""}`
@@ -181,8 +234,9 @@ export function ProduitGarantiesTab({
         </p>
       )}
 
-      {/* Extraction automatique */}
-      <div className="space-y-2 rounded-md border border-line bg-background p-3">
+      {/* Extraction automatique (grille produit uniquement) */}
+      <div className={`space-y-2 rounded-md border border-line bg-background p-3 ${modeFormule ? "hidden" : ""}`}>
+
         <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
           Extraction assistée depuis les CG / IPID
         </p>
@@ -343,7 +397,13 @@ export function ProduitGarantiesTab({
         <button
           type="button"
           disabled={busy !== null}
-          onClick={() => run("brouillon", () => brouillon({ data: payload() }), "Brouillon enregistré.")}
+          onClick={() =>
+            run(
+              "brouillon",
+              () => (modeFormule ? enregistrerFormule("brouillon") : brouillon({ data: payload() })),
+              "Brouillon enregistré.",
+            )
+          }
           className="rounded-md border border-line px-4 py-2 text-sm"
         >
           Enregistrer en brouillon
@@ -355,8 +415,13 @@ export function ProduitGarantiesTab({
           onClick={() =>
             run(
               "valider",
-              () => valider({ data: { ...payload(), proposition_id: proposition?.id ?? null } }),
-              "Grille validée — le produit peut alimenter un devoir de conseil.",
+              () =>
+                modeFormule
+                  ? enregistrerFormule("valide")
+                  : valider({ data: { ...payload(), proposition_id: proposition?.id ?? null } }),
+              modeFormule
+                ? "Grille de la formule validée — elle peut alimenter un devoir de conseil."
+                : "Grille validée — le produit peut alimenter un devoir de conseil.",
             )
           }
           className="rounded-md bg-ink px-4 py-2 text-sm text-surface disabled:opacity-50"
@@ -364,6 +429,7 @@ export function ProduitGarantiesTab({
           Valider la grille
         </button>
       </div>
+
     </section>
   );
 }
