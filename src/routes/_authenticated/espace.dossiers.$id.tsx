@@ -486,7 +486,7 @@ function RecueilPanel({ dossier }: { dossier: Dossier }) {
   const r = dossier.recueil_besoins ?? {};
   if (!branche) return null;
   return (
-    <Section title={`Recueil des besoins — ${branche.label}`}>
+    <Section id="section-recueil" title={`Recueil des besoins — ${branche.label}`}>
       {branche.sections.map((s) => {
         const rows = s.fields
           .map((f) => {
