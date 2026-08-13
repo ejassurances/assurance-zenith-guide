@@ -23,6 +23,8 @@ export type GarantieDef = {
   /** Garantie attendue par la réglementation ou par la typologie. */
   obligatoire?: boolean;
   aide?: string;
+  /** Section de la trame standardisée (regroupement d'affichage et de comparatif). */
+  groupe?: string;
 };
 
 export type GrilleGaranties = {
