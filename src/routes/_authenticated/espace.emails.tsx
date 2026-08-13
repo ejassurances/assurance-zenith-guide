@@ -217,25 +217,19 @@ function EmailsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-5">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-ink">Emails</h1>
-          <p className="mt-1 text-sm text-ink-muted">
+          <h1 className="font-serif text-3xl text-ink">Emails</h1>
+          <span className="mt-2 block h-0.5 w-16 bg-[color:var(--crm-gold)]" aria-hidden />
+          <p className="mt-3 text-sm text-ink-muted">
             Boîte de réception principale du cabinet (onglet « Principal » de Gmail).
           </p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={() => loadBoite()}
-            disabled={loading}
-            className="rounded-full border border-line px-4 py-2 text-sm disabled:opacity-60"
-          >
+          <button onClick={() => loadBoite()} disabled={loading} className={BTN_SECONDAIRE}>
             {loading ? "Synchronisation…" : "Synchroniser"}
           </button>
-          <button
-            onClick={() => setCompose({ to: "", sujet: "", threadId: null })}
-            className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground"
-          >
+          <button onClick={() => setCompose({ to: "", sujet: "", threadId: null })} className={BTN_PRIMAIRE}>
             Nouvel email
           </button>
         </div>
@@ -252,67 +246,77 @@ function EmailsPage() {
           value={recherche}
           onChange={(e) => setRecherche(e.target.value)}
           placeholder="Rechercher (expéditeur, objet…)"
-          className="w-full max-w-sm rounded-md border border-line bg-background px-3 py-2 text-sm"
+          className={CHAMP + " max-w-sm"}
         />
-        <button className="rounded-full border border-line px-4 py-2 text-sm">Rechercher</button>
+        <button className={BTN_SECONDAIRE}>Rechercher</button>
       </form>
 
-      {error && <p className="rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+      {error && <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_1fr]">
-        <div className="space-y-2">
+        <div className={CARTE + " overflow-hidden"}>
+          <div className="flex items-center justify-between border-b border-line px-4 py-3">
+            <h2 className={TITRE_SECTION}>Messages</h2>
+            <span className="text-xs text-ink-muted">{messages.length}</span>
+          </div>
           {loading ? (
-            <p className="text-sm text-ink-muted">Chargement de la boîte…</p>
+            <p className="px-4 py-6 text-sm text-ink-muted">Chargement de la boîte…</p>
           ) : messages.length === 0 ? (
-            <p className="text-sm text-ink-muted">Aucun message.</p>
+            <p className="px-4 py-6 text-sm text-ink-muted">Aucun message.</p>
           ) : (
-            messages.map((m) => {
-              const lien = lienDe(m.id);
-              const actif = selected?.id === m.id;
-              return (
-                <button
-                  key={m.id}
-                  onClick={() => ouvrir(m)}
-                  className={
-                    "w-full rounded-xl border p-3 text-left transition-colors " +
-                    (actif ? "border-ink bg-surface-elevated" : "border-line bg-surface-elevated hover:bg-surface")
-                  }
-                >
-                  <div className="flex items-center gap-2">
-                    <p className={"truncate text-sm " + (m.non_lu ? "font-semibold text-ink" : "text-ink-soft")}>
-                      {m.expediteur_nom ?? m.expediteur_email ?? "—"}
-                    </p>
-                    <span className="ml-auto shrink-0 text-[11px] text-ink-muted">
-                      {m.date ? new Date(m.date).toLocaleDateString("fr-FR") : ""}
-                    </span>
-                  </div>
-                  <p className="truncate text-sm text-ink">{m.sujet}</p>
-                  <p className="mt-1 line-clamp-2 text-xs text-ink-muted">{m.snippet}</p>
-                  {m.etiquettes.length > 0 && (
-                    <span className="mt-2 flex flex-wrap gap-1">
-                      {m.etiquettes.map((e) => (
-                        <span
-                          key={e}
-                          className="rounded-full bg-surface px-2 py-0.5 text-[10px] font-medium text-ink-soft"
-                        >
-                          {e}
+            <ul className="max-h-[70vh] divide-y divide-line overflow-y-auto">
+              {messages.map((m) => {
+                const lien = lienDe(m.id);
+                const actif = selected?.id === m.id;
+                return (
+                  <li key={m.id}>
+                    <button
+                      onClick={() => ouvrir(m)}
+                      className={
+                        "w-full border-l-2 px-4 py-3 text-left transition-colors " +
+                        (actif
+                          ? "border-l-[color:var(--crm-gold)] bg-[color:var(--crm-gold)]/8"
+                          : "border-l-transparent hover:bg-surface")
+                      }
+                    >
+                      <div className="flex items-center gap-2">
+                        <p className={"truncate text-sm " + (m.non_lu ? "font-semibold text-ink" : "text-ink-soft")}>
+                          {m.expediteur_nom ?? m.expediteur_email ?? "—"}
+                        </p>
+                        <span className="ml-auto shrink-0 text-[11px] text-ink-muted">
+                          {m.date ? new Date(m.date).toLocaleDateString("fr-FR") : ""}
                         </span>
-                      ))}
-                    </span>
-                  )}
-                  {lien && (
-                    <p className="mt-2 text-[11px] font-medium text-[color:var(--crm-gold)]">
-                      Rattaché ·{" "}
-                      {lien.clients
-                        ? [lien.clients.prenom, lien.clients.nom].filter(Boolean).join(" ")
-                        : lien.compagnies?.nom ?? "CRM"}
-                    </p>
-                  )}
-                </button>
-              );
-            })
+                      </div>
+                      <p className={"truncate text-sm " + (actif ? "font-medium text-ink" : "text-ink")}>{m.sujet}</p>
+                      <p className="mt-1 line-clamp-2 text-xs text-ink-muted">{m.snippet}</p>
+                      {m.etiquettes.length > 0 && (
+                        <span className="mt-2 flex flex-wrap gap-1">
+                          {m.etiquettes.map((e) => (
+                            <span
+                              key={e}
+                              className="rounded-full border border-line bg-surface px-2 py-0.5 text-[10px] font-medium text-ink-soft"
+                            >
+                              {e}
+                            </span>
+                          ))}
+                        </span>
+                      )}
+                      {lien && (
+                        <p className="mt-2 text-[11px] font-medium text-[color:var(--crm-gold)]">
+                          Rattaché ·{" "}
+                          {lien.clients
+                            ? [lien.clients.prenom, lien.clients.nom].filter(Boolean).join(" ")
+                            : lien.compagnies?.nom ?? "CRM"}
+                        </p>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </div>
+
 
         <div>
           {!selected ? (
