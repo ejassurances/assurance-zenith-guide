@@ -13,6 +13,8 @@ export type DevoirConseilSaisie = {
   compagnie?: string;
   produit?: string;
   cotisation_mensuelle?: number | null;
+  frais_dossier?: number | null;
+  frais_souscription?: number | null;
   economie_estimee?: number | null;
   garanties?: string;
   exigences_client?: string;
