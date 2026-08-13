@@ -428,6 +428,8 @@ export function ProduitGarantiesTab({
             </div>
           );
         })}
+        </div>
+        ))}
       </div>
 
       {msg && (
