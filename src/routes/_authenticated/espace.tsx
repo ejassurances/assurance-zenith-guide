@@ -51,6 +51,7 @@ function EspaceLayout() {
     { to: "/espace/mon-espace", label: "Mon espace", hide: role !== "client" },
     { to: "/espace/clients", label: "Clients", hide: role === "client" },
     { to: "/espace/dossiers", label: "Dossiers", hide: role === "client" },
+    { to: "/espace/emails", label: "Emails", hide: role !== "admin" && role !== "mandataire" },
     { to: "/espace/taches", label: "Tâches", hide: role === "client" },
     { to: "/espace/compagnies", label: "Compagnies", hide: role !== "admin" && role !== "mandataire" },
     { to: "/espace/neoliane", label: "Néoliane (API)", hide: role !== "admin" && role !== "mandataire" },
