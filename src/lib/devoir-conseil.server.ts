@@ -216,6 +216,8 @@ export async function genererDevoirConseilAuto(
     economie_estimee: typeof d.economie_estimee === "number" ? d.economie_estimee : null,
   });
 
+  const emprunteur = d.type_assurance === "emprunteur";
+
   return envoyerDevoirConseil(supabase, dossierId, userId, {
     recommandation: pre.recommandation,
     motifs: pre.motifs,
@@ -223,5 +225,13 @@ export async function genererDevoirConseilAuto(
     exigences_client: pre.exigences_client,
     compagnie,
     produit,
+    offres: [{ compagnie, produit, statut: "retenue", commentaire: "Meilleur rapport garanties / coût" }],
+    ...(emprunteur
+      ? {
+          assiette: "capital_restant_du" as const,
+          capital_assure: typeof d.capital === "number" ? d.capital : null,
+          duree_mois: typeof d.duree_mois === "number" ? d.duree_mois : null,
+        }
+      : {}),
   });
 }
