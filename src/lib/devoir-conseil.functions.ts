@@ -146,6 +146,32 @@ export const changerEtapeDossier = createServerFn({ method: "POST" })
       .maybeSingle();
     if (error || !dossier) throw new Error("Dossier introuvable ou accès refusé");
 
+    // Passage à « Devoir de conseil envoyé » : le document est généré
+    // automatiquement depuis le modèle de la typologie, puis envoyé au client.
+    if (data.etape === "devoir_conseil_envoye") {
+      const { data: existant } = await supabase
+        .from("devoirs_conseil")
+        .select("id, statut")
+        .eq("dossier_id", data.dossier_id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!existant || existant.statut !== "signe") {
+        const { genererDevoirConseilAuto } = await import("./devoir-conseil.server");
+        await genererDevoirConseilAuto(supabase, data.dossier_id, userId);
+        if (data.commentaire) {
+          await supabase.from("dossier_etapes_historique").insert({
+            dossier_id: data.dossier_id,
+            ancienne_etape: dossier.statut,
+            nouvelle_etape: data.etape,
+            commentaire: data.commentaire,
+            par: userId,
+          });
+        }
+        return { ok: true, devoir_genere: true };
+      }
+    }
+
     const { error: upErr } = await supabase
       .from("dossiers")
       .update({ statut: data.etape })
