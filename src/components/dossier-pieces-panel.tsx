@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { monFichierUrl } from "@/lib/espace-client.functions";
+import { traiterPieceIdentite } from "@/lib/cni-extraction.functions";
 import {
   CATEGORIE_LABEL,
   STATUT_PIECE_LABEL,
@@ -67,6 +68,7 @@ export function DossierPiecesPanel({
   const [precision, setPrecision] = useState<Record<string, string>>({});
   const inputs = useRef<Record<string, HTMLInputElement | null>>({});
   const fichierUrl = useServerFn(monFichierUrl);
+  const traiterPiece = useServerFn(traiterPieceIdentite);
   const [telechargement, setTelechargement] = useState<string | null>(null);
 
   /** Ouvre le fichier déjà déposé (KYC ou document) via une URL signée. */
@@ -157,6 +159,14 @@ export function DossierPiecesPanel({
         .from("dossier_pieces_requises")
         .update({ statut: "recue", recue_le: new Date().toISOString(), kyc_document_id: kyc!.id } as never)
         .eq("id", piece.id);
+      // Pièce d'identité : lecture IA + relance automatique du LCB-FT en attente.
+      if (kycType === "cni") {
+        try {
+          await traiterPiece({ data: { kyc_document_id: kyc!.id } });
+        } catch (e) {
+          console.error("[CNI] lecture automatique impossible", e);
+        }
+      }
     } else {
       const { data: userRes } = await supabase.auth.getUser();
       const { data: doc, error: dErr } = await supabase

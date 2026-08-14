@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { rechercherSanctionsPPE, marquerVerificationLCB } from "@/lib/lcb-ft.functions";
+import { traiterPieceIdentite } from "@/lib/cni-extraction.functions";
 import { DerStatusCard } from "@/components/der-status-card";
 import { detailConformite, NIVEAU_BAR, SEUIL_BLOCAGE_CONTRAT, type NiveauConformite } from "@/lib/conformite-score";
 
@@ -79,6 +80,7 @@ export function ConformiteClientTab({
 
   const rechercher = useServerFn(rechercherSanctionsPPE);
   const marquer = useServerFn(marquerVerificationLCB);
+  const traiterPiece = useServerFn(traiterPieceIdentite);
 
   const load = async () => {
     const [c, d, v, e] = await Promise.all([
@@ -126,17 +128,30 @@ export function ConformiteClientTab({
       alert("Upload : " + upErr.message);
       return;
     }
-    const { error: insErr } = await supabase.from("client_kyc_documents").insert({
-      client_id: clientId,
-      type,
-      nom: file.name,
-      storage_path: path,
-      statut: "a_valider",
-      date_emission: type === "justificatif_domicile" ? new Date().toISOString().slice(0, 10) : null,
-    });
+    const { data: insere, error: insErr } = await supabase
+      .from("client_kyc_documents")
+      .insert({
+        client_id: clientId,
+        type,
+        nom: file.name,
+        storage_path: path,
+        statut: "a_valider",
+        date_emission: type === "justificatif_domicile" ? new Date().toISOString().slice(0, 10) : null,
+      })
+      .select("id")
+      .maybeSingle();
     if (insErr) alert(insErr.message);
+    // Pièce d'identité : lecture IA + relance automatique du LCB-FT en attente.
+    if (!insErr && type === "cni" && insere) {
+      try {
+        await traiterPiece({ data: { kyc_document_id: (insere as { id: string }).id } });
+      } catch (e) {
+        console.error("[CNI] lecture automatique impossible", e);
+      }
+    }
     await load();
   };
+
 
   const valider = async (id: string, statut: string) => {
     await supabase.from("client_kyc_documents").update({ statut }).eq("id", id);
