@@ -184,6 +184,31 @@ function NeolianePage() {
       </Card>
 
       <Card title="Diagnostic / test de connexion">
+        <div className="mb-3 flex flex-wrap items-center gap-3 text-xs">
+          {[
+            ["NEOLIANE_CLIENT_ID", statut?.hasClientId],
+            ["NEOLIANE_CLIENT_SECRET", statut?.hasClientSecret],
+            ["NEOLIANE_USER_API_KEY", statut?.hasUserApiKey],
+          ].map(([name, ok]) => (
+            <span
+              key={String(name)}
+              className={
+                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 " +
+                (ok
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-red-200 bg-red-50 text-red-700")
+              }
+            >
+              <span
+                className={
+                  "inline-block h-1.5 w-1.5 rounded-full " + (ok ? "bg-emerald-500" : "bg-red-500")
+                }
+              />
+              <span className="font-mono">{String(name)}</span>
+              <span>{ok ? "détecté" : "absent"}</span>
+            </span>
+          ))}
+        </div>
         <div className="flex flex-wrap gap-2">
           {(["oauth2", "basic"] as const).map((mode) => (
             <button
