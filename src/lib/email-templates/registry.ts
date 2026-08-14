@@ -119,6 +119,8 @@ function PiecesManquantesEmail(props: {
   reference?: string;
   pieces?: string[];
   link?: string;
+  /** Premiere relance J+2 : ajoute l'accuse de reception de la demande. */
+  accuse?: boolean;
 }) {
   const nom = props.cabinetName || "EJ Partners Assurances";
   const liste = (props.pieces || []).map((p) => "<li>" + p + "</li>").join("");
@@ -126,12 +128,18 @@ function PiecesManquantesEmail(props: {
     "<p>Bonjour " +
     (props.clientName || "") +
     ",</p>" +
+    (props.accuse
+      ? "<p>Nous accusons reception de votre demande et vous remercions de votre confiance. Votre dossier " +
+        (props.reference || "") +
+        " est en cours d'etude par nos equipes.</p>"
+      : "") +
     "<p>Afin de poursuivre l'etude de votre dossier " +
     (props.reference || "") +
     ", il nous manque les pieces suivantes :</p>" +
     "<ul>" +
     liste +
     "</ul>" +
+
     "<p><a href='" +
     (props.link || "") +
     "'>Deposer mes pieces dans mon espace client</a></p>" +

@@ -1,0 +1,266 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+
+/**
+ * Agent commercial — analyse IA d'un email entrant non rattaché à un client
+ * existant : s'agit-il d'une demande de devis / de contact assurance, sur
+ * quelle branche, et au nom de qui ? Si la classification est confiante, le
+ * prospect, son dossier et la lettre de mission sont créés automatiquement.
+ */
+
+const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const MODELES = ["google/gemini-3.6-flash", "google/gemini-2.5-flash"];
+
+/** Branches réellement gérées par le CRM aujourd'hui. */
+export const BRANCHES_AUTO = ["emprunteur", "sante", "prevoyance"] as const;
+export type BrancheAuto = (typeof BRANCHES_AUTO)[number];
+
+export interface TriageEmail {
+  sujet: string | null;
+  expediteur_nom: string | null;
+  expediteur_email: string | null;
+  texte: string | null;
+  pieces_jointes: { nom: string; mime: string | null }[];
+}
+
+export interface TriageResultat {
+  prospect: "oui" | "non" | "incertain";
+  branche: BrancheAuto | null;
+  nom: string | null;
+  prenom: string | null;
+  telephone: string | null;
+  capital_restant_du: number | null;
+  mois_restants: number | null;
+  piece_pret: string | null;
+  confiance: number;
+  resume: string;
+  modele: string | null;
+}
+
+function extraireJson(texte: string): Record<string, unknown> {
+  const nettoye = texte.replace(/```json/gi, "").replace(/```/g, "").trim();
+  try {
+    return JSON.parse(nettoye) as Record<string, unknown>;
+  } catch {
+    const debut = nettoye.indexOf("{");
+    const fin = nettoye.lastIndexOf("}");
+    if (debut === -1 || fin <= debut) throw new Error("Réponse IA illisible (JSON attendu)");
+    return JSON.parse(nettoye.slice(debut, fin + 1)) as Record<string, unknown>;
+  }
+}
+
+function consigne(email: TriageEmail): string {
+  return [
+    "Tu es assistant commercial dans un cabinet de courtage en assurances français.",
+    "On te transmet un email entrant reçu sur la boîte du cabinet, qui ne correspond à aucun client connu.",
+    "Détermine :",
+    "1. S'il s'agit d'un prospect demandant un devis, une étude ou une prise de contact en assurance.",
+    "2. La branche demandée, UNIQUEMENT parmi : emprunteur, sante, prevoyance.",
+    "   Si le besoin porte sur autre chose (auto, habitation, animaux, professionnelle, etc.) ou si plusieurs",
+    "   branches sont possibles, réponds prospect = \"incertain\" et branche = null.",
+    "3. Le nom et le prénom si identifiables dans le corps du message ou la signature, sinon null.",
+    "4. Si la branche est emprunteur ET qu'une pièce jointe ressemble à un tableau d'amortissement ou une offre",
+    "   de prêt (d'après son nom de fichier) ou que le corps du mail donne ces chiffres : extrais le capital",
+    "   restant dû (en euros, nombre) et la durée restante en mois (nombre). Sinon null.",
+    "N'invente jamais un nom, un chiffre ou une branche : dans le doute, null et prospect = \"incertain\".",
+    "",
+    `Expéditeur : ${email.expediteur_nom ?? ""} <${email.expediteur_email ?? ""}>`,
+    `Objet : ${email.sujet ?? "(sans objet)"}`,
+    `Pièces jointes : ${email.pieces_jointes.map((p) => p.nom).join(", ") || "aucune"}`,
+    "Corps du message :",
+    (email.texte ?? "").slice(0, 6000),
+    "",
+    'Réponds STRICTEMENT en JSON : {"prospect":"oui|non|incertain","branche":"emprunteur|sante|prevoyance|null",',
+    '"nom":"...|null","prenom":"...|null","telephone":"...|null","capital_restant_du":null,"mois_restants":null,',
+    '"piece_pret":"nom du fichier|null","confiance":0.0,"resume":"une phrase"}',
+  ].join("\n");
+}
+
+function nombreOuNull(v: unknown): number | null {
+  const n = typeof v === "string" ? Number(v.replace(/[^\d.,-]/g, "").replace(",", ".")) : Number(v);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function texteOuNull(v: unknown, max = 120): string | null {
+  if (typeof v !== "string") return null;
+  const t = v.trim();
+  if (!t || t.toLowerCase() === "null") return null;
+  return t.slice(0, max);
+}
+
+/** Analyse IA d'un email entrant. */
+export async function analyserEmailProspect(email: TriageEmail): Promise<TriageResultat> {
+  const cle = process.env["LOVABLE_API_KEY"];
+  if (!cle) throw new Error("Analyse indisponible : clé IA absente du projet.");
+
+  let derniere = "";
+  for (const modele of MODELES) {
+    const res = await fetch(GATEWAY, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${cle}` },
+      body: JSON.stringify({ model: modele, messages: [{ role: "user", content: consigne(email) }] }),
+    });
+    if (res.ok) {
+      const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+      const contenu = json.choices?.[0]?.message?.content ?? "";
+      if (!contenu) throw new Error("Réponse IA vide");
+      const brut = extraireJson(contenu);
+
+      const prospectBrut = String(brut["prospect"] ?? "incertain").toLowerCase();
+      const prospect: TriageResultat["prospect"] =
+        prospectBrut === "oui" ? "oui" : prospectBrut === "non" ? "non" : "incertain";
+      const brancheBrut = texteOuNull(brut["branche"], 20);
+      const branche = (BRANCHES_AUTO as readonly string[]).includes(brancheBrut ?? "")
+        ? (brancheBrut as BrancheAuto)
+        : null;
+
+      return {
+        prospect,
+        branche,
+        nom: texteOuNull(brut["nom"]),
+        prenom: texteOuNull(brut["prenom"]),
+        telephone: texteOuNull(brut["telephone"], 30),
+        capital_restant_du: nombreOuNull(brut["capital_restant_du"]),
+        mois_restants: nombreOuNull(brut["mois_restants"]),
+        piece_pret: texteOuNull(brut["piece_pret"], 200),
+        confiance: Math.max(0, Math.min(1, Number(brut["confiance"]) || 0)),
+        resume: texteOuNull(brut["resume"], 400) ?? "",
+        modele,
+      };
+    }
+    derniere = `${res.status} ${await res.text()}`;
+    if (res.status === 429) throw new Error("Analyse IA momentanément saturée.");
+    if (res.status !== 400 && res.status !== 404) break;
+  }
+  throw new Error(`Analyse IA impossible : ${derniere}`);
+}
+
+/** La classification est-elle assez sûre pour créer le dossier sans intervention ? */
+export function classificationConfiante(r: TriageResultat): boolean {
+  return r.prospect === "oui" && !!r.branche && !!r.nom && r.confiance >= 0.7;
+}
+
+/**
+ * Création automatique complète depuis un email entrant : prospect (contrôle
+ * LCB-FT déclenché par la création de la fiche), dossier de la branche détectée
+ * avec recueil des besoins pré-rempli, puis lettre de mission envoyée.
+ */
+export async function creerDossierDepuisEmail(
+  admin: SupabaseClient<Database>,
+  params: {
+    email: TriageEmail;
+    triage: TriageResultat;
+    gmail_message_id: string;
+    gmail_thread_id?: string | null;
+    recu_le?: string | null;
+    userId: string;
+  },
+) {
+  const { triage, email } = params;
+  if (!email.expediteur_email) throw new Error("Email expéditeur manquant");
+  if (!classificationConfiante(triage)) throw new Error("Classification insuffisante");
+
+  const { data: cree, error } = await admin
+    .from("clients")
+    .insert({
+      nom: triage.nom!,
+      prenom: triage.prenom,
+      email: email.expediteur_email,
+      mobile: triage.telephone,
+      statut: "prospect",
+      origine: "internet",
+      etiquettes: ["email-entrant", "agent-commercial"],
+      created_by: params.userId,
+    })
+    .select("id")
+    .single();
+  if (error || !cree) throw new Error(error?.message ?? "Création de la fiche impossible");
+  const clientId = cree.id;
+
+  // Contrôle LCB-FT / OpenSanctions automatique sur toute nouvelle fiche.
+  const { lancerLcbAutomatique } = await import("@/lib/dossier-automation.server");
+  await lancerLcbAutomatique(admin, { client_id: clientId, nom: triage.nom!, prenom: triage.prenom });
+
+  const { creerDossierAutomatique } = await import("@/lib/dossier-automation.server");
+  const dossier = await creerDossierAutomatique(admin, {
+    client_id: clientId,
+    nom: triage.nom!,
+    prenom: triage.prenom,
+    email: email.expediteur_email,
+    telephone: triage.telephone,
+    type_assurance: triage.branche!,
+    notes: `Créé automatiquement depuis un email entrant : ${email.sujet ?? "(sans objet)"}\n${triage.resume}`,
+    admin_id: params.userId,
+    origin: "agent-commercial-email",
+  });
+
+  // Recueil des besoins vide (à compléter), pré-rempli pour l'emprunteur si le
+  // mail ou une pièce jointe donne le capital restant dû et la durée restante.
+  const recueil: Record<string, number> = {};
+  if (triage.branche === "emprunteur") {
+    if (triage.capital_restant_du != null) recueil["capital_restant_du"] = triage.capital_restant_du;
+    if (triage.mois_restants != null) recueil["mois_restants"] = triage.mois_restants;
+  }
+  await admin
+    .from("dossiers")
+    .update({ client_id: clientId, recueil_besoins: recueil })
+    .eq("id", dossier.id);
+
+
+  let lettreEnvoyee = false;
+  let lettreErreur: string | null = null;
+  try {
+    const { envoyerLettreMission } = await import("@/lib/lettres-mission.server");
+    const { APP_URL } = await import("@/lib/app-url");
+    await envoyerLettreMission(admin, dossier.id, params.userId, APP_URL);
+    lettreEnvoyee = true;
+  } catch (e) {
+    lettreErreur = e instanceof Error ? e.message : "Envoi de la lettre de mission impossible";
+  }
+
+  await admin.from("crm_emails").upsert(
+    {
+      gmail_message_id: params.gmail_message_id,
+      gmail_thread_id: params.gmail_thread_id ?? null,
+      direction: "entrant",
+      expediteur_nom: email.expediteur_nom,
+      expediteur_email: email.expediteur_email,
+      sujet: email.sujet,
+      snippet: (email.texte ?? "").slice(0, 500) || null,
+      recu_le: params.recu_le ?? null,
+      client_id: clientId,
+      dossier_id: dossier.id,
+      notes: "Dossier créé automatiquement (agent commercial)",
+      triage_ia: JSON.parse(JSON.stringify(triage)),
+      triage_le: new Date().toISOString(),
+      created_by: params.userId,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "gmail_message_id" },
+  );
+
+  await admin.from("activites").insert({
+    client_id: clientId,
+    type: "systeme",
+    titre: "Dossier créé automatiquement depuis un email entrant",
+    contenu: [
+      `Branche détectée : ${triage.branche}`,
+      `Dossier : ${dossier.reference}`,
+      `Objet du mail : ${email.sujet ?? "(sans objet)"}`,
+      triage.resume,
+      lettreEnvoyee
+        ? "Lettre de mission générée et envoyée au client."
+        : `Lettre de mission non envoyée : ${lettreErreur ?? "erreur inconnue"}`,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    created_by: params.userId,
+  });
+
+  return {
+    client_id: clientId,
+    dossier_id: dossier.id,
+    dossier_reference: dossier.reference,
+    lettre_envoyee: lettreEnvoyee,
+  };
+}

@@ -54,6 +54,9 @@ type Lien = {
   contrat_id: string | null;
   compagnie_id: string | null;
   notes: string | null;
+  triage_ia?: unknown;
+  triage_le?: string | null;
+
   clients?: { nom: string | null; prenom: string | null } | null;
   compagnies?: { nom: string | null } | null;
 };
@@ -151,6 +154,12 @@ function EmailsPage() {
       const res = await charger({ data: { recherche: recherche || null, pageToken: token ?? null } });
       setMessages(res.messages as Resume[]);
       setLiens(res.liens as Lien[]);
+      if (res.dossiers_crees > 0) {
+        toast.success(
+          `${res.dossiers_crees} dossier(s) créé(s) automatiquement depuis les emails entrants (lettre de mission envoyée).`,
+        );
+      }
+
     } catch (err) {
       setError(err instanceof Error ? err.message : "Lecture de la boîte impossible");
     } finally {
@@ -636,7 +645,17 @@ function RattachementPanel({
   const [msg, setMsg] = useState<string | null>(null);
 
   const [creation, setCreation] = useState(false);
+  // Suggestion de l'agent commercial lorsque la classification n'est pas certaine.
+  const triage = (lien?.triage_ia ?? null) as {
+    prospect?: string;
+    branche?: string | null;
+    nom?: string | null;
+    prenom?: string | null;
+    telephone?: string | null;
+    resume?: string;
+  } | null;
   const nomDeduit = (message.expediteur_nom ?? message.expediteur_email ?? "").split(" ");
+
   const [form, setForm] = useState({
     prenom: nomDeduit.length > 1 ? nomDeduit[0]! : "",
     nom: nomDeduit.length > 1 ? nomDeduit.slice(1).join(" ") : nomDeduit[0] || "Contact",
@@ -819,11 +838,38 @@ function RattachementPanel({
         </div>
       </div>
 
+      {triage && triage.prospect !== "non" && !lien?.client_id && (
+        <div className="rounded-xl border border-[color:var(--crm-gold)] bg-surface p-4">
+          <p className="text-sm font-medium text-ink">Créer un dossier ?</p>
+          <p className="mt-1 text-xs text-ink-muted">
+            L'analyse automatique hésite sur ce message
+            {triage.branche ? ` (branche suggérée : ${triage.branche})` : ""}. {triage.resume}
+          </p>
+          <button
+            onClick={() => {
+              setForm((f) => ({
+                ...f,
+                nom: triage.nom || f.nom,
+                prenom: triage.prenom || f.prenom,
+                telephone: triage.telephone || f.telephone,
+                creer_dossier: true,
+                type_assurance: triage.branche || f.type_assurance,
+              }));
+              setCreation(true);
+            }}
+            className={BTN_SECONDAIRE + " mt-3"}
+          >
+            Créer le dossier suggéré
+          </button>
+        </div>
+      )}
+
       <div className="border-t border-line pt-4">
         {!creation ? (
           <button onClick={() => setCreation(true)} className={BTN_SECONDAIRE}>
             + Créer une fiche client (et un dossier)
           </button>
+
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             <input

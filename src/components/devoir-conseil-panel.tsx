@@ -7,6 +7,8 @@ import { useAuth } from "@/lib/auth-context";
 import { useCommissionBareme } from "@/hooks/use-commission-bareme";
 import { resoudreRegle, decrireRegle, fmtEuros } from "@/lib/commissions-bareme";
 import { montantMensuelEstime, moisRestantsRecueil, totalPrevisionnel } from "@/lib/commission-previsions";
+import { etatDelaiEnvoi } from "@/lib/devoir-conseil-delai";
+
 
 type Devoir = {
   id: string;
@@ -173,6 +175,32 @@ export function DevoirConseilPanel({
     if (staff) loadPrevision();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dossierId, staff]);
+
+  // Délai de réflexion : 16 h après signature de la lettre de mission,
+  // et envoi possible uniquement pendant les horaires d'ouverture.
+  const [lettreSigneeLe, setLettreSigneeLe] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("lettres_mission")
+        .select("signed_at")
+        .eq("dossier_id", dossierId)
+        .eq("statut", "signee")
+        .order("signed_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setLettreSigneeLe((data as { signed_at: string | null } | null)?.signed_at ?? null);
+    })();
+  }, [dossierId]);
+  useEffect(() => {
+    const t = setInterval(() => setTick((n) => n + 1), 60000);
+    return () => clearInterval(t);
+  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const delai = etatDelaiEnvoi(lettreSigneeLe, new Date());
+  void tick;
+
 
   // Contre-proposition demandée depuis l'analyse IA du refus : ouvre et pré-remplit la saisie.
   useEffect(() => {
@@ -764,11 +792,13 @@ export function DevoirConseilPanel({
 
           <button
             onClick={submit}
-            disabled={busy || !valide}
+            disabled={busy || !valide || !delai.autorise}
             className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
           >
             {busy ? "Envoi…" : "Générer et envoyer au client"}
           </button>
+          {!delai.autorise && delai.motif && <p className="text-xs text-destructive">{delai.motif}</p>}
+
           {!valide && (
             <p className="text-xs text-ink-muted">
               Recommandation et motifs doivent contenir au moins 10 caractères (exigence DDA)

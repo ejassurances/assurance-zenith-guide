@@ -103,12 +103,90 @@ export const boiteReception = createServerFn({ method: "POST" })
       }
     }
 
-    const { data: liensFinaux } = nouveaux && ids.length
-      ? await supabaseAdmin.from("crm_emails").select(selectLiens).in("gmail_message_id", ids)
-      : { data: liens ?? [] };
+    // Agent commercial : les messages entrants qui ne correspondent à aucun
+    // client sont analysés par l'IA. Classification confiante -> prospect,
+    // dossier, recueil et lettre de mission créés ; sinon suggestion affichée.
+    let dossiersCrees = 0;
+    const { data: dejaTriage } = ids.length
+      ? await supabaseAdmin.from("crm_emails").select("gmail_message_id").in("gmail_message_id", ids).not("triage_ia", "is", null)
+      : { data: [] };
+    const triageFaits = new Set((dejaTriage ?? []).map((r) => r.gmail_message_id));
+    const { data: liensApres } = ids.length
+      ? await supabaseAdmin.from("crm_emails").select("gmail_message_id, client_id").in("gmail_message_id", ids)
+      : { data: [] };
+    const avecClient = new Set((liensApres ?? []).filter((l) => l.client_id).map((l) => l.gmail_message_id));
 
-    return { messages, nextPageToken, liens: liensFinaux ?? [] };
+    const aTrier = messages
+      .filter(
+        (m) =>
+          !!m.expediteur_email &&
+          !m.etiquettes.includes("SENT") &&
+          !avecClient.has(m.id) &&
+          !triageFaits.has(m.id),
+      )
+      .slice(0, 5);
+
+    if (aTrier.length) {
+      const { lireMessage } = await import("@/lib/gmail.server");
+      const { analyserEmailProspect, classificationConfiante, creerDossierDepuisEmail } = await import(
+        "@/lib/email-triage.server"
+      );
+      for (const m of aTrier) {
+        try {
+          const detail = await lireMessage(m.id);
+          const entree = {
+            sujet: detail.sujet ?? null,
+            expediteur_nom: detail.expediteur_nom ?? null,
+            expediteur_email: detail.expediteur_email ?? null,
+            texte: detail.texte ?? detail.snippet ?? null,
+            pieces_jointes: detail.pieces_jointes.map((p) => ({ nom: p.nom, mime: p.mime })),
+          };
+          const triage = await analyserEmailProspect(entree);
+
+          if (classificationConfiante(triage)) {
+            await creerDossierDepuisEmail(supabaseAdmin, {
+              email: entree,
+              triage,
+              gmail_message_id: m.id,
+              gmail_thread_id: m.thread_id ?? null,
+              recu_le: m.date ?? null,
+              userId: context.userId,
+            });
+            dossiersCrees++;
+          } else {
+            await supabaseAdmin.from("crm_emails").upsert(
+              {
+                gmail_message_id: m.id,
+                gmail_thread_id: m.thread_id ?? null,
+                direction: "entrant",
+                expediteur_nom: m.expediteur_nom ?? null,
+                expediteur_email: m.expediteur_email ?? null,
+                destinataires: m.destinataires ?? null,
+                sujet: m.sujet ?? null,
+                snippet: m.snippet ?? null,
+                recu_le: m.date ?? null,
+                triage_ia: JSON.parse(JSON.stringify(triage)),
+                triage_le: new Date().toISOString(),
+                created_by: context.userId,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: "gmail_message_id" },
+            );
+          }
+        } catch (e) {
+          console.error("[agent-commercial] triage email", m.id, e);
+        }
+      }
+    }
+
+    const selectComplet = `${selectLiens}, triage_ia, triage_le`;
+    const { data: liensFinaux } = ids.length
+      ? await supabaseAdmin.from("crm_emails").select(selectComplet).in("gmail_message_id", ids)
+      : { data: [] };
+
+    return { messages, nextPageToken, liens: liensFinaux ?? [], nouveaux, dossiers_crees: dossiersCrees };
   });
+
 
 /** Contenu complet d'un message + son rattachement éventuel. */
 export const messageComplet = createServerFn({ method: "POST" })

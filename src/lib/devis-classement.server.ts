@@ -167,8 +167,25 @@ export async function classerDevisDossier(
     .single();
   if (iErr || !inserted) throw new Error(iErr?.message ?? "Enregistrement du classement impossible");
 
-  return { classement_id: inserted.id as string, classement };
+  // Agent commercial : l'offre de rang 1 est retenue automatiquement et le
+  // devoir de conseil est généré en brouillon. Le classement reste au statut
+  // 'propose' : le staff peut retenir une autre offre avant l'envoi.
+  let auto: { devis_id: string; devoir_id: string | null } | null = null;
+  const rang1 = classement[0];
+  if (rang1) {
+    try {
+      const res = await retenirDevisDossier(supabase, inserted.id as string, rang1.dossier_devis_id, userId, {
+        auto: true,
+      });
+      auto = { devis_id: rang1.dossier_devis_id, devoir_id: res.devoir_id ?? null };
+    } catch (e) {
+      console.error("[agent-commercial] sélection auto du rang 1 impossible", e);
+    }
+  }
+
+  return { classement_id: inserted.id as string, classement, auto };
 }
+
 
 /**
  * Le staff retient une offre : la compagnie / le produit du devis choisi sont
@@ -181,6 +198,7 @@ export async function retenirDevisDossier(
   classementId: string,
   devisId: string,
   userId: string,
+  options?: { auto?: boolean },
 ) {
   const { data: cls, error: cErr } = await supabase
     .from("dossier_devis_classements")
@@ -208,13 +226,19 @@ export async function retenirDevisDossier(
     .eq("id", c.dossier_id);
   if (upErr) throw new Error(upErr.message);
 
-  await supabase.from("dossier_devis_classements").update({ statut: "traite" }).eq("id", classementId);
+  // Sélection automatique : le classement reste 'propose' pour que le staff
+  // puisse encore retenir une autre offre avant l'envoi.
+  await supabase
+    .from("dossier_devis_classements")
+    .update({ statut: options?.auto ? "propose" : "traite", devis_retenu_id: devisId })
+    .eq("id", classementId);
 
   const { genererDevoirConseilAuto } = await import("./devoir-conseil.server");
   const res = await genererDevoirConseilAuto(supabase, c.dossier_id, userId, { sansEnvoi: true });
 
   return { dossier_id: c.dossier_id as string, devoir_id: res.id, envoye: false };
 }
+
 
 /**
  * Produit à tarification FIXE : le devis est construit depuis la formule et les
