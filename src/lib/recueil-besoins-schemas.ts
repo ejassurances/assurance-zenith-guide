@@ -141,6 +141,21 @@ export const BRANCHES: BrancheConfig[] = [
           },
           { key: "capital", label: "Capital emprunté", type: "number", suffix: "€", required: true },
           { key: "duree_mois", label: "Durée restante", type: "number", suffix: "mois", required: true },
+          {
+            key: "capital_restant_du",
+            label: "Capital restant dû",
+            type: "number",
+            suffix: "€",
+            help: "Montant du prêt restant à rembourser — utile en cas de substitution d'assurance sur un prêt en cours.",
+          },
+          {
+            key: "mois_restants",
+            label: "Mois restants sur le crédit",
+            type: "number",
+            suffix: "mois",
+            help: "Nombre de mois restants à compter de la date d'effet prévue au contrat : base de la commission prévisionnelle.",
+          },
+
           { key: "taux_pret", label: "Taux nominal du prêt", type: "number", suffix: "%" },
           { key: "quotite", label: "Quotité assurée", type: "number", suffix: "%", placeholder: "100" },
         ],
