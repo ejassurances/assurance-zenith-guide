@@ -93,6 +93,7 @@ type Produit = {
   famille_id: string;
   nom: string;
   code_produit: string | null;
+  assureur_porteur: string | null;
   description: string | null;
   statut: "actif" | "en_test" | "retire";
   caracteristiques: Record<string, unknown>;
@@ -580,6 +581,7 @@ function ProduitEditor({
       .update({
         nom: p.nom,
         code_produit: p.code_produit,
+        assureur_porteur: p.assureur_porteur,
         description: p.description,
         statut: p.statut,
         caracteristiques: p.caracteristiques as never,
@@ -620,6 +622,12 @@ function ProduitEditor({
           label="Référence interne compagnie"
           value={p.code_produit ?? ""}
           onChange={(v) => setP({ ...p, code_produit: v })}
+          readOnly={readOnly}
+        />
+        <Field
+          label="Assureur porteur du risque (ex. CARDIF, MNCAP)"
+          value={p.assureur_porteur ?? ""}
+          onChange={(v) => setP({ ...p, assureur_porteur: v })}
           readOnly={readOnly}
         />
         <div className="md:col-span-2">
