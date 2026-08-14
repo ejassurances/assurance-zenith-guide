@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CommissionMoisCard } from "@/components/commission-mois-card";
-import { getCaRealEtN1, type CaRealSummary } from "@/lib/dashboard.functions";
+import { getCaRealEtN1, getCommissionsEstimeesAnneeEnCours, type CaRealSummary } from "@/lib/dashboard.functions";
 
 export const Route = createFileRoute("/_authenticated/espace/")({
   component: Dashboard,
@@ -31,6 +31,7 @@ function Dashboard() {
   const [taches, setTaches] = useState<Tache[]>([]);
   const [caReal, setCaReal] = useState<CaRealSummary | null>(null);
   const fetchCaReal = useServerFn(getCaRealEtN1);
+  const fetchCommissionsEstimees = useServerFn(getCommissionsEstimeesAnneeEnCours);
 
   useEffect(() => {
     (async () => {
@@ -40,7 +41,7 @@ function Dashboard() {
         supabase.from("dossiers").select("*", { count: "exact", head: true }),
         supabase.from("dossiers").select("*", { count: "exact", head: true }).eq("statut", "en_cours"),
         supabase.from("dossiers").select("*", { count: "exact", head: true }).eq("statut", "signe"),
-        supabase.from("commissions").select("montant"),
+        fetchCommissionsEstimees(),
         supabase
           .from("taches")
           .select("id,titre,echeance,priorite,client_id,clients(prenom,nom)")
@@ -49,19 +50,18 @@ function Dashboard() {
           .limit(6),
         fetchCaReal(),
       ]);
-      const commissions = (com.data ?? []).reduce((s, r) => s + Number(r.montant), 0);
       setStats({
         clients: c.count ?? 0,
         prospects: p.count ?? 0,
         dossiers: tot.count ?? 0,
         enCours: ec.count ?? 0,
         signes: si.count ?? 0,
-        commissions,
+        commissions: com,
       });
       setTaches((tch.data ?? []) as unknown as Tache[]);
       setCaReal(ca);
     })();
-  }, [fetchCaReal]);
+  }, [fetchCaReal, fetchCommissionsEstimees]);
 
   return (
     <div>
