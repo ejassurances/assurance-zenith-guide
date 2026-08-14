@@ -29,10 +29,12 @@ function Dashboard() {
   }, [role, navigate]);
   const [stats, setStats] = useState({ clients: 0, prospects: 0, dossiers: 0, enCours: 0, signes: 0, commissions: 0 });
   const [taches, setTaches] = useState<Tache[]>([]);
+  const [caReal, setCaReal] = useState<CaRealSummary | null>(null);
+  const fetchCaReal = useServerFn(getCaRealEtN1);
 
   useEffect(() => {
     (async () => {
-      const [c, p, tot, ec, si, com, tch] = await Promise.all([
+      const [c, p, tot, ec, si, com, tch, ca] = await Promise.all([
         supabase.from("clients").select("*", { count: "exact", head: true }),
         supabase.from("clients").select("*", { count: "exact", head: true }).eq("statut", "prospect"),
         supabase.from("dossiers").select("*", { count: "exact", head: true }),
@@ -41,7 +43,7 @@ function Dashboard() {
         supabase.from("commissions").select("montant"),
         supabase
           .from("taches")
-          .select("id,titre,echeance,priorite,client_id,clients(prenom,nom)")
+          .select("id,titre,echeance,priorite,client_id,clients(prenom,nom)"),
           .neq("statut", "terminee")
           .order("echeance", { ascending: true, nullsFirst: false })
           .limit(6),
