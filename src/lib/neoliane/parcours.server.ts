@@ -28,6 +28,7 @@ import {
   type OffreInput,
   type ProfileMember,
 } from "./api.server";
+import { messageTechnique, reduireReponseNeoliane } from "./redaction";
 import type { EtapeParcours } from "./referentiels";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -91,10 +92,25 @@ export async function parcoursDuDossier(sb: Sb, dossierId: string): Promise<Parc
   return (data as Parcours | null) ?? null;
 }
 
+/**
+ * Écriture du parcours. Minimisation RGPD centralisée ici : les réponses
+ * Néoliane et les avertissements sont réduits aux identifiants techniques, et
+ * les erreurs à un diagnostic court, avant toute persistance.
+ */
 async function majParcours(sb: Sb, id: string, patch: Record<string, unknown>) {
+  const nettoye: Record<string, unknown> = { ...patch };
+  if ("derniere_reponse" in nettoye) {
+    nettoye["derniere_reponse"] = reduireReponseNeoliane(nettoye["derniere_reponse"]);
+  }
+  if ("avertissements" in nettoye) {
+    nettoye["avertissements"] = reduireReponseNeoliane(nettoye["avertissements"]);
+  }
+  if (typeof nettoye["derniere_erreur"] === "string") {
+    nettoye["derniere_erreur"] = messageTechnique(nettoye["derniere_erreur"] as string);
+  }
   const { data, error } = await sb
     .from("neoliane_parcours")
-    .update(patch)
+    .update(nettoye)
     .eq("id", id)
     .select("*")
     .maybeSingle();
@@ -103,10 +119,11 @@ async function majParcours(sb: Sb, id: string, patch: Record<string, unknown>) {
 }
 
 async function enregistrerErreur(sb: Sb, id: string, e: unknown) {
-  const message = (e as Error)?.message ?? "Erreur inconnue";
+  const message = messageTechnique((e as Error)?.message ?? "Erreur inconnue");
   await sb.from("neoliane_parcours").update({ derniere_erreur: message }).eq("id", id);
   return message;
 }
+
 
 /** Exécute une étape en journalisant l'erreur éventuelle sur le parcours. */
 async function etape<T>(sb: Sb, id: string, fn: () => Promise<T>): Promise<T> {

@@ -3990,6 +3990,8 @@ export type Database = {
         }
         Returns: undefined
       }
+      neoliane_reduire_json: { Args: { _data: Json }; Returns: Json }
+      purger_neoliane_evenements: { Args: never; Returns: undefined }
       recalculer_echeances_contrat: {
         Args: { _contrat_id: string }
         Returns: undefined

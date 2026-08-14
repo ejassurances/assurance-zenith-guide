@@ -13,6 +13,7 @@
 
 import { neolianeRequest, type NeolianeResponse } from "./client.server";
 import { readNeolianeCredentials } from "./config";
+import { diagnosticErreur, masquerSecret } from "./redaction";
 import type { EventName, FamilyMember, ProductType, SocialSecurityScheme } from "./referentiels";
 
 export const EZ = "/neoverse/public";
@@ -25,6 +26,8 @@ interface AppelOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   payload?: Record<string, unknown> | undefined;
   withUserApiKey?: boolean;
+  /** Chemin affiché dans les logs lorsque le chemin réel contient un secret. */
+  logPath?: string;
 }
 
 /** Appel journalisé et normalisé vers l'API Néoliane. */
@@ -35,6 +38,7 @@ export async function appel<T = unknown>(
   const cid = correlationId();
   const debut = Date.now();
   const method = options.method ?? "GET";
+  const pathLog = options.logPath ?? path;
   try {
     const res = await neolianeRequest<T>({
       path: `${EZ}${path}`,
@@ -43,12 +47,12 @@ export async function appel<T = unknown>(
       withUserApiKey: options.withUserApiKey ?? false,
     });
     console.info(
-      `[neoliane] ${cid} ${method} ${path} → ${res.status} (${Date.now() - debut} ms, auth=${res.authMode})`,
+      `[neoliane] ${cid} ${method} ${pathLog} → ${res.status} (${Date.now() - debut} ms, auth=${res.authMode})`,
     );
     return res;
   } catch (e) {
     console.error(
-      `[neoliane] ${cid} ${method} ${path} → échec en ${Date.now() - debut} ms : ${
+      `[neoliane] ${cid} ${method} ${pathLog} → échec en ${Date.now() - debut} ms : ${
         (e as Error)?.name ?? "Error"
       }`,
     );
@@ -56,15 +60,12 @@ export async function appel<T = unknown>(
   }
 }
 
-/** Extrait un message d'erreur exploitable d'une réponse Néoliane. */
+/**
+ * Diagnostic technique d'une réponse en erreur : codes et libellés d'erreur
+ * uniquement, sans le corps brut ni les valeurs de champs rejetées.
+ */
 export function messageErreurApi(prefixe: string, res: NeolianeResponse<unknown>): string {
-  let detail = "";
-  try {
-    detail = typeof res.data === "string" ? res.data : JSON.stringify(res.data);
-  } catch {
-    detail = "";
-  }
-  return `${prefixe} (HTTP ${res.status})${detail ? ` — ${detail.slice(0, 500)}` : ""}`;
+  return diagnosticErreur(prefixe, res.status, res.data);
 }
 
 /** Renvoie la donnée utile, ou lève une erreur explicite. */
@@ -90,11 +91,13 @@ export async function validerUserApiKey() {
   if (!userApiKey) throw new Error("NEOLIANE_USER_API_KEY absent.");
   const res = await appel<{ isValid?: boolean; sousCode?: string }>(
     `/user/api-key/${encodeURIComponent(userApiKey)}/validation`,
-    { method: "POST" },
+    // La clé ne doit jamais apparaître dans les journaux.
+    { method: "POST", logPath: `/user/api-key/${masquerSecret(userApiKey)}/validation` },
   );
   const d = (deballer(res.data) ?? {}) as { isValid?: boolean; sousCode?: string };
   return { ok: res.ok, status: res.status, isValid: !!d.isValid, sousCode: d.sousCode ?? null };
 }
+
 
 /* ------------------------------------------------------------------ */
 /* 5.1 Tarification et panier                                         */
