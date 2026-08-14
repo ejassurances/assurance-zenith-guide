@@ -205,6 +205,15 @@ export const BRANCHES: BrancheConfig[] = [
             suffix: "ans",
             help: "Nombre d'années sur lesquelles la commission est perçue : sert au calcul de la valorisation du portefeuille.",
           },
+          {
+            key: "tarif_taux_commission",
+            label: "Taux de commission",
+            type: "number",
+            suffix: "% de la cotisation",
+            placeholder: "5",
+            help: "Laissé vide : 5 % par défaut (barème cabinet emprunteur).",
+          },
+
         ],
       },
       {
