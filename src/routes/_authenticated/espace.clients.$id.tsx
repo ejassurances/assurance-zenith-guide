@@ -314,7 +314,11 @@ function IdentiteTab({ client, canEdit, onSaved }: { client: Client; canEdit: bo
 
           <Section title="Profil">
             <Row label="Statut" value={client.statut} />
-            <Row label="Origine" value={client.origine} />
+            <Row label="Origine" value={origineLabel(client.origine)} />
+            {client.client_origine_id && (
+              <ClientOrigineLien origine={client.origine} clientOrigineId={client.client_origine_id} />
+            )}
+
             <Row label="CSP" value={client.csp} />
             <Row label="Métier" value={client.metier} />
             <Row label="Fumeur" value={client.fumeur ? "Oui" : "Non"} />
