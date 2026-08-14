@@ -349,16 +349,24 @@ function NewClientForm({ onCreated }: { onCreated: (id: string) => void }) {
       />
       <select
         value={form.origine}
-        onChange={(e) => setForm({ ...form, origine: e.target.value as typeof form.origine })}
+        onChange={(e) => setForm({ ...form, origine: e.target.value as OrigineKey })}
         className="rounded-md border border-line bg-background px-3 py-2 text-sm"
       >
-        <option value="internet">Internet</option>
-        <option value="assurlead">Assurlead</option>
-        <option value="telephone">Téléphone</option>
-        <option value="apporteur">Apporteur</option>
-        <option value="reseau">Réseau</option>
-        <option value="autre">Autre</option>
+        {ORIGINES.map((o) => (
+          <option key={o.key} value={o.key}>
+            {o.label}
+          </option>
+        ))}
       </select>
+      {origineAvecClientSource(form.origine) && (
+        <div className="sm:col-span-3">
+          <ClientOriginePicker
+            value={form.client_origine_id}
+            onChange={(id) => setForm({ ...form, client_origine_id: id })}
+          />
+        </div>
+      )}
+
       <select
         value={form.marque}
         onChange={(e) => setForm({ ...form, marque: e.target.value })}
