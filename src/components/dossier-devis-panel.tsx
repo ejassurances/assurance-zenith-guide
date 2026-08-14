@@ -80,6 +80,14 @@ export function DossierDevisPanel({
   const [fixeOptionIds, setFixeOptionIds] = useState<string[]>([]);
   const [fixeEtat, setFixeEtat] = useState<"idle" | "envoi">("idle");
 
+  /** Tarification API Néoliane (branche santé). */
+  const tariferNeoliane = useServerFn(neolianeTariferSante);
+  const [nbAssuresSante, setNbAssuresSante] = useState(0);
+  const [neoDate, setNeoDate] = useState(premierDuMoisSuivant());
+  const [neoEtat, setNeoEtat] = useState<"idle" | "appel">("idle");
+  const [neoMsg, setNeoMsg] = useState<string | null>(null);
+  const [neoErr, setNeoErr] = useState<string | null>(null);
+
   const [form, setForm] = useState({
     compagnie_id: "",
     produit_id: "",
