@@ -25,6 +25,8 @@ export type AnalyseNiveau1 = {
   reduction_courtage_pct: number | null;
   /** Nouvelle quotité assurée demandée par le client (branche emprunteur, 1-100). */
   quotite_demandee?: number | null;
+  /** Assuré visé par l'ajustement de quotité : « principal » | « co_emprunteur ». */
+  quotite_assure_lien?: string | null;
   niveau_justification: string | null;
 };
 
@@ -120,6 +122,40 @@ async function appliquerReduction(
     } as never)
     .eq("id", p.id);
   return true;
+}
+
+/**
+ * Reporte la nouvelle quotité sur l'assuré concerné de recueil_besoins.assures.
+ * Retourne le libellé de l'assuré mis à jour, ou null si la liste est absente.
+ */
+async function majQuotiteAssure(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any, any, any>,
+  dossierId: string,
+  quotite: number,
+  lienVise: string | null,
+): Promise<string | null> {
+  const { assuresEmprunteur, LIENS_EMPRUNTEUR } = await import("./recueil-besoins-schemas");
+  const { data } = await supabase
+    .from("dossiers")
+    .select("recueil_besoins")
+    .eq("id", dossierId)
+    .maybeSingle();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recueil = ((data as any)?.recueil_besoins ?? {}) as Record<string, any>;
+  const assures = assuresEmprunteur(recueil["assures"]);
+  if (assures.length === 0) return null;
+
+  // À défaut d'indication claire du client, l'ajustement porte sur l'assuré principal.
+  let cible = lienVise ? assures.findIndex((p) => p.lien === lienVise) : -1;
+  if (cible < 0) cible = Math.max(0, assures.findIndex((p) => p.lien === "principal"));
+
+  const maj = assures.map((p, i) => (i === cible ? { ...p, quotite_pct: quotite } : p));
+  await supabase
+    .from("dossiers")
+    .update({ recueil_besoins: { ...recueil, assures: maj } } as never)
+    .eq("id", dossierId);
+  return LIENS_EMPRUNTEUR.find((l) => l.value === maj[cible]!.lien)?.label ?? "Assuré principal";
 }
 
 /** Quotité assurée demandée, bornée à l'intervalle exploitable (1-100 %). */
@@ -302,6 +338,13 @@ export async function executerModificationNiveau1(
       });
       return null;
     }
+    const assureMaj = await majQuotiteAssure(
+      supabase,
+      analyse.dossier_id,
+      quotiteDemandee,
+      analyse.quotite_assure_lien ?? null,
+    );
+    if (assureMaj) actions.push(`quotité de « ${assureMaj} » portée à ${quotiteDemandee} % dans le recueil`);
     devisId = nouveau.id;
     devisCompagnieId = nouveau.compagnie_id;
     devisProduitId = nouveau.produit_id;
