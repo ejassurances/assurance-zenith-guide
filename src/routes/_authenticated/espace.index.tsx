@@ -1,8 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CommissionMoisCard } from "@/components/commission-mois-card";
+import { getCaRealEtN1, type CaRealSummary } from "@/lib/dashboard.functions";
 
 export const Route = createFileRoute("/_authenticated/espace/")({
   component: Dashboard,
