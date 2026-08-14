@@ -3844,6 +3844,9 @@ export type Database = {
         | "apporteur"
         | "reseau"
         | "autre"
+        | "parrainage"
+        | "recommandation"
+        | "contact_perso"
       client_statut: "prospect" | "actif" | "inactif" | "perdu" | "ancien"
       commission_statut: "prevue" | "versee" | "annulee"
       compagnie_doc_type:
@@ -4025,6 +4028,9 @@ export const Constants = {
         "apporteur",
         "reseau",
         "autre",
+        "parrainage",
+        "recommandation",
+        "contact_perso",
       ],
       client_statut: ["prospect", "actif", "inactif", "perdu", "ancien"],
       commission_statut: ["prevue", "versee", "annulee"],
