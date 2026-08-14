@@ -318,6 +318,8 @@ export async function executerModificationNiveau1(
     devisProduitId = d.produit_id as string;
   }
 
+  let assureQuotiteMaj: string | null = null;
+
   // Ajustement de quotité (emprunteur) : nouveau devis recalculé proportionnellement.
   if (quotiteDemandee !== null) {
     const nouveau = await creerDevisQuotiteAjustee(
@@ -344,6 +346,7 @@ export async function executerModificationNiveau1(
       quotiteDemandee,
       analyse.quotite_assure_lien ?? null,
     );
+    assureQuotiteMaj = assureMaj;
     if (assureMaj) actions.push(`quotité de « ${assureMaj} » portée à ${quotiteDemandee} % dans le recueil`);
     devisId = nouveau.id;
     devisCompagnieId = nouveau.compagnie_id;
@@ -361,6 +364,7 @@ export async function executerModificationNiveau1(
     justification: analyse.niveau_justification ?? analyse.suggestion_contre_proposition ?? null,
     devis_retenu_id: devisId,
     quotite_ajustee_pct: quotiteDemandee,
+    quotite_assure: assureQuotiteMaj,
     reduction_courtage_pct: quotiteDemandee === null && pct > 0 ? pct : null,
   });
 
