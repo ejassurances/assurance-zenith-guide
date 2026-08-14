@@ -20,7 +20,9 @@ export type FieldType =
   | "cards"
   | "yesno"
   /** Liste dynamique de personnes à couvrir (voir PersonneAssuree) */
-  | "personnes";
+  | "personnes"
+  /** Liste dynamique des assurés emprunteurs avec quotité (voir PersonneEmprunteur) */
+  | "assures_emprunteur";
 
 /** Niveaux de couverture proposés poste par poste en complémentaire santé. */
 export const NIVEAUX_SOINS = [
@@ -72,6 +74,35 @@ export type PersonneAssuree = {
   lien: string;
   date_naissance: string;
   regime: string;
+};
+
+/** Liens possibles pour un assuré de la branche emprunteur. */
+export const LIENS_EMPRUNTEUR = [
+  { value: "principal", label: "Assuré principal" },
+  { value: "co_emprunteur", label: "Co-emprunteur" },
+] as const;
+
+/** Catégories socio-professionnelles proposées aux assurés emprunteurs. */
+export const CSP_EMPRUNTEUR = [
+  { value: "cadre", label: "Cadre" },
+  { value: "employe", label: "Employé" },
+  { value: "artisan", label: "Artisan / commerçant" },
+  { value: "profession_liberale", label: "Profession libérale" },
+  { value: "tns", label: "TNS" },
+  { value: "fonctionnaire", label: "Fonctionnaire" },
+  { value: "retraite", label: "Retraité" },
+  { value: "sans_activite", label: "Sans activité" },
+] as const;
+
+/** Assuré emprunteur : la quotité est portée par chaque personne. */
+export type PersonneEmprunteur = {
+  lien: string;
+  date_naissance: string;
+  quotite_pct: number | null;
+  csp: string;
+  fumeur: boolean;
+  sports_risque: string;
+  antecedents_sante: string;
 };
 
 
@@ -157,36 +188,21 @@ export const BRANCHES: BrancheConfig[] = [
           },
 
           { key: "taux_pret", label: "Taux nominal du prêt", type: "number", suffix: "%" },
-          { key: "quotite", label: "Quotité assurée", type: "number", suffix: "%", placeholder: "100" },
         ],
       },
       {
-        title: "Assuré principal",
+        title: "Assurés à couvrir",
+        intro:
+          "Listez chaque personne à assurer sur le prêt : l'assuré principal et, le cas échéant, le ou les co-emprunteurs. La quotité est portée par chaque assuré (ex. 70 % / 40 %).",
         fields: [
-          { key: "age", label: "Âge de l'assuré", type: "number", required: true },
           {
-            key: "csp",
-            label: "Catégorie socio-professionnelle",
-            type: "select",
-            options: [
-              { value: "cadre", label: "Cadre" },
-              { value: "employe", label: "Employé" },
-              { value: "artisan", label: "Artisan / commerçant" },
-              { value: "profession_liberale", label: "Profession libérale" },
-              { value: "tns", label: "TNS" },
-              { value: "fonctionnaire", label: "Fonctionnaire" },
-              { value: "retraite", label: "Retraité" },
-              { value: "sans_activite", label: "Sans activité" },
-            ],
+            key: "assures",
+            label: "Assurés emprunteurs",
+            question: "Qui doit être assuré sur ce prêt, et avec quelle quotité ?",
+            type: "assures_emprunteur",
+            required: true,
+            help: "La date de naissance et la quotité assurée sont obligatoires pour chaque personne : elles conditionnent la tarification.",
           },
-          { key: "fumeur", label: "Fumeur (ou vapoteur)", type: "checkbox" },
-          {
-            key: "sports_risque",
-            label: "Sports à risque pratiqués",
-            type: "text",
-            placeholder: "Aucun / Moto / Alpinisme…",
-          },
-          { key: "antecedents_sante", label: "Antécédents de santé notables", type: "textarea" },
         ],
       },
       {
@@ -715,6 +731,32 @@ export function personnesAssurees(value: unknown): PersonneAssuree[] {
     }));
 }
 
+/** Assurés emprunteurs saisis dans un champ de type « assures_emprunteur ». */
+export function assuresEmprunteur(value: unknown): PersonneEmprunteur[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((p): p is Record<string, unknown> => !!p && typeof p === "object")
+    .map((p) => {
+      const q = Number(p.quotite_pct ?? NaN);
+      return {
+        lien: typeof p.lien === "string" ? p.lien : "",
+        date_naissance: typeof p.date_naissance === "string" ? p.date_naissance : "",
+        quotite_pct: Number.isFinite(q) && q > 0 ? q : null,
+        csp: typeof p.csp === "string" ? p.csp : "",
+        fumeur: p.fumeur === true,
+        sports_risque: typeof p.sports_risque === "string" ? p.sports_risque : "",
+        antecedents_sante: typeof p.antecedents_sante === "string" ? p.antecedents_sante : "",
+      };
+    });
+}
+
+/** Assuré principal de la branche emprunteur (lien « principal », sinon 1er de la liste). */
+export function assurePrincipalEmprunteur(value: unknown): PersonneEmprunteur | null {
+  const list = assuresEmprunteur(value);
+  if (list.length === 0) return null;
+  return list.find((p) => p.lien === "principal") ?? list[0]!;
+}
+
 /** Âge en années révolues à partir d'une date ISO (AAAA-MM-JJ). */
 export function ageDepuisDateNaissance(iso: string): number | null {
   if (!iso) return null;
@@ -736,6 +778,13 @@ export function missingRequired(section: SectionConfig, values: Record<string, u
     if (f.type === "personnes") {
       const list = personnesAssurees(v);
       return list.length === 0 || list.some((p) => !p.date_naissance);
+    }
+    if (f.type === "assures_emprunteur") {
+      const list = assuresEmprunteur(v);
+      return (
+        list.length === 0 ||
+        list.some((p) => !p.date_naissance || p.quotite_pct == null || p.quotite_pct <= 0 || p.quotite_pct > 100)
+      );
     }
     return v === undefined || v === null || v === "";
   });
