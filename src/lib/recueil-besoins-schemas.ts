@@ -741,6 +741,19 @@ export function missingRequired(section: SectionConfig, values: Record<string, u
   });
 }
 
+/** Champs obligatoires manquants sur l'ensemble du recueil d'une branche. */
+export function champsManquantsRecueil(branche: string, values: Record<string, unknown>): FieldConfig[] {
+  const b = getBranche(branche);
+  if (!b) return [];
+  return b.sections.flatMap((s) => missingRequired(s, values));
+}
+
+/** Le recueil des besoins de la branche est-il complet ? */
+export function recueilComplet(branche: string, values: Record<string, unknown> | null | undefined): boolean {
+  if (!values || Object.keys(values).length === 0) return false;
+  return champsManquantsRecueil(branche, values).length === 0;
+}
+
 
 /* ------------------------------------------------------------------ */
 /* Emprunteur : valorisation du contrat dans le portefeuille           */

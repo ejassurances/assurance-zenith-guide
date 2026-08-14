@@ -128,9 +128,13 @@ export const boiteReception = createServerFn({ method: "POST" })
 
     if (aTrier.length) {
       const { lireMessage } = await import("@/lib/gmail.server");
-      const { analyserEmailProspect, classificationConfiante, creerDossierDepuisEmail } = await import(
-        "@/lib/email-triage.server"
-      );
+      const {
+        analyserEmailProspect,
+        classificationConfiante,
+        creerDossierDepuisEmail,
+        creerFicheProspectIncertaine,
+      } = await import("@/lib/email-triage.server");
+      const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
       for (const m of aTrier) {
         try {
           const detail = await lireMessage(m.id);
@@ -154,27 +158,29 @@ export const boiteReception = createServerFn({ method: "POST" })
             });
             dossiersCrees++;
           } else {
-            await supabaseAdmin.from("crm_emails").upsert(
-              {
-                gmail_message_id: m.id,
-                gmail_thread_id: m.thread_id ?? null,
-                direction: "entrant",
-                expediteur_nom: m.expediteur_nom ?? null,
-                expediteur_email: m.expediteur_email ?? null,
-                destinataires: m.destinataires ?? null,
-                sujet: m.sujet ?? null,
-                snippet: m.snippet ?? null,
-                recu_le: m.date ?? null,
-                triage_ia: JSON.parse(JSON.stringify(triage)),
-                triage_le: new Date().toISOString(),
-                created_by: context.userId,
-                updated_at: new Date().toISOString(),
-              },
-              { onConflict: "gmail_message_id" },
-            );
+            // Classification incertaine : fiche prospect + LCB-FT + tâche
+            // humaine de qualification, mais aucun dossier créé.
+            await creerFicheProspectIncertaine(supabaseAdmin, {
+              email: entree,
+              triage,
+              gmail_message_id: m.id,
+              gmail_thread_id: m.thread_id ?? null,
+              recu_le: m.date ?? null,
+              userId: context.userId,
+            });
           }
         } catch (e) {
           console.error("[agent-commercial] triage email", m.id, e);
+          // Aucune étape ne doit échouer silencieusement : une tâche décrit l'erreur.
+          await creerTacheAdmin(supabaseAdmin, {
+            titre: `Traitement automatique d'un email entrant impossible — ${m.expediteur_email ?? "expéditeur inconnu"}`,
+            description: [
+              `Objet : ${m.sujet ?? "(sans objet)"}`,
+              `Erreur : ${e instanceof Error ? e.message : "erreur inconnue"}`,
+              "Email à qualifier manuellement depuis l'onglet Emails.",
+            ].join("\n"),
+            created_by: context.userId,
+          });
         }
       }
     }

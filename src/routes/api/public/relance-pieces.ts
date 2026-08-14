@@ -23,7 +23,7 @@ export const Route = createFileRoute("/api/public/relance-pieces")({
         if (!parToken && !parApiKey) return new Response("Unauthorized", { status: 401 });
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { sendTemplateEmail } = await import("@/lib/email-templates/send-email");
+        const { planifierLotEmails } = await import("@/lib/emails-file-attente.server");
 
         const seuil = new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString();
 
@@ -38,8 +38,14 @@ export const Route = createFileRoute("/api/public/relance-pieces")({
           .limit(200);
         if (error) return Response.json({ error: error.message }, { status: 500 });
 
-        let envoyes = 0;
-        const details: { dossier: string; pieces: number; accuse: boolean; sent: boolean }[] = [];
+        const lot: {
+          template: string;
+          destinataire: string;
+          donnees: Record<string, unknown>;
+          idempotency_key: string;
+        }[] = [];
+        const details: { dossier: string; pieces: number; accuse: boolean }[] = [];
+
 
         for (const d of dossiers ?? []) {
           if (d.relance_pieces_envoyee_le && d.relance_pieces_envoyee_le > seuil) continue;
@@ -83,36 +89,40 @@ export const Route = createFileRoute("/api/public/relance-pieces")({
           if (manquants.length === 0) continue;
 
           const accuse = !d.accuse_reception_envoye_le;
-          let sent = false;
-          try {
-            const res = await sendTemplateEmail("pieces-manquantes", d.client_email!, {
-              templateData: {
-                clientName: d.client_nom,
-                reference: d.reference,
-                pieces: manquants,
-                accuse,
-                link: appUrl("/espace/mon-espace"),
-              },
-              idempotencyKey: `relance-pieces-${d.id}-${new Date().toISOString().slice(0, 10)}`,
-            });
-            sent = res.sent;
-          } catch {
-            sent = false;
-          }
+
+          // Envoi étalé : mise en file d'attente (premier email à 10h00 Paris,
+          // puis un toutes les 5 minutes) au lieu d'un envoi immédiat en rafale.
+          lot.push({
+            template: "pieces-manquantes",
+            destinataire: d.client_email!,
+            donnees: {
+              clientName: d.client_nom,
+              reference: d.reference,
+              pieces: manquants,
+              accuse,
+              link: appUrl("/espace/mon-espace"),
+            },
+            idempotency_key: `relance-pieces-${d.id}-${new Date().toISOString().slice(0, 10)}`,
+          });
 
           await supabaseAdmin
             .from("dossiers")
             .update({
               relance_pieces_envoyee_le: new Date().toISOString(),
-              ...(accuse && sent ? { accuse_reception_envoye_le: new Date().toISOString() } : {}),
+              ...(accuse ? { accuse_reception_envoye_le: new Date().toISOString() } : {}),
             })
             .eq("id", d.id);
 
-          if (sent) envoyes += 1;
-          details.push({ dossier: d.reference, pieces: manquants.length, accuse, sent });
+          details.push({ dossier: d.reference, pieces: manquants.length, accuse });
         }
 
-        return Response.json({ ok: true, envoyes, details });
+        const { planifies, premier } = await planifierLotEmails(
+          supabaseAdmin,
+          `relance-pieces-${new Date().toISOString().slice(0, 10)}`,
+          lot,
+        );
+
+        return Response.json({ ok: true, planifies, premier_envoi: premier, details });
       },
     },
   },

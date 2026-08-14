@@ -206,16 +206,47 @@ export async function creerDossierDepuisEmail(
     .update({ client_id: clientId, recueil_besoins: recueil })
     .eq("id", dossier.id);
 
+  // La lettre de mission n'est envoyée automatiquement que si le recueil des
+  // besoins est complet ; sinon une tâche est déposée pour l'admin.
+  const { recueilComplet, champsManquantsRecueil } = await import("@/lib/recueil-besoins-schemas");
+  const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
+  const complet = recueilComplet(triage.branche!, recueil);
 
   let lettreEnvoyee = false;
   let lettreErreur: string | null = null;
-  try {
-    const { envoyerLettreMission } = await import("@/lib/lettres-mission.server");
-    const { APP_URL } = await import("@/lib/app-url");
-    await envoyerLettreMission(admin, dossier.id, params.userId, APP_URL);
-    lettreEnvoyee = true;
-  } catch (e) {
-    lettreErreur = e instanceof Error ? e.message : "Envoi de la lettre de mission impossible";
+  if (!complet) {
+    const manquants = champsManquantsRecueil(triage.branche!, recueil)
+      .map((f) => f.label)
+      .slice(0, 20);
+    lettreErreur = "Recueil des besoins incomplet — envoi manuel requis.";
+    await creerTacheAdmin(admin, {
+      titre: `Recueil incomplet — lettre de mission à valider et envoyer manuellement — ${dossier.reference}`,
+      description: [
+        `Dossier ${dossier.reference} créé automatiquement depuis un email entrant.`,
+        `Branche : ${triage.branche}`,
+        manquants.length ? `Champs obligatoires manquants : ${manquants.join(", ")}` : null,
+        triage.resume,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      client_id: clientId,
+      created_by: params.userId,
+    });
+  } else {
+    try {
+      const { envoyerLettreMission } = await import("@/lib/lettres-mission.server");
+      const { APP_URL } = await import("@/lib/app-url");
+      await envoyerLettreMission(admin, dossier.id, params.userId, APP_URL);
+      lettreEnvoyee = true;
+    } catch (e) {
+      lettreErreur = e instanceof Error ? e.message : "Envoi de la lettre de mission impossible";
+      await creerTacheAdmin(admin, {
+        titre: `Lettre de mission non envoyée — ${dossier.reference}`,
+        description: `Erreur technique lors de l'envoi automatique : ${lettreErreur}`,
+        client_id: clientId,
+        created_by: params.userId,
+      });
+    }
   }
 
   await admin.from("crm_emails").upsert(
@@ -263,4 +294,96 @@ export async function creerDossierDepuisEmail(
     dossier_reference: dossier.reference,
     lettre_envoyee: lettreEnvoyee,
   };
+}
+
+/**
+ * Classification incertaine : on crée uniquement la fiche prospect (avec le
+ * contrôle LCB-FT automatique) et une tâche humaine de qualification. Aucun
+ * dossier n'est créé.
+ */
+export async function creerFicheProspectIncertaine(
+  admin: SupabaseClient<Database>,
+  params: {
+    email: TriageEmail;
+    triage: TriageResultat;
+    gmail_message_id: string;
+    gmail_thread_id?: string | null;
+    recu_le?: string | null;
+    userId: string;
+  },
+) {
+  const { triage, email } = params;
+  if (!email.expediteur_email) throw new Error("Email expéditeur manquant");
+
+  const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
+  const nom = triage.nom ?? email.expediteur_nom ?? email.expediteur_email;
+
+  // Fiche déjà existante pour cet email : on ne duplique pas.
+  const { data: existant } = await admin
+    .from("clients")
+    .select("id")
+    .eq("email", email.expediteur_email)
+    .limit(1)
+    .maybeSingle();
+
+  let clientId = existant?.id ?? null;
+  if (!clientId) {
+    const { data: cree, error } = await admin
+      .from("clients")
+      .insert({
+        nom,
+        prenom: triage.prenom,
+        email: email.expediteur_email,
+        mobile: triage.telephone,
+        statut: "prospect",
+        origine: "internet",
+        etiquettes: ["email-entrant", "agent-commercial", "a-qualifier"],
+        created_by: params.userId,
+      })
+      .select("id")
+      .single();
+    if (error || !cree) throw new Error(error?.message ?? "Création de la fiche impossible");
+    clientId = cree.id;
+
+    const { lancerLcbAutomatique } = await import("@/lib/dossier-automation.server");
+    await lancerLcbAutomatique(admin, { client_id: clientId, nom, prenom: triage.prenom });
+  }
+
+  await creerTacheAdmin(admin, {
+    titre: `Email entrant ambigu à qualifier — ${nom}`,
+    description: [
+      `Objet du mail : ${email.sujet ?? "(sans objet)"}`,
+      `Analyse IA : ${triage.resume || "aucun résumé"}`,
+      `Branche détectée : ${triage.branche ?? "indéterminée"} (confiance ${Math.round(triage.confiance * 100)} %)`,
+      `Fiche client : ${appUrlFiche(clientId)}`,
+    ].join("\n"),
+    client_id: clientId,
+    created_by: params.userId,
+  });
+
+  await admin.from("crm_emails").upsert(
+    {
+      gmail_message_id: params.gmail_message_id,
+      gmail_thread_id: params.gmail_thread_id ?? null,
+      direction: "entrant",
+      expediteur_nom: email.expediteur_nom,
+      expediteur_email: email.expediteur_email,
+      sujet: email.sujet,
+      snippet: (email.texte ?? "").slice(0, 500) || null,
+      recu_le: params.recu_le ?? null,
+      client_id: clientId,
+      notes: "Fiche prospect créée automatiquement — qualification humaine requise",
+      triage_ia: JSON.parse(JSON.stringify(triage)),
+      triage_le: new Date().toISOString(),
+      created_by: params.userId,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "gmail_message_id" },
+  );
+
+  return { client_id: clientId };
+}
+
+function appUrlFiche(clientId: string): string {
+  return `/espace/clients/${clientId}`;
 }

@@ -2443,6 +2443,54 @@ export type Database = {
           },
         ]
       }
+      emails_planifies: {
+        Row: {
+          contexte: Json
+          created_at: string
+          destinataire: string
+          donnees: Json
+          envoye_le: string | null
+          envoyer_le: string
+          erreur: string | null
+          id: string
+          idempotency_key: string | null
+          lot: string | null
+          statut: string
+          template: string
+          updated_at: string
+        }
+        Insert: {
+          contexte?: Json
+          created_at?: string
+          destinataire: string
+          donnees?: Json
+          envoye_le?: string | null
+          envoyer_le?: string
+          erreur?: string | null
+          id?: string
+          idempotency_key?: string | null
+          lot?: string | null
+          statut?: string
+          template: string
+          updated_at?: string
+        }
+        Update: {
+          contexte?: Json
+          created_at?: string
+          destinataire?: string
+          donnees?: Json
+          envoye_le?: string | null
+          envoyer_le?: string
+          erreur?: string | null
+          id?: string
+          idempotency_key?: string | null
+          lot?: string | null
+          statut?: string
+          template?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       exercices: {
         Row: {
           cloture: boolean
@@ -3281,6 +3329,7 @@ export type Database = {
       }
       produits: {
         Row: {
+          assureur_porteur: string | null
           caracteristiques: Json
           cible: string | null
           code_produit: string | null
@@ -3303,6 +3352,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assureur_porteur?: string | null
           caracteristiques?: Json
           cible?: string | null
           code_produit?: string | null
@@ -3325,6 +3375,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assureur_porteur?: string | null
           caracteristiques?: Json
           cible?: string | null
           code_produit?: string | null

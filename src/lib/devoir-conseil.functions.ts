@@ -15,6 +15,8 @@ const offreSchema = z.object({
 
 const saisieSchema = z.object({
   dossier_id: z.string().uuid(),
+  /** Validation / relecture : génère ou met à jour le brouillon sans envoyer au client. */
+  sans_envoi: z.boolean().optional(),
   recommandation: z.string().min(10).max(5000),
   motifs: z.string().min(10).max(5000),
   mises_en_garde: z.string().max(5000).optional(),
@@ -44,8 +46,10 @@ export const envoyerDevoirConseilFn = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => saisieSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { envoyerDevoirConseil } = await import("./devoir-conseil.server");
-    const { dossier_id, ...saisie } = data;
-    const res = await envoyerDevoirConseil(context.supabase, dossier_id, context.userId, saisie);
+    const { dossier_id, sans_envoi, ...saisie } = data;
+    const res = await envoyerDevoirConseil(context.supabase, dossier_id, context.userId, saisie, {
+      sansEnvoi: sans_envoi === true,
+    });
     return { ok: true, ...res };
   });
 
