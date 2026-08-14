@@ -49,6 +49,7 @@ type Client = {
   pays: string | null;
   statut: string;
   origine: string | null;
+  client_origine_id: string | null;
   preference_contact: string | null;
   fumeur: boolean | null;
   csp: string | null;
