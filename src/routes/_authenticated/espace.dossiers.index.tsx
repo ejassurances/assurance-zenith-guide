@@ -12,6 +12,9 @@ import {
   BRANCHES_CREATION,
   getBranche,
   labelForBranche,
+  assuresEmprunteur,
+  assurePrincipalEmprunteur,
+  ageDepuisDateNaissance,
   type BrancheAssurance,
   type FieldConfig,
 } from "@/lib/recueil-besoins-schemas";
