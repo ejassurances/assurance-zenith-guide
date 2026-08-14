@@ -49,7 +49,7 @@ export function CompagnieTauxCommission({
       .select("id,niveau,branche,compagnie_id,type,montant_fixe,taux_pourcentage,base_calcul,notes")
       .eq("compagnie_id", compagnieId);
     if (error) setErr(error.message);
-    setRegles(((data ?? []) as unknown as RegleCommission[]) ?? []);
+    setRegles((data ?? []) as unknown as RegleCommission[]);
     setLoading(false);
   }, [compagnieId]);
 
