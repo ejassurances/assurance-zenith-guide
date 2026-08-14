@@ -3816,6 +3816,14 @@ export type Database = {
           score: number
         }[]
       }
+      score_valeur_client: { Args: { p_client_id: string }; Returns: number }
+      scores_valeur_clients: {
+        Args: never
+        Returns: {
+          client_id: string
+          score: number
+        }[]
+      }
       solde_compte: {
         Args: { _compte: string; _date_debut: string; _date_fin: string }
         Returns: {
