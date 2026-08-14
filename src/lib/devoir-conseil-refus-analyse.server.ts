@@ -173,7 +173,13 @@ export async function analyserRefusDevoirConseil(
     typeof devisAltBrut === "string" && devisDossier.some((v) => v.id === devisAltBrut)
       ? devisAltBrut
       : null;
-  const reducBrut = Number(obj["reduction_courtage_pct"] ?? NaN);
+  const quotiteBrut = Number(obj["quotite_demandee"] ?? NaN);
+  // Quotité assurée : levier de prix (emprunteur), jamais confondu avec les frais de courtage.
+  const quotiteDemandee =
+    Number.isFinite(quotiteBrut) && quotiteBrut > 0 && quotiteBrut <= 100
+      ? Math.round(quotiteBrut * 100) / 100
+      : null;
+  const reducBrut = quotiteDemandee !== null ? NaN : Number(obj["reduction_courtage_pct"] ?? NaN);
   const reduction =
     Number.isFinite(reducBrut) && reducBrut > 0 && reducBrut <= REDUCTION_COURTAGE_MAX_PCT
       ? Math.round(reducBrut * 100) / 100
@@ -183,7 +189,7 @@ export async function analyserRefusDevoirConseil(
     reco === "contre_proposition" &&
     String(obj["niveau"] ?? "") === "niveau_1" &&
     !reductionHorsPerimetre &&
-    (devisAlt !== null || reduction !== null)
+    (devisAlt !== null || reduction !== null || quotiteDemandee !== null)
       ? "niveau_1"
       : "niveau_2";
   const niveauJustification = obj["niveau_justification"]
@@ -226,6 +232,7 @@ export async function analyserRefusDevoirConseil(
           suggestion_contre_proposition: suggestion,
           devis_alternatif_id: devisAlt,
           reduction_courtage_pct: reduction,
+          quotite_demandee: quotiteDemandee,
           niveau_justification: niveauJustification,
         },
         null,

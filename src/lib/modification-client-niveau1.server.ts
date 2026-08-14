@@ -23,6 +23,8 @@ export type AnalyseNiveau1 = {
   suggestion_contre_proposition: string | null;
   devis_alternatif_id: string | null;
   reduction_courtage_pct: number | null;
+  /** Nouvelle quotité assurée demandée par le client (branche emprunteur, 1-100). */
+  quotite_demandee?: number | null;
   niveau_justification: string | null;
 };
 
@@ -34,7 +36,9 @@ export async function devisDuDossier(
 ) {
   const { data } = await supabase
     .from("dossier_devis")
-    .select("id, compagnie_id, produit_id, formule_id, cotisation_mensuelle, garanties_resume, source")
+    .select(
+      "id, compagnie_id, produit_id, formule_id, cotisation_mensuelle, garanties_resume, source, quotite_pct",
+    )
     .eq("dossier_id", dossierId);
   return (data ?? []) as {
     id: string;
@@ -44,6 +48,7 @@ export async function devisDuDossier(
     cotisation_mensuelle: number | null;
     garanties_resume: string | null;
     source: string | null;
+    quotite_pct: number | null;
   }[];
 }
 
