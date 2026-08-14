@@ -98,9 +98,10 @@ export async function envoyerDevoirConseil(
   dossierId: string,
   userId: string,
   saisie: DevoirConseilSaisie,
-  options?: { sansEnvoi?: boolean },
+  options?: { sansEnvoi?: boolean; valider?: boolean },
 ) {
   const sansEnvoi = options?.sansEnvoi === true;
+  const valider = options?.valider === true;
 
   const { data: dossier, error: dErr } = await supabase
     .from("dossiers")
@@ -190,9 +191,11 @@ export async function envoyerDevoirConseil(
     recommandation: saisie.recommandation,
     motifs: saisie.motifs,
     mises_en_garde: saisie.mises_en_garde ?? null,
-    statut: sansEnvoi ? "brouillon" : "envoye",
+    statut: sansEnvoi ? (valider ? "valide" : "brouillon") : "envoye",
     email_destinataire: d.client_email,
     envoye_le: sansEnvoi ? null : new Date().toISOString(),
+    valide_le: sansEnvoi ? (valider ? new Date().toISOString() : null) : new Date().toISOString(),
+    valide_par: sansEnvoi && !valider ? null : userId,
     refus_motif: null,
     refuse_le: null,
   };
@@ -351,4 +354,102 @@ export async function genererDevoirConseilAuto(
     options,
   );
 
+}
+
+/**
+ * Job planifié : envoie au client les devoirs de conseil VALIDÉS par le cabinet
+ * dont le délai de réflexion (6 h après la signature de la lettre de mission)
+ * est écoulé et qui tombent dans les horaires d'ouverture. Un devoir de conseil
+ * jamais validé n'est jamais envoyé.
+ */
+export async function envoyerDevoirsConseilValidesDus(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any, any, any>,
+  limite = 30,
+): Promise<{ envoyes: number; reportes: number; echecs: number }> {
+  const { etatDelaiEnvoi } = await import("./devoir-conseil-delai");
+
+  const { data, error } = await supabase
+    .from("devoirs_conseil")
+    .select("id, dossier_id, type_assurance, email_destinataire, contenu, valide_le, valide_par")
+    .eq("statut", "valide")
+    .is("envoye_le", null)
+    .order("valide_le", { ascending: true })
+    .limit(limite);
+  if (error) throw new Error(error.message);
+
+  let envoyes = 0;
+  let reportes = 0;
+  let echecs = 0;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const dc of ((data ?? []) as any[])) {
+    try {
+      const { data: lm } = await supabase
+        .from("lettres_mission")
+        .select("signed_at")
+        .eq("dossier_id", dc.dossier_id)
+        .eq("statut", "signee")
+        .order("signed_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const etat = etatDelaiEnvoi((lm as { signed_at: string | null } | null)?.signed_at ?? null);
+      if (!etat.autorise) {
+        reportes += 1;
+        continue;
+      }
+
+      const { data: dossier } = await supabase
+        .from("dossiers")
+        .select("reference, client_nom, client_email, type_assurance")
+        .eq("id", dc.dossier_id)
+        .maybeSingle();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const d = (dossier as any) ?? {};
+      const destinataire = (dc.email_destinataire as string | null) ?? d.client_email ?? null;
+      if (!destinataire) {
+        echecs += 1;
+        continue;
+      }
+
+      const modele = modeleDevoirConseil(dc.type_assurance ?? d.type_assurance);
+      const res = await sendTemplateEmail("devoir-conseil-envoi", destinataire, {
+        templateData: {
+          clientName: d.client_nom,
+          cabinetName: SITE.shortName,
+          reference: d.reference,
+          link: appUrl("/espace/signer-devoir-conseil"),
+        },
+        brevoParams: {
+          PRENOM: String(d.client_nom ?? "").split(" ")[0] || d.client_nom,
+          LIEN_ACTION: appUrl("/espace/signer-devoir-conseil"),
+          TYPE_ASSURANCE: modele.libelle,
+        },
+        replyTo: SITE.email,
+        idempotencyKey: `devoir-conseil-${dc.id}`,
+      });
+      if (!res.sent) {
+        echecs += 1;
+        continue;
+      }
+
+      await supabase
+        .from("devoirs_conseil")
+        .update({ statut: "envoye", envoye_le: new Date().toISOString(), email_destinataire: destinataire })
+        .eq("id", dc.id);
+      await supabase.from("dossiers").update({ statut: "devoir_conseil_envoye" }).eq("id", dc.dossier_id);
+      await supabase.from("dossier_etapes_historique").insert({
+        dossier_id: dc.dossier_id,
+        nouvelle_etape: "devoir_conseil_envoye",
+        commentaire: "Devoir de conseil validé envoyé automatiquement au client (délai de réflexion écoulé)",
+        par: dc.valide_par ?? null,
+      });
+      envoyes += 1;
+    } catch (e) {
+      echecs += 1;
+      console.error("[devoir-conseil] envoi automatique échoué", dc.id, e);
+    }
+  }
+
+  return { envoyes, reportes, echecs };
 }

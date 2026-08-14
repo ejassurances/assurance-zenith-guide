@@ -192,11 +192,48 @@ export async function classerPiecesJointes(
   return resultats;
 }
 
-/** Contrôle LCB-FT automatique (sanctions + PPE). */
+/**
+ * Contrôle LCB-FT automatique (sanctions + PPE).
+ * L'API OpenSanctions n'est appelée QUE si nom, prénom ET date de naissance
+ * sont renseignés (indispensables à une vérification fiable). Sinon, une
+ * vérification « en_attente_infos » est enregistrée sur la fiche client pour
+ * que le manque soit visible, et le contrôle devra être relancé manuellement
+ * depuis l'onglet Conformité une fois l'information complétée.
+ */
 export async function lancerLcbAutomatique(
   admin: Admin,
   params: { client_id: string; nom: string; prenom?: string | null; date_naissance?: string | null },
 ) {
+  const manquants: string[] = [];
+  if (!params.nom?.trim()) manquants.push("nom");
+  if (!params.prenom?.trim()) manquants.push("prénom");
+  if (!params.date_naissance) manquants.push("date de naissance");
+
+  if (manquants.length > 0) {
+    try {
+      await admin.from("client_lcb_verifications").insert({
+        client_id: params.client_id,
+        type: "combined",
+        fournisseur: "opensanctions",
+        requete: {
+          nom: params.nom ?? null,
+          prenom: params.prenom ?? null,
+          date_naissance: params.date_naissance ?? null,
+          informations_manquantes: manquants,
+        },
+        resultats: [],
+        nb_correspondances: 0,
+        score_correspondance: null,
+        statut: "en_attente_infos",
+        notes: `Vérification LCB-FT non lancée : ${manquants.join(", ")} manquant(s). Complétez la fiche puis relancez la vérification depuis l'onglet Conformité.`,
+        verifie_par: null,
+      });
+    } catch (e) {
+      console.error("[LCB-FT] trace « en attente d'informations » non enregistrée", params.client_id, e);
+    }
+    return null;
+  }
+
   try {
     return await executerRechercheLCB(admin, {
       client_id: params.client_id,
