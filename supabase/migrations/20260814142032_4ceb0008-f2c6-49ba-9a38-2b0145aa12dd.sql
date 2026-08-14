@@ -1,0 +1,1 @@
+ALTER TABLE public.devoirs_conseil ADD COLUMN IF NOT EXISTS notes_modification text;

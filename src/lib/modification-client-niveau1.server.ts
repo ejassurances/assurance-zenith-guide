@@ -118,6 +118,54 @@ async function appliquerReduction(
 }
 
 /**
+ * Résumé lisible par le client des ajustements apportés à sa demande.
+ * Aucun élément technique interne (identifiants, barème, langage métier).
+ */
+async function resumeClient(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any, any, any>,
+  ctx: {
+    devisId: string | null;
+    compagnieId: string | null;
+    produitId: string | null;
+    reductionPct: number;
+  },
+): Promise<string | null> {
+  const changements: string[] = [];
+
+  if (ctx.devisId) {
+    let compagnie: string | null = null;
+    let produit: string | null = null;
+    if (ctx.compagnieId) {
+      const { data } = await supabase
+        .from("compagnies")
+        .select("nom")
+        .eq("id", ctx.compagnieId)
+        .maybeSingle();
+      compagnie = (data as { nom: string } | null)?.nom ?? null;
+    }
+    if (ctx.produitId) {
+      const { data } = await supabase.from("produits").select("nom").eq("id", ctx.produitId).maybeSingle();
+      produit = (data as { nom: string } | null)?.nom ?? null;
+    }
+    const offre = [compagnie, produit].filter(Boolean).join(" — ");
+    changements.push(
+      offre
+        ? `nous vous recommandons désormais l'offre ${offre}`
+        : "nous vous recommandons désormais une autre offre parmi celles étudiées",
+    );
+  }
+
+  if (ctx.reductionPct > 0) {
+    changements.push(`nos frais de courtage ont été réduits de ${ctx.reductionPct} %`);
+  }
+
+  if (changements.length === 0) return null;
+
+  return `Suite à votre demande, nous avons ajusté notre proposition : ${changements.join(" et ")}.`;
+}
+
+/**
  * Exécute une demande de modification qualifiée « niveau 1 » par l'IA.
  * Retourne le détail des actions réellement appliquées, ou null si la demande
  * ne rentre finalement pas dans le périmètre (elle reste alors en niveau 2).
@@ -133,6 +181,8 @@ export async function executerModificationNiveau1(
 
   // Vérification du périmètre : le devis doit appartenir au dossier.
   let devisId: string | null = null;
+  let devisCompagnieId: string | null = null;
+  let devisProduitId: string | null = null;
   if (analyse.devis_alternatif_id) {
     const { data } = await supabase
       .from("dossier_devis")
@@ -143,6 +193,8 @@ export async function executerModificationNiveau1(
     const d = data as any;
     if (!d || d.dossier_id !== analyse.dossier_id || !d.compagnie_id || !d.produit_id) return null;
     devisId = d.id as string;
+    devisCompagnieId = d.compagnie_id as string;
+    devisProduitId = d.produit_id as string;
   }
 
   if (!devisId && pct <= 0) return null;
@@ -199,6 +251,22 @@ export async function executerModificationNiveau1(
     devoirId = (res as { id: string }).id;
   }
   actions.push("devoir de conseil régénéré en brouillon (revalidation staff requise)");
+
+  // Résumé destiné au client, inséré dans le mail d'envoi du nouveau devoir de conseil.
+  if (devoirId) {
+    const notes = await resumeClient(supabase, {
+      devisId,
+      compagnieId: devisCompagnieId,
+      produitId: devisProduitId,
+      reductionPct: pct,
+    });
+    if (notes) {
+      await supabase
+        .from("devoirs_conseil")
+        .update({ notes_modification: notes } as never)
+        .eq("id", devoirId);
+    }
+  }
 
   const detail = [
     `Demande du client : ${analyse.motif_client ?? "non précisée"}`,
