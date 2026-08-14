@@ -97,14 +97,15 @@ export async function classerDevisDossier(
   const { data: devisRows, error: devErr } = await supabase
     .from("dossier_devis")
     .select(
-      "id, cotisation_mensuelle, garanties_resume, compagnies:compagnie_id(nom, tier_favori), produits:produit_id(nom), produit_formules:formule_id(nom)",
+      "id, cotisation_mensuelle, garanties_resume, source, compagnies:compagnie_id(nom, tier_favori), produits:produit_id(id, nom, assureur_porteur), produit_formules:formule_id(nom)",
     )
     .eq("dossier_id", dossierId)
     .order("created_at", { ascending: true });
   if (devErr) throw new Error(devErr.message);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const devis = (devisRows ?? []) as any[];
-  if (devis.length < 2) throw new Error("Saisissez au moins 2 devis pour lancer le classement IA.");
+  // Le classement doit toujours produire un TOP 3 : 3 devis minimum.
+  if (devis.length < 3) throw new Error("Saisissez au moins 3 devis pour lancer le classement IA (TOP 3 exigé).");
 
   const payload = devis.map((d) => ({
     id: d.id as string,
@@ -167,23 +168,110 @@ export async function classerDevisDossier(
     .single();
   if (iErr || !inserted) throw new Error(iErr?.message ?? "Enregistrement du classement impossible");
 
-  // Agent commercial : l'offre de rang 1 est retenue automatiquement et le
-  // devoir de conseil est généré en brouillon. Le classement reste au statut
-  // 'propose' : le staff peut retenir une autre offre avant l'envoi.
+  // Agent commercial : sélection automatique dans le TOP 3.
+  // - santé / prévoyance : l'offre la plus adaptée (rang 1 du classement IA).
+  // - emprunteur : la moins chère du TOP 3, priorité au tarif automatique (API)
+  //   à égalité de prix, sauf si un même assureur porteur est disponible via un
+  //   autre canal de distribution (dans ce cas, arbitrage humain).
   let auto: { devis_id: string; devoir_id: string | null } | null = null;
-  const rang1 = classement[0];
-  if (rang1) {
-    try {
-      const res = await retenirDevisDossier(supabase, inserted.id as string, rang1.dossier_devis_id, userId, {
-        auto: true,
+  const top3 = classement.slice(0, 3);
+  const parId = new Map(devis.map((d) => [d.id as string, d]));
+  const branche = String(dos.type_assurance ?? "");
+
+  let choisi: string | null = top3[0]?.dossier_devis_id ?? null;
+  let blocage: string | null = null;
+
+  if (branche === "emprunteur" && top3.length > 0) {
+    const candidats = top3
+      .map((l) => parId.get(l.dossier_devis_id))
+      .filter(Boolean)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((d) => d as any);
+
+    // Doublon d'assureur porteur : le même risque est peut-être distribué par un
+    // autre grossiste, à un tarif différent.
+    const porteurs = Array.from(
+      new Set(
+        candidats
+          .map((d) => (d.produits?.assureur_porteur as string | null)?.trim())
+          .filter((v): v is string => !!v),
+      ),
+    );
+    const produitsTop = new Set(candidats.map((d) => d.produits?.id as string).filter(Boolean));
+    const alternatives: string[] = [];
+    for (const porteur of porteurs) {
+      const { data: autres } = await supabase
+        .from("produits")
+        .select("id, nom, assureur_porteur, statut, compagnies:compagnie_id(nom)")
+        .eq("statut", "actif")
+        .ilike("assureur_porteur", porteur);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const a of ((autres ?? []) as any[])) {
+        if (produitsTop.has(a.id as string)) continue;
+        alternatives.push(`${porteur} — ${a.nom}${a.compagnies?.nom ? ` (${a.compagnies.nom})` : ""}`);
+      }
+    }
+
+    if (alternatives.length > 0) {
+      choisi = null;
+      blocage = alternatives.join(" ; ");
+      const { creerTacheAdmin } = await import("./agent-taches.server");
+      const { data: dosInfo } = await supabase
+        .from("dossiers")
+        .select("reference, client_id")
+        .eq("id", dossierId)
+        .maybeSingle();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const di = dosInfo as any;
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await creerTacheAdmin(supabaseAdmin, {
+        titre: `Même assureur porteur (${porteurs.join(", ")}) disponible via un autre canal — comparer les tarifs avant de retenir une offre`,
+        description: [
+          `Dossier ${di?.reference ?? dossierId} (assurance emprunteur).`,
+          `Autres produits du même assureur porteur : ${blocage}`,
+          "Devis du TOP 3 concernés :",
+          ...candidats.map(
+            (d) =>
+              `- ${d.compagnies?.nom ?? "compagnie ?"} / ${d.produits?.nom ?? "produit ?"} : ` +
+              `${d.cotisation_mensuelle == null ? "tarif non renseigné" : `${Number(d.cotisation_mensuelle)} € / mois`}` +
+              `${d.produits?.assureur_porteur ? ` — porteur ${d.produits.assureur_porteur}` : ""}` +
+              `${d.source === "api" ? " — tarif automatique (API)" : ""}`,
+          ),
+        ].join("\n"),
+        client_id: (di?.client_id as string | null) ?? null,
+        created_by: userId,
       });
-      auto = { devis_id: rang1.dossier_devis_id, devoir_id: res.devoir_id ?? null };
-    } catch (e) {
-      console.error("[agent-commercial] sélection auto du rang 1 impossible", e);
+    } else {
+      const tarifes = candidats.filter((d) => d.cotisation_mensuelle != null);
+      const tri = (tarifes.length > 0 ? tarifes : candidats).sort((a, b) => {
+        const pa = a.cotisation_mensuelle == null ? Infinity : Number(a.cotisation_mensuelle);
+        const pb = b.cotisation_mensuelle == null ? Infinity : Number(b.cotisation_mensuelle);
+        if (pa !== pb) return pa - pb;
+        const aApi = a.source === "api" ? 0 : 1;
+        const bApi = b.source === "api" ? 0 : 1;
+        return aApi - bApi;
+      });
+      choisi = (tri[0]?.id as string | undefined) ?? null;
     }
   }
 
-  return { classement_id: inserted.id as string, classement, auto };
+  if (choisi) {
+    try {
+      const res = await retenirDevisDossier(supabase, inserted.id as string, choisi, userId, { auto: true });
+      auto = { devis_id: choisi, devoir_id: res.devoir_id ?? null };
+    } catch (e) {
+      console.error("[agent-commercial] sélection automatique impossible", e);
+      const { creerTacheAdmin } = await import("./agent-taches.server");
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await creerTacheAdmin(supabaseAdmin, {
+        titre: "Sélection automatique de l'offre impossible — à traiter manuellement",
+        description: `Dossier ${dossierId} : ${e instanceof Error ? e.message : "erreur inconnue"}`,
+        created_by: userId,
+      });
+    }
+  }
+
+  return { classement_id: inserted.id as string, classement, auto, arbitrage_requis: blocage };
 }
 
 
