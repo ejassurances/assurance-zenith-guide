@@ -260,7 +260,11 @@ export function DevoirConseilPanel({
       : null;
 
   /** Demande la confirmation de la commission prévisionnelle avant l'envoi. */
-  const submit = async () => {
+  const submit = async (sansEnvoi = false) => {
+    if (sansEnvoi) {
+      await doSubmit(true);
+      return;
+    }
     if (staff && !prevision && !prevIgnoree && regleApplicable) {
       const mensuel = montantMensuelEstime(
         regleApplicable.regle,
@@ -301,7 +305,7 @@ export function DevoirConseilPanel({
     await doSubmit();
   };
 
-  const doSubmit = async () => {
+  const doSubmit = async (sansEnvoi = false) => {
     setBusy(true);
     setError(null);
     setMsg(null);
@@ -309,6 +313,7 @@ export function DevoirConseilPanel({
       await envoyer({
         data: {
           dossier_id: dossierId,
+          sans_envoi: sansEnvoi,
           recommandation: form.recommandation.trim(),
           motifs: form.motifs.trim(),
           mises_en_garde: form.mises_en_garde.trim() || undefined,
@@ -347,12 +352,16 @@ export function DevoirConseilPanel({
           der_remis: form.der_remis,
         },
       });
-      setMsg("Devoir de conseil généré et envoyé au client.");
+      setMsg(
+        sansEnvoi
+          ? "Devoir de conseil validé et enregistré en brouillon — envoi possible dès la fin du délai de réflexion."
+          : "Devoir de conseil généré et envoyé au client.",
+      );
       setOpen(false);
       await load();
       onChanged();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erreur d'envoi");
+      setError(e instanceof Error ? e.message : sansEnvoi ? "Erreur de validation" : "Erreur d'envoi");
     }
     setBusy(false);
   };
@@ -790,13 +799,24 @@ export function DevoirConseilPanel({
             </div>
           </div>
 
-          <button
-            onClick={submit}
-            disabled={busy || !valide || !delai.autorise}
-            className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
-          >
-            {busy ? "Envoi…" : "Générer et envoyer au client"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            {/* La validation (relecture / confirmation du contenu) reste possible
+                à tout moment ; seul l'envoi final au client dépend du délai. */}
+            <button
+              onClick={() => submit(true)}
+              disabled={busy || !valide}
+              className="rounded-full border border-line px-5 py-2 text-sm font-medium hover:bg-surface disabled:opacity-50"
+            >
+              {busy ? "Enregistrement…" : "Valider (brouillon, sans envoi)"}
+            </button>
+            <button
+              onClick={() => submit(false)}
+              disabled={busy || !valide || !delai.autorise}
+              className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            >
+              {busy ? "Envoi…" : "Envoyer au client"}
+            </button>
+          </div>
           {!delai.autorise && delai.motif && <p className="text-xs text-destructive">{delai.motif}</p>}
 
           {!valide && (
