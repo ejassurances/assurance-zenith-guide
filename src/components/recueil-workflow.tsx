@@ -3,6 +3,10 @@ import {
   isFieldVisible,
   missingRequired,
   personnesAssurees,
+  assuresEmprunteur,
+  LIENS_EMPRUNTEUR,
+  CSP_EMPRUNTEUR,
+  type PersonneEmprunteur,
   ageDepuisDateNaissance,
   valorisationEmprunteur,
 
@@ -283,6 +287,11 @@ function formatValue(f: FieldConfig, v: unknown) {
     if (list.length === 0) return "—";
     return list.map((p) => resumePersonne(p)).join(" · ");
   }
+  if (f.type === "assures_emprunteur") {
+    const list = assuresEmprunteur(v);
+    if (list.length === 0) return "—";
+    return list.map((p) => resumeAssureEmprunteur(p)).join(" · ");
+  }
   if (v === undefined || v === null || v === "") return "—";
   const opt = f.options?.find((o) => o.value === v);
   return `${opt?.label ?? String(v)}${f.suffix ? ` ${f.suffix}` : ""}`;
@@ -294,6 +303,161 @@ export function resumePersonne(p: PersonneAssuree) {
   const age = ageDepuisDateNaissance(p.date_naissance);
   const regime = REGIMES_OBLIGATOIRES.find((r) => r.value === p.regime)?.label;
   return [lien, age !== null ? `${age} ans` : null, regime ? `(${regime})` : null].filter(Boolean).join(", ");
+}
+
+/** Résumé lisible d'un assuré emprunteur : « Co-emprunteur, 38 ans, 40 % ». */
+export function resumeAssureEmprunteur(p: PersonneEmprunteur) {
+  const lien = LIENS_EMPRUNTEUR.find((l) => l.value === p.lien)?.label ?? "Assuré";
+  const age = ageDepuisDateNaissance(p.date_naissance);
+  return [lien, age !== null ? `${age} ans` : null, p.quotite_pct != null ? `${p.quotite_pct} %` : null]
+    .filter(Boolean)
+    .join(", ");
+}
+
+const ASSURE_EMPRUNTEUR_VIDE = (lien: string): PersonneEmprunteur => ({
+  lien,
+  date_naissance: "",
+  quotite_pct: null,
+  csp: "",
+  fumeur: false,
+  sports_risque: "",
+  antecedents_sante: "",
+});
+
+function AssuresEmprunteurField({
+  value,
+  onChange,
+  error,
+}: {
+  value: unknown;
+  onChange: (v: unknown) => void;
+  error?: boolean;
+}) {
+  const list = assuresEmprunteur(value);
+  const rows: PersonneEmprunteur[] = list.length > 0 ? list : [ASSURE_EMPRUNTEUR_VIDE("principal")];
+
+  const update = (i: number, patch: Partial<PersonneEmprunteur>) =>
+    onChange(rows.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
+
+  const invalide = (p: PersonneEmprunteur) =>
+    !p.date_naissance || p.quotite_pct == null || p.quotite_pct <= 0 || p.quotite_pct > 100;
+
+  return (
+    <div className="space-y-3">
+      {rows.map((p, i) => {
+        const age = ageDepuisDateNaissance(p.date_naissance);
+        return (
+          <div
+            key={i}
+            className={`rounded-xl border p-4 ${error && invalide(p) ? "border-destructive" : "border-line"} bg-background/40`}
+          >
+            <div className="grid gap-3 sm:grid-cols-3">
+              <label className="block">
+                <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Lien</span>
+                <select value={p.lien} onChange={(e) => update(i, { lien: e.target.value })} className={inputCls}>
+                  {LIENS_EMPRUNTEUR.map((l) => (
+                    <option key={l.value} value={l.value}>
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+                  Date de naissance <span className="text-accent">*</span>
+                </span>
+                <input
+                  type="date"
+                  value={p.date_naissance}
+                  onChange={(e) => update(i, { date_naissance: e.target.value })}
+                  className={inputCls}
+                />
+                {age !== null && <span className="text-xs text-ink-muted">{age} ans</span>}
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+                  Quotité assurée <span className="text-accent">*</span>
+                </span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={p.quotite_pct ?? ""}
+                    onChange={(e) => update(i, { quotite_pct: e.target.value ? Number(e.target.value) : null })}
+                    className={inputCls}
+                    placeholder="100"
+                  />
+                  <span className="text-sm text-ink-muted">%</span>
+                </div>
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+                  Catégorie socio-professionnelle
+                </span>
+                <select value={p.csp} onChange={(e) => update(i, { csp: e.target.value })} className={inputCls}>
+                  <option value="">—</option>
+                  {CSP_EMPRUNTEUR.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+                  Sports à risque pratiqués
+                </span>
+                <input
+                  type="text"
+                  value={p.sports_risque}
+                  onChange={(e) => update(i, { sports_risque: e.target.value })}
+                  className={inputCls}
+                  placeholder="Aucun / Moto / Alpinisme…"
+                />
+              </label>
+              <label className="flex items-center gap-2 pt-6">
+                <input
+                  type="checkbox"
+                  checked={p.fumeur}
+                  onChange={(e) => update(i, { fumeur: e.target.checked })}
+                  className="h-4 w-4 rounded border-line"
+                />
+                <span className="text-sm text-ink">Fumeur (ou vapoteur)</span>
+              </label>
+            </div>
+            <label className="mt-3 block">
+              <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+                Antécédents de santé notables
+              </span>
+              <textarea
+                rows={2}
+                value={p.antecedents_sante}
+                onChange={(e) => update(i, { antecedents_sante: e.target.value })}
+                className={inputCls}
+              />
+            </label>
+            {rows.length > 1 && (
+              <button
+                type="button"
+                onClick={() => onChange(rows.filter((_, idx) => idx !== i))}
+                className="mt-2 text-xs text-destructive underline"
+              >
+                Retirer cet assuré
+              </button>
+            )}
+          </div>
+        );
+      })}
+      <button
+        type="button"
+        onClick={() => onChange([...rows, ASSURE_EMPRUNTEUR_VIDE("co_emprunteur")])}
+        className="rounded-full border border-line px-4 py-2 text-sm text-ink hover:bg-background"
+      >
+        + Ajouter un co-emprunteur
+      </button>
+    </div>
+  );
 }
 
 function PersonnesField({
@@ -402,7 +566,7 @@ export function WorkflowField({
   error?: boolean;
 }) {
   const heading = field.question ?? field.label;
-  const isChoice = field.type === "cards" || field.type === "yesno" || field.type === "personnes";
+  const isChoice = field.type === "cards" || field.type === "yesno" || field.type === "personnes" || field.type === "assures_emprunteur";
 
   return (
     <div className={isChoice ? "space-y-3" : "max-w-xl space-y-2"}>
@@ -426,6 +590,10 @@ export function WorkflowField({
       )}
 
       {field.type === "personnes" && <PersonnesField value={value} onChange={onChange} error={error} />}
+
+      {field.type === "assures_emprunteur" && (
+        <AssuresEmprunteurField value={value} onChange={onChange} error={error} />
+      )}
 
       {field.type === "cards" && (
 

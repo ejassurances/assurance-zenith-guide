@@ -87,6 +87,10 @@ function consigne(ctx: {
     "      nombre entre 0 et 15), et/ou",
     "  (c) 'ajustement_quotite' : la demande porte sur la QUOTITÉ ASSURÉE (branche emprunteur uniquement).",
     "      Renseigne alors quotite_demandee (nombre entre 1 et 100) avec la nouvelle quotité souhaitée.",
+    "      S'il y a plusieurs assurés sur le prêt, renseigne quotite_assure_lien avec l'assuré visé :",
+    "      'principal' ou 'co_emprunteur'. Si le client ne l'indique pas clairement, laisse null : la",
+    "      modification sera appliquée à l'assuré principal et l'ambiguïté doit être signalée dans",
+    "      niveau_justification.",
     "- IMPORTANT : la quotité et les frais de courtage sont deux leviers DIFFÉRENTS. La quotité modifie le",
     "  montant du risque assuré, donc le prix payé par le client ; les frais de courtage ne modifient que",
     "  notre marge sans changer le prix. Une demande de baisse (ou de hausse) de quotité doit être qualifiée",
@@ -97,7 +101,7 @@ function consigne(ctx: {
     "  à la demande, changement de garantie non tarifé, ou le moindre doute réglementaire.",
     "- niveau_justification : explique en une ou deux phrases pourquoi ce niveau.",
     "",
-    'Réponds STRICTEMENT en JSON : {"recommandation":"contre_proposition|cloture_perdue","synthese":"...","suggestion_contre_proposition":"...","niveau":"niveau_1|niveau_2","niveau_justification":"...","devis_alternatif_id":null,"reduction_courtage_pct":null,"quotite_demandee":null}',
+    'Réponds STRICTEMENT en JSON : {"recommandation":"contre_proposition|cloture_perdue","synthese":"...","suggestion_contre_proposition":"...","niveau":"niveau_1|niveau_2","niveau_justification":"...","devis_alternatif_id":null,"reduction_courtage_pct":null,"quotite_demandee":null,"quotite_assure_lien":null}',
   ].join("\n");
 }
 
@@ -179,6 +183,9 @@ export async function analyserRefusDevoirConseil(
     Number.isFinite(quotiteBrut) && quotiteBrut > 0 && quotiteBrut <= 100
       ? Math.round(quotiteBrut * 100) / 100
       : null;
+  const lienBrut = String(obj["quotite_assure_lien"] ?? "");
+  const quotiteAssureLien =
+    lienBrut === "principal" || lienBrut === "co_emprunteur" ? lienBrut : null;
   const reducBrut = quotiteDemandee !== null ? NaN : Number(obj["reduction_courtage_pct"] ?? NaN);
   const reduction =
     Number.isFinite(reducBrut) && reducBrut > 0 && reducBrut <= REDUCTION_COURTAGE_MAX_PCT
@@ -233,6 +240,7 @@ export async function analyserRefusDevoirConseil(
           devis_alternatif_id: devisAlt,
           reduction_courtage_pct: reduction,
           quotite_demandee: quotiteDemandee,
+          quotite_assure_lien: quotiteAssureLien,
           niveau_justification: niveauJustification,
         },
         null,
