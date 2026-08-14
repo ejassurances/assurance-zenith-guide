@@ -175,6 +175,40 @@ export const BRANCHES: BrancheConfig[] = [
         ],
       },
       {
+        title: "Tarification & valorisation",
+        intro:
+          "Coût de l'assurance retenue et durée de commissionnement, pour valoriser le contrat dans le portefeuille.",
+        fields: [
+          {
+            key: "tarif_montant_total",
+            label: "Montant total de l'assurance",
+            type: "number",
+            suffix: "€",
+            help: "Coût total de l'assurance sur toute la durée retenue.",
+          },
+          {
+            key: "tarif_cotisation_mensuelle",
+            label: "Cotisation mensuelle",
+            type: "number",
+            suffix: "€ / mois",
+          },
+          {
+            key: "tarif_cotisation_annuelle",
+            label: "Cotisation annuelle",
+            type: "number",
+            suffix: "€ / an",
+          },
+          {
+            key: "tarif_nb_annees",
+            label: "Nombre d'années de commissionnement",
+            type: "number",
+            suffix: "ans",
+            help: "Nombre d'années sur lesquelles la commission est perçue : sert au calcul de la valorisation du portefeuille.",
+          },
+        ],
+      },
+      {
+
         title: "Besoins & attentes",
         fields: [
           {
