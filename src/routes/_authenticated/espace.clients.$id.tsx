@@ -567,6 +567,40 @@ function Section({
     </div>
   );
 }
+/** Lien vers la fiche du client parrain / recommandeur. */
+function ClientOrigineLien({ origine, clientOrigineId }: { origine: string | null; clientOrigineId: string }) {
+  const [nom, setNom] = useState<string | null>(null);
+  useEffect(() => {
+    let actif = true;
+    supabase
+      .from("clients")
+      .select("prenom,nom")
+      .eq("id", clientOrigineId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (actif && data) setNom([data.prenom, data.nom].filter(Boolean).join(" "));
+      });
+    return () => {
+      actif = false;
+    };
+  }, [clientOrigineId]);
+
+  return (
+    <Row
+      label={labelClientOrigine(origine)}
+      value={
+        <Link
+          to="/espace/clients/$id"
+          params={{ id: clientOrigineId }}
+          className="text-ink underline hover:no-underline"
+        >
+          {nom ?? "Voir la fiche"} →
+        </Link>
+      }
+    />
+  );
+}
+
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[140px_1fr] gap-2 text-sm">
