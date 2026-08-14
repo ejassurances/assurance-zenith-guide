@@ -41,6 +41,62 @@ export const rechercherSanctionsPPE = createServerFn({ method: "POST" })
     });
   });
 
+type StaffClient = {
+  from: (table: "user_roles") => {
+    select: (cols: string) => { eq: (col: string, val: string) => PromiseLike<{ data: { role: string }[] | null }> };
+  };
+};
+
+async function exigerStaff(supabase: unknown, userId: string) {
+  const { data } = await (supabase as StaffClient).from("user_roles").select("role").eq("user_id", userId);
+  const roles = (data ?? []).map((r) => r.role);
+  if (!roles.includes("admin") && !roles.includes("mandataire")) throw new Error("Accès réservé au cabinet.");
+}
+
+/**
+ * Rattrapage : lance le contrôle LCB-FT sur toutes les fiches clients qui n'ont
+ * encore aucune vérification (fiches créées avant l'automatisation ou dont le
+ * contrôle automatique a échoué silencieusement).
+ */
+export const lancerLcbClientsManquants = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await exigerStaff(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { executerRechercheLCB } = await import("./lcb-ft.server");
+
+    const { data: clients } = await supabaseAdmin
+      .from("clients")
+      .select("id, nom, prenom, date_naissance")
+      .order("created_at", { ascending: false })
+      .limit(500);
+    const { data: deja } = await supabaseAdmin.from("client_lcb_verifications").select("client_id");
+    const avec = new Set((deja ?? []).map((v) => v.client_id));
+
+    const aTraiter = (clients ?? []).filter((c) => !avec.has(c.id)).slice(0, 50);
+    let traites = 0;
+    let aVerifier = 0;
+    const erreurs: string[] = [];
+
+    for (const c of aTraiter) {
+      try {
+        const res = await executerRechercheLCB(supabaseAdmin, {
+          client_id: c.id,
+          nom: c.nom,
+          prenom: c.prenom ?? null,
+          date_naissance: c.date_naissance ?? null,
+          verifie_par: context.userId,
+        });
+        traites += 1;
+        if (res.statut === "a_verifier") aVerifier += 1;
+      } catch (e) {
+        erreurs.push(`${c.nom} : ${e instanceof Error ? e.message : "erreur"}`);
+      }
+    }
+
+    return { total_sans_controle: (clients ?? []).length - avec.size, traites, a_verifier: aVerifier, erreurs };
+  });
+
 /** Marque une vérification comme faux positif ou confirmée */
 export const marquerVerificationLCB = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

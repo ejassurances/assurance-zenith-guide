@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { creerClientManuel } from "@/lib/clients.functions";
+import { lancerLcbClientsManquants } from "@/lib/lcb-ft.functions";
+import { toast } from "sonner";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -79,14 +81,17 @@ function ClientsList() {
     <div>
       <div className="flex items-center justify-between gap-4">
         <h1 className="font-serif text-3xl font-medium text-ink">Clients</h1>
-        {canCreate && (
-          <button
-            onClick={() => setShowForm((v) => !v)}
-            className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-primary-foreground"
-          >
-            {showForm ? "Annuler" : "Nouveau client"}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {canCreate && <LcbRattrapageButton onDone={load} />}
+          {canCreate && (
+            <button
+              onClick={() => setShowForm((v) => !v)}
+              className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-primary-foreground"
+            >
+              {showForm ? "Annuler" : "Nouveau client"}
+            </button>
+          )}
+        </div>
       </div>
 
       {showForm && canCreate && (
@@ -369,5 +374,36 @@ function NewClientForm({ onCreated }: { onCreated: (id: string) => void }) {
         </button>
       </div>
     </form>
+  );
+}
+
+/** Rattrapage du contrôle LCB-FT (sanctions / PPE) sur les fiches non contrôlées. */
+function LcbRattrapageButton({ onDone }: { onDone: () => void }) {
+  const lancer = useServerFn(lancerLcbClientsManquants);
+  const [busy, setBusy] = useState(false);
+  return (
+    <button
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        try {
+          const res = await lancer({});
+          if (res.traites === 0) toast.success("Toutes les fiches ont déjà un contrôle LCB-FT.");
+          else
+            toast.success(
+              `LCB-FT : ${res.traites} fiche(s) contrôlée(s)${res.a_verifier > 0 ? ` · ${res.a_verifier} à vérifier` : ""}.`,
+            );
+          if (res.erreurs.length > 0) toast.error(res.erreurs.slice(0, 3).join(" · "));
+          onDone();
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : "Contrôle LCB-FT impossible");
+        } finally {
+          setBusy(false);
+        }
+      }}
+      className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink disabled:opacity-50"
+    >
+      {busy ? "Contrôle en cours…" : "Contrôle LCB-FT manquant"}
+    </button>
   );
 }
