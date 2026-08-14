@@ -268,7 +268,8 @@ function NewClientForm({ onCreated }: { onCreated: (id: string) => void }) {
     email: "",
     mobile: "",
     ville: "",
-    origine: "internet" as const,
+    origine: "internet" as OrigineKey,
+    client_origine_id: null as string | null,
     marque: "ej_assurances",
   });
 
@@ -287,6 +288,7 @@ function NewClientForm({ onCreated }: { onCreated: (id: string) => void }) {
           mobile: form.mobile || null,
           ville: form.ville || null,
           origine: form.origine,
+          client_origine_id: origineAvecClientSource(form.origine) ? form.client_origine_id : null,
           marque: form.marque,
         },
       });
@@ -297,6 +299,7 @@ function NewClientForm({ onCreated }: { onCreated: (id: string) => void }) {
       setSaving(false);
     }
   };
+
 
   return (
     <form onSubmit={submit} className="mt-6 grid gap-3 rounded-2xl border border-line bg-surface-elevated p-5 sm:grid-cols-3">
