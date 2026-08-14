@@ -139,7 +139,7 @@ export async function traiterPieceIdentiteEtRelancerLcb(
 ): Promise<ResultatCni> {
   const { data: doc } = await admin
     .from("client_kyc_documents")
-    .select("id, client_id, type, nom, storage_path, mime_type")
+    .select("id, client_id, type, nom, storage_path")
     .eq("id", kycDocumentId)
     .maybeSingle();
   if (!doc) return { statut: "ignore", raison: "Document introuvable" };
@@ -148,7 +148,6 @@ export async function traiterPieceIdentiteEtRelancerLcb(
     type: string;
     nom: string | null;
     storage_path: string;
-    mime_type: string | null;
   };
   if (d.type !== "cni") return { statut: "ignore", raison: "Type de document non exploitable" };
 
@@ -187,7 +186,7 @@ export async function traiterPieceIdentiteEtRelancerLcb(
     if (buffer.byteLength > TAILLE_MAX) throw new Error("Fichier trop volumineux (12 Mo maximum)");
     extraction = await appelerIa({
       nom: d.nom || "piece-identite",
-      mime: d.mime_type || fichier.blob.type || "application/pdf",
+      mime: fichier.blob.type || "application/pdf",
       base64: buffer.toString("base64"),
     });
   } catch (e) {
