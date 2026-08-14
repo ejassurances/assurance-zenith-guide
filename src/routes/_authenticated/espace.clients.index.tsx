@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { MARQUES, MARQUE_KEYS, besoinLabel, marque } from "@/lib/crm-brands";
 import { DeleteClientButton } from "@/components/delete-client-button";
-import { NIVEAU_BADGE, niveauFromScore, type NiveauConformite } from "@/lib/conformite-score";
+import { niveauFromScore, type NiveauConformite } from "@/lib/conformite-score";
 import { ORIGINES, origineAvecClientSource, type OrigineKey } from "@/lib/crm-origines";
 import { ClientOriginePicker } from "@/components/client-origine-picker";
 import { ScoreRings } from "@/components/score-rings";
