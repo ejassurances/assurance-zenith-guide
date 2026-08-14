@@ -98,9 +98,10 @@ export async function envoyerDevoirConseil(
   dossierId: string,
   userId: string,
   saisie: DevoirConseilSaisie,
-  options?: { sansEnvoi?: boolean },
+  options?: { sansEnvoi?: boolean; valider?: boolean },
 ) {
   const sansEnvoi = options?.sansEnvoi === true;
+  const valider = options?.valider === true;
 
   const { data: dossier, error: dErr } = await supabase
     .from("dossiers")
