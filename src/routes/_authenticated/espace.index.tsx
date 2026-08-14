@@ -43,10 +43,11 @@ function Dashboard() {
         supabase.from("commissions").select("montant"),
         supabase
           .from("taches")
-          .select("id,titre,echeance,priorite,client_id,clients(prenom,nom)"),
+          .select("id,titre,echeance,priorite,client_id,clients(prenom,nom)")
           .neq("statut", "terminee")
           .order("echeance", { ascending: true, nullsFirst: false })
           .limit(6),
+        fetchCaReal(),
       ]);
       const commissions = (com.data ?? []).reduce((s, r) => s + Number(r.montant), 0);
       setStats({
@@ -58,8 +59,9 @@ function Dashboard() {
         commissions,
       });
       setTaches((tch.data ?? []) as unknown as Tache[]);
+      setCaReal(ca);
     })();
-  }, []);
+  }, [fetchCaReal]);
 
   return (
     <div>
