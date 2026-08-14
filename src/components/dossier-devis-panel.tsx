@@ -24,6 +24,7 @@ export type DossierDevis = {
   cotisation_mensuelle: number | null;
   source: "manuel" | "api" | "pdf";
   garanties_resume: string | null;
+  quotite_pct: number | null;
   created_at: string;
 };
 

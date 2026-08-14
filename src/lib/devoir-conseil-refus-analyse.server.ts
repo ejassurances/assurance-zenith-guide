@@ -84,12 +84,20 @@ function consigne(ctx: {
     "  (a) retenir un AUTRE devis déjà présent dans la liste ci-dessus (renseigne alors devis_alternatif_id",
     "      avec son id exact, et rien d'autre), et/ou",
     "  (b) réduire les frais de courtage de ce dossier de 15 % MAXIMUM (renseigne reduction_courtage_pct,",
-    "      nombre entre 0 et 15).",
+    "      nombre entre 0 et 15), et/ou",
+    "  (c) 'ajustement_quotite' : la demande porte sur la QUOTITÉ ASSURÉE (branche emprunteur uniquement).",
+    "      Renseigne alors quotite_demandee (nombre entre 1 et 100) avec la nouvelle quotité souhaitée.",
+    "- IMPORTANT : la quotité et les frais de courtage sont deux leviers DIFFÉRENTS. La quotité modifie le",
+    "  montant du risque assuré, donc le prix payé par le client ; les frais de courtage ne modifient que",
+    "  notre marge sans changer le prix. Une demande de baisse (ou de hausse) de quotité doit être qualifiée",
+    "  'ajustement_quotite' avec quotite_demandee, JAMAIS en reduction_courtage_pct.",
+    "- Ces deux catégories ne se combinent JAMAIS dans la même réponse : si quotite_demandee est renseignée,",
+    "  reduction_courtage_pct doit être null, et inversement.",
     "- 'niveau_2' dans TOUS les autres cas : réduction supérieure à 15 %, aucun devis existant ne répond",
     "  à la demande, changement de garantie non tarifé, ou le moindre doute réglementaire.",
     "- niveau_justification : explique en une ou deux phrases pourquoi ce niveau.",
     "",
-    'Réponds STRICTEMENT en JSON : {"recommandation":"contre_proposition|cloture_perdue","synthese":"...","suggestion_contre_proposition":"...","niveau":"niveau_1|niveau_2","niveau_justification":"...","devis_alternatif_id":null,"reduction_courtage_pct":null}',
+    'Réponds STRICTEMENT en JSON : {"recommandation":"contre_proposition|cloture_perdue","synthese":"...","suggestion_contre_proposition":"...","niveau":"niveau_1|niveau_2","niveau_justification":"...","devis_alternatif_id":null,"reduction_courtage_pct":null,"quotite_demandee":null}',
   ].join("\n");
 }
 
