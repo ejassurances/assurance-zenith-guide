@@ -154,6 +154,12 @@ function EmailsPage() {
       const res = await charger({ data: { recherche: recherche || null, pageToken: token ?? null } });
       setMessages(res.messages as Resume[]);
       setLiens(res.liens as Lien[]);
+      if (res.dossiers_crees > 0) {
+        toast.success(
+          `${res.dossiers_crees} dossier(s) créé(s) automatiquement depuis les emails entrants (lettre de mission envoyée).`,
+        );
+      }
+
     } catch (err) {
       setError(err instanceof Error ? err.message : "Lecture de la boîte impossible");
     } finally {
