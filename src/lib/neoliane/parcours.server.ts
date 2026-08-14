@@ -28,6 +28,7 @@ import {
   type OffreInput,
   type ProfileMember,
 } from "./api.server";
+import { messageTechnique, reduireReponseNeoliane } from "./redaction";
 import type { EtapeParcours } from "./referentiels";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
