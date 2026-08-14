@@ -50,6 +50,8 @@ export function useCommissionBareme() {
       const { regle, source } = resoudreRegle(regles, branche, c.compagnie_id ?? null);
       const montant = calculerCommission(regle, {
         prime: c.prime_annuelle ?? null,
+        // Prime pure mensuelle : base de la règle « un mois de cotisation ».
+        primeMensuelle: c.prime_annuelle != null ? Number(c.prime_annuelle) / 12 : null,
         economie: c.economie_realisee ?? c.economie_estimee ?? null,
       });
       return { branche, regle, source, montant };

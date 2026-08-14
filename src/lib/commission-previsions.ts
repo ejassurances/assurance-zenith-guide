@@ -50,7 +50,11 @@ export function montantMensuelEstime(
 ): number | null {
   if (regle.type === "fixe") return Number(regle.montant_fixe ?? 0);
   if (cotisationMensuelle == null) return null;
-  return calculerCommission({ ...regle, base_calcul: "prime" }, { prime: cotisationMensuelle });
+  // Assiette = prime d'assurance pure mensuelle, hors frais et taxes.
+  return calculerCommission(
+    { ...regle, base_calcul: "prime" },
+    { prime: cotisationMensuelle, primeMensuelle: cotisationMensuelle },
+  );
 }
 
 /** Total prévisionnel : mensuel × mois restants (null si les mois sont inconnus). */
