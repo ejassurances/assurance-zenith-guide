@@ -1836,6 +1836,7 @@ export type Database = {
           id: string
           mises_en_garde: string | null
           motifs: string | null
+          notes_modification: string | null
           pdf_path: string | null
           recommandation: string | null
           refus_motif: string | null
@@ -1862,6 +1863,7 @@ export type Database = {
           id?: string
           mises_en_garde?: string | null
           motifs?: string | null
+          notes_modification?: string | null
           pdf_path?: string | null
           recommandation?: string | null
           refus_motif?: string | null
@@ -1888,6 +1890,7 @@ export type Database = {
           id?: string
           mises_en_garde?: string | null
           motifs?: string | null
+          notes_modification?: string | null
           pdf_path?: string | null
           recommandation?: string | null
           refus_motif?: string | null
