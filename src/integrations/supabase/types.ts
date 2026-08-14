@@ -1819,6 +1819,8 @@ export type Database = {
           statut: string
           type_assurance: string
           updated_at: string
+          valide_le: string | null
+          valide_par: string | null
         }
         Insert: {
           client_id?: string | null
@@ -1843,6 +1845,8 @@ export type Database = {
           statut?: string
           type_assurance?: string
           updated_at?: string
+          valide_le?: string | null
+          valide_par?: string | null
         }
         Update: {
           client_id?: string | null
@@ -1867,6 +1871,8 @@ export type Database = {
           statut?: string
           type_assurance?: string
           updated_at?: string
+          valide_le?: string | null
+          valide_par?: string | null
         }
         Relationships: [
           {
