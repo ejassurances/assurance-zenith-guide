@@ -113,7 +113,7 @@ export function DossierDevisPanel({
         .order("genere_le", { ascending: false })
         .limit(1)
         .maybeSingle(),
-      supabase.from("dossiers").select("produit_id").eq("id", dossierId).maybeSingle(),
+      supabase.from("dossiers").select("produit_id,type_assurance,recueil_besoins").eq("id", dossierId).maybeSingle(),
     ]);
     if (d.error) setErr(d.error.message);
     setDevis((d.data as DossierDevis[]) ?? []);
@@ -121,7 +121,17 @@ export function DossierDevisPanel({
     setProduits((p.data as ProduitRef[]) ?? []);
     setClassement((cl.data as Classement | null) ?? null);
 
-    const produitDossierId = (dos.data as { produit_id: string | null } | null)?.produit_id ?? null;
+    const dossier = dos.data as
+      | { produit_id: string | null; type_assurance: string | null; recueil_besoins: unknown }
+      | null;
+    const recueil = (dossier?.recueil_besoins ?? {}) as Record<string, unknown>;
+    setNbAssuresSante(
+      dossier?.type_assurance === "sante"
+        ? personnesAssurees(recueil["assures"]).filter((p) => !!p.date_naissance).length
+        : 0,
+    );
+
+    const produitDossierId = dossier?.produit_id ?? null;
     if (!produitDossierId) {
       setProduitFixe(null);
       setFormulesFixes([]);
