@@ -4,6 +4,8 @@ import {
   missingRequired,
   personnesAssurees,
   ageDepuisDateNaissance,
+  valorisationEmprunteur,
+
   LIENS_ASSURE,
   REGIMES_OBLIGATOIRES,
   type BrancheConfig,
