@@ -122,6 +122,79 @@ async function appliquerReduction(
   return true;
 }
 
+/** Quotité assurée demandée, bornée à l'intervalle exploitable (1-100 %). */
+export function quotiteValide(pct: number | null | undefined): number | null {
+  const n = Number(pct ?? NaN);
+  if (!Number.isFinite(n) || n <= 0 || n > 100) return null;
+  return Math.round(n * 100) / 100;
+}
+
+/**
+ * Nouveau devis recalculé proportionnellement à la quotité demandée, à partir du
+ * devis actuellement retenu du dossier (ou du devis alternatif visé).
+ * Retourne null si la quotité d'origine est absente : le recalcul devient
+ * impossible et la demande repasse en niveau 2.
+ */
+async function creerDevisQuotiteAjustee(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any, any, any>,
+  dossierId: string,
+  devisCibleId: string | null,
+  quotite: number,
+): Promise<{ id: string; compagnie_id: string | null; produit_id: string | null } | null> {
+  let origineId = devisCibleId;
+  if (!origineId) {
+    const { data: cls } = await supabase
+      .from("dossier_devis_classements")
+      .select("devis_retenu_id")
+      .eq("dossier_id", dossierId)
+      .not("devis_retenu_id", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    origineId = (cls as { devis_retenu_id: string | null } | null)?.devis_retenu_id ?? null;
+  }
+  if (!origineId) return null;
+
+  const { data } = await supabase
+    .from("dossier_devis")
+    .select(
+      "id, dossier_id, compagnie_id, produit_id, formule_id, cotisation_mensuelle, garanties_resume, source, quotite_pct",
+    )
+    .eq("id", origineId)
+    .maybeSingle();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const o = data as any;
+  if (!o || o.dossier_id !== dossierId) return null;
+
+  const quotiteOrigine = Number(o.quotite_pct ?? NaN);
+  if (!Number.isFinite(quotiteOrigine) || quotiteOrigine <= 0) return null;
+  const cotisationOrigine = o.cotisation_mensuelle == null ? null : Number(o.cotisation_mensuelle);
+  if (cotisationOrigine == null || !Number.isFinite(cotisationOrigine)) return null;
+
+  const nouvelleCotisation = Math.round((cotisationOrigine * quotite) / quotiteOrigine * 100) / 100;
+  const resume = [o.garanties_resume, `Quotité assurée ajustée à ${quotite} % (précédemment ${quotiteOrigine} %).`]
+    .filter(Boolean)
+    .join("\n");
+
+  const { data: cree, error } = await supabase
+    .from("dossier_devis")
+    .insert({
+      dossier_id: dossierId,
+      compagnie_id: o.compagnie_id,
+      produit_id: o.produit_id,
+      formule_id: o.formule_id,
+      cotisation_mensuelle: nouvelleCotisation,
+      quotite_pct: quotite,
+      garanties_resume: resume.slice(0, 4000),
+      source: o.source,
+    } as never)
+    .select("id, compagnie_id, produit_id")
+    .single();
+  if (error || !cree) return null;
+  return cree as { id: string; compagnie_id: string | null; produit_id: string | null };
+}
+
 /**
  * Résumé lisible par le client des ajustements apportés à sa demande.
  * Aucun élément technique interne (identifiants, barème, langage métier).

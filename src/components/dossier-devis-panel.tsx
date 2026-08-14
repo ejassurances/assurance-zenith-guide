@@ -84,8 +84,6 @@ export function DossierDevisPanel({
   /** Tarification API Néoliane (branche santé). */
   const tariferNeoliane = useServerFn(neolianeTariferSante);
   const [nbAssuresSante, setNbAssuresSante] = useState(0);
-  /** Branche du dossier : la quotité n'est saisie que sur l'assurance emprunteur. */
-  const [branche, setBranche] = useState<string | null>(null);
   const [neoDate, setNeoDate] = useState(premierDuMoisSuivant());
   const [neoEtat, setNeoEtat] = useState<"idle" | "appel">("idle");
   const [neoMsg, setNeoMsg] = useState<string | null>(null);
@@ -128,7 +126,6 @@ export function DossierDevisPanel({
     const dossier = dos.data as
       | { produit_id: string | null; type_assurance: string | null; recueil_besoins: unknown }
       | null;
-    setBranche(dossier?.type_assurance ?? null);
     const recueil = (dossier?.recueil_besoins ?? {}) as Record<string, unknown>;
     setNbAssuresSante(
       dossier?.type_assurance === "sante"
