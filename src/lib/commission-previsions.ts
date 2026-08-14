@@ -50,6 +50,102 @@ export function moisRestantsRecueil(
 
 export type LignePrevisionnelAnnee = { annee: number; montant: number };
 
+/** Contrat actif minimal nécessaire pour estimer une commission récurrente. */
+export interface ContratPourPrevision {
+  id: string;
+  dossier_id: string | null;
+  compagnie_id: string | null;
+  is_emprunteur: boolean | null;
+  statut: string | null;
+  date_effet: string | null;
+  duree_mois: number | null;
+  prime_annuelle: number | null;
+}
+
+/** Commission déjà encaissée, utilisée pour déduire le rythme mensuel réel. */
+export interface CommissionEncaissee {
+  contrat_id: string | null;
+  montant: number | null;
+  date_versement: string | null;
+  statut: string | null;
+}
+
+const STATUTS_CONTRAT_ACTIF = new Set(["actif", "contrat_actif"]);
+
+function moisEcoules(dateEffet: string, aujourdhui: Date): number {
+  const d = new Date(dateEffet);
+  if (Number.isNaN(d.getTime())) return 0;
+  const diff =
+    (aujourdhui.getFullYear() - d.getFullYear()) * 12 + (aujourdhui.getMonth() - d.getMonth());
+  return Math.max(0, diff);
+}
+
+/**
+ * Prévisions déduites des contrats actifs qui n'ont pas encore de ligne dans
+ * commission_previsions (contrats importés, ou validés avant la mise en place
+ * du module). Le mensuel retenu est la moyenne des commissions réellement
+ * encaissées sur le contrat ; à défaut, 5 % de la cotisation mensuelle.
+ */
+export function previsionsSynthetiques(
+  contrats: ContratPourPrevision[],
+  commissions: CommissionEncaissee[],
+  previsionsExistantes: CommissionPrevision[],
+  aujourdhui = new Date(),
+): CommissionPrevision[] {
+  const dejaCouverts = new Set(
+    previsionsExistantes.map((p) => p.contrat_id).filter((id): id is string => Boolean(id)),
+  );
+
+  const parContrat = new Map<string, { total: number; mois: Set<string> }>();
+  for (const c of commissions) {
+    if (!c.contrat_id || c.statut !== "versee") continue;
+    const cle = (c.date_versement ?? "").slice(0, 7);
+    const agg = parContrat.get(c.contrat_id) ?? { total: 0, mois: new Set<string>() };
+    agg.total += Number(c.montant ?? 0);
+    if (cle) agg.mois.add(cle);
+    parContrat.set(c.contrat_id, agg);
+  }
+
+  const out: CommissionPrevision[] = [];
+  for (const ct of contrats) {
+    if (dejaCouverts.has(ct.id)) continue;
+    if (!STATUTS_CONTRAT_ACTIF.has(ct.statut ?? "")) continue;
+
+    const hist = parContrat.get(ct.id);
+    const mensuel =
+      hist && hist.mois.size > 0
+        ? hist.total / hist.mois.size
+        : ct.prime_annuelle != null
+          ? (Number(ct.prime_annuelle) / 12) * 0.05
+          : null;
+    if (mensuel == null || mensuel <= 0) continue;
+
+    const duree = ct.duree_mois != null ? Number(ct.duree_mois) : null;
+    const restants =
+      duree != null && ct.date_effet
+        ? Math.max(0, duree - moisEcoules(ct.date_effet, aujourdhui))
+        : duree;
+    if (restants == null || restants <= 0) continue;
+
+    out.push({
+      id: `synth-${ct.id}`,
+      dossier_id: ct.dossier_id ?? "",
+      contrat_id: ct.id,
+      branche: ct.is_emprunteur ? "emprunteur" : null,
+      compagnie_id: ct.compagnie_id,
+      montant_mensuel_estime: Math.round(mensuel * 100) / 100,
+      mois_restants_initial: restants,
+      date_estimation: null,
+      montant_mensuel_reel: null,
+      mois_restants_actuels: restants,
+      montant_previsionnel_total: totalPrevisionnel(mensuel, restants),
+      statut: "estimee",
+    });
+  }
+  return out;
+}
+
+
 /**
  * Répartition du prévisionnel sur les années à venir : chaque dossier verse son
  * montant mensuel (réel si connu, sinon estimé) jusqu'à épuisement de ses mois
