@@ -133,6 +133,8 @@ export async function executerModificationNiveau1(
 
   // Vérification du périmètre : le devis doit appartenir au dossier.
   let devisId: string | null = null;
+  let devisCompagnieId: string | null = null;
+  let devisProduitId: string | null = null;
   if (analyse.devis_alternatif_id) {
     const { data } = await supabase
       .from("dossier_devis")
@@ -143,6 +145,8 @@ export async function executerModificationNiveau1(
     const d = data as any;
     if (!d || d.dossier_id !== analyse.dossier_id || !d.compagnie_id || !d.produit_id) return null;
     devisId = d.id as string;
+    devisCompagnieId = d.compagnie_id as string;
+    devisProduitId = d.produit_id as string;
   }
 
   if (!devisId && pct <= 0) return null;
