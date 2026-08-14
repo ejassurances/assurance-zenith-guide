@@ -636,7 +636,17 @@ function RattachementPanel({
   const [msg, setMsg] = useState<string | null>(null);
 
   const [creation, setCreation] = useState(false);
+  // Suggestion de l'agent commercial lorsque la classification n'est pas certaine.
+  const triage = (lien?.triage_ia ?? null) as {
+    prospect?: string;
+    branche?: string | null;
+    nom?: string | null;
+    prenom?: string | null;
+    telephone?: string | null;
+    resume?: string;
+  } | null;
   const nomDeduit = (message.expediteur_nom ?? message.expediteur_email ?? "").split(" ");
+
   const [form, setForm] = useState({
     prenom: nomDeduit.length > 1 ? nomDeduit[0]! : "",
     nom: nomDeduit.length > 1 ? nomDeduit.slice(1).join(" ") : nomDeduit[0] || "Contact",
