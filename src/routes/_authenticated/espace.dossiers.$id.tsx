@@ -9,6 +9,9 @@ import {
   isBrancheLegacy,
   labelForBranche,
   personnesAssurees,
+  assuresEmprunteur,
+  LIENS_EMPRUNTEUR,
+  CSP_EMPRUNTEUR,
   ageDepuisDateNaissance,
   LIENS_ASSURE,
   REGIMES_OBLIGATOIRES,
@@ -600,6 +603,35 @@ function RecueilPanel({ dossier }: { dossier: Dossier }) {
           .map((f) => {
             const v = (r as Record<string, unknown>)[f.key];
             if (v === undefined || v === null || v === "" || v === false) return null;
+            if (f.type === "assures_emprunteur") {
+              const list = assuresEmprunteur(v);
+              if (list.length === 0) return null;
+              return (
+                <div key={f.key} className="border-b border-line py-1 text-sm">
+                  <span className="text-ink-muted">{f.label}</span>
+                  <ul className="mt-1 space-y-0.5">
+                    {list.map((p, i) => {
+                      const lien = LIENS_EMPRUNTEUR.find((l) => l.value === p.lien)?.label ?? "Assuré";
+                      const age = ageDepuisDateNaissance(p.date_naissance);
+                      const csp = CSP_EMPRUNTEUR.find((c) => c.value === p.csp)?.label;
+                      return (
+                        <li key={i} className="font-medium">
+                          {[
+                            lien,
+                            age !== null ? `${age} ans` : null,
+                            p.quotite_pct != null ? `quotité ${p.quotite_pct} %` : null,
+                            csp,
+                            p.fumeur ? "fumeur" : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            }
             if (f.type === "personnes") {
               const list = personnesAssurees(v);
               if (list.length === 0) return null;

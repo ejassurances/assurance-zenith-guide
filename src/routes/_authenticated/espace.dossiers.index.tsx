@@ -192,7 +192,14 @@ export function NewDossierForm({
     setClientNom([c.prenom, c.nom].filter(Boolean).join(" ") || c.nom);
     setClientEmail(c.email ?? "");
     setClientPhone(c.mobile ?? c.telephone ?? "");
-    if (type === "emprunteur") setRecueil((r) => ({ ...r, fumeur: !!c.fumeur }));
+    if (type === "emprunteur") {
+      // Préremplissage du statut fumeur sur l'assuré principal de la liste.
+      setRecueil((r) => {
+        const list = assuresEmprunteur(r["assures"]);
+        const rows = list.length > 0 ? list : [{ lien: "principal", date_naissance: "", quotite_pct: null, csp: "", fumeur: false, sports_risque: "", antecedents_sante: "" }];
+        return { ...r, assures: rows.map((p, i) => (i === 0 ? { ...p, fumeur: !!c.fumeur } : p)) };
+      });
+    }
   };
 
   const branche = getBranche(type)!;
@@ -214,8 +221,10 @@ export function NewDossierForm({
     if (type === "emprunteur") {
       capital = Number(recueil.capital) || null;
       duree_mois = Number(recueil.duree_mois) || null;
-      age = Number(recueil.age) || null;
-      fumeur = !!recueil.fumeur;
+      // Assuré principal de la liste « assures » : base de l'estimation d'économie.
+      const principal = assurePrincipalEmprunteur(recueil["assures"]);
+      age = principal ? ageDepuisDateNaissance(principal.date_naissance) : null;
+      fumeur = principal?.fumeur === true;
       if (capital && duree_mois && age) {
         try {
           const est = estimerEconomie({ capital, dureeMois: duree_mois, age, fumeur });
