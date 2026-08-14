@@ -4,6 +4,7 @@ import { fmtEuros } from "@/lib/commissions-bareme";
 import {
   repartirTresorerie,
   previsionsSynthetiques,
+  COLONNES_PREVISION,
   type CommissionPrevision,
   type ContratPourPrevision,
   type CommissionEncaissee,
@@ -17,11 +18,8 @@ export function TresoreriePrevisionnelle() {
   useEffect(() => {
     (async () => {
       const [{ data }, { data: contrats }, { data: commissions }] = await Promise.all([
-        supabase
-          .from("commission_previsions")
-          .select(
-            "id,dossier_id,contrat_id,branche,compagnie_id,montant_mensuel_estime,mois_restants_initial,date_estimation,montant_mensuel_reel,mois_restants_actuels,montant_previsionnel_total,statut",
-          ),
+        supabase.from("commission_previsions").select(COLONNES_PREVISION),
+
         supabase
           .from("contrats")
           .select("id,dossier_id,compagnie_id,is_emprunteur,statut,date_effet,duree_mois,prime_annuelle"),

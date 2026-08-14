@@ -861,6 +861,7 @@ export type Database = {
           montant_mensuel_estime: number | null
           montant_mensuel_reel: number | null
           montant_previsionnel_total: number | null
+          reduction_courtage_pct: number | null
           statut: string
           updated_at: string
         }
@@ -879,6 +880,7 @@ export type Database = {
           montant_mensuel_estime?: number | null
           montant_mensuel_reel?: number | null
           montant_previsionnel_total?: number | null
+          reduction_courtage_pct?: number | null
           statut?: string
           updated_at?: string
         }
@@ -897,6 +899,7 @@ export type Database = {
           montant_mensuel_estime?: number | null
           montant_mensuel_reel?: number | null
           montant_previsionnel_total?: number | null
+          reduction_courtage_pct?: number | null
           statut?: string
           updated_at?: string
         }
@@ -1738,12 +1741,18 @@ export type Database = {
       devoir_conseil_refus_analyses: {
         Row: {
           created_at: string
+          devis_alternatif_id: string | null
           devoir_id: string
           dossier_id: string
+          execution_auto_detail: string | null
+          execution_auto_le: string | null
           id: string
           modele_ia: string | null
           motif_client: string
+          niveau: string | null
+          niveau_justification: string | null
           recommandation_ia: string
+          reduction_courtage_pct: number | null
           statut: string
           suggestion_contre_proposition: string | null
           synthese: string
@@ -1752,12 +1761,18 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          devis_alternatif_id?: string | null
           devoir_id: string
           dossier_id: string
+          execution_auto_detail?: string | null
+          execution_auto_le?: string | null
           id?: string
           modele_ia?: string | null
           motif_client: string
+          niveau?: string | null
+          niveau_justification?: string | null
           recommandation_ia: string
+          reduction_courtage_pct?: number | null
           statut?: string
           suggestion_contre_proposition?: string | null
           synthese: string
@@ -1766,12 +1781,18 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          devis_alternatif_id?: string | null
           devoir_id?: string
           dossier_id?: string
+          execution_auto_detail?: string | null
+          execution_auto_le?: string | null
           id?: string
           modele_ia?: string | null
           motif_client?: string
+          niveau?: string | null
+          niveau_justification?: string | null
           recommandation_ia?: string
+          reduction_courtage_pct?: number | null
           statut?: string
           suggestion_contre_proposition?: string | null
           synthese?: string
@@ -1779,6 +1800,13 @@ export type Database = {
           traite_par?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "devoir_conseil_refus_analyses_devis_alternatif_id_fkey"
+            columns: ["devis_alternatif_id"]
+            isOneToOne: false
+            referencedRelation: "dossier_devis"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "devoir_conseil_refus_analyses_devoir_id_fkey"
             columns: ["devoir_id"]

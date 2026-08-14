@@ -19,7 +19,29 @@ export interface CommissionPrevision {
   mois_restants_actuels: number | null;
   montant_previsionnel_total: number | null;
   statut: string;
+  /** Réduction commerciale des frais de courtage accordée au client (0 à 15 %). */
+  reduction_courtage_pct?: number | null;
 }
+
+/** Colonnes à lire pour tout calcul de prévisionnel. */
+export const COLONNES_PREVISION =
+  "id,dossier_id,contrat_id,branche,compagnie_id,montant_mensuel_estime,mois_restants_initial,date_estimation,montant_mensuel_reel,mois_restants_actuels,montant_previsionnel_total,statut,reduction_courtage_pct";
+
+/** Réduction de courtage bornée à l'intervalle autorisé (0-15 %). */
+export function reductionValide(pct: number | null | undefined): number {
+  const n = Number(pct ?? 0);
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return Math.min(15, n);
+}
+
+/** Montant mensuel effectif d'une prévision : réel si connu, sinon estimé, réduction appliquée. */
+export function mensuelEffectif(p: CommissionPrevision): number | null {
+  const brut = p.montant_mensuel_reel ?? p.montant_mensuel_estime;
+  if (brut == null) return null;
+  const net = Number(brut) * (1 - reductionValide(p.reduction_courtage_pct) / 100);
+  return Math.round(net * 100) / 100;
+}
+
 
 /** Montant mensuel estimé : règle du barème appliquée à la cotisation mensuelle. */
 export function montantMensuelEstime(
@@ -160,7 +182,7 @@ export function repartirTresorerie(
   const moisDebut = aujourdhui.getMonth(); // 0-11
 
   for (const p of previsions) {
-    const mensuel = p.montant_mensuel_reel ?? p.montant_mensuel_estime;
+    const mensuel = mensuelEffectif(p);
     const mois = p.mois_restants_actuels ?? p.mois_restants_initial;
     if (mensuel == null || mois == null || mois <= 0) continue;
     for (let i = 0; i < mois; i++) {
