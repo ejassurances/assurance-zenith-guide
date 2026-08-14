@@ -631,6 +631,7 @@ export type Database = {
           apporteur_id: string | null
           besoins: string[]
           civilite: string | null
+          client_origine_id: string | null
           code_postal: string | null
           commercial_id: string | null
           complement_adresse: string | null
@@ -683,6 +684,7 @@ export type Database = {
           apporteur_id?: string | null
           besoins?: string[]
           civilite?: string | null
+          client_origine_id?: string | null
           code_postal?: string | null
           commercial_id?: string | null
           complement_adresse?: string | null
@@ -735,6 +737,7 @@ export type Database = {
           apporteur_id?: string | null
           besoins?: string[]
           civilite?: string | null
+          client_origine_id?: string | null
           code_postal?: string | null
           commercial_id?: string | null
           complement_adresse?: string | null
@@ -782,7 +785,15 @@ export type Database = {
           ville?: string | null
           ville_naissance?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clients_client_origine_id_fkey"
+            columns: ["client_origine_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       commission_bareme: {
         Row: {
