@@ -35,9 +35,14 @@ export const creerClientManuel = createServerFn({ method: "POST" })
         mobile: data.mobile || null,
         ville: data.ville || null,
         origine: data.origine,
+        client_origine_id:
+          data.origine === "parrainage" || data.origine === "recommandation"
+            ? (data.client_origine_id ?? null)
+            : null,
         marque: data.marque,
         created_by: context.userId,
       })
+
       .select("id")
       .single();
     if (error || !cree) throw new Error(error?.message ?? "Création de la fiche impossible");
