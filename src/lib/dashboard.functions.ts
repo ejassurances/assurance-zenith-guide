@@ -3,10 +3,12 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   repartirTresorerie,
   previsionsSynthetiques,
+  COLONNES_PREVISION,
   type CommissionPrevision,
   type ContratPourPrevision,
   type CommissionEncaissee,
 } from "@/lib/commission-previsions";
+
 
 export type CaRealSummary = {
   anneeEnCours: number;
@@ -75,9 +77,8 @@ export const getCommissionsEstimeesAnneeEnCours = createServerFn({ method: "GET"
     const [{ data }, { data: contrats }, { data: commissions }] = await Promise.all([
       context.supabase
         .from("commission_previsions")
-        .select(
-          "id,dossier_id,contrat_id,branche,compagnie_id,montant_mensuel_estime,mois_restants_initial,date_estimation,montant_mensuel_reel,mois_restants_actuels,montant_previsionnel_total,statut",
-        ),
+        .select(COLONNES_PREVISION),
+
       context.supabase
         .from("contrats")
         .select("id,dossier_id,compagnie_id,is_emprunteur,statut,date_effet,duree_mois,prime_annuelle"),

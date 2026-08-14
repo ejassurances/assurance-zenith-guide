@@ -9,6 +9,8 @@ type Analyse = {
   recommandation_ia: "contre_proposition" | "cloture_perdue";
   synthese: string;
   suggestion_contre_proposition: string | null;
+  niveau: "niveau_1" | "niveau_2" | null;
+  niveau_justification: string | null;
   created_at: string;
 };
 
@@ -31,7 +33,7 @@ export function DevoirConseilRefusAnalysePanel({
   const load = async () => {
     const { data } = await supabase
       .from("devoir_conseil_refus_analyses")
-      .select("id, motif_client, recommandation_ia, synthese, suggestion_contre_proposition, created_at")
+      .select("id, motif_client, recommandation_ia, synthese, suggestion_contre_proposition, niveau, niveau_justification, created_at")
       .eq("dossier_id", dossierId)
       .eq("statut", "en_attente")
       .order("created_at", { ascending: false })
@@ -88,6 +90,11 @@ export function DevoirConseilRefusAnalysePanel({
         <span className="rounded-full bg-[#D4AF37]/15 px-2 py-0.5 text-xs text-[#8a6d12]">
           {contre ? "Contre-proposition recommandée" : "Clôture en perdu recommandée"}
         </span>
+        {analyse.niveau === "niveau_2" && (
+          <span className="rounded-full border border-line px-2 py-0.5 text-xs text-ink-muted">
+            Niveau 2 — action manuelle
+          </span>
+        )}
       </div>
 
       <div className="mt-3 space-y-3 text-sm">
@@ -99,6 +106,12 @@ export function DevoirConseilRefusAnalysePanel({
           <p className="text-xs uppercase tracking-wide text-ink-muted">Synthèse de l'IA</p>
           <p className="mt-1 whitespace-pre-wrap text-ink-soft">{analyse.synthese}</p>
         </div>
+        {analyse.niveau_justification && (
+          <div>
+            <p className="text-xs uppercase tracking-wide text-ink-muted">Qualification du niveau</p>
+            <p className="mt-1 whitespace-pre-wrap text-ink-soft">{analyse.niveau_justification}</p>
+          </div>
+        )}
         {contre && analyse.suggestion_contre_proposition && (
           <div className="rounded-xl border border-line bg-surface p-3">
             <p className="text-xs uppercase tracking-wide text-ink-muted">Suggestion d'ajustement</p>

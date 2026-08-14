@@ -50,6 +50,7 @@ function consigne(ctx: {
   offres: unknown;
   recueil: unknown;
   branche: string | null;
+  devisDossier: unknown;
 }) {
   return [
     "Tu es analyste conformité dans un cabinet de courtage en assurances français (ACPR / DDA).",
@@ -67,6 +68,8 @@ function consigne(ctx: {
     JSON.stringify(ctx.offres ?? []).slice(0, 4000),
     "Recueil des besoins du dossier (JSON) :",
     JSON.stringify(ctx.recueil ?? {}).slice(0, 6000),
+    "Devis DÉJÀ enregistrés sur ce dossier (JSON, avec leur id) :",
+    JSON.stringify(ctx.devisDossier ?? []).slice(0, 4000),
     "",
     "Règles :",
     "- Si le motif porte sur le prix, une garantie, une compagnie, un délai ou un malentendu : recommande 'contre_proposition'.",
@@ -76,9 +79,20 @@ function consigne(ctx: {
     "  ajustement de cotisation ou de quotité, garantie à revoir, argument à reprendre), sans promesse commerciale chiffrée fausse.",
     "- N'invente aucun tarif précis : parle en axes d'ajustement.",
     "",
-    'Réponds STRICTEMENT en JSON : {"recommandation":"contre_proposition|cloture_perdue","synthese":"...","suggestion_contre_proposition":"..."}',
+    "QUALIFICATION DU NIVEAU (obligatoire) :",
+    "- 'niveau_1' UNIQUEMENT si la contre-proposition tient entièrement dans l'un ou les deux cas suivants :",
+    "  (a) retenir un AUTRE devis déjà présent dans la liste ci-dessus (renseigne alors devis_alternatif_id",
+    "      avec son id exact, et rien d'autre), et/ou",
+    "  (b) réduire les frais de courtage de ce dossier de 15 % MAXIMUM (renseigne reduction_courtage_pct,",
+    "      nombre entre 0 et 15).",
+    "- 'niveau_2' dans TOUS les autres cas : réduction supérieure à 15 %, aucun devis existant ne répond",
+    "  à la demande, changement de garantie non tarifé, ou le moindre doute réglementaire.",
+    "- niveau_justification : explique en une ou deux phrases pourquoi ce niveau.",
+    "",
+    'Réponds STRICTEMENT en JSON : {"recommandation":"contre_proposition|cloture_perdue","synthese":"...","suggestion_contre_proposition":"...","niveau":"niveau_1|niveau_2","niveau_justification":"...","devis_alternatif_id":null,"reduction_courtage_pct":null}',
   ].join("\n");
 }
+
 
 /**
  * Analyse IA du motif de refus d'un devoir de conseil et enregistrement
@@ -108,6 +122,11 @@ export async function analyserRefusDevoirConseil(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const dos = dossier as any;
 
+  const { devisDuDossier, executerModificationNiveau1, REDUCTION_COURTAGE_MAX_PCT } = await import(
+    "./modification-client-niveau1.server"
+  );
+  const devisDossier = await devisDuDossier(supabase, d.dossier_id);
+
   const { modele, brut } = await appelerIa(
     consigne({
       motif,
@@ -127,6 +146,7 @@ export async function analyserRefusDevoirConseil(
       offres: d.offres,
       recueil: dos?.recueil_besoins ?? null,
       branche: dos?.type_assurance ?? null,
+      devisDossier,
     }),
   );
 
@@ -139,6 +159,29 @@ export async function analyserRefusDevoirConseil(
       ? String(obj["suggestion_contre_proposition"]).slice(0, 4000)
       : null;
 
+  // Qualification du périmètre d'action automatique (niveau 1) — vérifiée côté serveur.
+  const devisAltBrut = obj["devis_alternatif_id"];
+  const devisAlt =
+    typeof devisAltBrut === "string" && devisDossier.some((v) => v.id === devisAltBrut)
+      ? devisAltBrut
+      : null;
+  const reducBrut = Number(obj["reduction_courtage_pct"] ?? NaN);
+  const reduction =
+    Number.isFinite(reducBrut) && reducBrut > 0 && reducBrut <= REDUCTION_COURTAGE_MAX_PCT
+      ? Math.round(reducBrut * 100) / 100
+      : null;
+  const reductionHorsPerimetre = Number.isFinite(reducBrut) && reducBrut > REDUCTION_COURTAGE_MAX_PCT;
+  const niveau: "niveau_1" | "niveau_2" =
+    reco === "contre_proposition" &&
+    String(obj["niveau"] ?? "") === "niveau_1" &&
+    !reductionHorsPerimetre &&
+    (devisAlt !== null || reduction !== null)
+      ? "niveau_1"
+      : "niveau_2";
+  const niveauJustification = obj["niveau_justification"]
+    ? String(obj["niveau_justification"]).slice(0, 2000)
+    : null;
+
   const { data: inserted, error: iErr } = await supabase
     .from("devoir_conseil_refus_analyses")
     .insert({
@@ -150,10 +193,47 @@ export async function analyserRefusDevoirConseil(
       suggestion_contre_proposition: suggestion,
       modele_ia: modele,
       statut: "en_attente",
-    })
+      niveau,
+      niveau_justification: niveauJustification,
+      devis_alternatif_id: niveau === "niveau_1" ? devisAlt : null,
+      reduction_courtage_pct: niveau === "niveau_1" ? reduction : null,
+    } as never)
     .select("id")
     .single();
   if (iErr || !inserted) throw new Error(iErr?.message ?? "Enregistrement de l'analyse impossible");
 
-  return { analyse_id: inserted.id as string, recommandation: reco, synthese, suggestion };
+  const analyseId = (inserted as { id: string }).id;
+
+  // Niveau 1 : exécution automatique bornée, devoir de conseil régénéré en brouillon.
+  let executionAuto: { devoir_id: string | null; actions: string[] } | null = null;
+  if (niveau === "niveau_1") {
+    try {
+      const res = await executerModificationNiveau1(
+        supabase,
+        {
+          id: analyseId,
+          dossier_id: d.dossier_id as string,
+          motif_client: motif,
+          synthese,
+          suggestion_contre_proposition: suggestion,
+          devis_alternatif_id: devisAlt,
+          reduction_courtage_pct: reduction,
+          niveau_justification: niveauJustification,
+        },
+        null,
+      );
+      executionAuto = res ? { devoir_id: res.devoir_id, actions: res.actions } : null;
+    } catch (e) {
+      console.error("[agent-commercial] modification niveau 1 non appliquée", e);
+      const { creerTacheAdmin } = await import("./agent-taches.server");
+      await creerTacheAdmin(supabase as unknown as Parameters<typeof creerTacheAdmin>[0], {
+        titre: "Modification client niveau 1 non appliquée — à traiter manuellement",
+        description: `Dossier ${d.dossier_id} : ${e instanceof Error ? e.message : "erreur inconnue"}`,
+        created_by: null,
+      });
+    }
+  }
+
+  return { analyse_id: analyseId, recommandation: reco, synthese, suggestion, niveau, executionAuto };
 }
+
