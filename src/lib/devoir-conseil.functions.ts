@@ -15,6 +15,8 @@ const offreSchema = z.object({
 
 const saisieSchema = z.object({
   dossier_id: z.string().uuid(),
+  /** Validation / relecture : génère ou met à jour le brouillon sans envoyer au client. */
+  sans_envoi: z.boolean().optional(),
   recommandation: z.string().min(10).max(5000),
   motifs: z.string().min(10).max(5000),
   mises_en_garde: z.string().max(5000).optional(),
