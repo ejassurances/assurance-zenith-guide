@@ -18,6 +18,7 @@ type Row = {
   statut: string;
   economie_realisee: number | null;
   compagnie_id: string | null;
+  dossier_id: string | null;
 };
 
 export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: boolean }) {
@@ -25,18 +26,51 @@ export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: 
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const { staff, commissionContrat } = useCommissionBareme();
+  const [previsions, setPrevisions] = useState<Record<string, number | null>>({});
+  const [recus, setRecus] = useState<Record<string, number>>({});
 
   async function load() {
     setLoading(true);
     const { data } = await supabase
       .from("contrats")
       .select(
-        "id,numero,assureur,produit,date_effet,duree_mois,prime_annuelle,is_emprunteur,capital_initial,taux_assurance_annuel,statut,economie_realisee,compagnie_id",
+        "id,numero,assureur,produit,date_effet,duree_mois,prime_annuelle,is_emprunteur,capital_initial,taux_assurance_annuel,statut,economie_realisee,compagnie_id,dossier_id",
       )
       .eq("client_id", clientId)
       .order("created_at", { ascending: false });
-    setRows((data as Row[]) ?? []);
+    const list = (data as Row[]) ?? [];
+    setRows(list);
     setLoading(false);
+    if (list.length > 0) await loadCommissions(list);
+  }
+
+  /** Commission prévisionnelle du dossier et commissions déjà versées par contrat. */
+  async function loadCommissions(list: Row[]) {
+    const dossierIds = list.map((r) => r.dossier_id).filter((v): v is string => !!v);
+    const contratIds = list.map((r) => r.id);
+    const [prev, com] = await Promise.all([
+      dossierIds.length > 0
+        ? supabase
+            .from("commission_previsions")
+            .select("dossier_id,contrat_id,montant_previsionnel_total")
+            .in("dossier_id", dossierIds)
+        : Promise.resolve({ data: [] as never[] }),
+      supabase.from("commissions").select("contrat_id,montant,statut").in("contrat_id", contratIds),
+    ]);
+    const parContrat: Record<string, number | null> = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const p of ((prev.data as any[]) ?? [])) {
+      const contrat = list.find((r) => r.id === p.contrat_id || r.dossier_id === p.dossier_id);
+      if (contrat) parContrat[contrat.id] = p.montant_previsionnel_total ?? null;
+    }
+    const sommes: Record<string, number> = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const c of ((com.data as any[]) ?? [])) {
+      if (c.statut !== "versee" || !c.contrat_id) continue;
+      sommes[c.contrat_id] = (sommes[c.contrat_id] ?? 0) + Number(c.montant ?? 0);
+    }
+    setPrevisions(parContrat);
+    setRecus(sommes);
   }
   useEffect(() => {
     load();
@@ -132,6 +166,12 @@ export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: 
                     <div className="font-medium">{r.produit}</div>
                     {r.is_emprunteur && (
                       <div className="text-xs text-ink-muted">Emprunteur · {formatEuro(r.capital_initial)}</div>
+                    )}
+                    {staff && r.id in previsions && (
+                      <div className="mt-1 text-xs text-[color:var(--crm-gold)]">
+                        Commission — reçu à ce jour : {formatEuro(recus[r.id] ?? 0)} / prévisionnel restant :{" "}
+                        {previsions[r.id] != null ? formatEuro(previsions[r.id]) : "à estimer"}
+                      </div>
                     )}
                   </td>
                   <td className="px-3 py-2 text-ink-soft">{r.assureur}</td>

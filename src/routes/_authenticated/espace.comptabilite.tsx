@@ -17,6 +17,7 @@ import {
 } from "@/components/comptabilite-ecritures";
 import { FacturesAchatTab } from "@/components/factures-achat-tab";
 import { CommissionMoisCard } from "@/components/commission-mois-card";
+import { TresoreriePrevisionnelle } from "@/components/tresorerie-previsionnelle";
 
 export const Route = createFileRoute("/_authenticated/espace/comptabilite")({
   component: ComptabilitePage,
@@ -118,7 +119,12 @@ function AdminView() {
       </TabsList>
 
       <TabsContent value="overview" className="mt-6"><Overview /></TabsContent>
-      <TabsContent value="previsionnel" className="mt-6"><Previsionnel /></TabsContent>
+      <TabsContent value="previsionnel" className="mt-6">
+        <div className="space-y-6">
+          <TresoreriePrevisionnelle />
+          <Previsionnel />
+        </div>
+      </TabsContent>
       <TabsContent value="encaissements" className="mt-6"><Encaissements /></TabsContent>
       <TabsContent value="retrocessions" className="mt-6"><Retrocessions portee="mandataire" /></TabsContent>
       <TabsContent value="prescripteurs" className="mt-6"><Retrocessions portee="prescripteur" /></TabsContent>

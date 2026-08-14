@@ -834,6 +834,85 @@ export type Database = {
           },
         ]
       }
+      commission_previsions: {
+        Row: {
+          branche: string | null
+          compagnie_id: string | null
+          confirme_le: string | null
+          confirme_par: string | null
+          contrat_id: string | null
+          created_at: string
+          date_estimation: string | null
+          dossier_id: string
+          id: string
+          mois_restants_actuels: number | null
+          mois_restants_initial: number | null
+          montant_mensuel_estime: number | null
+          montant_mensuel_reel: number | null
+          montant_previsionnel_total: number | null
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          branche?: string | null
+          compagnie_id?: string | null
+          confirme_le?: string | null
+          confirme_par?: string | null
+          contrat_id?: string | null
+          created_at?: string
+          date_estimation?: string | null
+          dossier_id: string
+          id?: string
+          mois_restants_actuels?: number | null
+          mois_restants_initial?: number | null
+          montant_mensuel_estime?: number | null
+          montant_mensuel_reel?: number | null
+          montant_previsionnel_total?: number | null
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          branche?: string | null
+          compagnie_id?: string | null
+          confirme_le?: string | null
+          confirme_par?: string | null
+          contrat_id?: string | null
+          created_at?: string
+          date_estimation?: string | null
+          dossier_id?: string
+          id?: string
+          mois_restants_actuels?: number | null
+          mois_restants_initial?: number | null
+          montant_mensuel_estime?: number | null
+          montant_mensuel_reel?: number | null
+          montant_previsionnel_total?: number | null
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_previsions_compagnie_id_fkey"
+            columns: ["compagnie_id"]
+            isOneToOne: false
+            referencedRelation: "compagnies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_previsions_contrat_id_fkey"
+            columns: ["contrat_id"]
+            isOneToOne: false
+            referencedRelation: "contrats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_previsions_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: true
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commission_regles: {
         Row: {
           assiette: string

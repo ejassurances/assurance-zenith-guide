@@ -3,6 +3,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { envoyerDevoirConseilFn, pdfDevoirConseil } from "@/lib/devoir-conseil.functions";
 import { prefillDevoirConseil, STATUT_OFFRE_LABEL, type StatutOffre } from "@/lib/devoir-conseil-modeles";
+import { useAuth } from "@/lib/auth-context";
+import { useCommissionBareme } from "@/hooks/use-commission-bareme";
+import { resoudreRegle, decrireRegle, fmtEuros } from "@/lib/commissions-bareme";
+import { montantMensuelEstime, moisRestantsRecueil, totalPrevisionnel } from "@/lib/commission-previsions";
 
 type Devoir = {
   id: string;
@@ -77,6 +81,21 @@ export function DevoirConseilPanel({
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Commission prévisionnelle (flux grossiste) confirmée à la validation.
+  const { user } = useAuth();
+  const { staff, regles } = useCommissionBareme();
+  const [dossier, setDossier] = useState<{
+    compagnie_id: string | null;
+    type_assurance: string | null;
+    recueil_besoins: Record<string, unknown> | null;
+  } | null>(null);
+  const [prevision, setPrevision] = useState<{ id: string; montant_previsionnel_total: number | null } | null>(
+    null,
+  );
+  const [prevOpen, setPrevOpen] = useState(false);
+  const [prevForm, setPrevForm] = useState({ mensuel: "", mois: "" });
+  const [prevIgnoree, setPrevIgnoree] = useState(false);
+
   const emprunteur = branche === "emprunteur";
 
   const [form, setForm] = useState({
@@ -130,9 +149,30 @@ export function DevoirConseilPanel({
     }
   };
 
+  const loadPrevision = async () => {
+    const [d, p] = await Promise.all([
+      supabase
+        .from("dossiers")
+        .select("compagnie_id, type_assurance, recueil_besoins")
+        .eq("id", dossierId)
+        .maybeSingle(),
+      supabase
+        .from("commission_previsions")
+        .select("id, montant_previsionnel_total")
+        .eq("dossier_id", dossierId)
+        .maybeSingle(),
+    ]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setDossier((d.data as any) ?? null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setPrevision((p.data as any) ?? null);
+  };
+
   useEffect(() => {
     load();
-  }, [dossierId]);
+    if (staff) loadPrevision();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dossierId, staff]);
 
   // Contre-proposition demandée depuis l'analyse IA du refus : ouvre et pré-remplit la saisie.
   useEffect(() => {
@@ -186,7 +226,54 @@ export function DevoirConseilPanel({
 
   const offresRemplies = offres.filter((o) => o.compagnie.trim() && o.produit.trim());
 
+  const regleApplicable =
+    staff && dossier?.compagnie_id
+      ? resoudreRegle(regles, branche || dossier.type_assurance, dossier.compagnie_id)
+      : null;
+
+  /** Demande la confirmation de la commission prévisionnelle avant l'envoi. */
   const submit = async () => {
+    if (staff && !prevision && !prevIgnoree && regleApplicable) {
+      const mensuel = montantMensuelEstime(
+        regleApplicable.regle,
+        form.cotisation_mensuelle ? Number(form.cotisation_mensuelle) : null,
+      );
+      const mois =
+        moisRestantsRecueil(branche || dossier?.type_assurance || null, dossier?.recueil_besoins) ??
+        (form.duree_mois ? Number(form.duree_mois) : null);
+      setPrevForm({ mensuel: mensuel != null ? String(mensuel) : "", mois: mois != null ? String(mois) : "" });
+      setPrevOpen(true);
+      return;
+    }
+    await doSubmit();
+  };
+
+  /** Enregistre la prévision confirmée puis poursuit l'envoi. */
+  const confirmerPrevision = async () => {
+    const mensuel = prevForm.mensuel ? Number(prevForm.mensuel) : null;
+    const mois = prevForm.mois ? Number(prevForm.mois) : null;
+    const { error: e } = await supabase.from("commission_previsions").upsert(
+      {
+        dossier_id: dossierId,
+        branche: branche || dossier?.type_assurance || null,
+        compagnie_id: dossier?.compagnie_id ?? null,
+        montant_mensuel_estime: mensuel,
+        mois_restants_initial: mois,
+        date_estimation: new Date().toISOString().slice(0, 10),
+        montant_previsionnel_total: totalPrevisionnel(mensuel, mois),
+        statut: "estime",
+        confirme_par: user?.id ?? null,
+        confirme_le: new Date().toISOString(),
+      } as never,
+      { onConflict: "dossier_id" },
+    );
+    setPrevOpen(false);
+    if (e) setError(e.message);
+    else await loadPrevision();
+    await doSubmit();
+  };
+
+  const doSubmit = async () => {
     setBusy(true);
     setError(null);
     setMsg(null);
@@ -317,6 +404,88 @@ export function DevoirConseilPanel({
         </div>
       ) : (
         <p className="mt-3 text-sm text-ink-muted">Aucun devoir de conseil généré pour ce projet.</p>
+      )}
+
+      {staff && prevision && (
+        <p className="mt-3 rounded-md border border-line bg-surface p-3 text-xs text-ink-soft">
+          Commission prévisionnelle enregistrée :{" "}
+          <strong>
+            {prevision.montant_previsionnel_total != null
+              ? fmtEuros(Number(prevision.montant_previsionnel_total))
+              : "montant mensuel seul"}
+          </strong>
+        </p>
+      )}
+      {staff && !prevision && prevIgnoree && (
+        <p className="mt-3 rounded-md border border-dashed border-line p-3 text-xs text-ink-muted">
+          Rappel : la commission prévisionnelle de ce dossier n'a pas été confirmée.
+        </p>
+      )}
+
+      {prevOpen && (
+        <div className="mt-4 space-y-3 rounded-xl border border-[color:var(--crm-gold,#D4AF37)] bg-surface p-4">
+          <p className="font-serif text-base text-ink">Commission prévisionnelle de ce dossier</p>
+          <p className="text-xs text-ink-muted">
+            Règle appliquée : {regleApplicable ? decrireRegle(regleApplicable.regle) : "—"}. Ajustez si besoin
+            avant confirmation.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="text-xs text-ink-muted">
+              Commission mensuelle (€)
+              <input
+                type="number"
+                step="0.01"
+                value={prevForm.mensuel}
+                onChange={(e) => setPrevForm({ ...prevForm, mensuel: e.target.value })}
+                className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="text-xs text-ink-muted">
+              Mois restants
+              <input
+                type="number"
+                value={prevForm.mois}
+                onChange={(e) => setPrevForm({ ...prevForm, mois: e.target.value })}
+                className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+              />
+            </label>
+          </div>
+          <p className="text-sm text-ink">
+            {prevForm.mensuel ? fmtEuros(Number(prevForm.mensuel)) : "—"} × {prevForm.mois || "?"} mois ={" "}
+            <strong>
+              {prevForm.mensuel && prevForm.mois
+                ? fmtEuros(Number(prevForm.mensuel) * Number(prevForm.mois))
+                : "total indisponible"}
+            </strong>
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={confirmerPrevision}
+              className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-primary-foreground"
+            >
+              Confirmer et envoyer
+            </button>
+            <button
+              onClick={() => {
+                setPrevIgnoree(true);
+                setPrevOpen(false);
+                doSubmit();
+              }}
+              className="rounded-full border border-line px-4 py-2 text-sm"
+            >
+              Envoyer sans enregistrer
+            </button>
+            <button
+              onClick={() => {
+                setPrevIgnoree(true);
+                setPrevOpen(false);
+              }}
+              className="text-sm text-ink-muted underline underline-offset-4"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
       )}
 
       {!clientEmail && (
