@@ -182,7 +182,9 @@ export async function executerModificationNiveau1(
   userId: string | null,
 ) {
   const actions: string[] = [];
-  const pct = reductionValide(analyse.reduction_courtage_pct);
+  const quotiteDemandee = quotiteValide(analyse.quotite_demandee);
+  // La quotité et les frais de courtage sont deux leviers distincts : jamais combinés.
+  const pct = quotiteDemandee !== null ? 0 : reductionValide(analyse.reduction_courtage_pct);
 
   // Vérification du périmètre : le devis doit appartenir au dossier.
   let devisId: string | null = null;
@@ -202,8 +204,34 @@ export async function executerModificationNiveau1(
     devisProduitId = d.produit_id as string;
   }
 
+  // Ajustement de quotité (emprunteur) : nouveau devis recalculé proportionnellement.
+  if (quotiteDemandee !== null) {
+    const nouveau = await creerDevisQuotiteAjustee(
+      supabase,
+      analyse.dossier_id,
+      devisId,
+      quotiteDemandee,
+    );
+    if (!nouveau) {
+      const { creerTacheAdmin } = await import("./agent-taches.server");
+      await creerTacheAdmin(supabase as unknown as Parameters<typeof creerTacheAdmin>[0], {
+        titre: "Ajustement de quotité impossible automatiquement — quotité d'origine manquante",
+        description:
+          `Dossier ${analyse.dossier_id} : le client demande une quotité de ${quotiteDemandee} %, ` +
+          "mais la quotité d'origine du devis retenu n'est pas renseignée. Impossible de recalculer la " +
+          "cotisation proportionnellement : renseignez la quotité sur le devis puis retarifez manuellement.",
+        created_by: null,
+      });
+      return null;
+    }
+    devisId = nouveau.id;
+    devisCompagnieId = nouveau.compagnie_id;
+    devisProduitId = nouveau.produit_id;
+  }
+
   if (!devisId && pct <= 0) return null;
-  if (Number(analyse.reduction_courtage_pct ?? 0) > REDUCTION_COURTAGE_MAX_PCT) return null;
+  if (Number(analyse.reduction_courtage_pct ?? 0) > REDUCTION_COURTAGE_MAX_PCT && quotiteDemandee === null)
+    return null;
 
   await historiserModification(supabase, analyse.dossier_id, {
     source: "agent_commercial_niveau_1",
@@ -211,7 +239,8 @@ export async function executerModificationNiveau1(
     analyse_ia: analyse.synthese ?? null,
     justification: analyse.niveau_justification ?? analyse.suggestion_contre_proposition ?? null,
     devis_retenu_id: devisId,
-    reduction_courtage_pct: pct > 0 ? pct : null,
+    quotite_ajustee_pct: quotiteDemandee,
+    reduction_courtage_pct: quotiteDemandee === null && pct > 0 ? pct : null,
   });
 
   let devoirId: string | null = null;
@@ -236,7 +265,11 @@ export async function executerModificationNiveau1(
       );
       devoirId = res.devoir_id ?? null;
     }
-    actions.push("devis alternatif retenu");
+    actions.push(
+      quotiteDemandee !== null
+        ? `quotité assurée ajustée à ${quotiteDemandee} % et cotisation recalculée`
+        : "devis alternatif retenu",
+    );
   }
 
   if (pct > 0) {
