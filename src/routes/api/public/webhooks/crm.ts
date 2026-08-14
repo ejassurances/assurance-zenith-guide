@@ -78,6 +78,14 @@ export const Route = createFileRoute("/api/public/webhooks/crm")({
             .single();
           if (error) return new Response(error.message, { status: 500 });
           clientId = data.id;
+
+          // Contrôle LCB-FT / OpenSanctions systématique sur toute nouvelle fiche.
+          const { lancerLcbAutomatique } = await import("@/lib/dossier-automation.server");
+          await lancerLcbAutomatique(supabaseAdmin, {
+            client_id: clientId,
+            nom: values.nom,
+            prenom: values.prenom ?? null,
+          });
         }
 
         if (clientId) {
