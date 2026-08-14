@@ -207,11 +207,16 @@ async function resumeClient(
     compagnieId: string | null;
     produitId: string | null;
     reductionPct: number;
+    quotitePct: number | null;
   },
 ): Promise<string | null> {
   const changements: string[] = [];
 
-  if (ctx.devisId) {
+  if (ctx.quotitePct !== null) {
+    changements.push(
+      `nous avons ajusté la quotité assurée à ${ctx.quotitePct} % et recalculé votre cotisation en conséquence`,
+    );
+  } else if (ctx.devisId) {
     let compagnie: string | null = null;
     let produit: string | null = null;
     if (ctx.compagnieId) {
@@ -370,6 +375,7 @@ export async function executerModificationNiveau1(
       compagnieId: devisCompagnieId,
       produitId: devisProduitId,
       reductionPct: pct,
+      quotitePct: quotiteDemandee,
     });
     if (notes) {
       await supabase
