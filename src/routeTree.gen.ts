@@ -44,6 +44,7 @@ import { Route as AuthenticatedEspaceClientsIndexRouteImport } from './routes/_a
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
+import { Route as ApiPublicWebhooksNeolianeRouteImport } from './routes/api/public/webhooks/neoliane'
 import { Route as ApiPublicWebhooksCrmRouteImport } from './routes/api/public/webhooks/crm'
 import { Route as AuthenticatedEspaceDossiersIdRouteImport } from './routes/_authenticated/espace.dossiers.$id'
 import { Route as AuthenticatedEspaceContratsIdRouteImport } from './routes/_authenticated/espace.contrats.$id'
@@ -247,6 +248,12 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
   path: '/lovable/email/auth/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicWebhooksNeolianeRoute =
+  ApiPublicWebhooksNeolianeRouteImport.update({
+    id: '/api/public/webhooks/neoliane',
+    path: '/api/public/webhooks/neoliane',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicWebhooksCrmRoute = ApiPublicWebhooksCrmRouteImport.update({
   id: '/api/public/webhooks/crm',
   path: '/api/public/webhooks/crm',
@@ -311,6 +318,7 @@ export interface FileRoutesByFullPath {
   '/espace/contrats/$id': typeof AuthenticatedEspaceContratsIdRoute
   '/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
   '/api/public/webhooks/crm': typeof ApiPublicWebhooksCrmRoute
+  '/api/public/webhooks/neoliane': typeof ApiPublicWebhooksNeolianeRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -351,6 +359,7 @@ export interface FileRoutesByTo {
   '/espace/contrats/$id': typeof AuthenticatedEspaceContratsIdRoute
   '/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
   '/api/public/webhooks/crm': typeof ApiPublicWebhooksCrmRoute
+  '/api/public/webhooks/neoliane': typeof ApiPublicWebhooksNeolianeRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -394,6 +403,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/contrats/$id': typeof AuthenticatedEspaceContratsIdRoute
   '/_authenticated/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
   '/api/public/webhooks/crm': typeof ApiPublicWebhooksCrmRoute
+  '/api/public/webhooks/neoliane': typeof ApiPublicWebhooksNeolianeRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -437,6 +447,7 @@ export interface FileRouteTypes {
     | '/espace/contrats/$id'
     | '/espace/dossiers/$id'
     | '/api/public/webhooks/crm'
+    | '/api/public/webhooks/neoliane'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -477,6 +488,7 @@ export interface FileRouteTypes {
     | '/espace/contrats/$id'
     | '/espace/dossiers/$id'
     | '/api/public/webhooks/crm'
+    | '/api/public/webhooks/neoliane'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -519,6 +531,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/contrats/$id'
     | '/_authenticated/espace/dossiers/$id'
     | '/api/public/webhooks/crm'
+    | '/api/public/webhooks/neoliane'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -542,6 +555,7 @@ export interface RootRouteChildren {
   ApiPublicRelancePiecesRoute: typeof ApiPublicRelancePiecesRoute
   ApiPublicRelanceSouscriptionRoute: typeof ApiPublicRelanceSouscriptionRoute
   ApiPublicWebhooksCrmRoute: typeof ApiPublicWebhooksCrmRoute
+  ApiPublicWebhooksNeolianeRoute: typeof ApiPublicWebhooksNeolianeRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
@@ -794,6 +808,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/webhooks/neoliane': {
+      id: '/api/public/webhooks/neoliane'
+      path: '/api/public/webhooks/neoliane'
+      fullPath: '/api/public/webhooks/neoliane'
+      preLoaderRoute: typeof ApiPublicWebhooksNeolianeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/crm': {
       id: '/api/public/webhooks/crm'
       path: '/api/public/webhooks/crm'
@@ -914,6 +935,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicRelancePiecesRoute: ApiPublicRelancePiecesRoute,
   ApiPublicRelanceSouscriptionRoute: ApiPublicRelanceSouscriptionRoute,
   ApiPublicWebhooksCrmRoute: ApiPublicWebhooksCrmRoute,
+  ApiPublicWebhooksNeolianeRoute: ApiPublicWebhooksNeolianeRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
