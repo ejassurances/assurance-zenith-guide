@@ -24,6 +24,7 @@ export type DossierDevis = {
   cotisation_mensuelle: number | null;
   source: "manuel" | "api" | "pdf";
   garanties_resume: string | null;
+  quotite_pct: number | null;
   created_at: string;
 };
 
@@ -93,6 +94,7 @@ export function DossierDevisPanel({
     produit_id: "",
     formule_id: "",
     cotisation_mensuelle: "",
+    quotite_pct: "",
     garanties_resume: "",
   });
 
@@ -100,7 +102,7 @@ export function DossierDevisPanel({
     const [d, c, p, cl, dos] = await Promise.all([
       supabase
         .from("dossier_devis")
-        .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,source,garanties_resume,created_at")
+        .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,source,garanties_resume,quotite_pct,created_at")
         .eq("dossier_id", dossierId)
         .order("created_at", { ascending: true }),
       supabase.from("compagnies").select("id,nom").order("nom"),
@@ -203,13 +205,21 @@ export function DossierDevisPanel({
       produit_id: form.produit_id,
       formule_id: form.formule_id || null,
       cotisation_mensuelle: form.cotisation_mensuelle ? Number(form.cotisation_mensuelle) : null,
+      quotite_pct: form.quotite_pct ? Number(form.quotite_pct) : null,
       garanties_resume: form.garanties_resume.trim() || null,
       source: "manuel",
       saisi_par: userId,
     });
     setSaving(false);
     if (error) return setErr(error.message);
-    setForm({ compagnie_id: "", produit_id: "", formule_id: "", cotisation_mensuelle: "", garanties_resume: "" });
+    setForm({
+      compagnie_id: "",
+      produit_id: "",
+      formule_id: "",
+      cotisation_mensuelle: "",
+      quotite_pct: "",
+      garanties_resume: "",
+    });
     await load();
     onChanged?.();
   };
@@ -592,6 +602,23 @@ export function DossierDevisPanel({
             className={inp}
           />
         </label>
+        {branche === "emprunteur" && (
+          <label className="block">
+            <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Quotité assurée (%)</span>
+            <input
+              type="number"
+              step="1"
+              min={1}
+              max={100}
+              value={form.quotite_pct}
+              onChange={(e) => setForm({ ...form, quotite_pct: e.target.value })}
+              className={inp}
+            />
+            <span className="mt-1 block text-xs text-ink-muted">
+              Nécessaire pour recalculer la cotisation en cas d'ajustement de quotité demandé par le client.
+            </span>
+          </label>
+        )}
         <label className="block sm:col-span-2">
           <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Résumé des garanties</span>
           <textarea

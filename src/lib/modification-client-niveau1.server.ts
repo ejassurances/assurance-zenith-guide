@@ -23,6 +23,8 @@ export type AnalyseNiveau1 = {
   suggestion_contre_proposition: string | null;
   devis_alternatif_id: string | null;
   reduction_courtage_pct: number | null;
+  /** Nouvelle quotité assurée demandée par le client (branche emprunteur, 1-100). */
+  quotite_demandee?: number | null;
   niveau_justification: string | null;
 };
 
@@ -34,7 +36,9 @@ export async function devisDuDossier(
 ) {
   const { data } = await supabase
     .from("dossier_devis")
-    .select("id, compagnie_id, produit_id, formule_id, cotisation_mensuelle, garanties_resume, source")
+    .select(
+      "id, compagnie_id, produit_id, formule_id, cotisation_mensuelle, garanties_resume, source, quotite_pct",
+    )
     .eq("dossier_id", dossierId);
   return (data ?? []) as {
     id: string;
@@ -44,6 +48,7 @@ export async function devisDuDossier(
     cotisation_mensuelle: number | null;
     garanties_resume: string | null;
     source: string | null;
+    quotite_pct: number | null;
   }[];
 }
 
@@ -117,6 +122,79 @@ async function appliquerReduction(
   return true;
 }
 
+/** Quotité assurée demandée, bornée à l'intervalle exploitable (1-100 %). */
+export function quotiteValide(pct: number | null | undefined): number | null {
+  const n = Number(pct ?? NaN);
+  if (!Number.isFinite(n) || n <= 0 || n > 100) return null;
+  return Math.round(n * 100) / 100;
+}
+
+/**
+ * Nouveau devis recalculé proportionnellement à la quotité demandée, à partir du
+ * devis actuellement retenu du dossier (ou du devis alternatif visé).
+ * Retourne null si la quotité d'origine est absente : le recalcul devient
+ * impossible et la demande repasse en niveau 2.
+ */
+async function creerDevisQuotiteAjustee(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any, any, any>,
+  dossierId: string,
+  devisCibleId: string | null,
+  quotite: number,
+): Promise<{ id: string; compagnie_id: string | null; produit_id: string | null } | null> {
+  let origineId = devisCibleId;
+  if (!origineId) {
+    const { data: cls } = await supabase
+      .from("dossier_devis_classements")
+      .select("devis_retenu_id")
+      .eq("dossier_id", dossierId)
+      .not("devis_retenu_id", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    origineId = (cls as { devis_retenu_id: string | null } | null)?.devis_retenu_id ?? null;
+  }
+  if (!origineId) return null;
+
+  const { data } = await supabase
+    .from("dossier_devis")
+    .select(
+      "id, dossier_id, compagnie_id, produit_id, formule_id, cotisation_mensuelle, garanties_resume, source, quotite_pct",
+    )
+    .eq("id", origineId)
+    .maybeSingle();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const o = data as any;
+  if (!o || o.dossier_id !== dossierId) return null;
+
+  const quotiteOrigine = Number(o.quotite_pct ?? NaN);
+  if (!Number.isFinite(quotiteOrigine) || quotiteOrigine <= 0) return null;
+  const cotisationOrigine = o.cotisation_mensuelle == null ? null : Number(o.cotisation_mensuelle);
+  if (cotisationOrigine == null || !Number.isFinite(cotisationOrigine)) return null;
+
+  const nouvelleCotisation = Math.round((cotisationOrigine * quotite) / quotiteOrigine * 100) / 100;
+  const resume = [o.garanties_resume, `Quotité assurée ajustée à ${quotite} % (précédemment ${quotiteOrigine} %).`]
+    .filter(Boolean)
+    .join("\n");
+
+  const { data: cree, error } = await supabase
+    .from("dossier_devis")
+    .insert({
+      dossier_id: dossierId,
+      compagnie_id: o.compagnie_id,
+      produit_id: o.produit_id,
+      formule_id: o.formule_id,
+      cotisation_mensuelle: nouvelleCotisation,
+      quotite_pct: quotite,
+      garanties_resume: resume.slice(0, 4000),
+      source: o.source,
+    } as never)
+    .select("id, compagnie_id, produit_id")
+    .single();
+  if (error || !cree) return null;
+  return cree as { id: string; compagnie_id: string | null; produit_id: string | null };
+}
+
 /**
  * Résumé lisible par le client des ajustements apportés à sa demande.
  * Aucun élément technique interne (identifiants, barème, langage métier).
@@ -129,11 +207,16 @@ async function resumeClient(
     compagnieId: string | null;
     produitId: string | null;
     reductionPct: number;
+    quotitePct: number | null;
   },
 ): Promise<string | null> {
   const changements: string[] = [];
 
-  if (ctx.devisId) {
+  if (ctx.quotitePct !== null) {
+    changements.push(
+      `nous avons ajusté la quotité assurée à ${ctx.quotitePct} % et recalculé votre cotisation en conséquence`,
+    );
+  } else if (ctx.devisId) {
     let compagnie: string | null = null;
     let produit: string | null = null;
     if (ctx.compagnieId) {
@@ -177,7 +260,9 @@ export async function executerModificationNiveau1(
   userId: string | null,
 ) {
   const actions: string[] = [];
-  const pct = reductionValide(analyse.reduction_courtage_pct);
+  const quotiteDemandee = quotiteValide(analyse.quotite_demandee);
+  // La quotité et les frais de courtage sont deux leviers distincts : jamais combinés.
+  const pct = quotiteDemandee !== null ? 0 : reductionValide(analyse.reduction_courtage_pct);
 
   // Vérification du périmètre : le devis doit appartenir au dossier.
   let devisId: string | null = null;
@@ -197,8 +282,34 @@ export async function executerModificationNiveau1(
     devisProduitId = d.produit_id as string;
   }
 
+  // Ajustement de quotité (emprunteur) : nouveau devis recalculé proportionnellement.
+  if (quotiteDemandee !== null) {
+    const nouveau = await creerDevisQuotiteAjustee(
+      supabase,
+      analyse.dossier_id,
+      devisId,
+      quotiteDemandee,
+    );
+    if (!nouveau) {
+      const { creerTacheAdmin } = await import("./agent-taches.server");
+      await creerTacheAdmin(supabase as unknown as Parameters<typeof creerTacheAdmin>[0], {
+        titre: "Ajustement de quotité impossible automatiquement — quotité d'origine manquante",
+        description:
+          `Dossier ${analyse.dossier_id} : le client demande une quotité de ${quotiteDemandee} %, ` +
+          "mais la quotité d'origine du devis retenu n'est pas renseignée. Impossible de recalculer la " +
+          "cotisation proportionnellement : renseignez la quotité sur le devis puis retarifez manuellement.",
+        created_by: null,
+      });
+      return null;
+    }
+    devisId = nouveau.id;
+    devisCompagnieId = nouveau.compagnie_id;
+    devisProduitId = nouveau.produit_id;
+  }
+
   if (!devisId && pct <= 0) return null;
-  if (Number(analyse.reduction_courtage_pct ?? 0) > REDUCTION_COURTAGE_MAX_PCT) return null;
+  if (Number(analyse.reduction_courtage_pct ?? 0) > REDUCTION_COURTAGE_MAX_PCT && quotiteDemandee === null)
+    return null;
 
   await historiserModification(supabase, analyse.dossier_id, {
     source: "agent_commercial_niveau_1",
@@ -206,7 +317,8 @@ export async function executerModificationNiveau1(
     analyse_ia: analyse.synthese ?? null,
     justification: analyse.niveau_justification ?? analyse.suggestion_contre_proposition ?? null,
     devis_retenu_id: devisId,
-    reduction_courtage_pct: pct > 0 ? pct : null,
+    quotite_ajustee_pct: quotiteDemandee,
+    reduction_courtage_pct: quotiteDemandee === null && pct > 0 ? pct : null,
   });
 
   let devoirId: string | null = null;
@@ -231,7 +343,11 @@ export async function executerModificationNiveau1(
       );
       devoirId = res.devoir_id ?? null;
     }
-    actions.push("devis alternatif retenu");
+    actions.push(
+      quotiteDemandee !== null
+        ? `quotité assurée ajustée à ${quotiteDemandee} % et cotisation recalculée`
+        : "devis alternatif retenu",
+    );
   }
 
   if (pct > 0) {
@@ -259,6 +375,7 @@ export async function executerModificationNiveau1(
       compagnieId: devisCompagnieId,
       produitId: devisProduitId,
       reductionPct: pct,
+      quotitePct: quotiteDemandee,
     });
     if (notes) {
       await supabase

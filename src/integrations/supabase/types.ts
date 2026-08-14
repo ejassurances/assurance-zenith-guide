@@ -2002,6 +2002,7 @@ export type Database = {
           garanties_resume: string | null
           id: string
           produit_id: string | null
+          quotite_pct: number | null
           saisi_par: string | null
           source: string
           updated_at: string
@@ -2015,6 +2016,7 @@ export type Database = {
           garanties_resume?: string | null
           id?: string
           produit_id?: string | null
+          quotite_pct?: number | null
           saisi_par?: string | null
           source?: string
           updated_at?: string
@@ -2028,6 +2030,7 @@ export type Database = {
           garanties_resume?: string | null
           id?: string
           produit_id?: string | null
+          quotite_pct?: number | null
           saisi_par?: string | null
           source?: string
           updated_at?: string
