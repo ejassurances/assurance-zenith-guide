@@ -44,8 +44,10 @@ export const envoyerDevoirConseilFn = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => saisieSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { envoyerDevoirConseil } = await import("./devoir-conseil.server");
-    const { dossier_id, ...saisie } = data;
-    const res = await envoyerDevoirConseil(context.supabase, dossier_id, context.userId, saisie);
+    const { dossier_id, sans_envoi, ...saisie } = data;
+    const res = await envoyerDevoirConseil(context.supabase, dossier_id, context.userId, saisie, {
+      sansEnvoi: sans_envoi === true,
+    });
     return { ok: true, ...res };
   });
 
