@@ -63,7 +63,10 @@ export function neolianeConfigStatus(): NeolianeConfigStatus {
       ? missing.length
         ? `Authentification prête. Manque encore : ${missing.join(', ')} (nécessaire pour certains endpoints).`
         : 'Identifiants Néoliane complets.'
-      : `Identifiants Néoliane non renseignés : ${missing.join(', ')}. À ajouter dans Paramètres du projet → Secrets avant toute utilisation.`,
+      : missing.length === 3
+        ? "Aucune variable d'environnement Néoliane n'est visible dans ce déploiement (NEOLIANE_CLIENT_ID, NEOLIANE_CLIENT_SECRET, NEOLIANE_USER_API_KEY). Les secrets ont probablement été ajoutés après la dernière publication : republiez le site pour que le serveur les reçoive."
+        : `Identifiants Néoliane non renseignés : ${missing.join(', ')}. À ajouter dans Paramètres du projet → Secrets avant toute utilisation.`,
+
   }
 }
 
