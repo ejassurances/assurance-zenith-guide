@@ -81,14 +81,17 @@ function ClientsList() {
     <div>
       <div className="flex items-center justify-between gap-4">
         <h1 className="font-serif text-3xl font-medium text-ink">Clients</h1>
-        {canCreate && (
-          <button
-            onClick={() => setShowForm((v) => !v)}
-            className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-primary-foreground"
-          >
-            {showForm ? "Annuler" : "Nouveau client"}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {canCreate && <LcbRattrapageButton onDone={load} />}
+          {canCreate && (
+            <button
+              onClick={() => setShowForm((v) => !v)}
+              className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-primary-foreground"
+            >
+              {showForm ? "Annuler" : "Nouveau client"}
+            </button>
+          )}
+        </div>
       </div>
 
       {showForm && canCreate && (
