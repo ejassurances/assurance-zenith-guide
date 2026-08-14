@@ -174,6 +174,38 @@ function Card({
 
 }
 
+function CaRealCard({ data }: { data: CaRealSummary }) {
+  const format = (n: number) =>
+    new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
+  const evolution = data.evolutionPct;
+  const evolutionColor = evolution === null
+    ? "text-ink-muted"
+    : evolution >= 0
+    ? "text-emerald-600"
+    : "text-red-600";
+  const evolutionSign = evolution === null ? "" : evolution >= 0 ? "+" : "";
+  return (
+    <div className="crm-card crm-card-accent p-6">
+      <p className="crm-eyebrow">CA réel {new Date().getFullYear()}</p>
+      <p className="crm-figure mt-3 text-3xl text-[color:var(--crm-gold-muted)]">
+        {format(data.anneeEnCours)}
+      </p>
+      <p className="mt-2 text-xs text-ink-muted">
+        {evolution === null ? (
+          "Aucune donnée N-1"
+        ) : (
+          <>
+            <span className={`font-semibold ${evolutionColor}`}>
+              {evolutionSign}{evolution}% vs N-1
+            </span>
+            {" "}(période comparable)
+          </>
+        )}
+      </p>
+    </div>
+  );
+}
+
 
 function ClientDerBanner() {
   const [derPending, setDerPending] = useState(false);
