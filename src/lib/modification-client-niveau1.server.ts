@@ -118,6 +118,54 @@ async function appliquerReduction(
 }
 
 /**
+ * Résumé lisible par le client des ajustements apportés à sa demande.
+ * Aucun élément technique interne (identifiants, barème, langage métier).
+ */
+async function resumeClient(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any, any, any>,
+  ctx: {
+    devisId: string | null;
+    compagnieId: string | null;
+    produitId: string | null;
+    reductionPct: number;
+  },
+): Promise<string | null> {
+  const changements: string[] = [];
+
+  if (ctx.devisId) {
+    let compagnie: string | null = null;
+    let produit: string | null = null;
+    if (ctx.compagnieId) {
+      const { data } = await supabase
+        .from("compagnies")
+        .select("nom")
+        .eq("id", ctx.compagnieId)
+        .maybeSingle();
+      compagnie = (data as { nom: string } | null)?.nom ?? null;
+    }
+    if (ctx.produitId) {
+      const { data } = await supabase.from("produits").select("nom").eq("id", ctx.produitId).maybeSingle();
+      produit = (data as { nom: string } | null)?.nom ?? null;
+    }
+    const offre = [compagnie, produit].filter(Boolean).join(" — ");
+    changements.push(
+      offre
+        ? `nous vous recommandons désormais l'offre ${offre}`
+        : "nous vous recommandons désormais une autre offre parmi celles étudiées",
+    );
+  }
+
+  if (ctx.reductionPct > 0) {
+    changements.push(`nos frais de courtage ont été réduits de ${ctx.reductionPct} %`);
+  }
+
+  if (changements.length === 0) return null;
+
+  return `Suite à votre demande, nous avons ajusté notre proposition : ${changements.join(" et ")}.`;
+}
+
+/**
  * Exécute une demande de modification qualifiée « niveau 1 » par l'IA.
  * Retourne le détail des actions réellement appliquées, ou null si la demande
  * ne rentre finalement pas dans le périmètre (elle reste alors en niveau 2).
