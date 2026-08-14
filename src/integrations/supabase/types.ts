@@ -908,10 +908,12 @@ export type Database = {
         Row: {
           beneficiaire_id: string
           bordereau_id: string | null
+          compte_produit: string
           contrat_id: string | null
           created_at: string
           date_versement: string | null
           dossier_id: string | null
+          ecriture_id: string | null
           id: string
           montant: number
           notes: string | null
@@ -921,10 +923,12 @@ export type Database = {
         Insert: {
           beneficiaire_id: string
           bordereau_id?: string | null
+          compte_produit?: string
           contrat_id?: string | null
           created_at?: string
           date_versement?: string | null
           dossier_id?: string | null
+          ecriture_id?: string | null
           id?: string
           montant: number
           notes?: string | null
@@ -934,10 +938,12 @@ export type Database = {
         Update: {
           beneficiaire_id?: string
           bordereau_id?: string | null
+          compte_produit?: string
           contrat_id?: string | null
           created_at?: string
           date_versement?: string | null
           dossier_id?: string | null
+          ecriture_id?: string | null
           id?: string
           montant?: number
           notes?: string | null
@@ -964,6 +970,13 @@ export type Database = {
             columns: ["dossier_id"]
             isOneToOne: false
             referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commissions_ecriture_id_fkey"
+            columns: ["ecriture_id"]
+            isOneToOne: false
+            referencedRelation: "ecritures"
             referencedColumns: ["id"]
           },
         ]
