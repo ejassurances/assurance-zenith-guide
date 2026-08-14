@@ -76,7 +76,7 @@ function Dashboard() {
       {role === "client" && <ClientDerBanner />}
       {(role === "admin" || role === "mandataire") && <ConformiteCabinetWidget />}
 
-      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
         {role !== "client" && (
           <Card label="Prospects" value={stats.prospects} sub={`${stats.clients} fiches au total`} accent />
         )}
@@ -85,6 +85,7 @@ function Dashboard() {
         {role !== "client" && (
           <Card label="Commissions estimées" value={`${stats.commissions.toLocaleString("fr-FR")} €`} accent />
         )}
+        {role !== "client" && caReal && <CaRealCard data={caReal} />}
       </div>
 
 
