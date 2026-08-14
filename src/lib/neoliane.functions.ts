@@ -114,6 +114,31 @@ export const neolianeTarifer = createServerFn({ method: "POST" })
     }
   });
 
+/** Tarification santé réelle : profil Néoliane → tarifs → devis du dossier. */
+export const neolianeTariferSante = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        dossier_id: z.string().uuid(),
+        date_effet: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertStaff(context.supabase, context.userId);
+    const { tariferSanteDossier } = await import("./neoliane/tarification.server");
+    const res = await tariferSanteDossier(
+      context.supabase,
+      { dossierId: data.dossier_id, dateEffet: data.date_effet },
+      context.userId,
+    );
+    return { ok: true as const, ...res };
+  });
+
 /** Module Souscription : lance la souscription d'un devis retenu. */
 export const neolianeSouscrire = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
