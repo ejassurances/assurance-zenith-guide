@@ -446,15 +446,32 @@ function IdentiteTab({ client, canEdit, onSaved }: { client: Client; canEdit: bo
           <span className="text-xs uppercase tracking-wide text-ink-muted">Origine</span>
           <select
             value={form.origine ?? ""}
-            onChange={(e) => setForm({ ...form, origine: e.target.value || null })}
+            onChange={(e) => {
+              const origine = e.target.value || null;
+              setForm({
+                ...form,
+                origine,
+                client_origine_id: origineAvecClientSource(origine) ? form.client_origine_id : null,
+              });
+            }}
             className="mt-1 w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
           >
             <option value="">—</option>
-            {["internet", "assurlead", "telephone", "apporteur", "reseau", "autre"].map((s) => (
-              <option key={s}>{s}</option>
+            {ORIGINES.map((o) => (
+              <option key={o.key} value={o.key}>
+                {o.label}
+              </option>
             ))}
           </select>
         </label>
+        {origineAvecClientSource(form.origine) && (
+          <ClientOriginePicker
+            value={form.client_origine_id}
+            excludeId={form.id}
+            onChange={(id) => setForm({ ...form, client_origine_id: id })}
+          />
+        )}
+
         {F("CSP", "csp")}
         {F("Métier", "metier")}
         <label className="flex items-center gap-2 text-sm">
