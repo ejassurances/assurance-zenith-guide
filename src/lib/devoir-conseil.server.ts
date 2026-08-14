@@ -191,9 +191,11 @@ export async function envoyerDevoirConseil(
     recommandation: saisie.recommandation,
     motifs: saisie.motifs,
     mises_en_garde: saisie.mises_en_garde ?? null,
-    statut: sansEnvoi ? "brouillon" : "envoye",
+    statut: sansEnvoi ? (valider ? "valide" : "brouillon") : "envoye",
     email_destinataire: d.client_email,
     envoye_le: sansEnvoi ? null : new Date().toISOString(),
+    valide_le: sansEnvoi ? (valider ? new Date().toISOString() : null) : new Date().toISOString(),
+    valide_par: sansEnvoi && !valider ? null : userId,
     refus_motif: null,
     refuse_le: null,
   };
