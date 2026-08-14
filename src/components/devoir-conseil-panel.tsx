@@ -800,24 +800,22 @@ export function DevoirConseilPanel({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {/* La validation (relecture / confirmation du contenu) reste possible
-                à tout moment ; seul l'envoi final au client dépend du délai. */}
+            {/* Seule action manuelle : la validation. L'envoi au client est
+                déclenché automatiquement une fois le délai de réflexion écoulé
+                (et pendant les horaires d'ouverture). */}
             <button
               onClick={() => submit(true)}
               disabled={busy || !valide}
-              className="rounded-full border border-line px-5 py-2 text-sm font-medium hover:bg-surface disabled:opacity-50"
-            >
-              {busy ? "Enregistrement…" : "Valider (brouillon, sans envoi)"}
-            </button>
-            <button
-              onClick={() => submit(false)}
-              disabled={busy || !valide || !delai.autorise}
               className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
             >
-              {busy ? "Envoi…" : "Envoyer au client"}
+              {busy ? "Enregistrement…" : "Valider (brouillon)"}
             </button>
           </div>
-          {!delai.autorise && delai.motif && <p className="text-xs text-destructive">{delai.motif}</p>}
+          <p className="text-xs text-ink-muted">
+            Après validation, l'envoi au client est automatique
+            {delai.disponible_le ? ` (prévu à partir du ${delai.disponible_le.toLocaleString("fr-FR")})` : ""}.
+            {!delai.autorise && delai.motif ? ` ${delai.motif}` : ""}
+          </p>
 
           {!valide && (
             <p className="text-xs text-ink-muted">
