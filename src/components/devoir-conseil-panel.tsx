@@ -424,8 +424,22 @@ export function DevoirConseilPanel({
         <div className="mt-3 space-y-1 text-sm text-ink-soft">
           <p>
             Destinataire : {devoir.email_destinataire ?? "—"}
-            {devoir.envoye_le && ` · envoyé le ${new Date(devoir.envoye_le).toLocaleString("fr-FR")}`}
           </p>
+          {devoir.envoye_le ? (
+            <p className="text-emerald-700">
+              Envoyé le {new Date(devoir.envoye_le).toLocaleString("fr-FR")}
+            </p>
+          ) : devoir.statut === "valide" ? (
+            <p className="text-ink-soft">
+              Validé — envoi automatique prévu{" "}
+              {delai.autorise
+                ? "au prochain passage du planificateur (quelques minutes)"
+                : delai.disponible_le
+                  ? `le ${delai.disponible_le.toLocaleString("fr-FR")} (horaires d'ouverture)`
+                  : "dès la signature de la lettre de mission"}
+              .
+            </p>
+          ) : null}
           {devoir.signed_at && (
             <p className="text-emerald-700">Signé le {new Date(devoir.signed_at).toLocaleString("fr-FR")}</p>
           )}
