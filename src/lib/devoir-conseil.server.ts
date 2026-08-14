@@ -177,7 +177,7 @@ export async function envoyerDevoirConseil(
 
   const { data: existing } = await supabase
     .from("devoirs_conseil")
-    .select("id, statut")
+    .select("id, statut, notes_modification")
     .eq("dossier_id", dossierId)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -235,6 +235,8 @@ export async function envoyerDevoirConseil(
       cabinetName: SITE.shortName,
       reference: d.reference,
       link: appUrl("/espace/signer-devoir-conseil"),
+      notesModification:
+        (existing as { notes_modification?: string | null } | null)?.notes_modification ?? undefined,
     },
     brevoParams: {
       PRENOM: String(d.client_nom ?? "").split(" ")[0] || d.client_nom,
