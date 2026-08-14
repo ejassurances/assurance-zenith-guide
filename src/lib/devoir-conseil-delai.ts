@@ -1,11 +1,11 @@
 /**
  * Délai de réflexion avant envoi du devoir de conseil (agent commercial) :
- * au moins 16 h après la signature de la lettre de mission, et uniquement
+ * au moins 6 h après la signature de la lettre de mission, et uniquement
  * pendant les horaires d'ouverture du cabinet (lundi-vendredi, 9h-18h,
  * heure de Paris).
  */
 
-export const DELAI_HEURES = 16;
+export const DELAI_HEURES = 6;
 const OUVERTURE = 9;
 const FERMETURE = 18;
 

@@ -21,6 +21,7 @@ import { Route as ApiPublicRelanceSouscriptionRouteImport } from './routes/api/p
 import { Route as ApiPublicRelancePiecesRouteImport } from './routes/api/public/relance-pieces'
 import { Route as ApiPublicRappelsExpirationRouteImport } from './routes/api/public/rappels-expiration'
 import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
+import { Route as ApiPublicEnvoisPlanifiesRouteImport } from './routes/api/public/envois-planifies'
 import { Route as ApiPublicBootstrapAdminRouteImport } from './routes/api/public/bootstrap-admin'
 import { Route as AuthenticatedEspaceUtilisateursRouteImport } from './routes/_authenticated/espace.utilisateurs'
 import { Route as AuthenticatedEspaceTachesRouteImport } from './routes/_authenticated/espace.taches'
@@ -110,6 +111,12 @@ const ApiPublicLeadsRoute = ApiPublicLeadsRouteImport.update({
   path: '/api/public/leads',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicEnvoisPlanifiesRoute =
+  ApiPublicEnvoisPlanifiesRouteImport.update({
+    id: '/api/public/envois-planifies',
+    path: '/api/public/envois-planifies',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicBootstrapAdminRoute = ApiPublicBootstrapAdminRouteImport.update({
   id: '/api/public/bootstrap-admin',
   path: '/api/public/bootstrap-admin',
@@ -285,6 +292,7 @@ export interface FileRoutesByFullPath {
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
+  '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
@@ -323,6 +331,7 @@ export interface FileRoutesByTo {
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
+  '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
@@ -364,6 +373,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/_authenticated/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
+  '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
@@ -405,6 +415,7 @@ export interface FileRouteTypes {
     | '/espace/taches'
     | '/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
+    | '/api/public/envois-planifies'
     | '/api/public/leads'
     | '/api/public/rappels-expiration'
     | '/api/public/relance-pieces'
@@ -443,6 +454,7 @@ export interface FileRouteTypes {
     | '/espace/taches'
     | '/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
+    | '/api/public/envois-planifies'
     | '/api/public/leads'
     | '/api/public/rappels-expiration'
     | '/api/public/relance-pieces'
@@ -483,6 +495,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/taches'
     | '/_authenticated/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
+    | '/api/public/envois-planifies'
     | '/api/public/leads'
     | '/api/public/rappels-expiration'
     | '/api/public/relance-pieces'
@@ -509,6 +522,7 @@ export interface RootRouteChildren {
   EspaceCguRoute: typeof EspaceCguRoute
   EspaceConfidentialiteRoute: typeof EspaceConfidentialiteRoute
   ApiPublicBootstrapAdminRoute: typeof ApiPublicBootstrapAdminRoute
+  ApiPublicEnvoisPlanifiesRoute: typeof ApiPublicEnvoisPlanifiesRoute
   ApiPublicLeadsRoute: typeof ApiPublicLeadsRoute
   ApiPublicRappelsExpirationRoute: typeof ApiPublicRappelsExpirationRoute
   ApiPublicRelancePiecesRoute: typeof ApiPublicRelancePiecesRoute
@@ -603,6 +617,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/leads'
       fullPath: '/api/public/leads'
       preLoaderRoute: typeof ApiPublicLeadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/envois-planifies': {
+      id: '/api/public/envois-planifies'
+      path: '/api/public/envois-planifies'
+      fullPath: '/api/public/envois-planifies'
+      preLoaderRoute: typeof ApiPublicEnvoisPlanifiesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/bootstrap-admin': {
@@ -865,6 +886,7 @@ const rootRouteChildren: RootRouteChildren = {
   EspaceCguRoute: EspaceCguRoute,
   EspaceConfidentialiteRoute: EspaceConfidentialiteRoute,
   ApiPublicBootstrapAdminRoute: ApiPublicBootstrapAdminRoute,
+  ApiPublicEnvoisPlanifiesRoute: ApiPublicEnvoisPlanifiesRoute,
   ApiPublicLeadsRoute: ApiPublicLeadsRoute,
   ApiPublicRappelsExpirationRoute: ApiPublicRappelsExpirationRoute,
   ApiPublicRelancePiecesRoute: ApiPublicRelancePiecesRoute,
