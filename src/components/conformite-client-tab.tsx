@@ -126,17 +126,30 @@ export function ConformiteClientTab({
       alert("Upload : " + upErr.message);
       return;
     }
-    const { error: insErr } = await supabase.from("client_kyc_documents").insert({
-      client_id: clientId,
-      type,
-      nom: file.name,
-      storage_path: path,
-      statut: "a_valider",
-      date_emission: type === "justificatif_domicile" ? new Date().toISOString().slice(0, 10) : null,
-    });
+    const { data: insere, error: insErr } = await supabase
+      .from("client_kyc_documents")
+      .insert({
+        client_id: clientId,
+        type,
+        nom: file.name,
+        storage_path: path,
+        statut: "a_valider",
+        date_emission: type === "justificatif_domicile" ? new Date().toISOString().slice(0, 10) : null,
+      })
+      .select("id")
+      .maybeSingle();
     if (insErr) alert(insErr.message);
+    // Pièce d'identité : lecture IA + relance automatique du LCB-FT en attente.
+    if (!insErr && type === "cni" && insere) {
+      try {
+        await traiterPiece({ data: { kyc_document_id: (insere as { id: string }).id } });
+      } catch (e) {
+        console.error("[CNI] lecture automatique impossible", e);
+      }
+    }
     await load();
   };
+
 
   const valider = async (id: string, statut: string) => {
     await supabase.from("client_kyc_documents").update({ statut }).eq("id", id);
