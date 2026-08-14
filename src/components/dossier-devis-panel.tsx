@@ -292,6 +292,32 @@ export function DossierDevisPanel({
     }
   };
 
+  const recupererTarifsNeoliane = async () => {
+    setNeoErr(null);
+    setNeoMsg(null);
+    setNeoEtat("appel");
+    try {
+      const res = (await tariferNeoliane({ data: { dossier_id: dossierId, date_effet: neoDate } })) as {
+        nbDevisCrees: number;
+        nbTarifs: number;
+        nbAssures: number;
+        compagnieTrouvee: boolean;
+      };
+      await load();
+      setNeoMsg(
+        `${res.nbDevisCrees} devis Néoliane ajoutés au dossier (${res.nbTarifs} tarifs retournés pour ${res.nbAssures} assuré(s)).` +
+          (res.compagnieTrouvee ? "" : " Compagnie « Néoliane » introuvable en base : les devis sont créés sans compagnie."),
+      );
+      onChanged?.();
+    } catch (e) {
+      setNeoErr(e instanceof Error ? e.message : "Appel Néoliane impossible");
+    } finally {
+      setNeoEtat("idle");
+    }
+  };
+
+
+
   return (
     <div className="rounded-2xl border border-line bg-surface-elevated p-5">
       <h2 className="font-serif text-lg font-medium text-ink">Devis comparés</h2>
