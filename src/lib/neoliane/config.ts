@@ -13,46 +13,46 @@
  * message explicite (voir `neolianeConfigStatus`).
  */
 
-export const NEOLIANE_BASE_URL = "https://api.neoliane.fr"
+export const NEOLIANE_BASE_URL = "https://api.neoliane.fr";
 
 /** Endpoint officiel d'obtention du token OAuth2 (client_credentials). */
-export const NEOLIANE_TOKEN_PATH = "/neoverse/public/oauth/token"
+export const NEOLIANE_TOKEN_PATH = "/neoverse/public/oauth/token";
 
 /** Méthode d'authentification utilisée pour les appels métier. */
-export type NeolianeAuthMode = "oauth2" | "basic"
+export type NeolianeAuthMode = "oauth2" | "basic";
 
 export interface NeolianeCredentials {
-  clientId: string
-  clientSecret: string
-  userApiKey: string
+  clientId: string;
+  clientSecret: string;
+  userApiKey: string;
 }
 
 /** Lecture des secrets — À APPELER UNIQUEMENT dans un handler serveur. */
 export function readNeolianeCredentials(): NeolianeCredentials {
   return {
-    clientId: (process.env['NEOLIANE_CLIENT_ID'] ?? '').trim(),
-    clientSecret: (process.env['NEOLIANE_CLIENT_SECRET'] ?? '').trim(),
-    userApiKey: (process.env['NEOLIANE_USER_API_KEY'] ?? '').trim(),
-  }
+    clientId: (process.env["NEOLIANE_CLIENT_ID"] ?? "").trim(),
+    clientSecret: (process.env["NEOLIANE_CLIENT_SECRET"] ?? "").trim(),
+    userApiKey: (process.env["NEOLIANE_USER_API_KEY"] ?? "").trim(),
+  };
 }
 
 export interface NeolianeConfigStatus {
-  configured: boolean
-  hasClientId: boolean
-  hasClientSecret: boolean
-  hasUserApiKey: boolean
-  missing: string[]
-  message: string
+  configured: boolean;
+  hasClientId: boolean;
+  hasClientSecret: boolean;
+  hasUserApiKey: boolean;
+  missing: string[];
+  message: string;
 }
 
 /** État de configuration, sans jamais révéler la valeur des secrets. */
 export function neolianeConfigStatus(): NeolianeConfigStatus {
-  const c = readNeolianeCredentials()
-  const missing: string[] = []
-  if (!c.clientId) missing.push('NEOLIANE_CLIENT_ID')
-  if (!c.clientSecret) missing.push('NEOLIANE_CLIENT_SECRET')
-  if (!c.userApiKey) missing.push('NEOLIANE_USER_API_KEY')
-  const configured = !c.clientId || !c.clientSecret ? false : true
+  const c = readNeolianeCredentials();
+  const missing: string[] = [];
+  if (!c.clientId) missing.push("NEOLIANE_CLIENT_ID");
+  if (!c.clientSecret) missing.push("NEOLIANE_CLIENT_SECRET");
+  if (!c.userApiKey) missing.push("NEOLIANE_USER_API_KEY");
+  const configured = !c.clientId || !c.clientSecret ? false : true;
   return {
     configured,
     hasClientId: !!c.clientId,
@@ -61,29 +61,28 @@ export function neolianeConfigStatus(): NeolianeConfigStatus {
     missing,
     message: configured
       ? missing.length
-        ? `Authentification prête. Manque encore : ${missing.join(', ')} (nécessaire pour certains endpoints).`
-        : 'Identifiants Néoliane complets.'
+        ? `Authentification prête. Manque encore : ${missing.join(", ")} (nécessaire pour certains endpoints).`
+        : "Identifiants Néoliane complets."
       : missing.length === 3
         ? "Aucune variable d'environnement Néoliane n'est visible dans ce déploiement (NEOLIANE_CLIENT_ID, NEOLIANE_CLIENT_SECRET, NEOLIANE_USER_API_KEY). Les secrets ont probablement été ajoutés après la dernière publication : republiez le site pour que le serveur les reçoive."
-        : `Identifiants Néoliane non renseignés : ${missing.join(', ')}. À ajouter dans Paramètres du projet → Secrets avant toute utilisation.`,
-
-  }
+        : `Identifiants Néoliane non renseignés : ${missing.join(", ")}. À ajouter dans Paramètres du projet → Secrets avant toute utilisation.`,
+  };
 }
 
 export class NeolianeNotConfiguredError extends Error {
   constructor(message: string) {
-    super(message)
-    this.name = 'NeolianeNotConfiguredError'
+    super(message);
+    this.name = "NeolianeNotConfiguredError";
   }
 }
 
 export class NeolianeApiError extends Error {
-  status: number
-  body: unknown
+  status: number;
+  body: unknown;
   constructor(message: string, status: number, body: unknown) {
-    super(message)
-    this.name = 'NeolianeApiError'
-    this.status = status
-    this.body = body
+    super(message);
+    this.name = "NeolianeApiError";
+    this.status = status;
+    this.body = body;
   }
 }

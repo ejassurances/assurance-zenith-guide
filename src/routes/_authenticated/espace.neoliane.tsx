@@ -3,6 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { NeolianeParcoursConsole } from "@/components/neoliane-parcours-console";
+
 import {
   neolianeSigner,
   neolianeSouscrire,
@@ -248,11 +250,18 @@ function NeolianePage() {
         )}
       </Card>
 
-      <Card title="Tarification (EZ API)">
+      <Card title="Parcours EZ API complet (profil → panier → offre → signature)">
+        <NeolianeParcoursConsole
+          callbackUrl={`${typeof window === "undefined" ? "" : window.location.origin}/api/public/webhooks/neoliane`}
+        />
+      </Card>
+
+      <Card title="Appel direct (diagnostic avancé)">
         <p className="mb-3 text-xs text-ink-muted">
-          La doc métier des endpoints n'étant pas encore fournie, le chemin et le payload sont libres. Le
+          Appel libre pour diagnostic : chemin et payload à la main. Le
           <span className="font-mono"> userApiKey</span> est ajouté automatiquement au payload côté serveur.
         </p>
+
         <input
           value={tarifPath}
           onChange={(e) => setTarifPath(e.target.value)}

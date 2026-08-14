@@ -2935,6 +2935,120 @@ export type Database = {
           },
         ]
       }
+      neoliane_evenements: {
+        Row: {
+          created_at: string
+          erreur: string | null
+          etat_rafraichi: Json | null
+          event_name: string
+          id: string
+          payload: Json | null
+          refresh_url: string | null
+          ressource_id: string | null
+          traite: boolean
+        }
+        Insert: {
+          created_at?: string
+          erreur?: string | null
+          etat_rafraichi?: Json | null
+          event_name: string
+          id?: string
+          payload?: Json | null
+          refresh_url?: string | null
+          ressource_id?: string | null
+          traite?: boolean
+        }
+        Update: {
+          created_at?: string
+          erreur?: string | null
+          etat_rafraichi?: Json | null
+          event_name?: string
+          id?: string
+          payload?: Json | null
+          refresh_url?: string | null
+          ressource_id?: string | null
+          traite?: boolean
+        }
+        Relationships: []
+      }
+      neoliane_parcours: {
+        Row: {
+          avertissements: Json
+          cart_id: string | null
+          client_id: string | null
+          contract_ids: string[]
+          created_at: string
+          cree_par: string | null
+          date_effet: string | null
+          derniere_erreur: string | null
+          derniere_reponse: Json | null
+          dossier_id: string | null
+          etape: string
+          id: string
+          offer_id: string | null
+          pricing_ids: Json
+          product_type: string
+          profile_id: string | null
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          avertissements?: Json
+          cart_id?: string | null
+          client_id?: string | null
+          contract_ids?: string[]
+          created_at?: string
+          cree_par?: string | null
+          date_effet?: string | null
+          derniere_erreur?: string | null
+          derniere_reponse?: Json | null
+          dossier_id?: string | null
+          etape?: string
+          id?: string
+          offer_id?: string | null
+          pricing_ids?: Json
+          product_type?: string
+          profile_id?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          avertissements?: Json
+          cart_id?: string | null
+          client_id?: string | null
+          contract_ids?: string[]
+          created_at?: string
+          cree_par?: string | null
+          date_effet?: string | null
+          derniere_erreur?: string | null
+          derniere_reponse?: Json | null
+          dossier_id?: string | null
+          etape?: string
+          id?: string
+          offer_id?: string | null
+          pricing_ids?: Json
+          product_type?: string
+          profile_id?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "neoliane_parcours_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "neoliane_parcours_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       paiements_partenaires: {
         Row: {
           beneficiaire_id: string
