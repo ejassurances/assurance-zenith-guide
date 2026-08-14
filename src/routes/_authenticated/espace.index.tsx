@@ -5,6 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CommissionMoisCard } from "@/components/commission-mois-card";
 import { getCaRealEtN1, getCommissionsEstimeesAnneeEnCours, type CaRealSummary } from "@/lib/dashboard.functions";
+import { ScoreRings } from "@/components/score-rings";
+import { useScoresValeur } from "@/hooks/use-scores-valeur";
+import type { NiveauConformite } from "@/lib/conformite-score";
+import { Users, Folder, Building2, Receipt, ShieldCheck, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/espace/")({
   component: Dashboard,
@@ -16,8 +20,55 @@ type Tache = {
   echeance: string | null;
   priorite: string;
   client_id: string | null;
-  clients: { prenom: string | null; nom: string } | null;
+  clients: {
+    prenom: string | null;
+    nom: string;
+    conformite_score: number | null;
+    conformite_niveau: string | null;
+  } | null;
 };
+
+const ACCES_RAPIDE = [
+  { to: "/espace/clients", label: "Clients", icon: Users, badge: "bg-sky-100 text-sky-700" },
+  { to: "/espace/dossiers", label: "Dossiers", icon: Folder, badge: "bg-emerald-100 text-emerald-700" },
+  { to: "/espace/compagnies", label: "Compagnies", icon: Building2, badge: "bg-amber-100 text-amber-700" },
+  { to: "/espace/commissions", label: "Commissions", icon: Receipt, badge: "bg-rose-100 text-rose-700" },
+  { to: "/espace/conformite", label: "Conformité", icon: ShieldCheck, badge: "bg-violet-100 text-violet-700" },
+  { to: "/espace/emails", label: "Emails", icon: Mail, badge: "bg-teal-100 text-teal-700" },
+] as const;
+
+/** Statut de relance déduit de la priorité et de l'échéance de la tâche. */
+function statutTache(t: Tache): { label: string; classe: string } {
+  const echeance = t.echeance ? new Date(t.echeance) : null;
+  const now = new Date();
+  const retard = echeance ? echeance < now : false;
+  if (retard || t.priorite === "urgente") return { label: "Action requise", classe: "bg-red-100 text-red-800" };
+  const proche = echeance ? (echeance.getTime() - now.getTime()) / 86400000 <= 7 : false;
+  if (proche || t.priorite === "haute") return { label: "En attente", classe: "bg-amber-100 text-amber-800" };
+  return { label: "À jour", classe: "bg-emerald-100 text-emerald-800" };
+}
+
+function AccesRapide() {
+  return (
+    <section className="mt-8">
+      <h2 className="crm-eyebrow">Accès rapide</h2>
+      <div className="mt-4 grid grid-cols-3 gap-4 sm:grid-cols-6">
+        {ACCES_RAPIDE.map((a) => (
+          <Link
+            key={a.to}
+            to={a.to}
+            className="crm-card flex flex-col items-center gap-3 p-5 transition-transform hover:-translate-y-0.5"
+          >
+            <span className={`flex size-11 items-center justify-center rounded-[12px] ${a.badge}`}>
+              <a.icon className="size-5" strokeWidth={1.8} />
+            </span>
+            <span className="text-xs font-semibold text-ink">{a.label}</span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 function Dashboard() {
   const { role, user } = useAuth();
@@ -30,6 +81,7 @@ function Dashboard() {
   const [stats, setStats] = useState({ clients: 0, prospects: 0, dossiers: 0, enCours: 0, signes: 0, commissions: 0 });
   const [taches, setTaches] = useState<Tache[]>([]);
   const [caReal, setCaReal] = useState<CaRealSummary | null>(null);
+  const scoresValeur = useScoresValeur();
   const fetchCaReal = useServerFn(getCaRealEtN1);
   const fetchCommissionsEstimees = useServerFn(getCommissionsEstimeesAnneeEnCours);
 
@@ -44,7 +96,7 @@ function Dashboard() {
         fetchCommissionsEstimees(),
         supabase
           .from("taches")
-          .select("id,titre,echeance,priorite,client_id,clients(prenom,nom)")
+          .select("id,titre,echeance,priorite,client_id,clients(prenom,nom,conformite_score,conformite_niveau)")
           .neq("statut", "terminee")
           .order("echeance", { ascending: true, nullsFirst: false })
           .limit(6),
@@ -73,6 +125,8 @@ function Dashboard() {
         </p>
       </div>
 
+      {role !== "client" && <AccesRapide />}
+
       {role === "client" && <ClientDerBanner />}
       {(role === "admin" || role === "mandataire") && <ConformiteCabinetWidget />}
 
@@ -96,53 +150,62 @@ function Dashboard() {
 
 
 
-      <div className="mt-10 grid gap-8 lg:grid-cols-12">
-        <div className="lg:col-span-7">
-          <ActiviteRecente isAdmin={role === "admin"} />
-        </div>
-
-        <section className="crm-panel-dark p-6 lg:col-span-5">
-          <div className="flex items-center justify-between border-b border-white/10 pb-4">
-            <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-[color:var(--crm-gold)]">
-              Tâches à faire
-            </h2>
-            <Link to="/espace/taches" className="text-[10px] font-bold uppercase tracking-widest text-white/50 hover:text-white">
-              Toutes →
-            </Link>
-          </div>
-          <div className="mt-5 space-y-3">
-            {taches.length === 0 ? (
-              <p className="text-sm text-white/50">Aucune tâche en attente.</p>
-            ) : (
-              taches.map((t) => (
-                <div
-                  key={t.id}
-                  className="rounded-sm border-l border-[color:var(--crm-gold)] bg-white/5 p-3 transition-colors hover:bg-white/10"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-medium text-white">{t.titre}</p>
-                    <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider">
-                      <span className="rounded-full border border-white/15 px-2 py-0.5 text-white/70">{t.priorite}</span>
-                      {t.echeance && (
-                        <span className="text-white/50">{new Date(t.echeance).toLocaleDateString("fr-FR")}</span>
-                      )}
-                    </div>
-                  </div>
-                  {t.clients && t.client_id && (
-                    <Link
-                      to="/espace/clients/$id"
-                      params={{ id: t.client_id }}
-                      className="mt-1 inline-block text-xs text-white/55 hover:text-[color:var(--crm-gold)]"
-                    >
-                      {[t.clients.prenom, t.clients.nom].filter(Boolean).join(" ")}
-                    </Link>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        </section>
+      <div className="mt-10">
+        <ActiviteRecente isAdmin={role === "admin"} />
       </div>
+
+      <section className="mt-10">
+        <div className="flex items-center justify-between border-b border-line pb-4">
+          <h2 className="crm-eyebrow">Dossiers &amp; clients à relancer</h2>
+          <Link to="/espace/taches" className="text-[10px] font-bold uppercase tracking-widest text-ink-muted hover:text-ink">
+            Toutes les tâches →
+          </Link>
+        </div>
+        {taches.length === 0 ? (
+          <p className="mt-5 text-sm text-ink-muted">Aucune relance en attente.</p>
+        ) : (
+          <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {taches.map((t) => {
+              const st = statutTache(t);
+              const nom = t.clients ? [t.clients.prenom, t.clients.nom].filter(Boolean).join(" ") : "Sans client";
+              return (
+                <article key={t.id} className="crm-card p-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      {t.client_id ? (
+                        <Link
+                          to="/espace/clients/$id"
+                          params={{ id: t.client_id }}
+                          className="font-serif text-lg font-semibold text-ink hover:underline"
+                        >
+                          {nom}
+                        </Link>
+                      ) : (
+                        <p className="font-serif text-lg font-semibold text-ink">{nom}</p>
+                      )}
+                      <p className="mt-1 text-xs text-ink-muted">
+                        {t.titre}
+                        {t.echeance ? ` · ${new Date(t.echeance).toLocaleDateString("fr-FR")}` : ""}
+                      </p>
+                    </div>
+                    <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${st.classe}`}>
+                      {st.label}
+                    </span>
+                  </div>
+                  <div className="mt-5">
+                    <ScoreRings
+                      size={52}
+                      conformite={t.clients?.conformite_score ?? 0}
+                      valeur={(t.client_id && scoresValeur[t.client_id]) || 0}
+                      niveau={(t.clients?.conformite_niveau as NiveauConformite | null) ?? null}
+                    />
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

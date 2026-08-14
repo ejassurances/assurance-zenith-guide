@@ -8,9 +8,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { MARQUES, MARQUE_KEYS, besoinLabel, marque } from "@/lib/crm-brands";
 import { DeleteClientButton } from "@/components/delete-client-button";
-import { NIVEAU_BADGE, niveauFromScore, type NiveauConformite } from "@/lib/conformite-score";
+import { niveauFromScore, type NiveauConformite } from "@/lib/conformite-score";
 import { ORIGINES, origineAvecClientSource, type OrigineKey } from "@/lib/crm-origines";
 import { ClientOriginePicker } from "@/components/client-origine-picker";
+import { ScoreRings } from "@/components/score-rings";
+import { useScoresValeur } from "@/hooks/use-scores-valeur";
 
 
 
@@ -42,6 +44,7 @@ const STATUTS = ["prospect", "actif", "inactif", "perdu", "ancien"] as const;
 function ClientsList() {
   const { role } = useAuth();
   const navigate = useNavigate();
+  const scoresValeur = useScoresValeur();
   const [items, setItems] = useState<ClientRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -171,7 +174,7 @@ function ClientsList() {
                 <th className="px-4 py-3">Marque</th>
                 <th className="px-4 py-3">Besoins</th>
                 <th className="px-4 py-3">Contact</th>
-                <th className="px-4 py-3">Conformité</th>
+                <th className="px-4 py-3">Scores</th>
                 <th className="px-4 py-3">Statut</th>
 
                 {canDelete && <th className="px-4 py-3 text-right">Actions</th>}
@@ -217,23 +220,15 @@ function ClientsList() {
                     <div className="text-xs text-ink-muted">{c.mobile ?? ""}</div>
                   </td>
                   <td className="px-4 py-3">
-                    {(() => {
-                      const sc = c.conformite_score ?? 0;
-                      const niv = ((c.conformite_niveau as NiveauConformite | null) ??
-                        niveauFromScore(sc)) as NiveauConformite;
-                      return (
-                        <span
-                          title={
-                            sc < 50
-                              ? "Conformité insuffisante : création de contrat bloquée"
-                              : "Conformité KYC / LCB-FT"
-                          }
-                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${NIVEAU_BADGE[niv]}`}
-                        >
-                          {sc}%{sc < 50 ? " ⛔" : ""}
-                        </span>
-                      );
-                    })()}
+                    <ScoreRings
+                      size={48}
+                      conformite={c.conformite_score ?? 0}
+                      valeur={scoresValeur[c.id] ?? 0}
+                      niveau={
+                        (c.conformite_niveau as NiveauConformite | null) ??
+                        niveauFromScore(c.conformite_score ?? 0)
+                      }
+                    />
                   </td>
                   <td className="px-4 py-3">
 

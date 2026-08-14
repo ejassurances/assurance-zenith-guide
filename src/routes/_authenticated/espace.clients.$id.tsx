@@ -6,6 +6,9 @@ import { FamilleTab, EntrepriseTab, EquipementsTab } from "@/components/client-3
 import { ContratsTab } from "@/components/contrats-tab";
 import { DerTab } from "@/components/der-tab";
 import { ConformiteClientTab } from "@/components/conformite-client-tab";
+import { ScoreRings } from "@/components/score-rings";
+import { useScoreValeur } from "@/hooks/use-scores-valeur";
+import { type NiveauConformite } from "@/lib/conformite-score";
 import { SinistresPanel } from "@/components/sinistres-panel";
 import { DeleteClientButton } from "@/components/delete-client-button";
 import { AccesEspaceClientButton } from "@/components/acces-espace-client-button";
@@ -122,6 +125,7 @@ function ClientDetail() {
   const navigate = useNavigate();
   const [client, setClient] = useState<Client | null>(null);
   const [tab, setTab] = useState<Tab>("identite");
+  const scoreValeur = useScoreValeur(id);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -161,7 +165,14 @@ function ClientDetail() {
             {new Date(client.created_at).toLocaleDateString("fr-FR")}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
+          <ScoreRings
+            conformite={(client as { conformite_score?: number | null }).conformite_score ?? 0}
+            valeur={scoreValeur ?? 0}
+            niveau={
+              ((client as { conformite_niveau?: string | null }).conformite_niveau as NiveauConformite | null) ?? null
+            }
+          />
           <span className="rounded-full border border-line bg-surface-elevated px-3 py-1 text-xs font-medium">
             {client.statut}
           </span>
