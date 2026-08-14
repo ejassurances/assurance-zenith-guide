@@ -376,3 +376,34 @@ function NewClientForm({ onCreated }: { onCreated: (id: string) => void }) {
     </form>
   );
 }
+
+/** Rattrapage du contrôle LCB-FT (sanctions / PPE) sur les fiches non contrôlées. */
+function LcbRattrapageButton({ onDone }: { onDone: () => void }) {
+  const lancer = useServerFn(lancerLcbClientsManquants);
+  const [busy, setBusy] = useState(false);
+  return (
+    <button
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        try {
+          const res = await lancer({});
+          if (res.traites === 0) toast.success("Toutes les fiches ont déjà un contrôle LCB-FT.");
+          else
+            toast.success(
+              `LCB-FT : ${res.traites} fiche(s) contrôlée(s)${res.a_verifier > 0 ? ` · ${res.a_verifier} à vérifier` : ""}.`,
+            );
+          if (res.erreurs.length > 0) toast.error(res.erreurs.slice(0, 3).join(" · "));
+          onDone();
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : "Contrôle LCB-FT impossible");
+        } finally {
+          setBusy(false);
+        }
+      }}
+      className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink disabled:opacity-50"
+    >
+      {busy ? "Contrôle en cours…" : "Contrôle LCB-FT manquant"}
+    </button>
+  );
+}
