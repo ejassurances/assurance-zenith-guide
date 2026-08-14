@@ -6,6 +6,14 @@ import {
   retenirDevisDossierFn,
   creerDevisTarifFixeFn,
 } from "@/lib/devis-classement.functions";
+import { neolianeTariferSante } from "@/lib/neoliane.functions";
+import { personnesAssurees } from "@/lib/recueil-besoins-schemas";
+
+/** 1er jour du mois suivant (AAAA-MM-JJ) — date d'effet proposée par défaut. */
+function premierDuMoisSuivant(): string {
+  const n = new Date();
+  return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth() + 1, 1)).toISOString().slice(0, 10);
+}
 
 export type DossierDevis = {
   id: string;
