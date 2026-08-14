@@ -726,3 +726,59 @@ export function missingRequired(section: SectionConfig, values: Record<string, u
   });
 }
 
+
+/* ------------------------------------------------------------------ */
+/* Emprunteur : valorisation du contrat dans le portefeuille           */
+/* ------------------------------------------------------------------ */
+
+export const TAUX_COMMISSION_EMPRUNTEUR_DEFAUT = 5;
+
+export type ValorisationEmprunteur = {
+  montantTotal: number | null;
+  cotisationMensuelle: number | null;
+  cotisationAnnuelle: number | null;
+  nbAnnees: number | null;
+  tauxCommission: number;
+  commissionAnnuelle: number | null;
+  /** Commission cumulée sur le nombre d'années de commissionnement */
+  valorisation: number | null;
+};
+
+function nombre(v: unknown): number | null {
+  if (v === undefined || v === null || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Valorisation d'un contrat emprunteur : commission annuelle (taux appliqué à
+ * la cotisation annuelle, à défaut au montant total ramené sur la durée) puis
+ * cumul sur le nombre d'années de commissionnement.
+ */
+export function valorisationEmprunteur(values: Record<string, unknown>): ValorisationEmprunteur {
+  const montantTotal = nombre(values["tarif_montant_total"]);
+  const cotisationMensuelle = nombre(values["tarif_cotisation_mensuelle"]);
+  const nbAnnees = nombre(values["tarif_nb_annees"]);
+  const tauxCommission = nombre(values["tarif_taux_commission"]) ?? TAUX_COMMISSION_EMPRUNTEUR_DEFAUT;
+
+  let cotisationAnnuelle = nombre(values["tarif_cotisation_annuelle"]);
+  if (cotisationAnnuelle === null && cotisationMensuelle !== null) cotisationAnnuelle = cotisationMensuelle * 12;
+  if (cotisationAnnuelle === null && montantTotal !== null && nbAnnees && nbAnnees > 0) {
+    cotisationAnnuelle = montantTotal / nbAnnees;
+  }
+
+  const commissionAnnuelle =
+    cotisationAnnuelle === null ? null : (cotisationAnnuelle * tauxCommission) / 100;
+  const valorisation =
+    commissionAnnuelle === null || nbAnnees === null ? null : commissionAnnuelle * nbAnnees;
+
+  return {
+    montantTotal,
+    cotisationMensuelle,
+    cotisationAnnuelle,
+    nbAnnees,
+    tauxCommission,
+    commissionAnnuelle,
+    valorisation,
+  };
+}
