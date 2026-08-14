@@ -205,7 +205,9 @@ export async function lancerLcbAutomatique(
       date_naissance: params.date_naissance ?? null,
       verifie_par: null,
     });
-  } catch {
+  } catch (e) {
+    // Ne bloque jamais la création de la fiche, mais laisse une trace exploitable.
+    console.error("[LCB-FT] contrôle automatique échoué", params.client_id, e);
     return null;
   }
 }
