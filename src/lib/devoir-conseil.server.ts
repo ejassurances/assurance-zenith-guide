@@ -113,6 +113,24 @@ export async function envoyerDevoirConseil(
   const d = dossier as any;
   if (!d.client_email) throw new Error("Le dossier n'a pas d'email client — renseignez-le d'abord.");
 
+  // Délai de réflexion (16 h après signature de la lettre de mission) et
+  // horaires d'ouverture : contrôlé côté serveur, uniquement pour un envoi réel.
+  if (!sansEnvoi) {
+    const { data: lm } = await supabase
+      .from("lettres_mission")
+      .select("signed_at, statut")
+      .eq("dossier_id", dossierId)
+      .eq("statut", "signee")
+      .order("signed_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const { etatDelaiEnvoi } = await import("./devoir-conseil-delai");
+    const etat = etatDelaiEnvoi((lm as { signed_at: string | null } | null)?.signed_at ?? null);
+    if (!etat.autorise) throw new Error(etat.motif ?? "Envoi non autorisé pour le moment.");
+  }
+
+
+
   const modele = modeleDevoirConseil(d.type_assurance);
   const garanties = await garantiesValideesProduit(supabase, d.produit_id ?? null);
 

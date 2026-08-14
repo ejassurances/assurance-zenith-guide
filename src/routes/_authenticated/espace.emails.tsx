@@ -819,11 +819,38 @@ function RattachementPanel({
         </div>
       </div>
 
+      {triage && triage.prospect !== "non" && !lien?.client_id && (
+        <div className="rounded-xl border border-[color:var(--crm-gold)] bg-surface p-4">
+          <p className="text-sm font-medium text-ink">Créer un dossier ?</p>
+          <p className="mt-1 text-xs text-ink-muted">
+            L'analyse automatique hésite sur ce message
+            {triage.branche ? ` (branche suggérée : ${triage.branche})` : ""}. {triage.resume}
+          </p>
+          <button
+            onClick={() => {
+              setForm((f) => ({
+                ...f,
+                nom: triage.nom || f.nom,
+                prenom: triage.prenom || f.prenom,
+                telephone: triage.telephone || f.telephone,
+                creer_dossier: true,
+                type_assurance: triage.branche || f.type_assurance,
+              }));
+              setCreation(true);
+            }}
+            className={BTN_SECONDAIRE + " mt-3"}
+          >
+            Créer le dossier suggéré
+          </button>
+        </div>
+      )}
+
       <div className="border-t border-line pt-4">
         {!creation ? (
           <button onClick={() => setCreation(true)} className={BTN_SECONDAIRE}>
             + Créer une fiche client (et un dossier)
           </button>
+
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             <input

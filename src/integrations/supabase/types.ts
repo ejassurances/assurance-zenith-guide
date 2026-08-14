@@ -1599,6 +1599,8 @@ export type Database = {
           recu_le: string | null
           snippet: string | null
           sujet: string | null
+          triage_ia: Json | null
+          triage_le: string | null
           updated_at: string
         }
         Insert: {
@@ -1619,6 +1621,8 @@ export type Database = {
           recu_le?: string | null
           snippet?: string | null
           sujet?: string | null
+          triage_ia?: Json | null
+          triage_le?: string | null
           updated_at?: string
         }
         Update: {
@@ -1639,6 +1643,8 @@ export type Database = {
           recu_le?: string | null
           snippet?: string | null
           sujet?: string | null
+          triage_ia?: Json | null
+          triage_le?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2025,6 +2031,7 @@ export type Database = {
           classement: Json
           created_at: string
           created_by: string | null
+          devis_retenu_id: string | null
           dossier_id: string
           genere_le: string
           id: string
@@ -2036,6 +2043,7 @@ export type Database = {
           classement?: Json
           created_at?: string
           created_by?: string | null
+          devis_retenu_id?: string | null
           dossier_id: string
           genere_le?: string
           id?: string
@@ -2047,6 +2055,7 @@ export type Database = {
           classement?: Json
           created_at?: string
           created_by?: string | null
+          devis_retenu_id?: string | null
           dossier_id?: string
           genere_le?: string
           id?: string
@@ -2055,6 +2064,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "dossier_devis_classements_devis_retenu_id_fkey"
+            columns: ["devis_retenu_id"]
+            isOneToOne: false
+            referencedRelation: "dossier_devis"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "dossier_devis_classements_dossier_id_fkey"
             columns: ["dossier_id"]
@@ -2184,6 +2200,7 @@ export type Database = {
       }
       dossiers: {
         Row: {
+          accuse_reception_envoye_le: string | null
           age: number | null
           apporteur_id: string | null
           capital: number | null
@@ -2214,6 +2231,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          accuse_reception_envoye_le?: string | null
           age?: number | null
           apporteur_id?: string | null
           capital?: number | null
@@ -2244,6 +2262,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          accuse_reception_envoye_le?: string | null
           age?: number | null
           apporteur_id?: string | null
           capital?: number | null
