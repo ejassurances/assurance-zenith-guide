@@ -204,6 +204,22 @@ export async function executerModificationNiveau1(
   }
   actions.push("devoir de conseil régénéré en brouillon (revalidation staff requise)");
 
+  // Résumé destiné au client, inséré dans le mail d'envoi du nouveau devoir de conseil.
+  if (devoirId) {
+    const notes = await resumeClient(supabase, {
+      devisId,
+      compagnieId: devisCompagnieId,
+      produitId: devisProduitId,
+      reductionPct: pct,
+    });
+    if (notes) {
+      await supabase
+        .from("devoirs_conseil")
+        .update({ notes_modification: notes } as never)
+        .eq("id", devoirId);
+    }
+  }
+
   const detail = [
     `Demande du client : ${analyse.motif_client ?? "non précisée"}`,
     `Analyse IA : ${analyse.synthese ?? "—"}`,
