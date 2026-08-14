@@ -54,6 +54,9 @@ type Lien = {
   contrat_id: string | null;
   compagnie_id: string | null;
   notes: string | null;
+  triage_ia?: unknown;
+  triage_le?: string | null;
+
   clients?: { nom: string | null; prenom: string | null } | null;
   compagnies?: { nom: string | null } | null;
 };
