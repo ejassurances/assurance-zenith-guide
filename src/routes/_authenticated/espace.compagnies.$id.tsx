@@ -8,6 +8,7 @@ import { ProduitFormulesTab } from "@/components/produit-formules-tab";
 
 import { EmailsLiesPanel } from "@/components/emails-lies-panel";
 import { ImageUploadField, StoredImage } from "@/components/image-upload-field";
+import { CompagnieTauxCommission } from "@/components/compagnie-taux-commission";
 
 type CompagnieDocRow = {
   id: string;
@@ -272,7 +273,12 @@ function CompagnieDetail() {
           onChange={load}
         />
       )}
-      {tab === "partenariats" && <PartenariatsTab compagnieId={c.id} compagnieNom={c.nom} isAdmin={isAdmin} />}
+      {tab === "partenariats" && (
+        <div className="space-y-6">
+          <PartenariatsTab compagnieId={c.id} compagnieNom={c.nom} isAdmin={isAdmin} />
+          <CompagnieTauxCommission compagnieId={c.id} canEdit={isAdmin} />
+        </div>
+      )}
       {tab === "emails" && (
         <EmailsLiesPanel
           liens={{ compagnie_id: c.id }}
