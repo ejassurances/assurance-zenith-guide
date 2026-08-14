@@ -6,6 +6,14 @@ import {
   retenirDevisDossierFn,
   creerDevisTarifFixeFn,
 } from "@/lib/devis-classement.functions";
+import { neolianeTariferSante } from "@/lib/neoliane.functions";
+import { personnesAssurees } from "@/lib/recueil-besoins-schemas";
+
+/** 1er jour du mois suivant (AAAA-MM-JJ) — date d'effet proposée par défaut. */
+function premierDuMoisSuivant(): string {
+  const n = new Date();
+  return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth() + 1, 1)).toISOString().slice(0, 10);
+}
 
 export type DossierDevis = {
   id: string;
@@ -72,6 +80,14 @@ export function DossierDevisPanel({
   const [fixeOptionIds, setFixeOptionIds] = useState<string[]>([]);
   const [fixeEtat, setFixeEtat] = useState<"idle" | "envoi">("idle");
 
+  /** Tarification API Néoliane (branche santé). */
+  const tariferNeoliane = useServerFn(neolianeTariferSante);
+  const [nbAssuresSante, setNbAssuresSante] = useState(0);
+  const [neoDate, setNeoDate] = useState(premierDuMoisSuivant());
+  const [neoEtat, setNeoEtat] = useState<"idle" | "appel">("idle");
+  const [neoMsg, setNeoMsg] = useState<string | null>(null);
+  const [neoErr, setNeoErr] = useState<string | null>(null);
+
   const [form, setForm] = useState({
     compagnie_id: "",
     produit_id: "",
@@ -97,7 +113,7 @@ export function DossierDevisPanel({
         .order("genere_le", { ascending: false })
         .limit(1)
         .maybeSingle(),
-      supabase.from("dossiers").select("produit_id").eq("id", dossierId).maybeSingle(),
+      supabase.from("dossiers").select("produit_id,type_assurance,recueil_besoins").eq("id", dossierId).maybeSingle(),
     ]);
     if (d.error) setErr(d.error.message);
     setDevis((d.data as DossierDevis[]) ?? []);
@@ -105,7 +121,17 @@ export function DossierDevisPanel({
     setProduits((p.data as ProduitRef[]) ?? []);
     setClassement((cl.data as Classement | null) ?? null);
 
-    const produitDossierId = (dos.data as { produit_id: string | null } | null)?.produit_id ?? null;
+    const dossier = dos.data as
+      | { produit_id: string | null; type_assurance: string | null; recueil_besoins: unknown }
+      | null;
+    const recueil = (dossier?.recueil_besoins ?? {}) as Record<string, unknown>;
+    setNbAssuresSante(
+      dossier?.type_assurance === "sante"
+        ? personnesAssurees(recueil["assures"]).filter((p) => !!p.date_naissance).length
+        : 0,
+    );
+
+    const produitDossierId = dossier?.produit_id ?? null;
     if (!produitDossierId) {
       setProduitFixe(null);
       setFormulesFixes([]);
@@ -266,6 +292,32 @@ export function DossierDevisPanel({
     }
   };
 
+  const recupererTarifsNeoliane = async () => {
+    setNeoErr(null);
+    setNeoMsg(null);
+    setNeoEtat("appel");
+    try {
+      const res = (await tariferNeoliane({ data: { dossier_id: dossierId, date_effet: neoDate } })) as {
+        nbDevisCrees: number;
+        nbTarifs: number;
+        nbAssures: number;
+        compagnieTrouvee: boolean;
+      };
+      await load();
+      setNeoMsg(
+        `${res.nbDevisCrees} devis Néoliane ajoutés au dossier (${res.nbTarifs} tarifs retournés pour ${res.nbAssures} assuré(s)).` +
+          (res.compagnieTrouvee ? "" : " Compagnie « Néoliane » introuvable en base : les devis sont créés sans compagnie."),
+      );
+      onChanged?.();
+    } catch (e) {
+      setNeoErr(e instanceof Error ? e.message : "Appel Néoliane impossible");
+    } finally {
+      setNeoEtat("idle");
+    }
+  };
+
+
+
   return (
     <div className="rounded-2xl border border-line bg-surface-elevated p-5">
       <h2 className="font-serif text-lg font-medium text-ink">Devis comparés</h2>
@@ -307,6 +359,33 @@ export function DossierDevisPanel({
           );
         })}
       </div>
+
+      {nbAssuresSante > 0 && (
+        <div className="mt-4 space-y-3 rounded-xl border border-line bg-surface p-4">
+          <div>
+            <h3 className="text-sm font-medium text-ink">Tarification Néoliane (API)</h3>
+            <p className="mt-1 text-xs text-ink-muted">
+              {nbAssuresSante} assuré(s) du recueil santé seront transmis à Néoliane. Les tarifs obtenus sont ajoutés
+              automatiquement au comparatif ; la saisie manuelle reste toujours possible.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="block">
+              <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Date d'effet</span>
+              <input type="date" value={neoDate} onChange={(e) => setNeoDate(e.target.value)} className={inp} />
+            </label>
+            <button
+              onClick={recupererTarifsNeoliane}
+              disabled={neoEtat === "appel" || !neoDate}
+              className="rounded-full bg-ink px-5 py-2 text-sm text-primary-foreground disabled:opacity-50"
+            >
+              {neoEtat === "appel" ? "Appel Néoliane…" : "Récupérer les tarifs Néoliane"}
+            </button>
+          </div>
+          {neoMsg && <p className="text-sm text-emerald-700">{neoMsg}</p>}
+          {neoErr && <p className="whitespace-pre-wrap text-sm text-destructive">{neoErr}</p>}
+        </div>
+      )}
 
       {produitFixe && (
         <div className="mt-4 space-y-3 border-t border-line pt-4">
