@@ -371,7 +371,7 @@ export async function envoyerDevoirsConseilValidesDus(
 
   const { data, error } = await supabase
     .from("devoirs_conseil")
-    .select("id, dossier_id, type_assurance, email_destinataire, contenu, valide_le")
+    .select("id, dossier_id, type_assurance, email_destinataire, contenu, valide_le, valide_par")
     .eq("statut", "valide")
     .is("envoye_le", null)
     .order("valide_le", { ascending: true })
