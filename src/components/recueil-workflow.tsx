@@ -224,9 +224,55 @@ export function RecueilWorkflow({
   );
 }
 
+const fmtEur = (n: number | null) =>
+  n === null
+    ? "—"
+    : new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
+
+/** Emprunteur : tarif retenu et valorisation du contrat dans le portefeuille. */
+function ValorisationCard({ values }: { values: Record<string, unknown> }) {
+  const v = valorisationEmprunteur(values);
+  if (v.montantTotal === null && v.cotisationAnnuelle === null && v.nbAnnees === null) return null;
+  return (
+    <div className="rounded-xl border border-accent/40 bg-accent/5 p-4">
+      <p className="text-sm font-medium text-ink">Tarification & valorisation du contrat</p>
+      <dl className="mt-3 grid gap-x-6 gap-y-1 sm:grid-cols-2">
+        <div className="flex justify-between gap-3 text-sm">
+          <dt className="text-ink-muted">Montant total de l'assurance</dt>
+          <dd className="text-ink">{fmtEur(v.montantTotal)}</dd>
+        </div>
+        <div className="flex justify-between gap-3 text-sm">
+          <dt className="text-ink-muted">Cotisation mensuelle</dt>
+          <dd className="text-ink">{fmtEur(v.cotisationMensuelle)}</dd>
+        </div>
+        <div className="flex justify-between gap-3 text-sm">
+          <dt className="text-ink-muted">Cotisation annuelle</dt>
+          <dd className="text-ink">{fmtEur(v.cotisationAnnuelle)}</dd>
+        </div>
+        <div className="flex justify-between gap-3 text-sm">
+          <dt className="text-ink-muted">Durée de commissionnement</dt>
+          <dd className="text-ink">{v.nbAnnees === null ? "—" : `${v.nbAnnees} ans`}</dd>
+        </div>
+        <div className="flex justify-between gap-3 text-sm">
+          <dt className="text-ink-muted">Commission annuelle ({v.tauxCommission} %)</dt>
+          <dd className="text-ink">{fmtEur(v.commissionAnnuelle)}</dd>
+        </div>
+        <div className="flex justify-between gap-3 text-sm font-medium">
+          <dt className="text-ink">Valorisation portefeuille</dt>
+          <dd className="text-ink">{fmtEur(v.valorisation)}</dd>
+        </div>
+      </dl>
+      <p className="mt-2 text-xs text-ink-muted">
+        Valorisation = commission annuelle × nombre d'années de commissionnement.
+      </p>
+    </div>
+  );
+}
+
 function shortLabel(f: FieldConfig) {
   return f.label.length > 60 ? `${f.label.slice(0, 57)}…` : f.label;
 }
+
 
 function formatValue(f: FieldConfig, v: unknown) {
   if (f.type === "checkbox") return v === true ? "Oui" : "Non";
