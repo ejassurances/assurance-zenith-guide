@@ -157,6 +157,14 @@ export function DossierPiecesPanel({
         .from("dossier_pieces_requises")
         .update({ statut: "recue", recue_le: new Date().toISOString(), kyc_document_id: kyc!.id } as never)
         .eq("id", piece.id);
+      // Pièce d'identité : lecture IA + relance automatique du LCB-FT en attente.
+      if (kycType === "cni") {
+        try {
+          await traiterPiece({ data: { kyc_document_id: kyc!.id } });
+        } catch (e) {
+          console.error("[CNI] lecture automatique impossible", e);
+        }
+      }
     } else {
       const { data: userRes } = await supabase.auth.getUser();
       const { data: doc, error: dErr } = await supabase
