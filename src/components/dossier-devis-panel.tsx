@@ -360,6 +360,33 @@ export function DossierDevisPanel({
         })}
       </div>
 
+      {nbAssuresSante > 0 && (
+        <div className="mt-4 space-y-3 rounded-xl border border-line bg-surface p-4">
+          <div>
+            <h3 className="text-sm font-medium text-ink">Tarification Néoliane (API)</h3>
+            <p className="mt-1 text-xs text-ink-muted">
+              {nbAssuresSante} assuré(s) du recueil santé seront transmis à Néoliane. Les tarifs obtenus sont ajoutés
+              automatiquement au comparatif ; la saisie manuelle reste toujours possible.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="block">
+              <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Date d'effet</span>
+              <input type="date" value={neoDate} onChange={(e) => setNeoDate(e.target.value)} className={inp} />
+            </label>
+            <button
+              onClick={recupererTarifsNeoliane}
+              disabled={neoEtat === "appel" || !neoDate}
+              className="rounded-full bg-ink px-5 py-2 text-sm text-primary-foreground disabled:opacity-50"
+            >
+              {neoEtat === "appel" ? "Appel Néoliane…" : "Récupérer les tarifs Néoliane"}
+            </button>
+          </div>
+          {neoMsg && <p className="text-sm text-emerald-700">{neoMsg}</p>}
+          {neoErr && <p className="whitespace-pre-wrap text-sm text-destructive">{neoErr}</p>}
+        </div>
+      )}
+
       {produitFixe && (
         <div className="mt-4 space-y-3 border-t border-line pt-4">
           <div>
