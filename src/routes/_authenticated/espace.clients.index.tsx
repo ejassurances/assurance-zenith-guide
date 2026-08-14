@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { MARQUES, MARQUE_KEYS, besoinLabel, marque } from "@/lib/crm-brands";
 import { DeleteClientButton } from "@/components/delete-client-button";
 import { NIVEAU_BADGE, niveauFromScore, type NiveauConformite } from "@/lib/conformite-score";
-import { ORIGINES, origineAvecClientSource, origineLabel, type OrigineKey } from "@/lib/crm-origines";
+import { ORIGINES, origineAvecClientSource, type OrigineKey } from "@/lib/crm-origines";
 import { ClientOriginePicker } from "@/components/client-origine-picker";
 
 
