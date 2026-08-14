@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { repartirTresorerie, type CommissionPrevision } from "@/lib/commission-previsions";
 
 export type CaRealSummary = {
   anneeEnCours: number;
@@ -56,4 +57,24 @@ export const getCaRealEtN1 = createServerFn({ method: "GET" })
       debutAnneeEnCours: startCurrent,
       finPeriodeN1: endPrevious,
     };
+  });
+
+/**
+ * Retourne les commissions prévisionnelles de l'année civile en cours,
+ * prorata temporis à partir de la table commission_previsions.
+ */
+export const getCommissionsEstimeesAnneeEnCours = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<number> => {
+    const { data } = await context.supabase
+      .from("commission_previsions")
+      .select(
+        "id,dossier_id,contrat_id,branche,compagnie_id,montant_mensuel_estime,mois_restants_initial,date_estimation,montant_mensuel_reel,mois_restants_actuels,montant_previsionnel_total,statut",
+      );
+
+    const previsions = (data as unknown as CommissionPrevision[]) ?? [];
+    const anneeEnCours = new Date().getFullYear();
+    const lignes = repartirTresorerie(previsions);
+    const ligneAnnee = lignes.find((l) => l.annee === anneeEnCours);
+    return Math.round((ligneAnnee?.montant ?? 0) * 100) / 100;
   });
