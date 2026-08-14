@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fmtEuros } from "@/lib/commissions-bareme";
-import { repartirTresorerie, type CommissionPrevision } from "@/lib/commission-previsions";
+import {
+  repartirTresorerie,
+  previsionsSynthetiques,
+  type CommissionPrevision,
+  type ContratPourPrevision,
+  type CommissionEncaissee,
+} from "@/lib/commission-previsions";
 
 /** Trésorerie prévisionnelle : commissions grossiste attendues, réparties par année. */
 export function TresoreriePrevisionnelle() {
@@ -10,17 +16,32 @@ export function TresoreriePrevisionnelle() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("commission_previsions")
-        .select(
-          "id,dossier_id,contrat_id,branche,compagnie_id,montant_mensuel_estime,mois_restants_initial,date_estimation,montant_mensuel_reel,mois_restants_actuels,montant_previsionnel_total,statut",
-        );
-      setPrevisions((data as unknown as CommissionPrevision[]) ?? []);
+      const [{ data }, { data: contrats }, { data: commissions }] = await Promise.all([
+        supabase
+          .from("commission_previsions")
+          .select(
+            "id,dossier_id,contrat_id,branche,compagnie_id,montant_mensuel_estime,mois_restants_initial,date_estimation,montant_mensuel_reel,mois_restants_actuels,montant_previsionnel_total,statut",
+          ),
+        supabase
+          .from("contrats")
+          .select("id,dossier_id,compagnie_id,is_emprunteur,statut,date_effet,duree_mois,prime_annuelle"),
+        supabase.from("commissions").select("contrat_id,montant,date_versement,statut"),
+      ]);
+      const base = (data as unknown as CommissionPrevision[]) ?? [];
+      setPrevisions([
+        ...base,
+        ...previsionsSynthetiques(
+          (contrats as unknown as ContratPourPrevision[]) ?? [],
+          (commissions as unknown as CommissionEncaissee[]) ?? [],
+          base,
+        ),
+      ]);
       setLoading(false);
     })();
   }, []);
 
   const lignes = useMemo(() => repartirTresorerie(previsions), [previsions]);
+
   const total = lignes.reduce((s, l) => s + l.montant, 0);
 
   return (
