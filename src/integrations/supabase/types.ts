@@ -631,6 +631,7 @@ export type Database = {
           apporteur_id: string | null
           besoins: string[]
           civilite: string | null
+          client_origine_id: string | null
           code_postal: string | null
           commercial_id: string | null
           complement_adresse: string | null
@@ -683,6 +684,7 @@ export type Database = {
           apporteur_id?: string | null
           besoins?: string[]
           civilite?: string | null
+          client_origine_id?: string | null
           code_postal?: string | null
           commercial_id?: string | null
           complement_adresse?: string | null
@@ -735,6 +737,7 @@ export type Database = {
           apporteur_id?: string | null
           besoins?: string[]
           civilite?: string | null
+          client_origine_id?: string | null
           code_postal?: string | null
           commercial_id?: string | null
           complement_adresse?: string | null
@@ -782,7 +785,15 @@ export type Database = {
           ville?: string | null
           ville_naissance?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clients_client_origine_id_fkey"
+            columns: ["client_origine_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       commission_bareme: {
         Row: {
@@ -3844,6 +3855,9 @@ export type Database = {
         | "apporteur"
         | "reseau"
         | "autre"
+        | "parrainage"
+        | "recommandation"
+        | "contact_perso"
       client_statut: "prospect" | "actif" | "inactif" | "perdu" | "ancien"
       commission_statut: "prevue" | "versee" | "annulee"
       compagnie_doc_type:
@@ -4025,6 +4039,9 @@ export const Constants = {
         "apporteur",
         "reseau",
         "autre",
+        "parrainage",
+        "recommandation",
+        "contact_perso",
       ],
       client_statut: ["prospect", "actif", "inactif", "perdu", "ancien"],
       commission_statut: ["prevue", "versee", "annulee"],

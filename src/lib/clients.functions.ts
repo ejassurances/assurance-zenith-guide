@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { ORIGINE_KEYS } from "@/lib/crm-origines";
 import { z } from "zod";
 
 const creerClientSchema = z.object({
@@ -9,9 +10,11 @@ const creerClientSchema = z.object({
   email: z.string().trim().email().max(255).optional().nullable().or(z.literal("")),
   mobile: z.string().trim().max(30).optional().nullable(),
   ville: z.string().trim().max(120).optional().nullable(),
-  origine: z.enum(["internet", "assurlead", "telephone", "apporteur", "reseau", "autre"]),
+  origine: z.enum(ORIGINE_KEYS),
+  client_origine_id: z.string().uuid().optional().nullable(),
   marque: z.string().trim().max(60),
 });
+
 
 /**
  * Création manuelle d'une fiche client depuis le CRM.
@@ -32,9 +35,14 @@ export const creerClientManuel = createServerFn({ method: "POST" })
         mobile: data.mobile || null,
         ville: data.ville || null,
         origine: data.origine,
+        client_origine_id:
+          data.origine === "parrainage" || data.origine === "recommandation"
+            ? (data.client_origine_id ?? null)
+            : null,
         marque: data.marque,
         created_by: context.userId,
       })
+
       .select("id")
       .single();
     if (error || !cree) throw new Error(error?.message ?? "Création de la fiche impossible");

@@ -9,6 +9,9 @@ import { useAuth } from "@/lib/auth-context";
 import { MARQUES, MARQUE_KEYS, besoinLabel, marque } from "@/lib/crm-brands";
 import { DeleteClientButton } from "@/components/delete-client-button";
 import { NIVEAU_BADGE, niveauFromScore, type NiveauConformite } from "@/lib/conformite-score";
+import { ORIGINES, origineAvecClientSource, type OrigineKey } from "@/lib/crm-origines";
+import { ClientOriginePicker } from "@/components/client-origine-picker";
+
 
 
 export const Route = createFileRoute("/_authenticated/espace/clients/")({
@@ -268,7 +271,8 @@ function NewClientForm({ onCreated }: { onCreated: (id: string) => void }) {
     email: "",
     mobile: "",
     ville: "",
-    origine: "internet" as const,
+    origine: "internet" as OrigineKey,
+    client_origine_id: null as string | null,
     marque: "ej_assurances",
   });
 
@@ -287,6 +291,7 @@ function NewClientForm({ onCreated }: { onCreated: (id: string) => void }) {
           mobile: form.mobile || null,
           ville: form.ville || null,
           origine: form.origine,
+          client_origine_id: origineAvecClientSource(form.origine) ? form.client_origine_id : null,
           marque: form.marque,
         },
       });
@@ -297,6 +302,7 @@ function NewClientForm({ onCreated }: { onCreated: (id: string) => void }) {
       setSaving(false);
     }
   };
+
 
   return (
     <form onSubmit={submit} className="mt-6 grid gap-3 rounded-2xl border border-line bg-surface-elevated p-5 sm:grid-cols-3">
@@ -343,16 +349,24 @@ function NewClientForm({ onCreated }: { onCreated: (id: string) => void }) {
       />
       <select
         value={form.origine}
-        onChange={(e) => setForm({ ...form, origine: e.target.value as typeof form.origine })}
+        onChange={(e) => setForm({ ...form, origine: e.target.value as OrigineKey })}
         className="rounded-md border border-line bg-background px-3 py-2 text-sm"
       >
-        <option value="internet">Internet</option>
-        <option value="assurlead">Assurlead</option>
-        <option value="telephone">Téléphone</option>
-        <option value="apporteur">Apporteur</option>
-        <option value="reseau">Réseau</option>
-        <option value="autre">Autre</option>
+        {ORIGINES.map((o) => (
+          <option key={o.key} value={o.key}>
+            {o.label}
+          </option>
+        ))}
       </select>
+      {origineAvecClientSource(form.origine) && (
+        <div className="sm:col-span-3">
+          <ClientOriginePicker
+            value={form.client_origine_id}
+            onChange={(id) => setForm({ ...form, client_origine_id: id })}
+          />
+        </div>
+      )}
+
       <select
         value={form.marque}
         onChange={(e) => setForm({ ...form, marque: e.target.value })}

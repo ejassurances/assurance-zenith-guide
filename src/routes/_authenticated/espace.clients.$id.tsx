@@ -12,6 +12,13 @@ import { AccesEspaceClientButton } from "@/components/acces-espace-client-button
 import { CrmBrandPanel } from "@/components/crm-brand-panel";
 import { EmailsLiesPanel } from "@/components/emails-lies-panel";
 import { NewDossierForm } from "@/routes/_authenticated/espace.dossiers.index";
+import {
+  ORIGINES,
+  origineAvecClientSource,
+  origineLabel,
+  labelClientOrigine,
+} from "@/lib/crm-origines";
+import { ClientOriginePicker } from "@/components/client-origine-picker";
 
 export const Route = createFileRoute("/_authenticated/espace/clients/$id")({
   component: ClientDetail,
@@ -42,6 +49,7 @@ type Client = {
   pays: string | null;
   statut: string;
   origine: string | null;
+  client_origine_id: string | null;
   preference_contact: string | null;
   fumeur: boolean | null;
   csp: string | null;
@@ -306,7 +314,11 @@ function IdentiteTab({ client, canEdit, onSaved }: { client: Client; canEdit: bo
 
           <Section title="Profil">
             <Row label="Statut" value={client.statut} />
-            <Row label="Origine" value={client.origine} />
+            <Row label="Origine" value={origineLabel(client.origine)} />
+            {client.client_origine_id && (
+              <ClientOrigineLien origine={client.origine} clientOrigineId={client.client_origine_id} />
+            )}
+
             <Row label="CSP" value={client.csp} />
             <Row label="Métier" value={client.metier} />
             <Row label="Fumeur" value={client.fumeur ? "Oui" : "Non"} />
@@ -438,15 +450,32 @@ function IdentiteTab({ client, canEdit, onSaved }: { client: Client; canEdit: bo
           <span className="text-xs uppercase tracking-wide text-ink-muted">Origine</span>
           <select
             value={form.origine ?? ""}
-            onChange={(e) => setForm({ ...form, origine: e.target.value || null })}
+            onChange={(e) => {
+              const origine = e.target.value || null;
+              setForm({
+                ...form,
+                origine,
+                client_origine_id: origineAvecClientSource(origine) ? form.client_origine_id : null,
+              });
+            }}
             className="mt-1 w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
           >
             <option value="">—</option>
-            {["internet", "assurlead", "telephone", "apporteur", "reseau", "autre"].map((s) => (
-              <option key={s}>{s}</option>
+            {ORIGINES.map((o) => (
+              <option key={o.key} value={o.key}>
+                {o.label}
+              </option>
             ))}
           </select>
         </label>
+        {origineAvecClientSource(form.origine) && (
+          <ClientOriginePicker
+            value={form.client_origine_id}
+            excludeId={form.id}
+            onChange={(id) => setForm({ ...form, client_origine_id: id })}
+          />
+        )}
+
         {F("CSP", "csp")}
         {F("Métier", "metier")}
         <label className="flex items-center gap-2 text-sm">
@@ -538,6 +567,40 @@ function Section({
     </div>
   );
 }
+/** Lien vers la fiche du client parrain / recommandeur. */
+function ClientOrigineLien({ origine, clientOrigineId }: { origine: string | null; clientOrigineId: string }) {
+  const [nom, setNom] = useState<string | null>(null);
+  useEffect(() => {
+    let actif = true;
+    supabase
+      .from("clients")
+      .select("prenom,nom")
+      .eq("id", clientOrigineId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (actif && data) setNom([data.prenom, data.nom].filter(Boolean).join(" "));
+      });
+    return () => {
+      actif = false;
+    };
+  }, [clientOrigineId]);
+
+  return (
+    <Row
+      label={labelClientOrigine(origine)}
+      value={
+        <Link
+          to="/espace/clients/$id"
+          params={{ id: clientOrigineId }}
+          className="text-ink underline hover:no-underline"
+        >
+          {nom ?? "Voir la fiche"} →
+        </Link>
+      }
+    />
+  );
+}
+
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[140px_1fr] gap-2 text-sm">
