@@ -61,24 +61,50 @@ function DevoirConseilEnvoiEmail(props: {
   cabinetName?: string;
   reference?: string;
   link?: string;
+  /** Resume des ajustements apportes suite a une demande du client (2e envoi). */
+  notesModification?: string;
 }) {
   const nom = props.cabinetName || "EJ Partners Assurances";
-  const html =
-    "<p>Bonjour " +
-    (props.clientName || "") +
-    ",</p>" +
-    "<p>Votre devoir de conseil relatif au dossier " +
-    (props.reference || "") +
-    " est disponible dans votre espace client. Il presente la solution recommandee et les motifs de ce conseil.</p>" +
-    "<p><a href='" +
-    (props.link || "") +
-    "'>Consulter, accepter ou refuser la recommandation</a></p>" +
-    "<p>Votre reponse est necessaire avant toute souscription.</p>" +
-    "<p>Cordialement,<br/>L'equipe " +
-    nom +
-    "</p>";
   const style = { fontFamily: "Arial, sans-serif", color: "#1a1a1a", fontSize: "15px", lineHeight: "1.6" };
-  return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
+  const notes = (props.notesModification || "").trim();
+  return React.createElement(
+    "div",
+    { style: style },
+    React.createElement("p", { key: "intro" }, "Bonjour " + (props.clientName || "") + ","),
+    notes
+      ? React.createElement(
+          "p",
+          {
+            key: "notes",
+            style: {
+              backgroundColor: "#f7f3e8",
+              borderLeft: "3px solid #b98f2b",
+              padding: "12px 14px",
+              margin: "0 0 16px",
+            },
+          },
+          notes,
+        )
+      : null,
+    React.createElement(
+      "p",
+      { key: "corps" },
+      "Votre devoir de conseil relatif au dossier " +
+        (props.reference || "") +
+        " est disponible dans votre espace client. Il presente la solution recommandee et les motifs de ce conseil.",
+    ),
+    React.createElement(
+      "p",
+      { key: "lien" },
+      React.createElement(
+        "a",
+        { href: props.link || "" },
+        "Consulter, accepter ou refuser la recommandation",
+      ),
+    ),
+    React.createElement("p", { key: "reponse" }, "Votre reponse est necessaire avant toute souscription."),
+    React.createElement("p", { key: "signature" }, "Cordialement,", React.createElement("br"), "L'equipe " + nom),
+  );
 }
 
 
