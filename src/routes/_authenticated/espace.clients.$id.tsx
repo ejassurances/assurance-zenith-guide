@@ -12,6 +12,13 @@ import { AccesEspaceClientButton } from "@/components/acces-espace-client-button
 import { CrmBrandPanel } from "@/components/crm-brand-panel";
 import { EmailsLiesPanel } from "@/components/emails-lies-panel";
 import { NewDossierForm } from "@/routes/_authenticated/espace.dossiers.index";
+import {
+  ORIGINES,
+  origineAvecClientSource,
+  origineLabel,
+  labelClientOrigine,
+} from "@/lib/crm-origines";
+import { ClientOriginePicker } from "@/components/client-origine-picker";
 
 export const Route = createFileRoute("/_authenticated/espace/clients/$id")({
   component: ClientDetail,
