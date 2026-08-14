@@ -1,0 +1,68 @@
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { fmtEuros } from "@/lib/commissions-bareme";
+import { repartirTresorerie, type CommissionPrevision } from "@/lib/commission-previsions";
+
+/** Trésorerie prévisionnelle : commissions grossiste attendues, réparties par année. */
+export function TresoreriePrevisionnelle() {
+  const [previsions, setPrevisions] = useState<CommissionPrevision[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("commission_previsions")
+        .select(
+          "id,dossier_id,contrat_id,branche,compagnie_id,montant_mensuel_estime,mois_restants_initial,date_estimation,montant_mensuel_reel,mois_restants_actuels,montant_previsionnel_total,statut",
+        );
+      setPrevisions((data as unknown as CommissionPrevision[]) ?? []);
+      setLoading(false);
+    })();
+  }, []);
+
+  const lignes = useMemo(() => repartirTresorerie(previsions), [previsions]);
+  const total = lignes.reduce((s, l) => s + l.montant, 0);
+
+  return (
+    <section className="rounded-2xl border border-line bg-surface-elevated p-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="font-serif text-xl font-medium text-ink">Trésorerie prévisionnelle</h2>
+          <p className="mt-1 text-xs text-ink-muted">
+            Commissions attendues des compagnies : montant réel du dernier bordereau si connu, sinon estimation
+            issue du devoir de conseil, réparti mois par mois sur les années à venir.
+          </p>
+        </div>
+        <p className="font-serif text-2xl font-medium text-ink">{fmtEuros(total)}</p>
+      </div>
+
+      {loading ? (
+        <p className="mt-4 text-sm text-ink-muted">Chargement…</p>
+      ) : lignes.length === 0 ? (
+        <p className="mt-4 rounded-md border border-dashed border-line p-4 text-sm text-ink-muted">
+          Aucune commission prévisionnelle enregistrée : confirmez l'estimation à la validation d'un devoir de
+          conseil.
+        </p>
+      ) : (
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[320px] text-sm">
+            <thead className="bg-surface text-xs uppercase tracking-wide text-ink-muted">
+              <tr>
+                <th className="px-3 py-2 text-left">Année</th>
+                <th className="px-3 py-2 text-right">Montant prévisionnel</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {lignes.map((l) => (
+                <tr key={l.annee}>
+                  <td className="px-3 py-2">{l.annee}</td>
+                  <td className="px-3 py-2 text-right font-medium">{fmtEuros(l.montant)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
