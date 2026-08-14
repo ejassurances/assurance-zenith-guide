@@ -476,7 +476,10 @@ export function DevoirConseilPanel({
               Envoyer sans enregistrer
             </button>
             <button
-              onClick={() => setPrevOpen(false)}
+              onClick={() => {
+                setPrevIgnoree(true);
+                setPrevOpen(false);
+              }}
               className="text-sm text-ink-muted underline underline-offset-4"
             >
               Annuler
