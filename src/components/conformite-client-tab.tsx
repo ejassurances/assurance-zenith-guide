@@ -533,12 +533,12 @@ export function ConformiteClientTab({
                             "rounded-full px-2 py-0.5 text-xs font-medium " +
                             (v.statut === "clair" || v.statut === "faux_positif"
                               ? "bg-emerald-100 text-emerald-900"
-                              : v.statut === "a_verifier"
+                              : v.statut === "a_verifier" || v.statut === "en_attente_infos"
                                 ? "bg-amber-100 text-amber-900"
                                 : "bg-red-100 text-red-900")
                           }
                         >
-                          {v.statut}
+                          {v.statut === "en_attente_infos" ? "en attente d'informations" : v.statut}
                         </span>
                       </td>
                       <td className="px-2 py-2 text-xs text-ink-muted">{v.notes ?? "—"}</td>
