@@ -11,6 +11,8 @@ import { DeleteClientButton } from "@/components/delete-client-button";
 import { NIVEAU_BADGE, niveauFromScore, type NiveauConformite } from "@/lib/conformite-score";
 import { ORIGINES, origineAvecClientSource, type OrigineKey } from "@/lib/crm-origines";
 import { ClientOriginePicker } from "@/components/client-origine-picker";
+import { ScoreRings } from "@/components/score-rings";
+import { useScoresValeur } from "@/hooks/use-scores-valeur";
 
 
 
