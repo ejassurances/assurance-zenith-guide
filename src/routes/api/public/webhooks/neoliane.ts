@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
+import { messageTechnique, reduireReponseNeoliane } from "@/lib/neoliane/redaction";
+
 /**
  * Webhook EZ Gestion Néoliane (§9). Appelé par Néoliane sur les événements
  * `contract` et `contractDemarche`.
@@ -61,15 +63,16 @@ export const Route = createFileRoute("/api/public/webhooks/neoliane")({
           if (contractId) etat = await api.rafraichirContrat(String(contractId));
           else if (demarcheId) etat = await api.rafraichirDemarche(String(demarcheId));
         } catch (e) {
-          erreur = (e as Error).message;
+          erreur = messageTechnique((e as Error).message);
         }
 
         await supabaseAdmin.from("neoliane_evenements").insert({
           event_name: eventName,
           ressource_id: ressourceId === null ? null : String(ressourceId),
           refresh_url: p.data.refreshUrl ?? null,
-          payload: parsed as never,
-          etat_rafraichi: (etat ?? null) as never,
+          // Minimisation RGPD : seuls les identifiants techniques sont conservés.
+          payload: reduireReponseNeoliane(parsed) as never,
+          etat_rafraichi: reduireReponseNeoliane(etat) as never,
           traite: !erreur,
           erreur,
         });
