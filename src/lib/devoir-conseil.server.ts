@@ -371,7 +371,9 @@ export async function envoyerDevoirsConseilValidesDus(
 
   const { data, error } = await supabase
     .from("devoirs_conseil")
-    .select("id, dossier_id, type_assurance, email_destinataire, contenu, valide_le, valide_par")
+    .select(
+      "id, dossier_id, type_assurance, email_destinataire, contenu, valide_le, valide_par, notes_modification",
+    )
     .eq("statut", "valide")
     .is("envoye_le", null)
     .order("valide_le", { ascending: true })
@@ -419,6 +421,7 @@ export async function envoyerDevoirsConseilValidesDus(
           cabinetName: SITE.shortName,
           reference: d.reference,
           link: appUrl("/espace/signer-devoir-conseil"),
+          notesModification: dc.notes_modification ?? undefined,
         },
         brevoParams: {
           PRENOM: String(d.client_nom ?? "").split(" ")[0] || d.client_nom,
