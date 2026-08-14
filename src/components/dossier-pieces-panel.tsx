@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { monFichierUrl } from "@/lib/espace-client.functions";
+import { traiterPieceIdentite } from "@/lib/cni-extraction.functions";
 import {
   CATEGORIE_LABEL,
   STATUT_PIECE_LABEL,
@@ -67,6 +68,7 @@ export function DossierPiecesPanel({
   const [precision, setPrecision] = useState<Record<string, string>>({});
   const inputs = useRef<Record<string, HTMLInputElement | null>>({});
   const fichierUrl = useServerFn(monFichierUrl);
+  const traiterPiece = useServerFn(traiterPieceIdentite);
   const [telechargement, setTelechargement] = useState<string | null>(null);
 
   /** Ouvre le fichier déjà déposé (KYC ou document) via une URL signée. */
