@@ -745,9 +745,11 @@ export function DossierDevisPanel({
             </p>
             {[...classement.classement]
               .sort((a, b) => a.rang - b.rang)
+              .filter((l) => afficherDoublons || !estDoublonMasque(devis.find((x) => x.id === l.dossier_devis_id)))
               .map((l) => {
                 const d = devis.find((x) => x.id === l.dossier_devis_id);
                 const groupe = porteurPartage(d);
+
                 const kereisCatalogue = compagnies.find((c) => /kereis/i.test(c.nom));
                 const kereisManquant =
                   groupe != null &&
