@@ -374,8 +374,69 @@ export function ProduitGarantiesTab({
           {proposition.avertissements && (
             <p className="text-xs text-amber-900">Remarques de l'analyse : {proposition.avertissements}</p>
           )}
+          {(proposition.assureur_porteur_propose || proposition.reference_contrat_propose) && (
+            <div className="rounded-md border border-amber-300 bg-surface p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                Assureur porteur identifié dans les documents
+              </p>
+              <p className="mt-1 text-sm text-ink">
+                {proposition.assureur_porteur_propose ?? "— non identifié —"}
+                {proposition.reference_contrat_propose
+                  ? ` · Référence contrat : ${proposition.reference_contrat_propose}`
+                  : ""}
+                {proposition.assureur_porteur_confiance != null
+                  ? ` · confiance ${Math.round(proposition.assureur_porteur_confiance * 100)} %`
+                  : ""}
+              </p>
+              {proposition.assureur_porteur_extrait && (
+                <p className="mt-1 text-xs italic text-ink-soft">« {proposition.assureur_porteur_extrait} »</p>
+              )}
+              <button
+                type="button"
+                onClick={() =>
+                  setPorteur({
+                    nom: proposition.assureur_porteur_propose ?? porteur.nom,
+                    reference: proposition.reference_contrat_propose ?? porteur.reference,
+                  })
+                }
+                className="mt-2 rounded-md border border-amber-300 bg-surface px-3 py-1.5 text-xs"
+              >
+                Reprendre dans les champs ci-dessous
+              </button>
+            </div>
+          )}
         </div>
       )}
+
+      {/* Assureur porteur du risque — écrit sur la fiche produit à la validation admin uniquement */}
+      <div className="grid gap-3 rounded-md border border-line p-3 md:grid-cols-2">
+        <label className="block">
+          <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+            Assureur porteur du risque
+          </span>
+          <input
+            value={porteur.nom}
+            onChange={(e) => setPorteur((p) => ({ ...p, nom: e.target.value }))}
+            placeholder="ex. CARDIF, MNCAP…"
+            className="mt-1 w-full rounded-md border border-line bg-background px-2 py-1.5 text-sm"
+          />
+        </label>
+        <label className="block">
+          <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+            Référence du contrat / police
+          </span>
+          <input
+            value={porteur.reference}
+            onChange={(e) => setPorteur((p) => ({ ...p, reference: e.target.value }))}
+            className="mt-1 w-full rounded-md border border-line bg-background px-2 py-1.5 text-sm"
+          />
+        </label>
+        <p className="text-xs text-ink-muted md:col-span-2">
+          Enregistré sur la fiche produit uniquement lors de la validation admin de la grille. Indiquez la compagnie
+          qui porte le risque, pas le grossiste distributeur.
+        </p>
+      </div>
+
 
       {/* Grille standardisée, section par section */}
       <div className="space-y-5">
