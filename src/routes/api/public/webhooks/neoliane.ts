@@ -69,8 +69,8 @@ export const Route = createFileRoute("/api/public/webhooks/neoliane")({
         let erreur: string | null = null;
         try {
           const api = await import("@/lib/neoliane/api.server");
-          if (contractId) etat = await api.rafraichirContrat(String(contractId));
-          else if (demarcheId) etat = await api.rafraichirDemarche(String(demarcheId));
+          if (demarcheId) etat = await api.rafraichirDemarche(String(demarcheId));
+          else if (contractId) etat = await api.rafraichirContrat(String(contractId));
         } catch (e) {
           erreur = messageTechnique((e as Error).message);
         }
