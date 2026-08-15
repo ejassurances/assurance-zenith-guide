@@ -16,9 +16,14 @@ import { messageTechnique, reduireReponseNeoliane } from "@/lib/neoliane/redacti
 const payloadSchema = z.object({
   eventName: z.string().optional(),
   event: z.string().optional(),
+  /** Format réel documenté : identifiant de l'objet modifié. */
+  modifiedObjectId: z.union([z.string(), z.number()]).optional(),
   contractId: z.union([z.string(), z.number()]).optional(),
   demarcheId: z.union([z.string(), z.number()]).optional(),
   id: z.union([z.string(), z.number()]).optional(),
+  /** `regularisation-instance` pour les événements contractDemarche. */
+  type: z.string().optional(),
+  message: z.string().optional(),
   refreshUrl: z.string().optional(),
 });
 
