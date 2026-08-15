@@ -451,3 +451,23 @@ export async function rafraichirDemarche(demarcheId: string) {
   exiger("Rafraîchissement de la démarche refusé", res);
   return deballer(res.data);
 }
+
+/**
+ * POST /contract/cancel — radiation de contrats (seule opération d'écriture
+ * publiée sur un contrat existant).
+ *
+ * Limite documentée : ne fonctionne que pour les contrats non encore transmis
+ * à Néoliane (en cours d'adhésion, en attente de signature, en cours de
+ * signature), et uniquement pour des contrats visibles par le porteur de la
+ * userApiKey. Succès = HTTP 204 avec corps vide.
+ */
+export async function radierContrats(contractIds: string[], comment?: string | undefined) {
+  if (contractIds.length === 0) throw new Error("Aucun contrat à radier.");
+  const res = await appel<unknown>("/contract/cancel", {
+    method: "POST",
+    payload: { contractIds, ...(comment ? { comment } : {}) },
+    withUserApiKey: true,
+  });
+  exiger("Radiation des contrats refusée", res);
+  return { ok: true, status: res.status, contractIds };
+}
