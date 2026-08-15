@@ -274,7 +274,7 @@ export async function analyserDocumentsProduit(
     ),
     fichiers,
   );
-  const { valeurs, avertissements } = normaliser(grille, brut);
+  const { valeurs, avertissements, porteur } = normaliser(grille, brut);
 
   const sources = docs.map((d) => `${TYPE_LABEL[d.type] ?? d.type} : ${d.nom}`).join(" · ");
   const remarques = [`Documents analysés — ${sources}`, avertissements].filter(Boolean).join("\n");
@@ -291,12 +291,18 @@ export async function analyserDocumentsProduit(
       avertissements: remarques || null,
       statut: "proposee",
       created_by: userId,
+      // Proposition seule : jamais écrite sur `produits` sans validation humaine.
+      assureur_porteur_propose: porteur.nom,
+      reference_contrat_propose: porteur.reference_contrat,
+      assureur_porteur_extrait: porteur.extrait,
+      assureur_porteur_confiance: porteur.confiance,
     })
     .select("id")
     .single();
   if (iErr || !inserted) throw new Error(iErr?.message ?? "Enregistrement de la proposition impossible");
 
-  return { proposition_id: inserted.id as string, valeurs, avertissements: remarques, modele };
+  return { proposition_id: inserted.id as string, valeurs, avertissements: remarques, modele, porteur };
+
 }
 
 /** Analyse d'un document isolé (compatibilité). */
