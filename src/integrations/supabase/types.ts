@@ -3023,6 +3023,14 @@ export type Database = {
           pricing_ids: Json
           product_type: string
           profile_id: string | null
+          signature_client_ip: string | null
+          signature_client_le: string | null
+          signature_client_statut: string
+          signature_client_ua: string | null
+          signature_demandee_le: string | null
+          signature_erreur: string | null
+          signature_jeton: string | null
+          signature_signataire: string | null
           statut: string
           updated_at: string
         }
@@ -3043,6 +3051,14 @@ export type Database = {
           pricing_ids?: Json
           product_type?: string
           profile_id?: string | null
+          signature_client_ip?: string | null
+          signature_client_le?: string | null
+          signature_client_statut?: string
+          signature_client_ua?: string | null
+          signature_demandee_le?: string | null
+          signature_erreur?: string | null
+          signature_jeton?: string | null
+          signature_signataire?: string | null
           statut?: string
           updated_at?: string
         }
@@ -3063,6 +3079,14 @@ export type Database = {
           pricing_ids?: Json
           product_type?: string
           profile_id?: string | null
+          signature_client_ip?: string | null
+          signature_client_le?: string | null
+          signature_client_statut?: string
+          signature_client_ua?: string | null
+          signature_demandee_le?: string | null
+          signature_erreur?: string | null
+          signature_jeton?: string | null
+          signature_signataire?: string | null
           statut?: string
           updated_at?: string
         }
