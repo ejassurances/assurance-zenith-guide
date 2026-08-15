@@ -189,13 +189,15 @@ export async function classerDevisDossier(
       .map((d) => d as any);
 
     // Doublon d'assureur porteur : le même risque est peut-être distribué par un
-    // autre grossiste, à un tarif différent.
+    // autre grossiste, à un tarif différent. Deux sources sont vérifiées — le
+    // produit du catalogue rattaché au devis, et la valeur renseignée par le
+    // connecteur API sur le devis lui-même (produit_id vide).
+    const porteurDevis = (d: any): string | null =>
+      (d.produits?.assureur_porteur as string | null)?.trim() ||
+      (d.assureur_porteur as string | null)?.trim() ||
+      null;
     const porteurs = Array.from(
-      new Set(
-        candidats
-          .map((d) => (d.produits?.assureur_porteur as string | null)?.trim())
-          .filter((v): v is string => !!v),
-      ),
+      new Set(candidats.map(porteurDevis).filter((v): v is string => !!v)),
     );
     const produitsTop = new Set(candidats.map((d) => d.produits?.id as string).filter(Boolean));
     const alternatives: string[] = [];
