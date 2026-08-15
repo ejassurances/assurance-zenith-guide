@@ -407,3 +407,46 @@ export const neolianeEvenements = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return { ok: true as const, evenements: data ?? [] };
   });
+
+/**
+ * Signature électronique : le signataire trace son paraphe dans nos écrans,
+ * le serveur l'appose sur les documents Néoliane, dépose les PDF signés et
+ * valide l'offre. `paraphes` = image PNG (data URL) par `familyMember`.
+ */
+export const neolianeSignerElectroniquement = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        parcours_id: z.string().uuid(),
+        signataire: z.string().min(2).max(120),
+        paraphes: z
+          .record(
+            z.string().min(1),
+            z.string().regex(/^data:image\/png;base64,[A-Za-z0-9+/=\s]+$/, "PNG attendu"),
+          )
+          .refine((v) => Object.keys(v).length > 0, "Au moins un paraphe est requis"),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertStaff(context.supabase, context.userId);
+    const { getRequestHeader } = await import("@tanstack/react-start/server");
+    const ip =
+      getRequestHeader("cf-connecting-ip") ??
+      getRequestHeader("x-forwarded-for")?.split(",")[0]?.trim() ??
+      null;
+    const { signerElectroniquement } = await import("./neoliane/parcours.server");
+    const res = await signerElectroniquement(context.supabase, data.parcours_id, data.paraphes, {
+      signataire: data.signataire,
+      ip,
+    });
+    return {
+      ok: res.ok,
+      jeton: res.jeton,
+      horodatage: res.horodatage,
+      journal: res.journal,
+      resultat: JSON.stringify(res.validation.reponse ?? null).slice(0, 4000),
+      erreurs: JSON.stringify(res.validation.erreurs ?? null).slice(0, 2000),
+    };
+  });

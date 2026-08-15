@@ -16,6 +16,7 @@ import {
   neolianeLirePanier,
   neolianeRadierContrats,
   neolianeRafraichir,
+  neolianeSignerElectroniquement,
   neolianeValiderCle,
   neolianeValiderSouscription,
 } from "@/lib/neoliane-parcours.functions";
@@ -25,6 +26,8 @@ import {
   PRODUCT_TYPE_LABELS,
   dateEffetParDefaut,
 } from "@/lib/neoliane/referentiels";
+import { SignaturePad } from "@/components/signature-pad";
+
 
 /**
  * Console de pilotage du parcours EZ API (tarification → panier → offre →
@@ -96,7 +99,12 @@ export function NeolianeParcoursConsole({ callbackUrl }: { callbackUrl: string }
   const [radiationIds, setRadiationIds] = useState("");
   const [radiationMotif, setRadiationMotif] = useState("");
 
+  const [signataire, setSignataire] = useState("");
+  const [paraphes, setParaphes] = useState<Record<string, string>>({});
+
   const demarrer = useServerFn(neolianeDemarrerParcours);
+  const signerElectronique = useServerFn(neolianeSignerElectroniquement);
+
   const tarifs = useServerFn(neolianeGenererTarifs);
   const panier = useServerFn(neolianeComposerPanier);
   const lirePanier = useServerFn(neolianeLirePanier);
@@ -444,6 +452,69 @@ export function NeolianeParcoursConsole({ callbackUrl }: { callbackUrl: string }
           Néoliane.
         </p>
       </Bloc>
+
+      <Bloc titre="5 bis · Signature électronique (paraphe du client)">
+        <p className="mb-3 text-xs text-ink-muted">
+          L'API Néoliane n'accepte que la finalisation <span className="font-mono">handSign</span> :
+          la signature électronique est produite ici. Le paraphe est apposé côté serveur aux
+          emplacements fournis par Néoliane (BA, SEPA, mandat de résiliation), avec bandeau de preuve
+          (identité, horodatage, IP, référence) puis dépôt et validation automatiques.
+        </p>
+        <label className="mb-2 block text-xs font-medium text-ink-muted">
+          Nom complet du signataire
+          <input
+            value={signataire}
+            onChange={(e) => setSignataire(e.target.value)}
+            placeholder="Jean Dupont"
+            className="mt-1 w-full rounded-md border border-line bg-background px-3 py-2 text-sm text-ink"
+          />
+        </label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {(["holder", "spouse"] as const).map((membre) => (
+            <div key={membre}>
+              <p className="mb-1 text-xs text-ink-muted">
+                Paraphe {membre === "holder" ? "titulaire (obligatoire)" : "conjoint (si couvert)"}
+              </p>
+              <SignaturePad
+                height={140}
+                onChange={(url) =>
+                  setParaphes((prev) => {
+                    const suivant = { ...prev };
+                    if (url) suivant[membre] = url;
+                    else delete suivant[membre];
+                    return suivant;
+                  })
+                }
+              />
+            </div>
+          ))}
+        </div>
+        <button
+          disabled={busy !== null}
+          className={`${btnPrim} mt-3`}
+          onClick={() => {
+            if (!exigeParcours()) return;
+            if (signataire.trim().length < 2) {
+              toast.error("Renseignez le nom du signataire.");
+              return;
+            }
+            if (!paraphes["holder"]) {
+              toast.error("Le paraphe du titulaire est obligatoire.");
+              return;
+            }
+            void lancer("esign", async () => {
+              const r = (await signerElectronique({
+                data: { parcours_id: parcoursId, signataire: signataire.trim(), paraphes },
+              })) as { ok: boolean };
+              setEtape(r.ok ? "termine" : "depot_signature");
+              return r;
+            });
+          }}
+        >
+          {busy === "esign" ? "Signature en cours…" : "Signer électroniquement et valider"}
+        </button>
+      </Bloc>
+
 
       <Bloc titre="EZ Gestion — abonnements et synchronisation">
         <p className="mb-3 text-xs text-ink-muted">

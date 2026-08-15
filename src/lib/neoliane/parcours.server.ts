@@ -368,3 +368,64 @@ export async function validerSouscription(sb: Sb, parcoursId: string) {
   });
   return res;
 }
+
+/* ------------------------------------------------------------------ */
+/* Signature électronique (paraphes apposés par le cabinet)            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Parcours complet de signature électronique : récupération des documents
+ * préremplis, apposition des paraphes aux emplacements Néoliane, dépôt des
+ * PDF signés, puis validation de l'offre. Le journal de preuve est consigné
+ * dans `neoliane_evenements` (aucun PDF n'est stocké).
+ */
+export async function signerElectroniquement(
+  sb: Sb,
+  parcoursId: string,
+  paraphes: Record<string, string>,
+  preuve: { signataire: string; ip?: string | null },
+) {
+  const { signerDocumentsOffre } = await import("./signature-electronique.server");
+  const p = await chargerParcours(sb, parcoursId);
+  if (!p.offer_id) throw new Error("Aucune offre Néoliane à signer.");
+
+  // Verrouille l'offre si ce n'est pas déjà fait (seul mode accepté par l'API).
+  if (rangEtape(p.etape) < rangEtape("finalisation")) {
+    await finaliser(sb, parcoursId, "handSign");
+  }
+
+  const bruts = (await documentsASigner(sb, parcoursId)) as unknown;
+  if (!Array.isArray(bruts) || bruts.length === 0) {
+    throw new Error("Néoliane n'a retourné aucun document à signer.");
+  }
+
+  const trace = {
+    signataire: preuve.signataire,
+    ip: preuve.ip ?? null,
+    horodatage: new Date().toISOString(),
+    jeton: crypto.randomUUID(),
+  };
+  const { documents, journal } = await signerDocumentsOffre(bruts, paraphes, trace);
+
+  await deposerSignatures(sb, parcoursId, documents);
+  const validation = await validerSouscription(sb, parcoursId);
+
+  await sb.from("neoliane_evenements").insert({
+    event_name: "signature_electronique",
+    ressource_id: p.offer_id,
+    traite: true,
+    payload: {
+      parcours_id: parcoursId,
+      contrats: p.contract_ids,
+      signataire: trace.signataire,
+      ip: trace.ip,
+      horodatage: trace.horodatage,
+      jeton: trace.jeton,
+      documents: journal,
+      signataires_paraphes: Object.keys(paraphes),
+      valide: validation.ok,
+    },
+  });
+
+  return { ok: validation.ok, jeton: trace.jeton, horodatage: trace.horodatage, journal, validation };
+}
