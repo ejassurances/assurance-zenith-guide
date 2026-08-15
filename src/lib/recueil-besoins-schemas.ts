@@ -9,7 +9,12 @@ export type BrancheAssurance =
   | "prevoyance_sante"
   | "epargne_retraite"
   | "iard"
-  | "trottinette";
+  | "trottinette"
+  /** Branches « recueil basique » alignées sur les produits Néoliane. */
+  | "accidents_vie"
+  | "juridique"
+  | "animaux"
+  | "expatrie";
 
 export type FieldType =
   | "text"
@@ -338,6 +343,20 @@ export const BRANCHES: BrancheConfig[] = [
     description: "Décès, incapacité de travail, invalidité, dépendance.",
     sections: [
       {
+        title: "Assurés à couvrir",
+        intro:
+          "Personnes à garantir. La date de naissance et le régime conditionnent la tarification des compagnies (API).",
+        fields: [
+          {
+            key: "assures",
+            label: "Personnes à couvrir",
+            question: "Qui doit être couvert par la prévoyance ?",
+            type: "personnes",
+            help: "Nécessaire pour interroger la tarification en ligne des compagnies.",
+          },
+        ],
+      },
+      {
         title: "Situation",
         fields: [
           {
@@ -381,6 +400,7 @@ export const BRANCHES: BrancheConfig[] = [
           { key: "besoin_incapacite", label: "Incapacité de travail (indemnités journalières)", type: "checkbox" },
           { key: "besoin_invalidite", label: "Invalidité (rente)", type: "checkbox" },
           { key: "besoin_dependance", label: "Dépendance", type: "checkbox" },
+          { key: "besoin_deces_accidentel", label: "Décès accidentel", type: "checkbox" },
           { key: "objectifs", label: "Objectifs et attentes", type: "textarea" },
         ],
       },
@@ -694,6 +714,141 @@ export const BRANCHES: BrancheConfig[] = [
           { key: "budget_annuel", label: "Budget annuel envisagé", type: "number", suffix: "€" },
           { key: "franchise_max", label: "Franchise maximale acceptable", type: "number", suffix: "€" },
           { key: "garanties_souhaitees", label: "Précisions sur les garanties souhaitées", type: "textarea" },
+        ],
+      },
+    ],
+  },
+  /* ------------------------------------------------------------------ */
+  /* Recueils basiques — informations minimales exigées par les API des    */
+  /* compagnies. Ils seront remplacés par des recueils complets.           */
+  /* ------------------------------------------------------------------ */
+  {
+    value: "accidents_vie",
+    label: "Garantie des accidents de la vie",
+    description: "Recueil basique : accidents de la vie privée (GAV).",
+    sections: [
+      {
+        title: "Assurés à couvrir",
+        intro: "Recueil simplifié : seules les informations exigées par la tarification sont demandées.",
+        fields: [
+          {
+            key: "assures",
+            label: "Personnes à couvrir",
+            question: "Qui doit être couvert ?",
+            type: "personnes",
+            required: true,
+            help: "Date de naissance et régime obligatoires pour la tarification.",
+          },
+        ],
+      },
+      {
+        title: "Besoins",
+        fields: [
+          { key: "budget_mensuel", label: "Budget mensuel envisagé", type: "number", suffix: "€/mois" },
+          { key: "objectifs", label: "Attentes et précisions", type: "textarea" },
+        ],
+      },
+    ],
+  },
+  {
+    value: "juridique",
+    label: "Protection juridique",
+    description: "Recueil basique : soutien et protection juridique.",
+    sections: [
+      {
+        title: "Assurés à couvrir",
+        intro: "Recueil simplifié : seules les informations exigées par la tarification sont demandées.",
+        fields: [
+          {
+            key: "assures",
+            label: "Personnes à couvrir",
+            question: "Qui doit être couvert ?",
+            type: "personnes",
+            required: true,
+            help: "Date de naissance et régime obligatoires pour la tarification.",
+          },
+        ],
+      },
+      {
+        title: "Besoins",
+        fields: [
+          {
+            key: "domaines",
+            label: "Domaines de litige attendus",
+            type: "textarea",
+            placeholder: "Consommation, habitation, travail, voisinage…",
+          },
+          { key: "budget_mensuel", label: "Budget mensuel envisagé", type: "number", suffix: "€/mois" },
+        ],
+      },
+    ],
+  },
+  {
+    value: "animaux",
+    label: "Santé animale (chien / chat)",
+    description: "Recueil basique : complémentaire santé pour un chien ou un chat.",
+    sections: [
+      {
+        title: "L'animal",
+        intro: "Recueil simplifié : espèce et date de naissance sont exigées par la tarification.",
+        fields: [
+          {
+            key: "espece",
+            label: "Espèce",
+            type: "select",
+            required: true,
+            options: [
+              { value: "chien", label: "Chien" },
+              { value: "chat", label: "Chat" },
+            ],
+          },
+          { key: "nom_animal", label: "Nom de l'animal", type: "text" },
+          {
+            key: "date_naissance",
+            label: "Date de naissance (AAAA-MM-JJ)",
+            type: "text",
+            required: true,
+            placeholder: "2021-04-15",
+          },
+          { key: "race", label: "Race", type: "text" },
+          { key: "antecedents", label: "Antécédents connus", type: "textarea" },
+        ],
+      },
+      {
+        title: "Besoins",
+        fields: [
+          { key: "budget_mensuel", label: "Budget mensuel envisagé", type: "number", suffix: "€/mois" },
+          { key: "objectifs", label: "Attentes et précisions", type: "textarea" },
+        ],
+      },
+    ],
+  },
+  {
+    value: "expatrie",
+    label: "Expatriés / nomades",
+    description: "Recueil basique : couverture santé à l'étranger (nomade / expatrié).",
+    sections: [
+      {
+        title: "Assurés à couvrir",
+        intro: "Recueil simplifié : seules les informations exigées par la tarification sont demandées.",
+        fields: [
+          {
+            key: "assures",
+            label: "Personnes à couvrir",
+            question: "Qui doit être couvert ?",
+            type: "personnes",
+            required: true,
+            help: "Date de naissance et régime obligatoires pour la tarification.",
+          },
+        ],
+      },
+      {
+        title: "Situation à l'étranger",
+        fields: [
+          { key: "pays", label: "Pays de résidence ou de destination", type: "text" },
+          { key: "duree_sejour", label: "Durée prévue du séjour", type: "text", placeholder: "Ex : 2 ans" },
+          { key: "budget_mensuel", label: "Budget mensuel envisagé", type: "number", suffix: "€/mois" },
+          { key: "objectifs", label: "Attentes et précisions", type: "textarea" },
         ],
       },
     ],
