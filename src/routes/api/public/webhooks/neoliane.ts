@@ -16,9 +16,14 @@ import { messageTechnique, reduireReponseNeoliane } from "@/lib/neoliane/redacti
 const payloadSchema = z.object({
   eventName: z.string().optional(),
   event: z.string().optional(),
+  /** Format réel documenté : identifiant de l'objet modifié. */
+  modifiedObjectId: z.union([z.string(), z.number()]).optional(),
   contractId: z.union([z.string(), z.number()]).optional(),
   demarcheId: z.union([z.string(), z.number()]).optional(),
   id: z.union([z.string(), z.number()]).optional(),
+  /** `regularisation-instance` pour les événements contractDemarche. */
+  type: z.string().optional(),
+  message: z.string().optional(),
   refreshUrl: z.string().optional(),
 });
 
@@ -47,10 +52,14 @@ export const Route = createFileRoute("/api/public/webhooks/neoliane")({
         if (!p.success) return new Response("Invalid payload", { status: 400 });
 
         const eventName = p.data.eventName ?? p.data.event ?? "contract";
-        const contractId = p.data.contractId ?? (eventName === "contract" ? p.data.id : undefined);
+        // Sur `contractDemarche`, `modifiedObjectId` est l'identifiant de la
+        // démarche et `contractId` celui du contrat porteur.
+        const objetModifie = p.data.modifiedObjectId ?? p.data.id;
         const demarcheId =
-          p.data.demarcheId ?? (eventName === "contractDemarche" ? p.data.id : undefined);
-        const ressourceId = contractId ?? demarcheId ?? null;
+          p.data.demarcheId ?? (eventName === "contractDemarche" ? objetModifie : undefined);
+        const contractId =
+          eventName === "contractDemarche" ? p.data.contractId : (p.data.contractId ?? objetModifie);
+        const ressourceId = demarcheId ?? contractId ?? null;
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -60,8 +69,8 @@ export const Route = createFileRoute("/api/public/webhooks/neoliane")({
         let erreur: string | null = null;
         try {
           const api = await import("@/lib/neoliane/api.server");
-          if (contractId) etat = await api.rafraichirContrat(String(contractId));
-          else if (demarcheId) etat = await api.rafraichirDemarche(String(demarcheId));
+          if (demarcheId) etat = await api.rafraichirDemarche(String(demarcheId));
+          else if (contractId) etat = await api.rafraichirContrat(String(contractId));
         } catch (e) {
           erreur = messageTechnique((e as Error).message);
         }

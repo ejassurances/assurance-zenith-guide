@@ -369,6 +369,31 @@ export const neolianeRafraichir = createServerFn({ method: "POST" })
     return { ok: true as const, etat: JSON.stringify(res ?? null) };
   });
 
+/**
+ * Radiation de contrats Néoliane (POST /contract/cancel) — uniquement pour les
+ * contrats pas encore transmis à la compagnie.
+ */
+export const neolianeRadierContrats = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        contract_ids: z.array(z.string().min(1)).min(1).max(20),
+        commentaire: z.string().max(500).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertStaff(context.supabase, context.userId);
+    const api = await import("./neoliane/api.server");
+    try {
+      const res = await api.radierContrats(data.contract_ids, data.commentaire);
+      return { ok: true as const, resultat: JSON.stringify(res) };
+    } catch (e) {
+      return { ok: false as const, erreur: (e as Error).message };
+    }
+  });
+
 /** Derniers événements EZ Gestion reçus (journal interne). */
 export const neolianeEvenements = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
