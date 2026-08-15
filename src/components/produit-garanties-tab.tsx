@@ -145,7 +145,7 @@ export function ProduitGarantiesTab({
       setValeurs(base);
       return;
     }
-    const [g, p] = await Promise.all([
+    const [g, p, prod] = await Promise.all([
       supabase.from("produit_garanties").select("*").eq("produit_id", produitId).maybeSingle(),
       supabase
         .from("produit_garanties_propositions")
@@ -155,14 +155,18 @@ export function ProduitGarantiesTab({
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
+      supabase.from("produits").select("assureur_porteur,reference_contrat").eq("id", produitId).maybeSingle(),
     ]);
     const gl = (g.data as Grille | null) ?? null;
     setLigne(gl);
     setProposition((p.data as Proposition | null) ?? null);
+    const pr = prod.data as { assureur_porteur: string | null; reference_contrat: string | null } | null;
+    setPorteur({ nom: pr?.assureur_porteur ?? "", reference: pr?.reference_contrat ?? "" });
     const base: ValeursGrille = {};
     for (const item of grille.garanties) base[item.code] = gl?.valeurs?.[item.code] ?? valeurVide();
     setValeurs(base);
     if (gl?.document_source_id) setDocId(gl.document_source_id);
+
   }, [grille, produitId, modeFormule, formuleId, familleCode]);
 
   useEffect(() => {
