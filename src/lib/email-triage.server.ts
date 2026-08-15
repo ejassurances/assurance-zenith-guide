@@ -11,9 +11,52 @@ import type { Database } from "@/integrations/supabase/types";
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODELES = ["google/gemini-3.6-flash", "google/gemini-2.5-flash"];
 
-/** Branches réellement gérées par le CRM aujourd'hui. */
-export const BRANCHES_AUTO = ["emprunteur", "sante", "prevoyance"] as const;
+/**
+ * Branches réellement gérées par le CRM aujourd'hui (valeurs des recueils des
+ * besoins). Les libellés commerciaux courants (GAV, PJ, animaux/pet, nomade)
+ * sont acceptés en entrée et normalisés via ALIAS_BRANCHES.
+ */
+export const BRANCHES_AUTO = [
+  "emprunteur",
+  "sante",
+  "prevoyance",
+  "accidents_vie",
+  "juridique",
+  "animaux",
+  "expatrie",
+] as const;
 export type BrancheAuto = (typeof BRANCHES_AUTO)[number];
+
+/** Synonymes tolérés dans la réponse IA → valeur de branche du CRM. */
+const ALIAS_BRANCHES: Record<string, BrancheAuto> = {
+  gav: "accidents_vie",
+  accident_vie: "accidents_vie",
+  accidents_de_la_vie: "accidents_vie",
+  pj: "juridique",
+  protection_juridique: "juridique",
+  pet: "animaux",
+  animal: "animaux",
+  sante_animale: "animaux",
+  nomade: "expatrie",
+  nomades: "expatrie",
+  expatries: "expatrie",
+  expat: "expatrie",
+  sante_internationale: "expatrie",
+};
+
+/** Normalise une branche renvoyée par l'IA (alias inclus). */
+export function normaliserBranche(valeur: string | null): BrancheAuto | null {
+  if (!valeur) return null;
+  const v = valeur
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\s-]+/g, "_");
+  if ((BRANCHES_AUTO as readonly string[]).includes(v)) return v as BrancheAuto;
+  return ALIAS_BRANCHES[v] ?? null;
+}
+
 
 export interface TriageEmail {
   sujet: string | null;
