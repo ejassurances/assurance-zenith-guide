@@ -6,8 +6,8 @@ import {
   retenirDevisDossierFn,
   creerDevisTarifFixeFn,
 } from "@/lib/devis-classement.functions";
-import { neolianeTariferSante } from "@/lib/neoliane.functions";
-import { personnesAssurees } from "@/lib/recueil-besoins-schemas";
+import { neolianeTariferDossier } from "@/lib/neoliane.functions";
+import { brancheTarifableNeoliane, nbAssuresNeoliane } from "@/lib/neoliane/branches";
 
 /** 1er jour du mois suivant (AAAA-MM-JJ) — date d'effet proposée par défaut. */
 function premierDuMoisSuivant(): string {
@@ -81,9 +81,9 @@ export function DossierDevisPanel({
   const [fixeOptionIds, setFixeOptionIds] = useState<string[]>([]);
   const [fixeEtat, setFixeEtat] = useState<"idle" | "envoi">("idle");
 
-  /** Tarification API Néoliane (branche santé). */
-  const tariferNeoliane = useServerFn(neolianeTariferSante);
-  const [nbAssuresSante, setNbAssuresSante] = useState(0);
+  /** Tarification API Néoliane (toutes branches couvertes). */
+  const tariferNeoliane = useServerFn(neolianeTariferDossier);
+  const [nbAssuresApi, setNbAssuresApi] = useState(0);
   const [neoDate, setNeoDate] = useState(premierDuMoisSuivant());
   const [neoEtat, setNeoEtat] = useState<"idle" | "appel">("idle");
   const [neoMsg, setNeoMsg] = useState<string | null>(null);
@@ -127,10 +127,9 @@ export function DossierDevisPanel({
       | { produit_id: string | null; type_assurance: string | null; recueil_besoins: unknown }
       | null;
     const recueil = (dossier?.recueil_besoins ?? {}) as Record<string, unknown>;
-    setNbAssuresSante(
-      dossier?.type_assurance === "sante"
-        ? personnesAssurees(recueil["assures"]).filter((p) => !!p.date_naissance).length
-        : 0,
+    const brancheDossier = dossier?.type_assurance ?? "";
+    setNbAssuresApi(
+      brancheTarifableNeoliane(brancheDossier) ? nbAssuresNeoliane(brancheDossier, recueil) : 0,
     );
 
     const produitDossierId = dossier?.produit_id ?? null;
@@ -370,13 +369,13 @@ export function DossierDevisPanel({
         })}
       </div>
 
-      {nbAssuresSante > 0 && (
+      {nbAssuresApi > 0 && (
         <div className="mt-4 space-y-3 rounded-xl border border-line bg-surface p-4">
           <div>
             <h3 className="text-sm font-medium text-ink">Tarification Néoliane (API)</h3>
             <p className="mt-1 text-xs text-ink-muted">
-              {nbAssuresSante} assuré(s) du recueil santé seront transmis à Néoliane. Les tarifs obtenus sont ajoutés
-              automatiquement au comparatif ; la saisie manuelle reste toujours possible.
+              {nbAssuresApi} assuré(s) du recueil seront transmis à Néoliane pour cette branche. Les tarifs obtenus
+              sont ajoutés automatiquement au comparatif ; la saisie manuelle reste toujours possible.
             </p>
           </div>
           <div className="flex flex-wrap items-end gap-3">
