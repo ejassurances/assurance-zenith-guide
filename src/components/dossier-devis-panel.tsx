@@ -10,6 +10,8 @@ import { neolianeTariferDossier } from "@/lib/neoliane.functions";
 import { brancheTarifableNeoliane, nbAssuresNeoliane } from "@/lib/neoliane/branches";
 import { ugipTariferDossier } from "@/lib/ugip.functions";
 import { nbAssuresUgip } from "@/lib/ugip/eligibilite";
+import { simulassurTariferDossier } from "@/lib/simulassur.functions";
+import { brancheTarifableSimulassur, nbAssuresSimulassur } from "@/lib/simulassur/eligibilite";
 
 /** 1er jour du mois suivant (AAAA-MM-JJ) — date d'effet proposée par défaut. */
 function premierDuMoisSuivant(): string {
@@ -99,6 +101,14 @@ export function DossierDevisPanel({
   const [ugipMsg, setUgipMsg] = useState<string | null>(null);
   const [ugipErr, setUgipErr] = useState<string | null>(null);
 
+  /** Tarification API Simulassur (branche emprunteur). */
+  const tariferSimulassur = useServerFn(simulassurTariferDossier);
+  const [nbAssuresSimu, setNbAssuresSimu] = useState(0);
+  const [simuDate, setSimuDate] = useState(premierDuMoisSuivant());
+  const [simuEtat, setSimuEtat] = useState<"idle" | "appel">("idle");
+  const [simuMsg, setSimuMsg] = useState<string | null>(null);
+  const [simuErr, setSimuErr] = useState<string | null>(null);
+
 
   const [form, setForm] = useState({
     compagnie_id: "",
@@ -143,6 +153,9 @@ export function DossierDevisPanel({
       brancheTarifableNeoliane(brancheDossier) ? nbAssuresNeoliane(brancheDossier, recueil) : 0,
     );
     setNbAssuresUgipApi(nbAssuresUgip(brancheDossier, recueil));
+    setNbAssuresSimu(
+      brancheTarifableSimulassur(brancheDossier) ? nbAssuresSimulassur(brancheDossier, recueil) : 0,
+    );
 
 
     const produitDossierId = dossier?.produit_id ?? null;
@@ -369,6 +382,39 @@ export function DossierDevisPanel({
 
 
 
+  const recupererTarifsSimulassur = async () => {
+    setSimuErr(null);
+    setSimuMsg(null);
+    setSimuEtat("appel");
+    try {
+      const res = (await tariferSimulassur({
+        data: { dossier_id: dossierId, date_effet: simuDate },
+      })) as {
+        nbDevisCrees: number;
+        nbOffres: number;
+        nbOffresExploitables: number;
+        nbAssures: number;
+        compagnieTrouvee: boolean;
+        erreursProduits: string[];
+      };
+      await load();
+      setSimuMsg(
+        `${res.nbDevisCrees} devis Simulassur ajoutés au dossier (${res.nbOffresExploitables} offres exploitables sur ${res.nbOffres} retournées, ${res.nbAssures} assuré(s)).` +
+          (res.compagnieTrouvee
+            ? ""
+            : " Compagnie « Simulassur » introuvable en base : les devis sont créés sans compagnie.") +
+          (res.erreursProduits.length > 0
+            ? `\nProduits écartés : ${res.erreursProduits.join(" · ")}`
+            : ""),
+      );
+      onChanged?.();
+    } catch (e) {
+      setSimuErr(e instanceof Error ? e.message : "Appel Simulassur impossible");
+    } finally {
+      setSimuEtat("idle");
+    }
+  };
+
   return (
     <div className="rounded-2xl border border-line bg-surface-elevated p-5">
       <h2 className="font-serif text-lg font-medium text-ink">Devis comparés</h2>
@@ -467,6 +513,34 @@ export function DossierDevisPanel({
       )}
 
 
+
+      {nbAssuresSimu > 0 && (
+        <div className="mt-4 space-y-3 rounded-xl border border-line bg-surface p-4">
+          <div>
+            <h3 className="text-sm font-medium text-ink">Tarification Simulassur (API)</h3>
+            <p className="mt-1 text-xs text-ink-muted">
+              {nbAssuresSimu} assuré(s) du recueil, avec leur quotité, sont transmis à Simulassur avec les
+              caractéristiques du prêt. Les 5 offres les moins chères sont ajoutées au comparatif (Décès, PTIA, IPT,
+              ITT/ITP franchise 90 jours), avec coût total et TAEA.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="block">
+              <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Date d'effet</span>
+              <input type="date" value={simuDate} onChange={(e) => setSimuDate(e.target.value)} className={inp} />
+            </label>
+            <button
+              onClick={recupererTarifsSimulassur}
+              disabled={simuEtat === "appel" || !simuDate}
+              className="rounded-full bg-ink px-5 py-2 text-sm text-primary-foreground disabled:opacity-50"
+            >
+              {simuEtat === "appel" ? "Appel Simulassur…" : "Récupérer les tarifs Simulassur"}
+            </button>
+          </div>
+          {simuMsg && <p className="whitespace-pre-wrap text-sm text-emerald-700">{simuMsg}</p>}
+          {simuErr && <p className="whitespace-pre-wrap text-sm text-destructive">{simuErr}</p>}
+        </div>
+      )}
 
       {produitFixe && (
         <div className="mt-4 space-y-3 border-t border-line pt-4">
