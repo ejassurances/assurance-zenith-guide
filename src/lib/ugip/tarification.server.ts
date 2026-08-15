@@ -5,7 +5,8 @@
  * UGIP → devis comparés (`dossier_devis`, source « api »).
  */
 
-import { assuresEmprunteur, type PersonneEmprunteur } from "@/lib/recueil-besoins-schemas";
+import type { PersonneEmprunteur } from "@/lib/recueil-besoins-schemas";
+import { lireRecueilEmprunteur, type RecueilEmprunteurUgip } from "./eligibilite";
 import { ugipCalculer, masquerSecretsUgip } from "./api.server";
 import {
   UGIP_ANCIENNETE_PRET,
@@ -29,11 +30,6 @@ import {
 function dateFr(iso: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
   return m ? `${m[3]}/${m[2]}/${m[1]}` : "";
-}
-
-function nombre(v: unknown): number | null {
-  const n = Number(v);
-  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 function premierDuMoisSuivant(): string {
@@ -80,54 +76,6 @@ function assureUgip(p: PersonneEmprunteur, index: number) {
     IdPaysResidenceFiscal: UGIP_DEFAUTS_RISQUE.paysResidenceFiscal,
     Garanties: garantiesAssure(p.quotite_pct ?? 100),
   };
-}
-
-export interface RecueilEmprunteurUgip {
-  capital: number;
-  dureeMois: number;
-  taux: number;
-  objetPret: string;
-  substitution: boolean;
-  assures: PersonneEmprunteur[];
-}
-
-/** Vérifie que le recueil emprunteur contient les données exigées par UGIP. */
-export function lireRecueilEmprunteur(recueil: unknown): {
-  ok: boolean;
-  manques: string[];
-  valeurs?: RecueilEmprunteurUgip;
-} {
-  const v = (recueil ?? {}) as Record<string, unknown>;
-  const capital = nombre(v["capital_restant_du"]) ?? nombre(v["capital"]);
-  const dureeMois = nombre(v["mois_restants"]) ?? nombre(v["duree_mois"]);
-  const taux = Number(v["taux_pret"]);
-  const assures = assuresEmprunteur(v["assures"]).filter((p) => /^\d{4}-\d{2}-\d{2}$/.test(p.date_naissance));
-
-  const manques: string[] = [];
-  if (!capital) manques.push("le capital emprunté (ou le capital restant dû)");
-  if (!dureeMois) manques.push("la durée restante du prêt en mois");
-  if (assures.length === 0) manques.push("au moins un assuré avec sa date de naissance");
-  if (manques.length > 0) return { ok: false, manques };
-
-  return {
-    ok: true,
-    manques: [],
-    valeurs: {
-      capital: capital as number,
-      dureeMois: dureeMois as number,
-      taux: Number.isFinite(taux) && taux > 0 ? taux : 0,
-      objetPret: String(v["objet_pret"] ?? ""),
-      substitution: !!nombre(v["capital_restant_du"]),
-      assures: assures.slice(0, 4),
-    },
-  };
-}
-
-/** Nombre d'assurés transmis à UGIP pour ce dossier (0 = branche non éligible). */
-export function nbAssuresUgip(branche: string, recueil: unknown): number {
-  if (branche !== "emprunteur") return 0;
-  const r = lireRecueilEmprunteur(recueil);
-  return r.ok ? (r.valeurs?.assures.length ?? 0) : 0;
 }
 
 function donneesPourProduit(
