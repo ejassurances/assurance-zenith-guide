@@ -26,6 +26,7 @@ import { DevoirConseilRefusAnalysePanel } from "@/components/devoir-conseil-refu
 import { SouscriptionPanel } from "@/components/souscription-panel";
 import { CopilotePanel } from "@/components/copilote-panel";
 import { DossierDevisPanel } from "@/components/dossier-devis-panel";
+import { SimulassurConsole } from "@/components/simulassur-console";
 import { etapeLabel } from "@/lib/pipeline-dossier";
 
 
@@ -205,6 +206,9 @@ function DossierDetail() {
             onChanged={load}
           />
         </div>
+      )}
+      {canEdit && dossier.type_assurance === "emprunteur" && (
+        <SimulassurConsole dossierId={id} clientEmail={dossier.client_email} />
       )}
       {canEdit && (
         <DevoirConseilRefusAnalysePanel
