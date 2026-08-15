@@ -164,13 +164,20 @@ export async function analyserEmailProspect(email: TriageEmail): Promise<TriageR
       if (!contenu) throw new Error("Réponse IA vide");
       const brut = extraireJson(contenu);
 
-      const prospectBrut = String(brut["prospect"] ?? "incertain").toLowerCase();
+      const prospectBrut = String(brut["prospect"] ?? "incertain")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
       const prospect: TriageResultat["prospect"] =
-        prospectBrut === "oui" ? "oui" : prospectBrut === "non" ? "non" : "incertain";
-      const brancheBrut = texteOuNull(brut["branche"], 20);
-      const branche = (BRANCHES_AUTO as readonly string[]).includes(brancheBrut ?? "")
-        ? (brancheBrut as BrancheAuto)
-        : null;
+        prospectBrut === "oui"
+          ? "oui"
+          : prospectBrut === "non"
+            ? "non"
+            : prospectBrut.startsWith("public") || prospectBrut === "spam" || prospectBrut === "marketing"
+              ? "publicite"
+              : "incertain";
+      const branche = normaliserBranche(texteOuNull(brut["branche"], 40));
+
 
       return {
         prospect,
