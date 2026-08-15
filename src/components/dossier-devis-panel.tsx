@@ -686,10 +686,20 @@ export function DossierDevisPanel({
               .sort((a, b) => a.rang - b.rang)
               .map((l) => {
                 const d = devis.find((x) => x.id === l.dossier_devis_id);
+                const groupe = porteurPartage(d);
+                const kereisCatalogue = compagnies.find((c) => /kereis/i.test(c.nom));
+                const kereisManquant =
+                  groupe != null &&
+                  kereisCatalogue != null &&
+                  !groupe.canaux.some((c) => /kereis/i.test(c));
                 return (
                   <div
                     key={l.dossier_devis_id}
-                    className="rounded-xl border border-[color:var(--crm-gold)]/40 bg-[color:var(--crm-gold)]/5 p-3 text-sm"
+                    className={`rounded-xl border p-3 text-sm ${
+                      groupe
+                        ? "border-l-4 border-l-[color:var(--crm-gold)] border-[color:var(--crm-gold)]/40 bg-[color:var(--crm-gold)]/10"
+                        : "border-[color:var(--crm-gold)]/40 bg-[color:var(--crm-gold)]/5"
+                    }`}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <p className="font-medium text-ink">
@@ -714,10 +724,25 @@ export function DossierDevisPanel({
                         </button>
                       )}
                     </div>
+                    {groupe && (
+                      <p className="mt-2 rounded-md bg-surface/70 px-2 py-1 text-xs text-ink-soft">
+                        Même assureur porteur : <strong>{groupe.nom}</strong> — disponible via{" "}
+                        {groupe.canaux.join(", ")}
+                        {kereisManquant && (
+                          <>
+                            {" "}
+                            · Aucun devis {kereisCatalogue?.nom} pour cet assureur porteur : faites un devis chez{" "}
+                            {kereisCatalogue?.nom} pour {groupe.nom} et ajoutez-le au comparatif avant de retenir une
+                            offre.
+                          </>
+                        )}
+                      </p>
+                    )}
                     <p className="mt-2 whitespace-pre-wrap text-xs text-ink-soft">{l.justification}</p>
                   </div>
                 );
               })}
+
           </div>
         )}
       </div>
