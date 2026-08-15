@@ -3695,6 +3695,147 @@ export type Database = {
           },
         ]
       }
+      simulassur_dossiers: {
+        Row: {
+          assureur: string | null
+          client_id: string | null
+          contrat_ref: string | null
+          created_at: string
+          created_by: string | null
+          derniere_erreur: string | null
+          devis_id: string | null
+          dossier_id: string
+          espaces_clients: Json
+          id: string
+          produit_code: string | null
+          quote_id: string | null
+          request_hash: string | null
+          simulation_id: string | null
+          suivi_le: string | null
+          suivi_partiel: boolean
+          suivi_statuts: Json
+          transfert_le: string | null
+          transfert_reponse: Json | null
+          transfert_statut: string
+          updated_at: string
+        }
+        Insert: {
+          assureur?: string | null
+          client_id?: string | null
+          contrat_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          derniere_erreur?: string | null
+          devis_id?: string | null
+          dossier_id: string
+          espaces_clients?: Json
+          id?: string
+          produit_code?: string | null
+          quote_id?: string | null
+          request_hash?: string | null
+          simulation_id?: string | null
+          suivi_le?: string | null
+          suivi_partiel?: boolean
+          suivi_statuts?: Json
+          transfert_le?: string | null
+          transfert_reponse?: Json | null
+          transfert_statut?: string
+          updated_at?: string
+        }
+        Update: {
+          assureur?: string | null
+          client_id?: string | null
+          contrat_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          derniere_erreur?: string | null
+          devis_id?: string | null
+          dossier_id?: string
+          espaces_clients?: Json
+          id?: string
+          produit_code?: string | null
+          quote_id?: string | null
+          request_hash?: string | null
+          simulation_id?: string | null
+          suivi_le?: string | null
+          suivi_partiel?: boolean
+          suivi_statuts?: Json
+          transfert_le?: string | null
+          transfert_reponse?: Json | null
+          transfert_statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulassur_dossiers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulassur_dossiers_devis_id_fkey"
+            columns: ["devis_id"]
+            isOneToOne: false
+            referencedRelation: "dossier_devis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulassur_dossiers_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: true
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulassur_evenements: {
+        Row: {
+          correlation_id: string
+          created_at: string
+          dossier_id: string | null
+          duree_ms: number | null
+          endpoint: string
+          erreur: string | null
+          http_status: number | null
+          id: string
+          methode: string
+          ok: boolean
+        }
+        Insert: {
+          correlation_id: string
+          created_at?: string
+          dossier_id?: string | null
+          duree_ms?: number | null
+          endpoint: string
+          erreur?: string | null
+          http_status?: number | null
+          id?: string
+          methode: string
+          ok?: boolean
+        }
+        Update: {
+          correlation_id?: string
+          created_at?: string
+          dossier_id?: string | null
+          duree_ms?: number | null
+          endpoint?: string
+          erreur?: string | null
+          http_status?: number | null
+          id?: string
+          methode?: string
+          ok?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulassur_evenements_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sinistre_evenements: {
         Row: {
           ancienne_etape: string | null
@@ -4050,6 +4191,7 @@ export type Database = {
       }
       neoliane_reduire_json: { Args: { _data: Json }; Returns: Json }
       purger_neoliane_evenements: { Args: never; Returns: undefined }
+      purger_simulassur_evenements: { Args: never; Returns: undefined }
       recalculer_echeances_contrat: {
         Args: { _contrat_id: string }
         Returns: undefined
