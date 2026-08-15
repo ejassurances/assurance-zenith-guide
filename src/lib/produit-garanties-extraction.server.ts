@@ -83,7 +83,54 @@ function consigne(grille: GrilleGaranties, docs: { nom: string; type: string }[]
 }
 
 
-function normaliser(grille: GrilleGaranties, brut: unknown): { valeurs: ValeursGrille; avertissements: string } {
+/** Distributeurs / grossistes : jamais l'assureur porteur du risque. */
+const DISTRIBUTEURS = [
+  "kereis",
+  "neoliane",
+  "néoliane",
+  "simulassur",
+  "alptis",
+  "april",
+  "ej partners",
+  "utwin",
+  "metlife distribution",
+  "ugip",
+];
+
+export type PorteurPropose = {
+  nom: string | null;
+  reference_contrat: string | null;
+  extrait: string | null;
+  confiance: number | null;
+};
+
+function normaliserPorteur(brut: unknown): PorteurPropose {
+  const raw = ((brut ?? {}) as Record<string, unknown>)["assureur_porteur"] as
+    | Record<string, unknown>
+    | undefined;
+  const texte = (v: unknown, max: number) => {
+    const s = typeof v === "string" ? v.trim() : "";
+    return s.length > 1 ? s.slice(0, max) : null;
+  };
+  const nom = texte(raw?.["nom"], 120);
+  // Un grossiste distributeur n'est pas un assureur porteur : proposition écartée.
+  const estDistributeur =
+    nom !== null && DISTRIBUTEURS.some((d) => nom.toLowerCase().includes(d));
+  return {
+    nom: estDistributeur ? null : nom,
+    reference_contrat: texte(raw?.["reference_contrat"], 120),
+    extrait: texte(raw?.["extrait"], 600),
+    confiance:
+      typeof raw?.["confiance"] === "number"
+        ? Math.max(0, Math.min(1, raw["confiance"] as number))
+        : null,
+  };
+}
+
+function normaliser(
+  grille: GrilleGaranties,
+  brut: unknown,
+): { valeurs: ValeursGrille; avertissements: string; porteur: PorteurPropose } {
   const obj = (brut ?? {}) as Record<string, unknown>;
   const src = (obj["garanties"] ?? {}) as Record<string, unknown>;
   const valeurs: ValeursGrille = {};
@@ -102,8 +149,9 @@ function normaliser(grille: GrilleGaranties, brut: unknown): { valeurs: ValeursG
     valeurs[g.code] = v;
   }
   const avertissements = obj["avertissements"] ? String(obj["avertissements"]).slice(0, 2000) : "";
-  return { valeurs, avertissements };
+  return { valeurs, avertissements, porteur: normaliserPorteur(brut) };
 }
+
 
 function extraireJson(texte: string): unknown {
   const nettoye = texte.replace(/```json/gi, "").replace(/```/g, "").trim();
