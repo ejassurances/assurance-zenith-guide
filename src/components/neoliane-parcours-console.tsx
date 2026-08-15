@@ -14,6 +14,7 @@ import {
   neolianeFinaliserOffre,
   neolianeGenererTarifs,
   neolianeLirePanier,
+  neolianeRadierContrats,
   neolianeRafraichir,
   neolianeValiderCle,
   neolianeValiderSouscription,
@@ -92,6 +93,8 @@ export function NeolianeParcoursConsole({ callbackUrl }: { callbackUrl: string }
   );
   const [refType, setRefType] = useState<"contract" | "demarche">("contract");
   const [refId, setRefId] = useState("");
+  const [radiationIds, setRadiationIds] = useState("");
+  const [radiationMotif, setRadiationMotif] = useState("");
 
   const demarrer = useServerFn(neolianeDemarrerParcours);
   const tarifs = useServerFn(neolianeGenererTarifs);
@@ -107,6 +110,7 @@ export function NeolianeParcoursConsole({ callbackUrl }: { callbackUrl: string }
   const abonnements = useServerFn(neolianeAbonnements);
   const rafraichir = useServerFn(neolianeRafraichir);
   const evenements = useServerFn(neolianeEvenements);
+  const radier = useServerFn(neolianeRadierContrats);
 
   const json = (raw: string): unknown | null => {
     try {
@@ -506,6 +510,49 @@ export function NeolianeParcoursConsole({ callbackUrl }: { callbackUrl: string }
           >
             Recharger l'état
           </button>
+        </div>
+        <div className="mt-4 rounded-lg border border-line bg-background p-3">
+          <p className="mb-2 text-xs text-ink-muted">
+            Radiation de contrats (POST /contract/cancel) — possible uniquement tant que le contrat
+            n'a pas été transmis à la compagnie : en cours d'adhésion, en attente de signature ou en
+            cours de signature.
+          </p>
+          <div className="flex flex-wrap items-end gap-2">
+            <input
+              value={radiationIds}
+              onChange={(e) => setRadiationIds(e.target.value)}
+              placeholder="contractId(s), séparés par une virgule"
+              className="min-w-64 flex-1 rounded-md border border-line bg-background px-3 py-2 font-mono text-xs"
+            />
+            <input
+              value={radiationMotif}
+              onChange={(e) => setRadiationMotif(e.target.value)}
+              placeholder="commentaire (optionnel)"
+              className="min-w-48 flex-1 rounded-md border border-line bg-background px-3 py-2 text-sm"
+            />
+            <button
+              disabled={busy !== null || radiationIds.trim() === ""}
+              className={btn}
+              onClick={() => {
+                const ids = radiationIds
+                  .split(",")
+                  .map((v) => v.trim())
+                  .filter(Boolean);
+                if (ids.length === 0) return;
+                if (!window.confirm(`Radier ${ids.length} contrat(s) chez Néoliane ?`)) return;
+                lancer("radiation", () =>
+                  radier({
+                    data: {
+                      contract_ids: ids,
+                      ...(radiationMotif.trim() ? { commentaire: radiationMotif.trim() } : {}),
+                    },
+                  }),
+                );
+              }}
+            >
+              Radier les contrats
+            </button>
+          </div>
         </div>
       </Bloc>
 
