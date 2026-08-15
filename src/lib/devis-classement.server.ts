@@ -247,7 +247,8 @@ export async function classerDevisDossier(
       const actionKereis = porteurKereis && !kereisDejaAuComparatif ? porteurKereis[0] : null;
       const lienDossier = `/espace/dossiers/${dossierId}#section-devis`;
 
-      await creerTacheAdmin(supabaseAdminTache(), {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await creerTacheAdmin(supabaseAdmin, {
         titre: actionKereis
           ? `Faire un devis chez Kereis pour ${actionKereis} et l'ajouter au comparatif de ce dossier avant de retenir une offre`
           : `Même assureur porteur (${porteurs.join(", ")}) disponible via un autre canal — comparer les tarifs avant de retenir une offre`,
