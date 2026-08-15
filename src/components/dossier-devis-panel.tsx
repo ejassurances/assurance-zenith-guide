@@ -91,6 +91,15 @@ export function DossierDevisPanel({
   const [neoMsg, setNeoMsg] = useState<string | null>(null);
   const [neoErr, setNeoErr] = useState<string | null>(null);
 
+  /** Tarification API UGIP Assurances (branche emprunteur). */
+  const tariferUgip = useServerFn(ugipTariferDossier);
+  const [nbAssuresUgipApi, setNbAssuresUgipApi] = useState(0);
+  const [ugipDate, setUgipDate] = useState(premierDuMoisSuivant());
+  const [ugipEtat, setUgipEtat] = useState<"idle" | "appel">("idle");
+  const [ugipMsg, setUgipMsg] = useState<string | null>(null);
+  const [ugipErr, setUgipErr] = useState<string | null>(null);
+
+
   const [form, setForm] = useState({
     compagnie_id: "",
     produit_id: "",
