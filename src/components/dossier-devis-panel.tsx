@@ -8,6 +8,8 @@ import {
 } from "@/lib/devis-classement.functions";
 import { neolianeTariferDossier } from "@/lib/neoliane.functions";
 import { brancheTarifableNeoliane, nbAssuresNeoliane } from "@/lib/neoliane/branches";
+import { ugipTariferDossier } from "@/lib/ugip.functions";
+import { nbAssuresUgip } from "@/lib/ugip/eligibilite";
 
 /** 1er jour du mois suivant (AAAA-MM-JJ) — date d'effet proposée par défaut. */
 function premierDuMoisSuivant(): string {
