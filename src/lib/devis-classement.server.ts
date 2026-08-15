@@ -97,7 +97,7 @@ export async function classerDevisDossier(
   const { data: devisRows, error: devErr } = await supabase
     .from("dossier_devis")
     .select(
-      "id, cotisation_mensuelle, garanties_resume, source, compagnies:compagnie_id(nom, tier_favori), produits:produit_id(id, nom, assureur_porteur), produit_formules:formule_id(nom)",
+      "id, cotisation_mensuelle, garanties_resume, source, assureur_porteur, compagnies:compagnie_id(nom, tier_favori), produits:produit_id(id, nom, assureur_porteur), produit_formules:formule_id(nom)",
     )
     .eq("dossier_id", dossierId)
     .order("created_at", { ascending: true });
