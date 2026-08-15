@@ -117,6 +117,9 @@ export function DossierDevisPanel({
   const [simuMsg, setSimuMsg] = useState<string | null>(null);
   const [simuErr, setSimuErr] = useState<string | null>(null);
 
+  /** Comparatif : par défaut une seule offre par assureur porteur (doublons de canaux masqués). */
+  const [afficherDoublons, setAfficherDoublons] = useState(false);
+
 
   const [form, setForm] = useState({
     compagnie_id: "",
@@ -251,6 +254,34 @@ export function DossierDevisPanel({
     const g = groupesPorteur.get(nom.toLowerCase());
     return g && g.devisIds.length > 1 ? g : null;
   };
+
+  /**
+   * Offre retenue par défaut dans un groupe de même assureur porteur : la moins
+   * chère, priorité au tarif automatique (API) à égalité — même règle que la
+   * sélection automatique du classement emprunteur.
+   */
+  const representantsGroupe = new Set<string>();
+  for (const g of groupesPorteur.values()) {
+    if (g.devisIds.length < 2) continue;
+    const membres = g.devisIds.map((id) => devis.find((x) => x.id === id)).filter((x): x is DossierDevis => !!x);
+    const tarifes = membres.filter((m) => m.cotisation_mensuelle != null);
+    const tri = (tarifes.length > 0 ? tarifes : membres).sort((a, b) => {
+      const pa = a.cotisation_mensuelle == null ? Infinity : Number(a.cotisation_mensuelle);
+      const pb = b.cotisation_mensuelle == null ? Infinity : Number(b.cotisation_mensuelle);
+      if (pa !== pb) return pa - pb;
+      return (a.source === "api" ? 0 : 1) - (b.source === "api" ? 0 : 1);
+    });
+    if (tri[0]) representantsGroupe.add(tri[0].id);
+  }
+  /** Un devis est masqué s'il fait partie d'un groupe sans en être l'offre retenue. */
+  const estDoublonMasque = (d: DossierDevis | undefined) => {
+    if (!d) return false;
+    const g = porteurPartage(d);
+    return g != null && !representantsGroupe.has(d.id);
+  };
+  const nbDoublonsMasques = devis.filter((d) => estDoublonMasque(d)).length;
+  const devisAffiches = afficherDoublons ? devis : devis.filter((d) => !estDoublonMasque(d));
+
 
 
   const ajouter = async () => {
@@ -463,12 +494,35 @@ export function DossierDevisPanel({
 
       {err && <p className="mt-2 text-sm text-destructive">{err}</p>}
 
+      {nbDoublonsMasques > 0 && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[color:var(--crm-gold)]/40 bg-[color:var(--crm-gold)]/10 px-3 py-2">
+          <p className="text-xs text-ink-soft">
+            {nbDoublonsMasques} offre(s) masquée(s) : même assureur porteur distribué par plusieurs canaux — seule
+            l'offre la moins chère (priorité au tarif automatique) est affichée.
+          </p>
+          <button
+            onClick={() => setAfficherDoublons((v) => !v)}
+            className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs text-ink"
+          >
+            {afficherDoublons ? "Masquer les doublons de canaux" : "Afficher tous les canaux (y compris doublons)"}
+          </button>
+        </div>
+      )}
+
       <div className="mt-4 space-y-2">
         {devis.length === 0 && <p className="text-sm text-ink-muted">Aucun devis saisi pour ce dossier.</p>}
-        {devis.map((d) => {
+        {devisAffiches.map((d) => {
           const formule = d.formule_id;
+          const groupeListe = porteurPartage(d);
           return (
-            <div key={d.id} className="rounded-xl border border-line bg-surface p-3 text-sm">
+            <div
+              key={d.id}
+              className={`rounded-xl border bg-surface p-3 text-sm ${
+                groupeListe
+                  ? "border-l-4 border-l-[color:var(--crm-gold)] border-[color:var(--crm-gold)]/40"
+                  : "border-line"
+              }`}
+            >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-medium text-ink">
                   {nomCompagnie(d.compagnie_id)} — {nomProduit(d.produit_id)}
@@ -485,12 +539,19 @@ export function DossierDevisPanel({
                   </button>
                 </div>
               </div>
+              {groupeListe && (
+                <p className="mt-2 rounded-md bg-surface-elevated/70 px-2 py-1 text-xs text-ink-soft">
+                  Même assureur porteur : <strong>{groupeListe.nom}</strong> — disponible via{" "}
+                  {groupeListe.canaux.join(", ")}
+                </p>
+              )}
               {d.garanties_resume && (
                 <p className="mt-1 whitespace-pre-wrap text-xs text-ink-soft">{d.garanties_resume}</p>
               )}
             </div>
           );
         })}
+
       </div>
 
       {nbAssuresApi > 0 && (
@@ -684,9 +745,11 @@ export function DossierDevisPanel({
             </p>
             {[...classement.classement]
               .sort((a, b) => a.rang - b.rang)
+              .filter((l) => afficherDoublons || !estDoublonMasque(devis.find((x) => x.id === l.dossier_devis_id)))
               .map((l) => {
                 const d = devis.find((x) => x.id === l.dossier_devis_id);
                 const groupe = porteurPartage(d);
+
                 const kereisCatalogue = compagnies.find((c) => /kereis/i.test(c.nom));
                 const kereisManquant =
                   groupe != null &&
