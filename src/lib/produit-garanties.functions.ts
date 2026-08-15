@@ -126,9 +126,9 @@ export const validerGrilleGaranties = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     // Assureur porteur / référence de contrat : écrits seulement si l'admin les a validés.
-    const patchProduit: Record<string, string> = {};
-    if (data.assureur_porteur) patchProduit["assureur_porteur"] = data.assureur_porteur.trim();
-    if (data.reference_contrat) patchProduit["reference_contrat"] = data.reference_contrat.trim();
+    const patchProduit: { assureur_porteur?: string; reference_contrat?: string } = {};
+    if (data.assureur_porteur) patchProduit.assureur_porteur = data.assureur_porteur.trim();
+    if (data.reference_contrat) patchProduit.reference_contrat = data.reference_contrat.trim();
     if (Object.keys(patchProduit).length > 0) {
       const { error: pErr } = await context.supabase
         .from("produits")
@@ -136,6 +136,7 @@ export const validerGrilleGaranties = createServerFn({ method: "POST" })
         .eq("id", data.produit_id);
       if (pErr) throw new Error(pErr.message);
     }
+
 
     if (data.proposition_id) {
       await context.supabase
