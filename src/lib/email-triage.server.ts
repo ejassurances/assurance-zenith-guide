@@ -67,7 +67,8 @@ export interface TriageEmail {
 }
 
 export interface TriageResultat {
-  prospect: "oui" | "non" | "incertain";
+  /** "publicite" = newsletter, prospection commerciale ou spam : aucun traitement CRM. */
+  prospect: "oui" | "non" | "incertain" | "publicite";
   branche: BrancheAuto | null;
   nom: string | null;
   prenom: string | null;
