@@ -173,6 +173,8 @@ export async function signerSouscription(
       })
       .eq("id", parcoursId);
 
+    if (res.ok) await avancerDossier(sb, p);
+
     if (!res.ok) {
       await tacheEchec(
         p,
@@ -235,5 +237,28 @@ async function tacheEchec(
     });
   } catch (e) {
     console.error("[neoliane] tâche d'échec de dépôt non créée", e);
+  }
+}
+
+/** Avance le dossier lié au parcours à l'étape « contrat validé ». */
+async function avancerDossier(sb: Sb, p: { dossier_id?: string | null }) {
+  const dossierId = p.dossier_id ?? null;
+  if (!dossierId) return;
+  try {
+    const { data } = await sb.from("dossiers").select("statut").eq("id", dossierId).maybeSingle();
+    const ancienne = (data?.statut as string | null) ?? null;
+    if (ancienne === "contrat_valide" || ancienne === "contrat_actif" || ancienne === "cloture") return;
+    await sb
+      .from("dossiers")
+      .update({ statut: "contrat_valide", updated_at: new Date().toISOString() })
+      .eq("id", dossierId);
+    await sb.from("dossier_etapes_historique").insert({
+      dossier_id: dossierId,
+      ancienne_etape: ancienne,
+      nouvelle_etape: "contrat_valide",
+      commentaire: "Documents de souscription signés par le client et transmis à l'assureur",
+    });
+  } catch (e) {
+    console.error("[neoliane] pipeline non avancé", e);
   }
 }
