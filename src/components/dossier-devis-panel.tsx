@@ -131,11 +131,11 @@ export function DossierDevisPanel({
     const [d, c, p, cl, dos] = await Promise.all([
       supabase
         .from("dossier_devis")
-        .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,source,garanties_resume,quotite_pct,created_at")
+        .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,source,garanties_resume,quotite_pct,assureur_porteur,created_at")
         .eq("dossier_id", dossierId)
         .order("created_at", { ascending: true }),
       supabase.from("compagnies").select("id,nom").order("nom"),
-      supabase.from("produits").select("id,nom,compagnie_id,famille_id").order("nom"),
+      supabase.from("produits").select("id,nom,compagnie_id,famille_id,assureur_porteur").order("nom"),
       supabase
         .from("dossier_devis_classements")
         .select("id,genere_le,modele_ia,classement,statut")
