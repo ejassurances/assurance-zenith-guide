@@ -189,7 +189,7 @@ export async function signerSouscription(
       validation: res.validation,
     };
   } catch (e) {
-    const detail = messageTechnique(e);
+    const detail = messageTechnique(e instanceof Error ? e.message : String(e), 1500);
     await sb
       .from("neoliane_parcours")
       .update({
