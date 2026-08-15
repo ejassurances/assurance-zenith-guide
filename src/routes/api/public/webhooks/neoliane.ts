@@ -52,10 +52,14 @@ export const Route = createFileRoute("/api/public/webhooks/neoliane")({
         if (!p.success) return new Response("Invalid payload", { status: 400 });
 
         const eventName = p.data.eventName ?? p.data.event ?? "contract";
-        const contractId = p.data.contractId ?? (eventName === "contract" ? p.data.id : undefined);
+        // Sur `contractDemarche`, `modifiedObjectId` est l'identifiant de la
+        // démarche et `contractId` celui du contrat porteur.
+        const objetModifie = p.data.modifiedObjectId ?? p.data.id;
         const demarcheId =
-          p.data.demarcheId ?? (eventName === "contractDemarche" ? p.data.id : undefined);
-        const ressourceId = contractId ?? demarcheId ?? null;
+          p.data.demarcheId ?? (eventName === "contractDemarche" ? objetModifie : undefined);
+        const contractId =
+          eventName === "contractDemarche" ? p.data.contractId : (p.data.contractId ?? objetModifie);
+        const ressourceId = demarcheId ?? contractId ?? null;
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
