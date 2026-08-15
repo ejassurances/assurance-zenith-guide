@@ -205,6 +205,49 @@ export function classificationConfiante(r: TriageResultat): boolean {
   return r.prospect === "oui" && !!r.branche && !!r.nom && r.confiance >= 0.7;
 }
 
+/** Publicité / newsletter / spam : le mail est simplement marqué comme traité. */
+export function estPublicite(r: TriageResultat): boolean {
+  return r.prospect === "publicite";
+}
+
+/**
+ * Publicité détectée : on n'ouvre aucune fiche client et aucune tâche. Le mail
+ * est enregistré comme traité afin de ne plus être analysé à chaque synchro.
+ */
+export async function marquerEmailPublicite(
+  admin: SupabaseClient<Database>,
+  params: {
+    email: TriageEmail;
+    triage: TriageResultat;
+    gmail_message_id: string;
+    gmail_thread_id?: string | null;
+    recu_le?: string | null;
+    userId: string;
+  },
+) {
+  const { email, triage } = params;
+  await admin.from("crm_emails").upsert(
+    {
+      gmail_message_id: params.gmail_message_id,
+      gmail_thread_id: params.gmail_thread_id ?? null,
+      direction: "entrant",
+      expediteur_nom: email.expediteur_nom,
+      expediteur_email: email.expediteur_email,
+      sujet: email.sujet,
+      snippet: (email.texte ?? "").slice(0, 500) || null,
+      recu_le: params.recu_le ?? null,
+      notes: "Publicité / newsletter — aucun traitement CRM",
+      triage_ia: JSON.parse(JSON.stringify(triage)),
+      triage_le: new Date().toISOString(),
+      created_by: params.userId,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "gmail_message_id" },
+  );
+  return { publicite: true as const };
+}
+
+
 /**
  * Création automatique complète depuis un email entrant : prospect (contrôle
  * LCB-FT déclenché par la création de la fiche), dossier de la branche détectée
