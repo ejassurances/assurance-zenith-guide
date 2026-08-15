@@ -131,6 +131,8 @@ export const boiteReception = createServerFn({ method: "POST" })
       const {
         analyserEmailProspect,
         classificationConfiante,
+        estPublicite,
+        marquerEmailPublicite,
         creerDossierDepuisEmail,
         creerFicheProspectIncertaine,
       } = await import("@/lib/email-triage.server");
