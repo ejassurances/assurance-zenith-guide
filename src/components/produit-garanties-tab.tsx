@@ -438,6 +438,8 @@ export function ProduitGarantiesTab({
           qui porte le risque, pas le grossiste distributeur.
         </p>
       </div>
+      )}
+
 
 
       {/* Grille standardisée, section par section */}
