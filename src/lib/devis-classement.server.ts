@@ -234,9 +234,9 @@ export async function classerDevisDossier(
           "Devis du TOP 3 concernés :",
           ...candidats.map(
             (d) =>
-              `- ${d.compagnies?.nom ?? "compagnie ?"} / ${d.produits?.nom ?? "produit ?"} : ` +
+              `- ${d.compagnies?.nom ?? "compagnie ?"} / ${d.produits?.nom ?? d.garanties_resume ?? "produit ?"} : ` +
               `${d.cotisation_mensuelle == null ? "tarif non renseigné" : `${Number(d.cotisation_mensuelle)} € / mois`}` +
-              `${d.produits?.assureur_porteur ? ` — porteur ${d.produits.assureur_porteur}` : ""}` +
+              `${porteurDevis(d) ? ` — porteur ${porteurDevis(d)}` : ""}` +
               `${d.source === "api" ? " — tarif automatique (API)" : ""}`,
           ),
         ].join("\n"),
