@@ -438,6 +438,36 @@ export function DossierDevisPanel({
         </div>
       )}
 
+      {nbAssuresUgipApi > 0 && (
+        <div className="mt-4 space-y-3 rounded-xl border border-line bg-surface p-4">
+          <div>
+            <h3 className="text-sm font-medium text-ink">Tarification UGIP Assurances (API)</h3>
+            <p className="mt-1 text-xs text-ink-muted">
+              {nbAssuresUgipApi} assuré(s) du recueil, avec leur quotité, seront transmis à UGIP sur l'ensemble des
+              produits emprunteur commercialisés (bases capital initial et capital restant dû). Les 5 offres les moins
+              chères sont ajoutées au comparatif, garanties Décès, PTIA, IPT et ITT franchise 90 jours.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="block">
+              <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Date d'effet</span>
+              <input type="date" value={ugipDate} onChange={(e) => setUgipDate(e.target.value)} className={inp} />
+            </label>
+            <button
+              onClick={recupererTarifsUgip}
+              disabled={ugipEtat === "appel" || !ugipDate}
+              className="rounded-full bg-ink px-5 py-2 text-sm text-primary-foreground disabled:opacity-50"
+            >
+              {ugipEtat === "appel" ? "Appel UGIP…" : "Récupérer les tarifs UGIP"}
+            </button>
+          </div>
+          {ugipMsg && <p className="whitespace-pre-wrap text-sm text-emerald-700">{ugipMsg}</p>}
+          {ugipErr && <p className="whitespace-pre-wrap text-sm text-destructive">{ugipErr}</p>}
+        </div>
+      )}
+
+
+
       {produitFixe && (
         <div className="mt-4 space-y-3 border-t border-line pt-4">
           <div>
