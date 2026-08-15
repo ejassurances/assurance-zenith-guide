@@ -1994,6 +1994,7 @@ export type Database = {
       }
       dossier_devis: {
         Row: {
+          assureur_porteur: string | null
           compagnie_id: string | null
           cotisation_mensuelle: number | null
           created_at: string
@@ -2008,6 +2009,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assureur_porteur?: string | null
           compagnie_id?: string | null
           cotisation_mensuelle?: number | null
           created_at?: string
@@ -2022,6 +2024,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assureur_porteur?: string | null
           compagnie_id?: string | null
           cotisation_mensuelle?: number | null
           created_at?: string
