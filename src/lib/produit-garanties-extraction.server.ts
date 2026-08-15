@@ -69,9 +69,19 @@ function consigne(grille: GrilleGaranties, docs: { nom: string; type: string }[]
     "Trame standardisée à remplir :",
     sections,
     "",
-    'Réponds STRICTEMENT en JSON : {"garanties":{"<code>":{"couverture":"oui|non|option|inconnu","plafond":null,"franchise":null,"delai_carence":null,"conditions":null,"extrait":"...","confiance":0.9}},"avertissements":"..."}',
+    "Identifie aussi l'ASSUREUR PORTEUR DU RISQUE : la compagnie d'assurance qui porte réellement",
+    "l'engagement (ex. CARDIF, MNCAP, SURAVENIR, AXA France Vie…), et NON le grossiste, le courtier",
+    "gestionnaire ou le distributeur (ex. Kereis, Néoliane, SimulAssur, Alptis, April…). Cherche les",
+    "mentions du type « assureur », « entreprise d'assurance », « le risque est porté par », le nom de",
+    "l'entité agréée avec son numéro RCS / code APE / mention ACPR. Si le document ne permet pas de",
+    "trancher, laisse assureur_porteur à null : ne devine jamais.",
+    "Relève également la référence du contrat / de la police (numéro de contrat groupe, référence de",
+    "police) uniquement si elle figure explicitement dans le document.",
+    "",
+    'Réponds STRICTEMENT en JSON : {"garanties":{"<code>":{"couverture":"oui|non|option|inconnu","plafond":null,"franchise":null,"delai_carence":null,"conditions":null,"extrait":"...","confiance":0.9}},"assureur_porteur":{"nom":null,"reference_contrat":null,"extrait":null,"confiance":0.0},"avertissements":"..."}',
   ].join("\n");
 }
+
 
 function normaliser(grille: GrilleGaranties, brut: unknown): { valeurs: ValeursGrille; avertissements: string } {
   const obj = (brut ?? {}) as Record<string, unknown>;
