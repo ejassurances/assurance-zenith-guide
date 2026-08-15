@@ -409,7 +409,9 @@ export function ProduitGarantiesTab({
       )}
 
       {/* Assureur porteur du risque — écrit sur la fiche produit à la validation admin uniquement */}
+      {!modeFormule && (
       <div className="grid gap-3 rounded-md border border-line p-3 md:grid-cols-2">
+
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
             Assureur porteur du risque
