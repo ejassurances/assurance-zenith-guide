@@ -252,6 +252,34 @@ export function DossierDevisPanel({
     return g && g.devisIds.length > 1 ? g : null;
   };
 
+  /**
+   * Offre retenue par défaut dans un groupe de même assureur porteur : la moins
+   * chère, priorité au tarif automatique (API) à égalité — même règle que la
+   * sélection automatique du classement emprunteur.
+   */
+  const representantsGroupe = new Set<string>();
+  for (const g of groupesPorteur.values()) {
+    if (g.devisIds.length < 2) continue;
+    const membres = g.devisIds.map((id) => devis.find((x) => x.id === id)).filter((x): x is DossierDevis => !!x);
+    const tarifes = membres.filter((m) => m.cotisation_mensuelle != null);
+    const tri = (tarifes.length > 0 ? tarifes : membres).sort((a, b) => {
+      const pa = a.cotisation_mensuelle == null ? Infinity : Number(a.cotisation_mensuelle);
+      const pb = b.cotisation_mensuelle == null ? Infinity : Number(b.cotisation_mensuelle);
+      if (pa !== pb) return pa - pb;
+      return (a.source === "api" ? 0 : 1) - (b.source === "api" ? 0 : 1);
+    });
+    if (tri[0]) representantsGroupe.add(tri[0].id);
+  }
+  /** Un devis est masqué s'il fait partie d'un groupe sans en être l'offre retenue. */
+  const estDoublonMasque = (d: DossierDevis | undefined) => {
+    if (!d) return false;
+    const g = porteurPartage(d);
+    return g != null && !representantsGroupe.has(d.id);
+  };
+  const nbDoublonsMasques = devis.filter((d) => estDoublonMasque(d)).length;
+  const devisAffiches = afficherDoublons ? devis : devis.filter((d) => !estDoublonMasque(d));
+
+
 
   const ajouter = async () => {
     setErr(null);
