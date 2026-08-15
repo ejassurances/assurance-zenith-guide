@@ -29,6 +29,7 @@ export type DossierDevis = {
   source: "manuel" | "api" | "pdf";
   garanties_resume: string | null;
   quotite_pct: number | null;
+  assureur_porteur: string | null;
   created_at: string;
 };
 
@@ -42,7 +43,14 @@ type Classement = {
 };
 
 type Ref = { id: string; nom: string };
-type ProduitRef = { id: string; nom: string; compagnie_id: string; famille_id: string };
+type ProduitRef = {
+  id: string;
+  nom: string;
+  compagnie_id: string;
+  famille_id: string;
+  assureur_porteur: string | null;
+};
+
 type FormuleRef = { id: string; nom: string; produit_id: string; actif: boolean };
 type FormuleFixe = { id: string; nom: string; tarif_fixe: number | null; actif: boolean };
 type OptionFixe = { id: string; nom: string; tarif_fixe: number | null; description: string | null };
