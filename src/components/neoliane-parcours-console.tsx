@@ -16,6 +16,7 @@ import {
   neolianeLirePanier,
   neolianeRadierContrats,
   neolianeRafraichir,
+  neolianeDemanderSignatureClient,
   neolianeSignerElectroniquement,
   neolianeValiderCle,
   neolianeValiderSouscription,
@@ -104,6 +105,7 @@ export function NeolianeParcoursConsole({ callbackUrl }: { callbackUrl: string }
 
   const demarrer = useServerFn(neolianeDemarrerParcours);
   const signerElectronique = useServerFn(neolianeSignerElectroniquement);
+  const demanderSignature = useServerFn(neolianeDemanderSignatureClient);
 
   const tarifs = useServerFn(neolianeGenererTarifs);
   const panier = useServerFn(neolianeComposerPanier);
@@ -513,6 +515,27 @@ export function NeolianeParcoursConsole({ callbackUrl }: { callbackUrl: string }
         >
           {busy === "esign" ? "Signature en cours…" : "Signer électroniquement et valider"}
         </button>
+
+        <div className="mt-4 border-t border-line pt-4">
+          <p className="mb-2 text-xs text-ink-muted">
+            Signature par le client depuis son espace : le bulletin d'adhésion et le mandat SEPA lui
+            sont présentés, il trace son paraphe, puis le dépôt et la validation sont automatiques.
+          </p>
+          <button
+            disabled={busy !== null}
+            className={btn}
+            onClick={() => {
+              if (!exigeParcours()) return;
+              void lancer("demande-signature", () =>
+                demanderSignature({ data: { parcours_id: parcoursId } }),
+              );
+            }}
+          >
+            {busy === "demande-signature"
+              ? "Envoi en cours…"
+              : "Demander la signature au client (espace client)"}
+          </button>
+        </div>
       </Bloc>
 
 
