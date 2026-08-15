@@ -436,10 +436,12 @@ export const neolianeSignerElectroniquement = createServerFn({ method: "POST" })
       getRequestHeader("cf-connecting-ip") ??
       getRequestHeader("x-forwarded-for")?.split(",")[0]?.trim() ??
       null;
-    const { signerElectroniquement } = await import("./neoliane/parcours.server");
-    const res = await signerElectroniquement(context.supabase, data.parcours_id, data.paraphes, {
+    const { signerSouscription } = await import("./neoliane/signature-client.server");
+    const res = await signerSouscription(context.supabase, data.parcours_id, data.paraphes, {
       signataire: data.signataire,
       ip,
+      ua: getRequestHeader("user-agent") ?? null,
+      origine: "staff",
     });
     return {
       ok: res.ok,
@@ -449,4 +451,15 @@ export const neolianeSignerElectroniquement = createServerFn({ method: "POST" })
       resultat: JSON.stringify(res.validation.reponse ?? null).slice(0, 4000),
       erreurs: JSON.stringify(res.validation.erreurs ?? null).slice(0, 2000),
     };
+  });
+
+/** Ouvre la signature au client : invitation par email + accès dans son espace. */
+export const neolianeDemanderSignatureClient = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ parcours_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertStaff(context.supabase, context.userId);
+    const { demanderSignatureClient } = await import("./neoliane/signature-client.server");
+    const res = await demanderSignatureClient(context.supabase, data.parcours_id);
+    return { ok: true as const, destinataire: res.destinataire };
   });

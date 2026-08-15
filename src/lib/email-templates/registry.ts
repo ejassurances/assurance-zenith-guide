@@ -335,6 +335,28 @@ function SouscriptionRelanceEmail(props: {
   return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
 }
 
+function SouscriptionSignatureClientEmail(props: {
+  clientName?: string;
+  cabinetName?: string;
+  link?: string;
+}) {
+  const nom = props.cabinetName || "EJ Partners Assurances";
+  const html =
+    "<p>Bonjour " +
+    (props.clientName || "") +
+    ",</p>" +
+    "<p>Vos documents de souscription (bulletin d'adhesion et mandat de prelevement) sont prets a etre signes dans votre espace client.</p>" +
+    "<p><a href='" +
+    (props.link || "") +
+    "'>Consulter et signer mes documents</a></p>" +
+    "<p>Des la signature, votre adhesion est transmise a l'assureur pour mise en gestion.</p>" +
+    "<p>Cordialement,<br/>L'equipe " +
+    nom +
+    "</p>";
+  const style = { fontFamily: "Arial, sans-serif", color: "#1a1a1a", fontSize: "15px", lineHeight: "1.6" };
+  return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
+}
+
 export const TEMPLATES: Record<string, TemplateEntry> = {
   "lien-connexion": {
     component: LienConnexionEmail,
@@ -461,5 +483,16 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
       jours: 3,
     },
   },
+  "souscription-signature-client": {
+    component: SouscriptionSignatureClientEmail,
+    subject: (data: Record<string, any>) =>
+      (data && data.cabinetName ? data.cabinetName : "EJ Partners Assurances") +
+      " - Signature de vos documents de souscription",
+    displayName: "Souscription - Signature client",
+    previewData: {
+      clientName: "Jean Dupont",
+      cabinetName: "EJ Partners Assurances",
+      link: "https://example.com/espace/signer-souscription",
+    },
+  },
 };
-
