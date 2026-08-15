@@ -98,6 +98,10 @@ export const validerGrilleGaranties = createServerFn({ method: "POST" })
         document_source_id: z.string().uuid().nullable().optional(),
         proposition_id: z.string().uuid().nullable().optional(),
         notes: z.string().max(2000).nullable().optional(),
+        /** Validation humaine explicite de l'assureur porteur proposé par l'IA. */
+        assureur_porteur: z.string().max(120).nullable().optional(),
+        reference_contrat: z.string().max(120).nullable().optional(),
+
       })
       .parse(input),
   )
