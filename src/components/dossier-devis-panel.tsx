@@ -338,6 +338,35 @@ export function DossierDevisPanel({
     }
   };
 
+  const recupererTarifsUgip = async () => {
+    setUgipErr(null);
+    setUgipMsg(null);
+    setUgipEtat("appel");
+    try {
+      const res = (await tariferUgip({ data: { dossier_id: dossierId, date_effet: ugipDate } })) as {
+        nbDevisCrees: number;
+        nbTarifs: number;
+        nbProduitsInterroges: number;
+        nbAssures: number;
+        compagnieTrouvee: boolean;
+        echecs: string[];
+      };
+      await load();
+      setUgipMsg(
+        `${res.nbDevisCrees} devis UGIP ajoutés au dossier (${res.nbTarifs} tarifs obtenus sur ${res.nbProduitsInterroges} produits interrogés, ${res.nbAssures} assuré(s)).` +
+          (res.compagnieTrouvee ? "" : " Compagnie « UGIP » introuvable en base : les devis sont créés sans compagnie.") +
+          (res.echecs.length > 0 ? `\nProduits écartés : ${res.echecs.join(" · ")}` : ""),
+      );
+      onChanged?.();
+    } catch (e) {
+      setUgipErr(e instanceof Error ? e.message : "Appel UGIP impossible");
+    } finally {
+      setUgipEtat("idle");
+    }
+  };
+
+
+
 
 
   return (
