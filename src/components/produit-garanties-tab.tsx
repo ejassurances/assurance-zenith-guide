@@ -90,6 +90,9 @@ export function ProduitGarantiesTab({
   const [valeurs, setValeurs] = useState<ValeursGrille>({});
   const [ligne, setLigne] = useState<Grille | null>(null);
   const [proposition, setProposition] = useState<Proposition | null>(null);
+  /** Assureur porteur du risque : brouillon éditable, écrit sur le produit à la validation admin. */
+  const [porteur, setPorteur] = useState({ nom: "", reference: "" });
+
   const [docId, setDocId] = useState<string>("");
   const [docIds, setDocIds] = useState<string[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
