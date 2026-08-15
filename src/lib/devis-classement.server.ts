@@ -97,7 +97,7 @@ export async function classerDevisDossier(
   const { data: devisRows, error: devErr } = await supabase
     .from("dossier_devis")
     .select(
-      "id, cotisation_mensuelle, garanties_resume, source, compagnies:compagnie_id(nom, tier_favori), produits:produit_id(id, nom, assureur_porteur), produit_formules:formule_id(nom)",
+      "id, cotisation_mensuelle, garanties_resume, source, assureur_porteur, compagnies:compagnie_id(nom, tier_favori), produits:produit_id(id, nom, assureur_porteur), produit_formules:formule_id(nom)",
     )
     .eq("dossier_id", dossierId)
     .order("created_at", { ascending: true });
@@ -189,13 +189,15 @@ export async function classerDevisDossier(
       .map((d) => d as any);
 
     // Doublon d'assureur porteur : le même risque est peut-être distribué par un
-    // autre grossiste, à un tarif différent.
+    // autre grossiste, à un tarif différent. Deux sources sont vérifiées — le
+    // produit du catalogue rattaché au devis, et la valeur renseignée par le
+    // connecteur API sur le devis lui-même (produit_id vide).
+    const porteurDevis = (d: any): string | null =>
+      (d.produits?.assureur_porteur as string | null)?.trim() ||
+      (d.assureur_porteur as string | null)?.trim() ||
+      null;
     const porteurs = Array.from(
-      new Set(
-        candidats
-          .map((d) => (d.produits?.assureur_porteur as string | null)?.trim())
-          .filter((v): v is string => !!v),
-      ),
+      new Set(candidats.map(porteurDevis).filter((v): v is string => !!v)),
     );
     const produitsTop = new Set(candidats.map((d) => d.produits?.id as string).filter(Boolean));
     const alternatives: string[] = [];
@@ -232,9 +234,9 @@ export async function classerDevisDossier(
           "Devis du TOP 3 concernés :",
           ...candidats.map(
             (d) =>
-              `- ${d.compagnies?.nom ?? "compagnie ?"} / ${d.produits?.nom ?? "produit ?"} : ` +
+              `- ${d.compagnies?.nom ?? "compagnie ?"} / ${d.produits?.nom ?? d.garanties_resume ?? "produit ?"} : ` +
               `${d.cotisation_mensuelle == null ? "tarif non renseigné" : `${Number(d.cotisation_mensuelle)} € / mois`}` +
-              `${d.produits?.assureur_porteur ? ` — porteur ${d.produits.assureur_porteur}` : ""}` +
+              `${porteurDevis(d) ? ` — porteur ${porteurDevis(d)}` : ""}` +
               `${d.source === "api" ? " — tarif automatique (API)" : ""}`,
           ),
         ].join("\n"),

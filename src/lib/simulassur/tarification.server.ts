@@ -221,11 +221,19 @@ export async function tariferDossierSimulassur(
   const quotiteTotale = recueil.assures.reduce((s, p) => s + (p.quotite_pct ?? 0), 0);
   const retenues = exploitables.slice(0, 5);
 
-  const lignes = retenues.map((o) => ({
+  const { resoudreAssureursPorteurs } = await import("@/lib/devis-assureur-porteur.server");
+  const porteurs = await resoudreAssureursPorteurs(
+    supabase,
+    compagnieId,
+    retenues.map((o) => ({ libelleProduit: o.produitNom, porteurApi: o.assureur })),
+  );
+
+  const lignes = retenues.map((o, i) => ({
     dossier_id: input.dossierId,
     compagnie_id: compagnieId,
     produit_id: null,
     formule_id: null,
+    assureur_porteur: porteurs[i] ?? null,
     cotisation_mensuelle: Math.round((o.coutTotal / recueil.dureeMois) * 100) / 100,
     quotite_pct: quotiteTotale > 0 && quotiteTotale <= 100 ? quotiteTotale : null,
     garanties_resume:
