@@ -494,12 +494,35 @@ export function DossierDevisPanel({
 
       {err && <p className="mt-2 text-sm text-destructive">{err}</p>}
 
+      {nbDoublonsMasques > 0 && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[color:var(--crm-gold)]/40 bg-[color:var(--crm-gold)]/10 px-3 py-2">
+          <p className="text-xs text-ink-soft">
+            {nbDoublonsMasques} offre(s) masquée(s) : même assureur porteur distribué par plusieurs canaux — seule
+            l'offre la moins chère (priorité au tarif automatique) est affichée.
+          </p>
+          <button
+            onClick={() => setAfficherDoublons((v) => !v)}
+            className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs text-ink"
+          >
+            {afficherDoublons ? "Masquer les doublons de canaux" : "Afficher tous les canaux (y compris doublons)"}
+          </button>
+        </div>
+      )}
+
       <div className="mt-4 space-y-2">
         {devis.length === 0 && <p className="text-sm text-ink-muted">Aucun devis saisi pour ce dossier.</p>}
-        {devis.map((d) => {
+        {devisAffiches.map((d) => {
           const formule = d.formule_id;
+          const groupeListe = porteurPartage(d);
           return (
-            <div key={d.id} className="rounded-xl border border-line bg-surface p-3 text-sm">
+            <div
+              key={d.id}
+              className={`rounded-xl border bg-surface p-3 text-sm ${
+                groupeListe
+                  ? "border-l-4 border-l-[color:var(--crm-gold)] border-[color:var(--crm-gold)]/40"
+                  : "border-line"
+              }`}
+            >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-medium text-ink">
                   {nomCompagnie(d.compagnie_id)} — {nomProduit(d.produit_id)}
@@ -516,12 +539,19 @@ export function DossierDevisPanel({
                   </button>
                 </div>
               </div>
+              {groupeListe && (
+                <p className="mt-2 rounded-md bg-surface-elevated/70 px-2 py-1 text-xs text-ink-soft">
+                  Même assureur porteur : <strong>{groupeListe.nom}</strong> — disponible via{" "}
+                  {groupeListe.canaux.join(", ")}
+                </p>
+              )}
               {d.garanties_resume && (
                 <p className="mt-1 whitespace-pre-wrap text-xs text-ink-soft">{d.garanties_resume}</p>
               )}
             </div>
           );
         })}
+
       </div>
 
       {nbAssuresApi > 0 && (
