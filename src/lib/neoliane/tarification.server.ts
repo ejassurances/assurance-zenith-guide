@@ -3,13 +3,18 @@
  *
  * Deux niveaux :
  *  - `appelerTarification` : appel générique paramétrable (écran de diagnostic) ;
- *  - `tariferSanteDossier` : flux réel de la branche santé
+ *  - `tariferDossierNeoliane` : flux réel de toutes les branches couvertes
  *      1. POST /neoverse/public/profile            → profile_id
  *      2. POST /neoverse/public/profile/{id}/generateprices
  *      3. création des lignes dossier_devis (source = 'api').
  */
 
 import { neolianeRequest } from "./client.server";
+import {
+  brancheTarifableNeoliane,
+  construireProfilNeoliane,
+  produitsNeolianePourDossier,
+} from "./branches";
 import { personnesAssurees } from "../recueil-besoins-schemas";
 
 export const DEFAULT_TARIF_PATH = "/neoverse/public/ez/tarification";
@@ -137,17 +142,21 @@ function messageApi(prefixe: string, status: number, data: unknown): string {
   return `${prefixe} (HTTP ${status})${detail ? ` — ${detail.slice(0, 400)}` : ""}`;
 }
 
-export interface TariferSanteInput {
+export interface TariferDossierInput {
   dossierId: string;
   /** Date d'effet AAAA-MM-JJ ; par défaut le 1er du mois suivant. */
   dateEffet?: string | undefined;
 }
 
-/** Flux complet : profil → tarifs → devis du dossier. */
-export async function tariferSanteDossier(
+/**
+ * Flux complet, toutes branches couvertes par Néoliane :
+ * profil (santé, prévoyance, GAV, PJ, animaux, nomade, emprunteur) → tarifs →
+ * devis du dossier.
+ */
+export async function tariferDossierNeoliane(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
-  input: TariferSanteInput,
+  input: TariferDossierInput,
   userId: string,
 ) {
   const { data: dos, error: errDos } = await supabase
@@ -157,16 +166,21 @@ export async function tariferSanteDossier(
     .maybeSingle();
   if (errDos) throw new Error(errDos.message);
   if (!dos) throw new Error("Dossier introuvable.");
-  if (dos.type_assurance !== "sante") {
+
+  const branche = String(dos.type_assurance ?? "");
+  if (!brancheTarifableNeoliane(branche)) {
     throw new Error(
-      "La tarification Néoliane automatique n'est disponible que sur la branche santé.",
+      "Cette branche n'est pas tarifiée par l'API Néoliane : saisissez les devis manuellement.",
     );
   }
 
-  const profileHealth = construireProfileHealth(dos.recueil_besoins);
-  if (profileHealth.length === 0) {
+  const types = produitsNeolianePourDossier(branche, dos.recueil_besoins);
+  const profil = construireProfilNeoliane(branche, dos.recueil_besoins);
+  if (!profil) {
     throw new Error(
-      "Aucun assuré exploitable dans le recueil des besoins : renseignez au moins une personne avec sa date de naissance.",
+      branche === "animaux"
+        ? "Recueil incomplet : renseignez l'espèce et la date de naissance de l'animal avant de tarifer."
+        : "Aucun assuré exploitable dans le recueil des besoins : renseignez au moins une personne avec sa date de naissance.",
     );
   }
 
@@ -190,30 +204,41 @@ export async function tariferSanteDossier(
     : dateEffetParDefaut();
 
   // 1) Création du profil
-  const profil = await neolianeRequest<Record<string, unknown>>({
+  const profil0 = await neolianeRequest<Record<string, unknown>>({
     path: NEOLIANE_PROFILE_PATH,
     method: "POST",
+    payload: {
+      zipCode,
+      dateEffect,
+      productType: types[0],
+      ...(profil.profileHealth ? { profileHealth: profil.profileHealth } : {}),
+      ...(profil.profileMembers ? { profileMembers: profil.profileMembers } : {}),
+      ...(profil.pet ? { pet: { ...profil.pet, zipCode, dateEffect } } : {}),
+    },
     withUserApiKey: true,
-    payload: { zipCode, dateEffect, productType: "sante", profileHealth },
   });
-  if (!profil.ok) {
-    throw new Error(messageApi("Création du profil Néoliane refusée", profil.status, profil.data));
+  if (!profil0.ok) {
+    throw new Error(messageApi("Création du profil Néoliane refusée", profil0.status, profil0.data));
   }
-  const pd = (profil.data ?? {}) as Record<string, unknown>;
+  const pd = (profil0.data ?? {}) as Record<string, unknown>;
   const profileId =
     (pd["id"] as string | number | undefined) ??
     ((pd["data"] as Record<string, unknown> | undefined)?.["id"] as string | number | undefined);
   if (profileId === undefined || profileId === null || profileId === "") {
     throw new Error(
-      messageApi("Réponse Néoliane sans identifiant de profil", profil.status, profil.data),
+      messageApi("Réponse Néoliane sans identifiant de profil", profil0.status, profil0.data),
     );
   }
 
-  // 2) Génération des tarifs
+  // 2) Génération des tarifs pour tous les produits de la branche
   const prix = await neolianeRequest<unknown>({
     path: `${NEOLIANE_PROFILE_PATH}/${profileId}/generateprices`,
     method: "POST",
-    payload: { types: ["sante"] },
+    payload: {
+      types,
+      ...(profil.profileMembers ? { profileMembers: profil.profileMembers } : {}),
+      ...(profil.pet ? { pet: { ...profil.pet, zipCode, dateEffect } } : {}),
+    },
   });
   if (!prix.ok) {
     throw new Error(messageApi("Génération des tarifs Néoliane refusée", prix.status, prix.data));
@@ -222,7 +247,7 @@ export async function tariferSanteDossier(
   const tarifs = extraireTarifs(prix.data);
   if (tarifs.length === 0) {
     throw new Error(
-      "Néoliane n'a retourné aucun tarif pour ce profil (zone géographique non couverte ou régime non éligible).",
+      "Néoliane n'a retourné aucun tarif pour ce profil (zone géographique non couverte, régime ou produit non éligible).",
     );
   }
 
@@ -262,8 +287,10 @@ export async function tariferSanteDossier(
 
   return {
     profileId: String(profileId),
+    branche,
+    produits: types,
     dateEffet: dateEffect,
-    nbAssures: profileHealth.length,
+    nbAssures: profil.pet ? 1 : (profil.profileHealth ?? profil.profileMembers ?? []).length,
     nbTarifs: tarifs.length,
     nbDevisCrees: lignes.length,
     compagnieTrouvee: !!compagnieId,

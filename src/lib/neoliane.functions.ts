@@ -114,8 +114,11 @@ export const neolianeTarifer = createServerFn({ method: "POST" })
     }
   });
 
-/** Tarification santé réelle : profil Néoliane → tarifs → devis du dossier. */
-export const neolianeTariferSante = createServerFn({ method: "POST" })
+/**
+ * Tarification réelle, toutes branches couvertes par Néoliane :
+ * profil → tarifs → devis du dossier.
+ */
+export const neolianeTariferDossier = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
     z
@@ -130,8 +133,8 @@ export const neolianeTariferSante = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertStaff(context.supabase, context.userId);
-    const { tariferSanteDossier } = await import("./neoliane/tarification.server");
-    const res = await tariferSanteDossier(
+    const { tariferDossierNeoliane } = await import("./neoliane/tarification.server");
+    const res = await tariferDossierNeoliane(
       context.supabase,
       { dossierId: data.dossier_id, dateEffet: data.date_effet },
       context.userId,
