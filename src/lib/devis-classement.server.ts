@@ -201,6 +201,8 @@ export async function classerDevisDossier(
     );
     const produitsTop = new Set(candidats.map((d) => d.produits?.id as string).filter(Boolean));
     const alternatives: string[] = [];
+    /** Canaux (compagnies du catalogue) où le même assureur porteur est distribuable. */
+    const canauxParPorteur = new Map<string, Set<string>>();
     for (const porteur of porteurs) {
       const { data: autres } = await supabase
         .from("produits")
@@ -211,6 +213,11 @@ export async function classerDevisDossier(
       for (const a of ((autres ?? []) as any[])) {
         if (produitsTop.has(a.id as string)) continue;
         alternatives.push(`${porteur} — ${a.nom}${a.compagnies?.nom ? ` (${a.compagnies.nom})` : ""}`);
+        if (a.compagnies?.nom) {
+          const set = canauxParPorteur.get(porteur) ?? new Set<string>();
+          set.add(a.compagnies.nom as string);
+          canauxParPorteur.set(porteur, set);
+        }
       }
     }
 
@@ -225,11 +232,34 @@ export async function classerDevisDossier(
         .maybeSingle();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const di = dosInfo as any;
+
+      // Un canal Kereis existe-t-il pour ce porteur, sans devis Kereis déjà au comparatif ?
+      const { data: devisDossier } = await supabase
+        .from("dossier_devis")
+        .select("compagnies:compagnie_id(nom)")
+        .eq("dossier_id", dossierId);
+      const kereisDejaAuComparatif = ((devisDossier ?? []) as { compagnies?: { nom?: string } }[]).some((d) =>
+        /kereis/i.test(d.compagnies?.nom ?? ""),
+      );
+      const porteurKereis = [...canauxParPorteur.entries()].find(([, canaux]) =>
+        [...canaux].some((c) => /kereis/i.test(c)),
+      );
+      const actionKereis = porteurKereis && !kereisDejaAuComparatif ? porteurKereis[0] : null;
+      const lienDossier = `/espace/dossiers/${dossierId}#section-devis`;
+
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       await creerTacheAdmin(supabaseAdmin, {
-        titre: `Même assureur porteur (${porteurs.join(", ")}) disponible via un autre canal — comparer les tarifs avant de retenir une offre`,
+        titre: actionKereis
+          ? `Faire un devis chez Kereis pour ${actionKereis} et l'ajouter au comparatif de ce dossier avant de retenir une offre`
+          : `Même assureur porteur (${porteurs.join(", ")}) disponible via un autre canal — comparer les tarifs avant de retenir une offre`,
         description: [
           `Dossier ${di?.reference ?? dossierId} (assurance emprunteur).`,
+          ...(actionKereis
+            ? [
+                `Assureur porteur ${actionKereis} également distribué par Kereis, sans devis Kereis dans ce dossier.`,
+                `Saisissez le tarif obtenu dans le bloc devis du dossier : ${lienDossier}`,
+              ]
+            : [`Bloc devis du dossier : ${lienDossier}`]),
           `Autres produits du même assureur porteur : ${blocage}`,
           "Devis du TOP 3 concernés :",
           ...candidats.map(
@@ -244,6 +274,7 @@ export async function classerDevisDossier(
         created_by: userId,
       });
     } else {
+
       const tarifes = candidats.filter((d) => d.cotisation_mensuelle != null);
       const tri = (tarifes.length > 0 ? tarifes : candidats).sort((a, b) => {
         const pa = a.cotisation_mensuelle == null ? Infinity : Number(a.cotisation_mensuelle);

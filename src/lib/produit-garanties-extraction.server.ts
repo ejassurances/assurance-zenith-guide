@@ -69,11 +69,68 @@ function consigne(grille: GrilleGaranties, docs: { nom: string; type: string }[]
     "Trame standardisée à remplir :",
     sections,
     "",
-    'Réponds STRICTEMENT en JSON : {"garanties":{"<code>":{"couverture":"oui|non|option|inconnu","plafond":null,"franchise":null,"delai_carence":null,"conditions":null,"extrait":"...","confiance":0.9}},"avertissements":"..."}',
+    "Identifie aussi l'ASSUREUR PORTEUR DU RISQUE : la compagnie d'assurance qui porte réellement",
+    "l'engagement (ex. CARDIF, MNCAP, SURAVENIR, AXA France Vie…), et NON le grossiste, le courtier",
+    "gestionnaire ou le distributeur (ex. Kereis, Néoliane, SimulAssur, Alptis, April…). Cherche les",
+    "mentions du type « assureur », « entreprise d'assurance », « le risque est porté par », le nom de",
+    "l'entité agréée avec son numéro RCS / code APE / mention ACPR. Si le document ne permet pas de",
+    "trancher, laisse assureur_porteur à null : ne devine jamais.",
+    "Relève également la référence du contrat / de la police (numéro de contrat groupe, référence de",
+    "police) uniquement si elle figure explicitement dans le document.",
+    "",
+    'Réponds STRICTEMENT en JSON : {"garanties":{"<code>":{"couverture":"oui|non|option|inconnu","plafond":null,"franchise":null,"delai_carence":null,"conditions":null,"extrait":"...","confiance":0.9}},"assureur_porteur":{"nom":null,"reference_contrat":null,"extrait":null,"confiance":0.0},"avertissements":"..."}',
   ].join("\n");
 }
 
-function normaliser(grille: GrilleGaranties, brut: unknown): { valeurs: ValeursGrille; avertissements: string } {
+
+/** Distributeurs / grossistes : jamais l'assureur porteur du risque. */
+const DISTRIBUTEURS = [
+  "kereis",
+  "neoliane",
+  "néoliane",
+  "simulassur",
+  "alptis",
+  "april",
+  "ej partners",
+  "utwin",
+  "metlife distribution",
+  "ugip",
+];
+
+export type PorteurPropose = {
+  nom: string | null;
+  reference_contrat: string | null;
+  extrait: string | null;
+  confiance: number | null;
+};
+
+function normaliserPorteur(brut: unknown): PorteurPropose {
+  const raw = ((brut ?? {}) as Record<string, unknown>)["assureur_porteur"] as
+    | Record<string, unknown>
+    | undefined;
+  const texte = (v: unknown, max: number) => {
+    const s = typeof v === "string" ? v.trim() : "";
+    return s.length > 1 ? s.slice(0, max) : null;
+  };
+  const nom = texte(raw?.["nom"], 120);
+  // Un grossiste distributeur n'est pas un assureur porteur : proposition écartée.
+  const estDistributeur =
+    nom !== null && DISTRIBUTEURS.some((d) => nom.toLowerCase().includes(d));
+  return {
+    nom: estDistributeur ? null : nom,
+    reference_contrat: texte(raw?.["reference_contrat"], 120),
+    extrait: texte(raw?.["extrait"], 600),
+    confiance:
+      typeof raw?.["confiance"] === "number"
+        ? Math.max(0, Math.min(1, raw["confiance"] as number))
+        : null,
+  };
+}
+
+function normaliser(
+  grille: GrilleGaranties,
+  brut: unknown,
+): { valeurs: ValeursGrille; avertissements: string; porteur: PorteurPropose } {
   const obj = (brut ?? {}) as Record<string, unknown>;
   const src = (obj["garanties"] ?? {}) as Record<string, unknown>;
   const valeurs: ValeursGrille = {};
@@ -92,8 +149,9 @@ function normaliser(grille: GrilleGaranties, brut: unknown): { valeurs: ValeursG
     valeurs[g.code] = v;
   }
   const avertissements = obj["avertissements"] ? String(obj["avertissements"]).slice(0, 2000) : "";
-  return { valeurs, avertissements };
+  return { valeurs, avertissements, porteur: normaliserPorteur(brut) };
 }
+
 
 function extraireJson(texte: string): unknown {
   const nettoye = texte.replace(/```json/gi, "").replace(/```/g, "").trim();
@@ -216,7 +274,7 @@ export async function analyserDocumentsProduit(
     ),
     fichiers,
   );
-  const { valeurs, avertissements } = normaliser(grille, brut);
+  const { valeurs, avertissements, porteur } = normaliser(grille, brut);
 
   const sources = docs.map((d) => `${TYPE_LABEL[d.type] ?? d.type} : ${d.nom}`).join(" · ");
   const remarques = [`Documents analysés — ${sources}`, avertissements].filter(Boolean).join("\n");
@@ -233,12 +291,18 @@ export async function analyserDocumentsProduit(
       avertissements: remarques || null,
       statut: "proposee",
       created_by: userId,
+      // Proposition seule : jamais écrite sur `produits` sans validation humaine.
+      assureur_porteur_propose: porteur.nom,
+      reference_contrat_propose: porteur.reference_contrat,
+      assureur_porteur_extrait: porteur.extrait,
+      assureur_porteur_confiance: porteur.confiance,
     })
     .select("id")
     .single();
   if (iErr || !inserted) throw new Error(iErr?.message ?? "Enregistrement de la proposition impossible");
 
-  return { proposition_id: inserted.id as string, valeurs, avertissements: remarques, modele };
+  return { proposition_id: inserted.id as string, valeurs, avertissements: remarques, modele, porteur };
+
 }
 
 /** Analyse d'un document isolé (compatibilité). */

@@ -98,6 +98,10 @@ export const validerGrilleGaranties = createServerFn({ method: "POST" })
         document_source_id: z.string().uuid().nullable().optional(),
         proposition_id: z.string().uuid().nullable().optional(),
         notes: z.string().max(2000).nullable().optional(),
+        /** Validation humaine explicite de l'assureur porteur proposé par l'IA. */
+        assureur_porteur: z.string().max(120).nullable().optional(),
+        reference_contrat: z.string().max(120).nullable().optional(),
+
       })
       .parse(input),
   )
@@ -121,6 +125,19 @@ export const validerGrilleGaranties = createServerFn({ method: "POST" })
     );
     if (error) throw new Error(error.message);
 
+    // Assureur porteur / référence de contrat : écrits seulement si l'admin les a validés.
+    const patchProduit: { assureur_porteur?: string; reference_contrat?: string } = {};
+    if (data.assureur_porteur) patchProduit.assureur_porteur = data.assureur_porteur.trim();
+    if (data.reference_contrat) patchProduit.reference_contrat = data.reference_contrat.trim();
+    if (Object.keys(patchProduit).length > 0) {
+      const { error: pErr } = await context.supabase
+        .from("produits")
+        .update(patchProduit)
+        .eq("id", data.produit_id);
+      if (pErr) throw new Error(pErr.message);
+    }
+
+
     if (data.proposition_id) {
       await context.supabase
         .from("produit_garanties_propositions")
@@ -132,8 +149,14 @@ export const validerGrilleGaranties = createServerFn({ method: "POST" })
       _action: "valider_grille_garanties",
       _target_type: "produit_garanties",
       _target_id: data.produit_id,
-      _metadata: { grille_version: data.grille_version, proposition_id: data.proposition_id ?? null },
+      _metadata: {
+        grille_version: data.grille_version,
+        proposition_id: data.proposition_id ?? null,
+        assureur_porteur: data.assureur_porteur ?? null,
+        reference_contrat: data.reference_contrat ?? null,
+      },
     });
+
 
     return { ok: true };
   });

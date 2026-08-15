@@ -29,6 +29,7 @@ export type DossierDevis = {
   source: "manuel" | "api" | "pdf";
   garanties_resume: string | null;
   quotite_pct: number | null;
+  assureur_porteur: string | null;
   created_at: string;
 };
 
@@ -42,7 +43,14 @@ type Classement = {
 };
 
 type Ref = { id: string; nom: string };
-type ProduitRef = { id: string; nom: string; compagnie_id: string; famille_id: string };
+type ProduitRef = {
+  id: string;
+  nom: string;
+  compagnie_id: string;
+  famille_id: string;
+  assureur_porteur: string | null;
+};
+
 type FormuleRef = { id: string; nom: string; produit_id: string; actif: boolean };
 type FormuleFixe = { id: string; nom: string; tarif_fixe: number | null; actif: boolean };
 type OptionFixe = { id: string; nom: string; tarif_fixe: number | null; description: string | null };
@@ -123,11 +131,11 @@ export function DossierDevisPanel({
     const [d, c, p, cl, dos] = await Promise.all([
       supabase
         .from("dossier_devis")
-        .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,source,garanties_resume,quotite_pct,created_at")
+        .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,source,garanties_resume,quotite_pct,assureur_porteur,created_at")
         .eq("dossier_id", dossierId)
         .order("created_at", { ascending: true }),
       supabase.from("compagnies").select("id,nom").order("nom"),
-      supabase.from("produits").select("id,nom,compagnie_id,famille_id").order("nom"),
+      supabase.from("produits").select("id,nom,compagnie_id,famille_id,assureur_porteur").order("nom"),
       supabase
         .from("dossier_devis_classements")
         .select("id,genere_le,modele_ia,classement,statut")
@@ -216,6 +224,34 @@ export function DossierDevisPanel({
 
   const nomCompagnie = (id: string | null) => compagnies.find((c) => c.id === id)?.nom ?? "—";
   const nomProduit = (id: string | null) => produits.find((p) => p.id === id)?.nom ?? "—";
+
+  /** Assureur porteur d'un devis : produit du catalogue en priorité, sinon valeur renvoyée par l'API. */
+  const porteurDevis = (d: DossierDevis | undefined) => {
+    if (!d) return null;
+    const viaProduit = produits.find((p) => p.id === d.produit_id)?.assureur_porteur ?? null;
+    const nom = (viaProduit || d.assureur_porteur || "").trim();
+    return nom ? nom : null;
+  };
+
+  /** Regroupement des devis du dossier par assureur porteur (au moins 2 offres du même porteur). */
+  const groupesPorteur = new Map<string, { nom: string; canaux: string[]; devisIds: string[] }>();
+  for (const d of devis) {
+    const nom = porteurDevis(d);
+    if (!nom) continue;
+    const cle = nom.toLowerCase();
+    const g = groupesPorteur.get(cle) ?? { nom, canaux: [], devisIds: [] };
+    const canal = nomCompagnie(d.compagnie_id);
+    if (canal !== "—" && !g.canaux.includes(canal)) g.canaux.push(canal);
+    g.devisIds.push(d.id);
+    groupesPorteur.set(cle, g);
+  }
+  const porteurPartage = (d: DossierDevis | undefined) => {
+    const nom = porteurDevis(d);
+    if (!nom) return null;
+    const g = groupesPorteur.get(nom.toLowerCase());
+    return g && g.devisIds.length > 1 ? g : null;
+  };
+
 
   const ajouter = async () => {
     setErr(null);
@@ -650,10 +686,20 @@ export function DossierDevisPanel({
               .sort((a, b) => a.rang - b.rang)
               .map((l) => {
                 const d = devis.find((x) => x.id === l.dossier_devis_id);
+                const groupe = porteurPartage(d);
+                const kereisCatalogue = compagnies.find((c) => /kereis/i.test(c.nom));
+                const kereisManquant =
+                  groupe != null &&
+                  kereisCatalogue != null &&
+                  !groupe.canaux.some((c) => /kereis/i.test(c));
                 return (
                   <div
                     key={l.dossier_devis_id}
-                    className="rounded-xl border border-[color:var(--crm-gold)]/40 bg-[color:var(--crm-gold)]/5 p-3 text-sm"
+                    className={`rounded-xl border p-3 text-sm ${
+                      groupe
+                        ? "border-l-4 border-l-[color:var(--crm-gold)] border-[color:var(--crm-gold)]/40 bg-[color:var(--crm-gold)]/10"
+                        : "border-[color:var(--crm-gold)]/40 bg-[color:var(--crm-gold)]/5"
+                    }`}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <p className="font-medium text-ink">
@@ -678,10 +724,25 @@ export function DossierDevisPanel({
                         </button>
                       )}
                     </div>
+                    {groupe && (
+                      <p className="mt-2 rounded-md bg-surface/70 px-2 py-1 text-xs text-ink-soft">
+                        Même assureur porteur : <strong>{groupe.nom}</strong> — disponible via{" "}
+                        {groupe.canaux.join(", ")}
+                        {kereisManquant && (
+                          <>
+                            {" "}
+                            · Aucun devis {kereisCatalogue?.nom} pour cet assureur porteur : faites un devis chez{" "}
+                            {kereisCatalogue?.nom} pour {groupe.nom} et ajoutez-le au comparatif avant de retenir une
+                            offre.
+                          </>
+                        )}
+                      </p>
+                    )}
                     <p className="mt-2 whitespace-pre-wrap text-xs text-ink-soft">{l.justification}</p>
                   </div>
                 );
               })}
+
           </div>
         )}
       </div>
