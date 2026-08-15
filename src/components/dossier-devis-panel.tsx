@@ -225,6 +225,34 @@ export function DossierDevisPanel({
   const nomCompagnie = (id: string | null) => compagnies.find((c) => c.id === id)?.nom ?? "—";
   const nomProduit = (id: string | null) => produits.find((p) => p.id === id)?.nom ?? "—";
 
+  /** Assureur porteur d'un devis : produit du catalogue en priorité, sinon valeur renvoyée par l'API. */
+  const porteurDevis = (d: DossierDevis | undefined) => {
+    if (!d) return null;
+    const viaProduit = produits.find((p) => p.id === d.produit_id)?.assureur_porteur ?? null;
+    const nom = (viaProduit || d.assureur_porteur || "").trim();
+    return nom ? nom : null;
+  };
+
+  /** Regroupement des devis du dossier par assureur porteur (au moins 2 offres du même porteur). */
+  const groupesPorteur = new Map<string, { nom: string; canaux: string[]; devisIds: string[] }>();
+  for (const d of devis) {
+    const nom = porteurDevis(d);
+    if (!nom) continue;
+    const cle = nom.toLowerCase();
+    const g = groupesPorteur.get(cle) ?? { nom, canaux: [], devisIds: [] };
+    const canal = nomCompagnie(d.compagnie_id);
+    if (canal !== "—" && !g.canaux.includes(canal)) g.canaux.push(canal);
+    g.devisIds.push(d.id);
+    groupesPorteur.set(cle, g);
+  }
+  const porteurPartage = (d: DossierDevis | undefined) => {
+    const nom = porteurDevis(d);
+    if (!nom) return null;
+    const g = groupesPorteur.get(nom.toLowerCase());
+    return g && g.devisIds.length > 1 ? g : null;
+  };
+
+
   const ajouter = async () => {
     setErr(null);
     if (!form.compagnie_id || !form.produit_id) {
