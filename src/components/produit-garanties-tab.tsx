@@ -39,7 +39,12 @@ type Proposition = {
   avertissements: string | null;
   statut: "proposee" | "acceptee" | "rejetee";
   created_at: string;
+  assureur_porteur_propose: string | null;
+  reference_contrat_propose: string | null;
+  assureur_porteur_extrait: string | null;
+  assureur_porteur_confiance: number | null;
 };
+
 
 export type DocAnalysable = { id: string; nom: string; type: string };
 
