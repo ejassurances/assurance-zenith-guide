@@ -11,9 +11,52 @@ import type { Database } from "@/integrations/supabase/types";
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODELES = ["google/gemini-3.6-flash", "google/gemini-2.5-flash"];
 
-/** Branches réellement gérées par le CRM aujourd'hui. */
-export const BRANCHES_AUTO = ["emprunteur", "sante", "prevoyance"] as const;
+/**
+ * Branches réellement gérées par le CRM aujourd'hui (valeurs des recueils des
+ * besoins). Les libellés commerciaux courants (GAV, PJ, animaux/pet, nomade)
+ * sont acceptés en entrée et normalisés via ALIAS_BRANCHES.
+ */
+export const BRANCHES_AUTO = [
+  "emprunteur",
+  "sante",
+  "prevoyance",
+  "accidents_vie",
+  "juridique",
+  "animaux",
+  "expatrie",
+] as const;
 export type BrancheAuto = (typeof BRANCHES_AUTO)[number];
+
+/** Synonymes tolérés dans la réponse IA → valeur de branche du CRM. */
+const ALIAS_BRANCHES: Record<string, BrancheAuto> = {
+  gav: "accidents_vie",
+  accident_vie: "accidents_vie",
+  accidents_de_la_vie: "accidents_vie",
+  pj: "juridique",
+  protection_juridique: "juridique",
+  pet: "animaux",
+  animal: "animaux",
+  sante_animale: "animaux",
+  nomade: "expatrie",
+  nomades: "expatrie",
+  expatries: "expatrie",
+  expat: "expatrie",
+  sante_internationale: "expatrie",
+};
+
+/** Normalise une branche renvoyée par l'IA (alias inclus). */
+export function normaliserBranche(valeur: string | null): BrancheAuto | null {
+  if (!valeur) return null;
+  const v = valeur
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\s-]+/g, "_");
+  if ((BRANCHES_AUTO as readonly string[]).includes(v)) return v as BrancheAuto;
+  return ALIAS_BRANCHES[v] ?? null;
+}
+
 
 export interface TriageEmail {
   sujet: string | null;
@@ -24,7 +67,8 @@ export interface TriageEmail {
 }
 
 export interface TriageResultat {
-  prospect: "oui" | "non" | "incertain";
+  /** "publicite" = newsletter, prospection commerciale ou spam : aucun traitement CRM. */
+  prospect: "oui" | "non" | "incertain" | "publicite";
   branche: BrancheAuto | null;
   nom: string | null;
   prenom: string | null;
@@ -54,10 +98,22 @@ function consigne(email: TriageEmail): string {
     "Tu es assistant commercial dans un cabinet de courtage en assurances français.",
     "On te transmet un email entrant reçu sur la boîte du cabinet, qui ne correspond à aucun client connu.",
     "Détermine :",
-    "1. S'il s'agit d'un prospect demandant un devis, une étude ou une prise de contact en assurance.",
-    "2. La branche demandée, UNIQUEMENT parmi : emprunteur, sante, prevoyance.",
-    "   Si le besoin porte sur autre chose (auto, habitation, animaux, professionnelle, etc.) ou si plusieurs",
-    "   branches sont possibles, réponds prospect = \"incertain\" et branche = null.",
+    "1. La nature du message :",
+    '   - "publicite" : newsletter, campagne marketing, prospection commerciale entrante, offre de service,',
+    "     démarchage de fournisseur, notification automatique promotionnelle ou spam. Aucun besoin client réel.",
+    '   - "oui" : un prospect demande un devis, une étude ou une prise de contact en assurance.',
+    '   - "non" : message qui n\'est ni de la publicité ni une demande d\'assurance (administratif, personnel…).',
+    '   - "incertain" : demande d\'assurance probable mais branche ou identité indéterminée.',
+    "2. La branche demandée, UNIQUEMENT parmi :",
+    "   - emprunteur : assurance de prêt / crédit immobilier",
+    "   - sante : complémentaire santé, mutuelle",
+    "   - prevoyance : arrêt de travail, décès, invalidité",
+    "   - accidents_vie : garantie des accidents de la vie (GAV)",
+    "   - juridique : protection juridique (PJ)",
+    "   - animaux : santé animale, chien ou chat (assurance « pet »)",
+    "   - expatrie : santé à l'étranger, expatriés, nomades, digital nomades",
+    "   Si le besoin porte sur autre chose (auto, habitation, trottinette, risques professionnels, etc.) ou si",
+    "   plusieurs branches sont possibles, réponds prospect = \"incertain\" et branche = null.",
     "3. Le nom et le prénom si identifiables dans le corps du message ou la signature, sinon null.",
     "4. Si la branche est emprunteur ET qu'une pièce jointe ressemble à un tableau d'amortissement ou une offre",
     "   de prêt (d'après son nom de fichier) ou que le corps du mail donne ces chiffres : extrais le capital",
@@ -70,9 +126,11 @@ function consigne(email: TriageEmail): string {
     "Corps du message :",
     (email.texte ?? "").slice(0, 6000),
     "",
-    'Réponds STRICTEMENT en JSON : {"prospect":"oui|non|incertain","branche":"emprunteur|sante|prevoyance|null",',
+    'Réponds STRICTEMENT en JSON : {"prospect":"oui|non|incertain|publicite",',
+    '"branche":"emprunteur|sante|prevoyance|accidents_vie|juridique|animaux|expatrie|null",',
     '"nom":"...|null","prenom":"...|null","telephone":"...|null","capital_restant_du":null,"mois_restants":null,',
     '"piece_pret":"nom du fichier|null","confiance":0.0,"resume":"une phrase"}',
+
   ].join("\n");
 }
 
@@ -106,13 +164,20 @@ export async function analyserEmailProspect(email: TriageEmail): Promise<TriageR
       if (!contenu) throw new Error("Réponse IA vide");
       const brut = extraireJson(contenu);
 
-      const prospectBrut = String(brut["prospect"] ?? "incertain").toLowerCase();
+      const prospectBrut = String(brut["prospect"] ?? "incertain")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
       const prospect: TriageResultat["prospect"] =
-        prospectBrut === "oui" ? "oui" : prospectBrut === "non" ? "non" : "incertain";
-      const brancheBrut = texteOuNull(brut["branche"], 20);
-      const branche = (BRANCHES_AUTO as readonly string[]).includes(brancheBrut ?? "")
-        ? (brancheBrut as BrancheAuto)
-        : null;
+        prospectBrut === "oui"
+          ? "oui"
+          : prospectBrut === "non"
+            ? "non"
+            : prospectBrut.startsWith("public") || prospectBrut === "spam" || prospectBrut === "marketing"
+              ? "publicite"
+              : "incertain";
+      const branche = normaliserBranche(texteOuNull(brut["branche"], 40));
+
 
       return {
         prospect,
@@ -139,6 +204,49 @@ export async function analyserEmailProspect(email: TriageEmail): Promise<TriageR
 export function classificationConfiante(r: TriageResultat): boolean {
   return r.prospect === "oui" && !!r.branche && !!r.nom && r.confiance >= 0.7;
 }
+
+/** Publicité / newsletter / spam : le mail est simplement marqué comme traité. */
+export function estPublicite(r: TriageResultat): boolean {
+  return r.prospect === "publicite";
+}
+
+/**
+ * Publicité détectée : on n'ouvre aucune fiche client et aucune tâche. Le mail
+ * est enregistré comme traité afin de ne plus être analysé à chaque synchro.
+ */
+export async function marquerEmailPublicite(
+  admin: SupabaseClient<Database>,
+  params: {
+    email: TriageEmail;
+    triage: TriageResultat;
+    gmail_message_id: string;
+    gmail_thread_id?: string | null;
+    recu_le?: string | null;
+    userId: string;
+  },
+) {
+  const { email, triage } = params;
+  await admin.from("crm_emails").upsert(
+    {
+      gmail_message_id: params.gmail_message_id,
+      gmail_thread_id: params.gmail_thread_id ?? null,
+      direction: "entrant",
+      expediteur_nom: email.expediteur_nom,
+      expediteur_email: email.expediteur_email,
+      sujet: email.sujet,
+      snippet: (email.texte ?? "").slice(0, 500) || null,
+      recu_le: params.recu_le ?? null,
+      notes: "Publicité / newsletter — aucun traitement CRM",
+      triage_ia: JSON.parse(JSON.stringify(triage)),
+      triage_le: new Date().toISOString(),
+      created_by: params.userId,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "gmail_message_id" },
+  );
+  return { publicite: true as const };
+}
+
 
 /**
  * Création automatique complète depuis un email entrant : prospect (contrôle
