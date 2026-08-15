@@ -117,6 +117,9 @@ export function DossierDevisPanel({
   const [simuMsg, setSimuMsg] = useState<string | null>(null);
   const [simuErr, setSimuErr] = useState<string | null>(null);
 
+  /** Comparatif : par défaut une seule offre par assureur porteur (doublons de canaux masqués). */
+  const [afficherDoublons, setAfficherDoublons] = useState(false);
+
 
   const [form, setForm] = useState({
     compagnie_id: "",
