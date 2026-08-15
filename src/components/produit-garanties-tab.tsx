@@ -218,7 +218,10 @@ export function ProduitGarantiesTab({
     grille_version: grille.version,
     valeurs,
     document_source_id: docId || null,
+    assureur_porteur: porteur.nom.trim() || null,
+    reference_contrat: porteur.reference.trim() || null,
   });
+
 
   /** Écriture de la grille d'une formule (RLS + trigger imposent la validation admin). */
   const enregistrerFormule = async (statut: "brouillon" | "valide") => {
