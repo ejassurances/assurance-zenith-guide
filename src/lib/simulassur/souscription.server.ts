@@ -327,10 +327,11 @@ export async function genererDocuments(
       await supabase.from("documents").insert({
         dossier_id: params.dossierId,
         client_id: (suivi?.client_id as string) ?? null,
-        nom: `Simulassur — ${LIBELLE_DOCUMENT[type]}`,
-        type: "autre",
-        chemin_stockage: chemin,
-        uploade_par: userId,
+        file_name: `Simulassur - ${LIBELLE_DOCUMENT[type]}.pdf`,
+        categorie: "simulassur",
+        mime_type: "application/pdf",
+        storage_path: chemin,
+        uploader_id: userId,
       });
 
       enregistres.push({ type, libelle: LIBELLE_DOCUMENT[type], chemin });
