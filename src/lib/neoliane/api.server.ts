@@ -178,28 +178,45 @@ export interface LignePanier {
   [k: string]: unknown;
 }
 
-/** POST /profile/{id}/cart — création du panier. */
+/**
+ * POST /profile/{id}/cart — ajout au panier.
+ *
+ * Format validé en recette (2026-08-15) : l'API attend UN produit par appel
+ * sous la clé `product` (`{ products: [...] }` renvoie HTTP 500). Les produits
+ * supplémentaires sont donc ajoutés par appels successifs, et le dernier panier
+ * retourné fait foi.
+ */
 export async function creerPanier(profileId: string, produits: LignePanier[]) {
-  const res = await appel<unknown>(`/profile/${profileId}/cart`, {
-    method: "POST",
-    payload: { products: produits },
-  });
-  exiger("Création du panier Néoliane refusée", res);
-  return deballer(res.data);
+  if (produits.length === 0) throw new Error("Aucun produit à mettre au panier.");
+  let dernier: unknown = null;
+  for (const produit of produits) {
+    const res = await appel<unknown>(`/profile/${profileId}/cart`, {
+      method: "POST",
+      payload: { product: produit },
+    });
+    exiger("Création du panier Néoliane refusée", res);
+    dernier = deballer(res.data);
+  }
+  return dernier;
 }
 
 /**
- * PUT /profile/{id}/cart — remplacement TOTAL du panier : il faut renvoyer
- * l'intégralité des produits conservés (un payload vide vide le panier).
+ * PUT /profile/{id}/cart — remplacement TOTAL du panier : le premier produit
+ * remplace le contenu existant, les suivants sont ajoutés (POST).
  */
 export async function remplacerPanier(profileId: string, produits: LignePanier[]) {
+  if (produits.length === 0) throw new Error("Aucun produit à mettre au panier.");
+  const [premier, ...suite] = produits;
   const res = await appel<unknown>(`/profile/${profileId}/cart`, {
     method: "PUT",
-    payload: { products: produits },
+    payload: { product: premier },
   });
   exiger("Remplacement du panier Néoliane refusé", res);
-  return deballer(res.data);
+  let dernier = deballer(res.data);
+  if (suite.length) dernier = (await creerPanier(profileId, suite)) ?? dernier;
+  return dernier;
 }
+
 
 /** GET /profile/{id}/cart — état réel du panier (source de vérité). */
 export async function lirePanier(profileId: string) {
