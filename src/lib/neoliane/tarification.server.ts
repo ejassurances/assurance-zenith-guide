@@ -266,7 +266,14 @@ export async function tariferDossierNeoliane(
     .maybeSingle();
   const compagnieId = (comp?.id as string | undefined) ?? null;
 
-  const lignes = retenus.map((l) => {
+  const { resoudreAssureursPorteurs } = await import("@/lib/devis-assureur-porteur.server");
+  const porteurs = await resoudreAssureursPorteurs(
+    supabase,
+    compagnieId,
+    retenus.map((l) => ({ libelleProduit: (l.gammeLabel ?? l.label ?? "").toString() })),
+  );
+
+  const lignes = retenus.map((l, i) => {
     const gamme = (l.gammeLabel ?? l.label ?? "Néoliane").toString();
     const formule = (l.formulaLabel ?? "").toString();
     const m = montant(l);
@@ -275,6 +282,7 @@ export async function tariferDossierNeoliane(
       compagnie_id: compagnieId,
       produit_id: null,
       formule_id: null,
+      assureur_porteur: porteurs[i] ?? null,
       cotisation_mensuelle: Number.isFinite(m) ? m : null,
       garanties_resume: formule ? `${gamme} — formule ${formule}` : gamme,
       source: "api",
