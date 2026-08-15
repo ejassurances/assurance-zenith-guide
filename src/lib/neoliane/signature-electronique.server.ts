@@ -90,6 +90,7 @@ export async function apposerSignatures(
   const pages = pdf.getPages();
   const police = await pdf.embedFont(StandardFonts.Helvetica);
 
+  let appose = 0;
   const membres = Object.keys(positions ?? {});
   if (membres.length === 0) {
     throw new Error("Néoliane n'a fourni aucune position de signature pour ce document.");
@@ -97,8 +98,10 @@ export async function apposerSignatures(
 
   for (const membre of membres) {
     const pos = (positions as Record<string, PositionSignature>)[membre] as PositionSignature;
-    const source = paraphes[membre] ?? paraphes["holder"];
-    if (!source) throw new Error(`Paraphe manquant pour le signataire « ${membre} ».`);
+    // Un emplacement sans paraphe fourni (ex. conjoint non couvert) est ignoré.
+    const source = paraphes[membre];
+    if (!source) continue;
+    appose += 1;
 
     const page = pages[Math.max(0, (pos.page ?? 1) - 1)];
     if (!page) throw new Error(`Page ${pos.page} absente du document à signer.`);
@@ -131,6 +134,9 @@ export async function apposerSignatures(
     );
   }
 
+  if (appose === 0) {
+    throw new Error("Aucun paraphe ne correspond aux emplacements de signature du document.");
+  }
   return octetsEnBase64(await pdf.save());
 }
 
