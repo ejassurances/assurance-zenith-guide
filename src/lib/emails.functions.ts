@@ -149,7 +149,17 @@ export const boiteReception = createServerFn({ method: "POST" })
           };
           const triage = await analyserEmailProspect(entree);
 
-          if (classificationConfiante(triage)) {
+          if (estPublicite(triage)) {
+            // Publicité / newsletter / spam : ni fiche client, ni tâche.
+            await marquerEmailPublicite(supabaseAdmin, {
+              email: entree,
+              triage,
+              gmail_message_id: m.id,
+              gmail_thread_id: m.thread_id ?? null,
+              recu_le: m.date ?? null,
+              userId: context.userId,
+            });
+          } else if (classificationConfiante(triage)) {
             await creerDossierDepuisEmail(supabaseAdmin, {
               email: entree,
               triage,
