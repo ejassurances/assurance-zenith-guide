@@ -3400,6 +3400,9 @@ export type Database = {
       }
       produit_garanties_propositions: {
         Row: {
+          assureur_porteur_confiance: number | null
+          assureur_porteur_extrait: string | null
+          assureur_porteur_propose: string | null
           avertissements: string | null
           created_at: string
           created_by: string | null
@@ -3409,6 +3412,7 @@ export type Database = {
           id: string
           modele_ia: string | null
           produit_id: string
+          reference_contrat_propose: string | null
           statut: string
           traite_le: string | null
           traite_par: string | null
@@ -3416,6 +3420,9 @@ export type Database = {
           valeurs: Json
         }
         Insert: {
+          assureur_porteur_confiance?: number | null
+          assureur_porteur_extrait?: string | null
+          assureur_porteur_propose?: string | null
           avertissements?: string | null
           created_at?: string
           created_by?: string | null
@@ -3425,6 +3432,7 @@ export type Database = {
           id?: string
           modele_ia?: string | null
           produit_id: string
+          reference_contrat_propose?: string | null
           statut?: string
           traite_le?: string | null
           traite_par?: string | null
@@ -3432,6 +3440,9 @@ export type Database = {
           valeurs?: Json
         }
         Update: {
+          assureur_porteur_confiance?: number | null
+          assureur_porteur_extrait?: string | null
+          assureur_porteur_propose?: string | null
           avertissements?: string | null
           created_at?: string
           created_by?: string | null
@@ -3441,6 +3452,7 @@ export type Database = {
           id?: string
           modele_ia?: string | null
           produit_id?: string
+          reference_contrat_propose?: string | null
           statut?: string
           traite_le?: string | null
           traite_par?: string | null
@@ -3529,6 +3541,7 @@ export type Database = {
           points_forts: string | null
           points_vigilance: string | null
           produit_requis_id: string | null
+          reference_contrat: string | null
           statut: Database["public"]["Enums"]["produit_statut"]
           updated_at: string
         }
@@ -3552,6 +3565,7 @@ export type Database = {
           points_forts?: string | null
           points_vigilance?: string | null
           produit_requis_id?: string | null
+          reference_contrat?: string | null
           statut?: Database["public"]["Enums"]["produit_statut"]
           updated_at?: string
         }
@@ -3575,6 +3589,7 @@ export type Database = {
           points_forts?: string | null
           points_vigilance?: string | null
           produit_requis_id?: string | null
+          reference_contrat?: string | null
           statut?: Database["public"]["Enums"]["produit_statut"]
           updated_at?: string
         }
