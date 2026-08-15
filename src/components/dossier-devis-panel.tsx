@@ -142,6 +142,8 @@ export function DossierDevisPanel({
     setNbAssuresApi(
       brancheTarifableNeoliane(brancheDossier) ? nbAssuresNeoliane(brancheDossier, recueil) : 0,
     );
+    setNbAssuresUgipApi(nbAssuresUgip(brancheDossier, recueil));
+
 
     const produitDossierId = dossier?.produit_id ?? null;
     if (!produitDossierId) {
