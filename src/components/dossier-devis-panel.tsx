@@ -8,6 +8,8 @@ import {
 } from "@/lib/devis-classement.functions";
 import { neolianeTariferDossier } from "@/lib/neoliane.functions";
 import { brancheTarifableNeoliane, nbAssuresNeoliane } from "@/lib/neoliane/branches";
+import { ugipTariferDossier } from "@/lib/ugip.functions";
+import { nbAssuresUgip } from "@/lib/ugip/eligibilite";
 
 /** 1er jour du mois suivant (AAAA-MM-JJ) — date d'effet proposée par défaut. */
 function premierDuMoisSuivant(): string {
@@ -89,6 +91,15 @@ export function DossierDevisPanel({
   const [neoMsg, setNeoMsg] = useState<string | null>(null);
   const [neoErr, setNeoErr] = useState<string | null>(null);
 
+  /** Tarification API UGIP Assurances (branche emprunteur). */
+  const tariferUgip = useServerFn(ugipTariferDossier);
+  const [nbAssuresUgipApi, setNbAssuresUgipApi] = useState(0);
+  const [ugipDate, setUgipDate] = useState(premierDuMoisSuivant());
+  const [ugipEtat, setUgipEtat] = useState<"idle" | "appel">("idle");
+  const [ugipMsg, setUgipMsg] = useState<string | null>(null);
+  const [ugipErr, setUgipErr] = useState<string | null>(null);
+
+
   const [form, setForm] = useState({
     compagnie_id: "",
     produit_id: "",
@@ -131,6 +142,8 @@ export function DossierDevisPanel({
     setNbAssuresApi(
       brancheTarifableNeoliane(brancheDossier) ? nbAssuresNeoliane(brancheDossier, recueil) : 0,
     );
+    setNbAssuresUgipApi(nbAssuresUgip(brancheDossier, recueil));
+
 
     const produitDossierId = dossier?.produit_id ?? null;
     if (!produitDossierId) {
@@ -325,6 +338,35 @@ export function DossierDevisPanel({
     }
   };
 
+  const recupererTarifsUgip = async () => {
+    setUgipErr(null);
+    setUgipMsg(null);
+    setUgipEtat("appel");
+    try {
+      const res = (await tariferUgip({ data: { dossier_id: dossierId, date_effet: ugipDate } })) as {
+        nbDevisCrees: number;
+        nbTarifs: number;
+        nbProduitsInterroges: number;
+        nbAssures: number;
+        compagnieTrouvee: boolean;
+        echecs: string[];
+      };
+      await load();
+      setUgipMsg(
+        `${res.nbDevisCrees} devis UGIP ajoutés au dossier (${res.nbTarifs} tarifs obtenus sur ${res.nbProduitsInterroges} produits interrogés, ${res.nbAssures} assuré(s)).` +
+          (res.compagnieTrouvee ? "" : " Compagnie « UGIP » introuvable en base : les devis sont créés sans compagnie.") +
+          (res.echecs.length > 0 ? `\nProduits écartés : ${res.echecs.join(" · ")}` : ""),
+      );
+      onChanged?.();
+    } catch (e) {
+      setUgipErr(e instanceof Error ? e.message : "Appel UGIP impossible");
+    } finally {
+      setUgipEtat("idle");
+    }
+  };
+
+
+
 
 
   return (
@@ -395,6 +437,36 @@ export function DossierDevisPanel({
           {neoErr && <p className="whitespace-pre-wrap text-sm text-destructive">{neoErr}</p>}
         </div>
       )}
+
+      {nbAssuresUgipApi > 0 && (
+        <div className="mt-4 space-y-3 rounded-xl border border-line bg-surface p-4">
+          <div>
+            <h3 className="text-sm font-medium text-ink">Tarification UGIP Assurances (API)</h3>
+            <p className="mt-1 text-xs text-ink-muted">
+              {nbAssuresUgipApi} assuré(s) du recueil, avec leur quotité, seront transmis à UGIP sur l'ensemble des
+              produits emprunteur commercialisés (bases capital initial et capital restant dû). Les 5 offres les moins
+              chères sont ajoutées au comparatif, garanties Décès, PTIA, IPT et ITT franchise 90 jours.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="block">
+              <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Date d'effet</span>
+              <input type="date" value={ugipDate} onChange={(e) => setUgipDate(e.target.value)} className={inp} />
+            </label>
+            <button
+              onClick={recupererTarifsUgip}
+              disabled={ugipEtat === "appel" || !ugipDate}
+              className="rounded-full bg-ink px-5 py-2 text-sm text-primary-foreground disabled:opacity-50"
+            >
+              {ugipEtat === "appel" ? "Appel UGIP…" : "Récupérer les tarifs UGIP"}
+            </button>
+          </div>
+          {ugipMsg && <p className="whitespace-pre-wrap text-sm text-emerald-700">{ugipMsg}</p>}
+          {ugipErr && <p className="whitespace-pre-wrap text-sm text-destructive">{ugipErr}</p>}
+        </div>
+      )}
+
+
 
       {produitFixe && (
         <div className="mt-4 space-y-3 border-t border-line pt-4">
