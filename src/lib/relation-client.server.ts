@@ -562,9 +562,8 @@ async function traiterEmailClientInterne(
   // réponse ni de brouillon automatique — différent du niveau 2 générique.
   const { sujetEstSuiviContrats } = await import("@/lib/suivi-contrats");
   if (sujetEstSuiviContrats(email.sujet)) {
-    const { marquerAgentATraiter: marquerSuivi } = await import("@/lib/gmail.server");
-    await marquerSuivi(gmail_message_id, "relation_client");
     const { traiterRetourSuiviContrats } = await import("@/lib/suivi-contrats.server");
+
     await traiterRetourSuiviContrats(admin, {
       client,
       sujet: email.sujet,
@@ -583,9 +582,7 @@ async function traiterEmailClientInterne(
 
   const classification = await analyserEmailClient(email);
 
-  // Dès la catégorisation : le mail est marqué « À traiter » pour cet agent.
-  const { marquerAgentATraiter } = await import("@/lib/gmail.server");
-  await marquerAgentATraiter(gmail_message_id, "relation_client");
+
 
   const base = {
     client_id: client.id,

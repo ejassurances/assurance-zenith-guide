@@ -16,8 +16,8 @@ const MODELES = ["google/gemini-3.6-flash", "google/gemini-2.5-flash"];
 
 type Admin = SupabaseClient<Database>;
 
-export const LABEL_VEILLE_A_EXAMINER = "Veille/À examiner";
-export const LABEL_VEILLE_NON_IMPACTE = "Veille/Non impacté";
+// Étiquettes Gmail réelles du cabinet (voir LABELS_CABINET).
+
 
 export interface EmailVeille {
   sujet: string | null;
