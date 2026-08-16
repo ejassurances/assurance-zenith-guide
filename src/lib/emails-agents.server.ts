@@ -62,7 +62,7 @@ export async function executerAgents(
         creerFicheProspectIncertaine,
       } = await import("@/lib/email-triage.server");
       const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
-      const { marquerAgentATraiter, marquerAgentArchive } = await import("@/lib/gmail.server");
+      const { poserLabelCabinet } = await import("@/lib/gmail.server");
       const { traiterEmailFinance } = await import("@/lib/finance-agent.server");
       const { traiterEmailVeille } = await import("@/lib/veille-reglementaire.server");
       for (const m of aTrier) {
@@ -140,10 +140,8 @@ export async function executerAgents(
           }
 
           const triage = await analyserEmailProspect(entree);
-          // Catégorisation faite : le mail est pris en charge par l'agent commercial.
-          await marquerAgentATraiter(m.id, "commercial");
-
-
+          // Catégorisation faite : prospect entrant spontané.
+          await poserLabelCabinet(m.id, "prospect_direct");
 
           if (estPublicite(triage)) {
             // Publicité / newsletter / spam : ni fiche client, ni tâche.
@@ -155,6 +153,7 @@ export async function executerAgents(
               recu_le: m.date ?? null,
               userId: userId,
             });
+            await poserLabelCabinet(m.id, "a_ignorer", { retirer: ["prospect_direct"] });
           } else if (classificationConfiante(triage)) {
             await creerDossierDepuisEmail(admin, {
               email: entree,
@@ -165,6 +164,8 @@ export async function executerAgents(
               userId: userId,
             });
             dossiersCrees++;
+            // Traitement automatique complet : prospect traité par l'IA.
+            await poserLabelCabinet(m.id, "prospect_traite_ia");
           } else {
             // Classification incertaine : fiche prospect + LCB-FT + tâche
             // humaine de qualification, mais aucun dossier créé.
@@ -176,11 +177,11 @@ export async function executerAgents(
               recu_le: m.date ?? null,
               userId: userId,
             });
+            // Qualification humaine attendue : à relancer.
+            await poserLabelCabinet(m.id, "prospect_a_relancer");
           }
-          // Traitement terminé : « À traiter » retiré, « Archivé » posé.
-          await marquerAgentArchive(m.id, "commercial");
-
         } catch (e) {
+          erreurs++;
           console.error("[agent-commercial] triage email", m.id, e);
           // Aucune étape ne doit échouer silencieusement : une tâche décrit l'erreur.
           await creerTacheAdmin(admin, {
@@ -193,6 +194,7 @@ export async function executerAgents(
             created_by: userId,
           });
         }
+
       }
     }
 
