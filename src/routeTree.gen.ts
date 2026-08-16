@@ -18,6 +18,7 @@ import { Route as EspaceCguRouteImport } from './routes/espace.cgu'
 import { Route as AuthenticatedEspaceRouteImport } from './routes/_authenticated/espace'
 import { Route as AuthenticatedEspaceIndexRouteImport } from './routes/_authenticated/espace.index'
 import { Route as ApiPublicSuiviContratsRouteImport } from './routes/api/public/suivi-contrats'
+import { Route as ApiPublicScanEmailsRouteImport } from './routes/api/public/scan-emails'
 import { Route as ApiPublicRevueLcbftRouteImport } from './routes/api/public/revue-lcbft'
 import { Route as ApiPublicRelanceSouscriptionRouteImport } from './routes/api/public/relance-souscription'
 import { Route as ApiPublicRelanceSinistresRouteImport } from './routes/api/public/relance-sinistres'
@@ -104,6 +105,11 @@ const AuthenticatedEspaceIndexRoute =
 const ApiPublicSuiviContratsRoute = ApiPublicSuiviContratsRouteImport.update({
   id: '/api/public/suivi-contrats',
   path: '/api/public/suivi-contrats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicScanEmailsRoute = ApiPublicScanEmailsRouteImport.update({
+  id: '/api/public/scan-emails',
+  path: '/api/public/scan-emails',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicRevueLcbftRoute = ApiPublicRevueLcbftRouteImport.update({
@@ -388,6 +394,7 @@ export interface FileRoutesByFullPath {
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
   '/api/public/revue-lcbft': typeof ApiPublicRevueLcbftRoute
+  '/api/public/scan-emails': typeof ApiPublicScanEmailsRoute
   '/api/public/suivi-contrats': typeof ApiPublicSuiviContratsRoute
   '/espace/': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
@@ -439,6 +446,7 @@ export interface FileRoutesByTo {
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
   '/api/public/revue-lcbft': typeof ApiPublicRevueLcbftRoute
+  '/api/public/scan-emails': typeof ApiPublicScanEmailsRoute
   '/api/public/suivi-contrats': typeof ApiPublicSuiviContratsRoute
   '/espace': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
@@ -493,6 +501,7 @@ export interface FileRoutesById {
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
   '/api/public/revue-lcbft': typeof ApiPublicRevueLcbftRoute
+  '/api/public/scan-emails': typeof ApiPublicScanEmailsRoute
   '/api/public/suivi-contrats': typeof ApiPublicSuiviContratsRoute
   '/_authenticated/espace/': typeof AuthenticatedEspaceIndexRoute
   '/_authenticated/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
@@ -547,6 +556,7 @@ export interface FileRouteTypes {
     | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
     | '/api/public/revue-lcbft'
+    | '/api/public/scan-emails'
     | '/api/public/suivi-contrats'
     | '/espace/'
     | '/espace/clients/$id'
@@ -598,6 +608,7 @@ export interface FileRouteTypes {
     | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
     | '/api/public/revue-lcbft'
+    | '/api/public/scan-emails'
     | '/api/public/suivi-contrats'
     | '/espace'
     | '/espace/clients/$id'
@@ -651,6 +662,7 @@ export interface FileRouteTypes {
     | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
     | '/api/public/revue-lcbft'
+    | '/api/public/scan-emails'
     | '/api/public/suivi-contrats'
     | '/_authenticated/espace/'
     | '/_authenticated/espace/clients/$id'
@@ -688,6 +700,7 @@ export interface RootRouteChildren {
   ApiPublicRelanceSinistresRoute: typeof ApiPublicRelanceSinistresRoute
   ApiPublicRelanceSouscriptionRoute: typeof ApiPublicRelanceSouscriptionRoute
   ApiPublicRevueLcbftRoute: typeof ApiPublicRevueLcbftRoute
+  ApiPublicScanEmailsRoute: typeof ApiPublicScanEmailsRoute
   ApiPublicSuiviContratsRoute: typeof ApiPublicSuiviContratsRoute
   ApiPublicWebhooksCrmRoute: typeof ApiPublicWebhooksCrmRoute
   ApiPublicWebhooksNeolianeRoute: typeof ApiPublicWebhooksNeolianeRoute
@@ -759,6 +772,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/suivi-contrats'
       fullPath: '/api/public/suivi-contrats'
       preLoaderRoute: typeof ApiPublicSuiviContratsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/scan-emails': {
+      id: '/api/public/scan-emails'
+      path: '/api/public/scan-emails'
+      fullPath: '/api/public/scan-emails'
+      preLoaderRoute: typeof ApiPublicScanEmailsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/revue-lcbft': {
@@ -1166,6 +1186,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicRelanceSinistresRoute: ApiPublicRelanceSinistresRoute,
   ApiPublicRelanceSouscriptionRoute: ApiPublicRelanceSouscriptionRoute,
   ApiPublicRevueLcbftRoute: ApiPublicRevueLcbftRoute,
+  ApiPublicScanEmailsRoute: ApiPublicScanEmailsRoute,
   ApiPublicSuiviContratsRoute: ApiPublicSuiviContratsRoute,
   ApiPublicWebhooksCrmRoute: ApiPublicWebhooksCrmRoute,
   ApiPublicWebhooksNeolianeRoute: ApiPublicWebhooksNeolianeRoute,
