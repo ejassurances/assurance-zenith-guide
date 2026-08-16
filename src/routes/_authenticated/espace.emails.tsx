@@ -336,6 +336,10 @@ function EmailsPage() {
 
       {error && <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
 
+      <ReponsesIaPanel />
+
+
+
       <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_1fr]">
         <div className={CARTE + " overflow-hidden"}>
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
