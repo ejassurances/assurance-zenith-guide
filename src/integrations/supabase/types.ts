@@ -2920,6 +2920,45 @@ export type Database = {
           },
         ]
       }
+      formations_personnel: {
+        Row: {
+          attestation_url: string | null
+          collaborateur_id: string
+          created_at: string
+          created_by: string | null
+          date_expiration: string | null
+          date_formation: string
+          id: string
+          statut: string
+          theme: string
+          updated_at: string
+        }
+        Insert: {
+          attestation_url?: string | null
+          collaborateur_id: string
+          created_at?: string
+          created_by?: string | null
+          date_expiration?: string | null
+          date_formation: string
+          id?: string
+          statut?: string
+          theme: string
+          updated_at?: string
+        }
+        Update: {
+          attestation_url?: string | null
+          collaborateur_id?: string
+          created_at?: string
+          created_by?: string | null
+          date_expiration?: string | null
+          date_formation?: string
+          id?: string
+          statut?: string
+          theme?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       formule_garanties: {
         Row: {
           created_at: string
@@ -3975,6 +4014,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      registre_traitements_rgpd: {
+        Row: {
+          base_legale: string | null
+          categories_donnees: string | null
+          created_at: string
+          created_by: string | null
+          destinataires: string | null
+          duree_conservation: string | null
+          finalite: string | null
+          id: string
+          mesures_securite: string | null
+          nom_traitement: string
+          personnes_concernees: string | null
+          revise_le: string | null
+          sous_traitants: string | null
+          transfert_hors_ue: boolean
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          base_legale?: string | null
+          categories_donnees?: string | null
+          created_at?: string
+          created_by?: string | null
+          destinataires?: string | null
+          duree_conservation?: string | null
+          finalite?: string | null
+          id?: string
+          mesures_securite?: string | null
+          nom_traitement: string
+          personnes_concernees?: string | null
+          revise_le?: string | null
+          sous_traitants?: string | null
+          transfert_hors_ue?: boolean
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          base_legale?: string | null
+          categories_donnees?: string | null
+          created_at?: string
+          created_by?: string | null
+          destinataires?: string | null
+          duree_conservation?: string | null
+          finalite?: string | null
+          id?: string
+          mesures_securite?: string | null
+          nom_traitement?: string
+          personnes_concernees?: string | null
+          revise_le?: string | null
+          sous_traitants?: string | null
+          transfert_hors_ue?: boolean
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
       }
       simulassur_dossiers: {
         Row: {

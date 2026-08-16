@@ -24,6 +24,7 @@ import { Route as ApiPublicRelanceSinistresRouteImport } from './routes/api/publ
 import { Route as ApiPublicRelancePiecesRouteImport } from './routes/api/public/relance-pieces'
 import { Route as ApiPublicRappelsExpirationRouteImport } from './routes/api/public/rappels-expiration'
 import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
+import { Route as ApiPublicFormationsRappelsRouteImport } from './routes/api/public/formations-rappels'
 import { Route as ApiPublicEnvoisPlanifiesRouteImport } from './routes/api/public/envois-planifies'
 import { Route as ApiPublicDevoirsConseilEnvoisRouteImport } from './routes/api/public/devoirs-conseil-envois'
 import { Route as ApiPublicControleInterneRappelRouteImport } from './routes/api/public/controle-interne-rappel'
@@ -138,6 +139,12 @@ const ApiPublicLeadsRoute = ApiPublicLeadsRouteImport.update({
   path: '/api/public/leads',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicFormationsRappelsRoute =
+  ApiPublicFormationsRappelsRouteImport.update({
+    id: '/api/public/formations-rappels',
+    path: '/api/public/formations-rappels',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicEnvoisPlanifiesRoute =
   ApiPublicEnvoisPlanifiesRouteImport.update({
     id: '/api/public/envois-planifies',
@@ -374,6 +381,7 @@ export interface FileRoutesByFullPath {
   '/api/public/controle-interne-rappel': typeof ApiPublicControleInterneRappelRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
+  '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
@@ -424,6 +432,7 @@ export interface FileRoutesByTo {
   '/api/public/controle-interne-rappel': typeof ApiPublicControleInterneRappelRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
+  '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
@@ -477,6 +486,7 @@ export interface FileRoutesById {
   '/api/public/controle-interne-rappel': typeof ApiPublicControleInterneRappelRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
+  '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
@@ -530,6 +540,7 @@ export interface FileRouteTypes {
     | '/api/public/controle-interne-rappel'
     | '/api/public/devoirs-conseil-envois'
     | '/api/public/envois-planifies'
+    | '/api/public/formations-rappels'
     | '/api/public/leads'
     | '/api/public/rappels-expiration'
     | '/api/public/relance-pieces'
@@ -580,6 +591,7 @@ export interface FileRouteTypes {
     | '/api/public/controle-interne-rappel'
     | '/api/public/devoirs-conseil-envois'
     | '/api/public/envois-planifies'
+    | '/api/public/formations-rappels'
     | '/api/public/leads'
     | '/api/public/rappels-expiration'
     | '/api/public/relance-pieces'
@@ -632,6 +644,7 @@ export interface FileRouteTypes {
     | '/api/public/controle-interne-rappel'
     | '/api/public/devoirs-conseil-envois'
     | '/api/public/envois-planifies'
+    | '/api/public/formations-rappels'
     | '/api/public/leads'
     | '/api/public/rappels-expiration'
     | '/api/public/relance-pieces'
@@ -668,6 +681,7 @@ export interface RootRouteChildren {
   ApiPublicControleInterneRappelRoute: typeof ApiPublicControleInterneRappelRoute
   ApiPublicDevoirsConseilEnvoisRoute: typeof ApiPublicDevoirsConseilEnvoisRoute
   ApiPublicEnvoisPlanifiesRoute: typeof ApiPublicEnvoisPlanifiesRoute
+  ApiPublicFormationsRappelsRoute: typeof ApiPublicFormationsRappelsRoute
   ApiPublicLeadsRoute: typeof ApiPublicLeadsRoute
   ApiPublicRappelsExpirationRoute: typeof ApiPublicRappelsExpirationRoute
   ApiPublicRelancePiecesRoute: typeof ApiPublicRelancePiecesRoute
@@ -787,6 +801,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/leads'
       fullPath: '/api/public/leads'
       preLoaderRoute: typeof ApiPublicLeadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/formations-rappels': {
+      id: '/api/public/formations-rappels'
+      path: '/api/public/formations-rappels'
+      fullPath: '/api/public/formations-rappels'
+      preLoaderRoute: typeof ApiPublicFormationsRappelsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/envois-planifies': {
@@ -1138,6 +1159,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicControleInterneRappelRoute: ApiPublicControleInterneRappelRoute,
   ApiPublicDevoirsConseilEnvoisRoute: ApiPublicDevoirsConseilEnvoisRoute,
   ApiPublicEnvoisPlanifiesRoute: ApiPublicEnvoisPlanifiesRoute,
+  ApiPublicFormationsRappelsRoute: ApiPublicFormationsRappelsRoute,
   ApiPublicLeadsRoute: ApiPublicLeadsRoute,
   ApiPublicRappelsExpirationRoute: ApiPublicRappelsExpirationRoute,
   ApiPublicRelancePiecesRoute: ApiPublicRelancePiecesRoute,
