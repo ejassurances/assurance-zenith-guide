@@ -103,7 +103,12 @@ export const Route = createFileRoute("/api/public/leads")({
             );
           }
           clientId = inserted.id;
+
+          // Listes Brevo : synchro immédiate du nouveau prospect (best-effort).
+          const { synchroniserContactBrevoSansEchec } = await import("@/lib/brevo-listes.server");
+          await synchroniserContactBrevoSansEchec(supabaseAdmin as never, clientId);
         }
+
 
         // Journalise la demande dans l'historique du client.
         const titre =
