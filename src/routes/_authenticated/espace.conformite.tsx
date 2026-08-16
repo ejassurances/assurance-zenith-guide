@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { RegistreClientsConformite } from "@/components/registre-clients-conformite";
 import { VeilleReglementairePanel } from "@/components/veille-reglementaire-panel";
 import { ControleInternePanel } from "@/components/controle-interne-panel";
+import { CartographieRisquesPanel } from "@/components/cartographie-risques-panel";
 
 export const Route = createFileRoute("/_authenticated/espace/conformite")({
   component: ConformitePage,
@@ -106,6 +107,7 @@ function ConformitePage() {
           <TabsTrigger value="registre-clients">Registre clients</TabsTrigger>
           <TabsTrigger value="veille">Veille réglementaire</TabsTrigger>
           <TabsTrigger value="controle-interne">Contrôle interne</TabsTrigger>
+          <TabsTrigger value="cartographie">Cartographie des risques</TabsTrigger>
         </TabsList>
 
         <TabsContent value="mes-documents" className="mt-6">
@@ -132,6 +134,10 @@ function ConformitePage() {
 
         <TabsContent value="controle-interne" className="mt-6">
           <ControleInternePanel isAdmin={role === "admin"} />
+        </TabsContent>
+
+        <TabsContent value="cartographie" className="mt-6">
+          <CartographieRisquesPanel isAdmin={role === "admin"} />
         </TabsContent>
       </Tabs>
     </div>
