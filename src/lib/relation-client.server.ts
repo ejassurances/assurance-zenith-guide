@@ -83,6 +83,12 @@ function consigne(email: EmailClient): string {
     '- "niveau_0" : sinistre, déclaration de dommage, réclamation, mécontentement, résiliation,',
     "  sujet de santé (maladie, hospitalisation, arrêt de travail, remboursement de soins),",
     "  ou sujet de paiement (prélèvement, impayé, remboursement, cotisation non passée).",
+    '  Pour le niveau_0 UNIQUEMENT, précise le sous-type dans "sous_type" :',
+    '  * "sinistre" : le client déclare un sinistre / un dommage survenu et attend une prise en charge',
+    '  * "reclamation" : mécontentement, litige, réclamation',
+    '  * "resiliation" : demande de résiliation',
+    '  * "sante" : sujet médical ou de remboursement de soins',
+    '  * "paiement" : prélèvement, impayé, cotisation, remboursement de cotisation',
     '- "niveau_1" : UNIQUEMENT si la demande correspond exactement à une de ces trois intentions,',
     "  sans aucune ambiguïté et sans autre demande associée :",
     '  * "info_contrat" : demande d\'information sur le contrat en cours (numéro, compagnie, cotisation, date d\'effet)',
@@ -101,11 +107,13 @@ function consigne(email: EmailClient): string {
     (email.texte ?? "").slice(0, 6000),
     "",
     'Réponds STRICTEMENT en JSON : {"niveau":"niveau_0|niveau_1|niveau_2",',
+    '"sous_type":"sinistre|reclamation|resiliation|sante|paiement|null",',
     '"intention":"info_contrat|info_garanties|attestation|null","piece_jointe_kyc":false,',
     '"pieces_kyc":[{"nom":"fichier.pdf","type":"cni|justificatif_domicile|rib|kbis"}],',
     '"confiance":0.0,"resume":"une phrase"}',
   ].join("\n");
 }
+
 
 /** Analyse IA d'un email client. Toute incertitude retombe en niveau_2. */
 export async function analyserEmailClient(email: EmailClient): Promise<ClassificationRelation> {
