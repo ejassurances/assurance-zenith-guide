@@ -121,7 +121,7 @@ export function RegistreClientsConformite({ isAdmin }: { isAdmin: boolean }) {
     setProgress({ current: 0, total: 0 });
 
     try {
-      const { client_ids } = await listerNonEvalues({ data: {} });
+      const { client_ids } = await listerNonEvalues();
       setProgress({ current: 0, total: client_ids.length });
 
       let traites = 0;
@@ -134,7 +134,7 @@ export function RegistreClientsConformite({ isAdmin }: { isAdmin: boolean }) {
           traites += 1;
           if (res.niveau_vigilance === "renforcee") renforcee += 1;
         } catch (e) {
-          erreurs.push(`${client_id} : ${e instanceof Error ? e.message : "erreur"}`);
+          erreurs.push(`${clientId} : ${e instanceof Error ? e.message : "erreur"}`);
         }
         setProgress({ current: traites, total: client_ids.length });
       }
