@@ -752,14 +752,32 @@ export function DevoirConseilPanel({
                 className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
               />
             </Field>
-            <Field label="Économie estimée (€)">
+            <Field label="Frais de courtage (€)">
               <input
                 type="number"
-                value={form.economie_estimee}
-                onChange={(e) => setForm({ ...form, economie_estimee: e.target.value })}
+                value={form.frais_courtage}
+                onChange={(e) => setForm({ ...form, frais_courtage: e.target.value })}
                 className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
               />
             </Field>
+            <Field label="Frais d'adhésion (€)">
+              <input
+                type="number"
+                value={form.frais_adhesion}
+                onChange={(e) => setForm({ ...form, frais_adhesion: e.target.value })}
+                className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+              />
+            </Field>
+            {emprunteur && (
+              <Field label="Économie estimée (€)">
+                <input
+                  type="number"
+                  value={form.economie_estimee}
+                  onChange={(e) => setForm({ ...form, economie_estimee: e.target.value })}
+                  className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+                />
+              </Field>
+            )}
           </div>
 
           <Field label="Garanties retenues">
