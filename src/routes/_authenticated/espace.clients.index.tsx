@@ -45,6 +45,18 @@ type ClientRow = {
 
 const STATUTS = ["prospect", "actif", "inactif", "perdu", "ancien"] as const;
 
+const NIVEAU_LABEL: Record<"simplifiee" | "standard" | "renforcee", string> = {
+  simplifiee: "Vigilance simplifiée",
+  standard: "Vigilance standard",
+  renforcee: "Vigilance renforcée",
+};
+
+const NIVEAU_STYLE: Record<"simplifiee" | "standard" | "renforcee", string> = {
+  simplifiee: "bg-emerald-100 text-emerald-900 border-emerald-300",
+  standard: "bg-amber-100 text-amber-900 border-amber-300",
+  renforcee: "bg-red-100 text-red-900 border-red-300",
+};
+
 function ClientsList() {
   const { role } = useAuth();
   const navigate = useNavigate();
