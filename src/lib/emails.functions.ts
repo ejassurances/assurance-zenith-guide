@@ -133,6 +133,7 @@ export const boiteReception = createServerFn({ method: "POST" })
       } = await import("@/lib/email-triage.server");
       const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
       const { marquerAgentATraiter, marquerAgentArchive } = await import("@/lib/gmail.server");
+      const { traiterEmailFinance } = await import("@/lib/finance-agent.server");
       for (const m of aTrier) {
         try {
           const detail = await lireMessage(m.id);
@@ -143,9 +144,47 @@ export const boiteReception = createServerFn({ method: "POST" })
             texte: detail.texte ?? detail.snippet ?? null,
             pieces_jointes: detail.pieces_jointes.map((p) => ({ nom: p.nom, mime: p.mime })),
           };
+
+          // Agent finance en premier : facture fournisseur ou bordereau de
+          // commissions. Si ce n'est pas du ressort de la finance, le tri
+          // prospect (agent commercial) prend la suite.
+          const finance = await traiterEmailFinance(supabaseAdmin, {
+            email: {
+              ...entree,
+              pieces_jointes: detail.pieces_jointes.map((p) => ({
+                nom: p.nom,
+                mime: p.mime,
+                attachment_id: p.attachment_id,
+              })),
+            },
+            gmail_message_id: m.id,
+            recu_le: m.date ?? null,
+            userId: context.userId,
+          });
+          if (finance.action !== "ignore") {
+            if (finance.action === "facture_creee") facturesCreees++;
+            if (finance.action === "bordereau_cree") bordereauxCrees++;
+            await supabaseAdmin.from("crm_emails").upsert(
+              {
+                gmail_message_id: m.id,
+                gmail_thread_id: m.thread_id ?? null,
+                direction: "entrant",
+                recu_le: m.date ?? null,
+                notes: `Agent finance — ${finance.categorie} (${finance.action})`,
+                triage_ia: JSON.parse(JSON.stringify({ agent: "finance", ...finance })),
+                triage_le: new Date().toISOString(),
+                created_by: context.userId,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: "gmail_message_id" },
+            );
+            continue;
+          }
+
           const triage = await analyserEmailProspect(entree);
           // Catégorisation faite : le mail est pris en charge par l'agent commercial.
           await marquerAgentATraiter(m.id, "commercial");
+
 
 
           if (estPublicite(triage)) {
