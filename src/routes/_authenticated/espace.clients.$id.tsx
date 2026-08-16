@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { signalerReponseIncorrecte } from "@/lib/relation-client.functions";
+import { synchroniserContactBrevoClient } from "@/lib/brevo-contact.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { FamilleTab, EntrepriseTab, EquipementsTab } from "@/components/client-360-tabs";
@@ -262,6 +263,7 @@ function ClientDetail() {
 /* -------------------- IDENTITÉ -------------------- */
 
 function IdentiteTab({ client, canEdit, onSaved }: { client: Client; canEdit: boolean; onSaved: () => void }) {
+  const syncBrevo = useServerFn(synchroniserContactBrevoClient);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<Client>(client);
   const [saving, setSaving] = useState(false);
@@ -280,6 +282,12 @@ function IdentiteTab({ client, canEdit, onSaved }: { client: Client; canEdit: bo
       .eq("id", client.id);
     setSaving(false);
     if (!error) {
+      // Listes Brevo : le statut du client a pu changer → synchro immédiate (best-effort).
+      if (form.statut !== client.statut) {
+        void syncBrevo({ data: { client_id: client.id } }).catch((e) =>
+          console.error("[brevo] synchro contact échouée", e),
+        );
+      }
       setEditing(false);
       onSaved();
     }

@@ -1,5 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
+import { synchroniserContactBrevoClient } from "@/lib/brevo-contact.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { calculerEconomieEmprunteur, economieColumns } from "@/lib/economie-emprunteur";
@@ -179,6 +181,12 @@ function ContratDetail() {
       .eq("id", c.id);
     setSaving(false);
     if (error) return setErr(error.message);
+    // Listes Brevo : le contrat vient de passer actif → synchro immédiate (best-effort).
+    if (["actif", "contrat_actif", "contrat_valide"].includes(c.statut)) {
+      void syncBrevo({ data: { client_id: c.client_id } }).catch((e) =>
+        console.error("[brevo] synchro contact échouée", e),
+      );
+    }
     // Reload to fetch newly computed échéances via trigger
     await load();
   }
