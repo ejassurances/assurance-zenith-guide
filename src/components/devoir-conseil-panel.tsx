@@ -327,6 +327,8 @@ export function DevoirConseilPanel({
           cotisation_mensuelle: form.cotisation_mensuelle ? Number(form.cotisation_mensuelle) : null,
           frais_dossier: form.frais_dossier ? Number(form.frais_dossier) : null,
           frais_souscription: form.frais_souscription ? Number(form.frais_souscription) : null,
+          frais_courtage: form.frais_courtage ? Number(form.frais_courtage) : null,
+          frais_adhesion: form.frais_adhesion ? Number(form.frais_adhesion) : null,
           economie_estimee: form.economie_estimee ? Number(form.economie_estimee) : null,
           offres:
             offresRemplies.length > 0
