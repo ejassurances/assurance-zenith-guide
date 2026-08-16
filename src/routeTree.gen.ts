@@ -25,6 +25,7 @@ import { Route as ApiPublicRappelsExpirationRouteImport } from './routes/api/pub
 import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
 import { Route as ApiPublicEnvoisPlanifiesRouteImport } from './routes/api/public/envois-planifies'
 import { Route as ApiPublicDevoirsConseilEnvoisRouteImport } from './routes/api/public/devoirs-conseil-envois'
+import { Route as ApiPublicBrevoListesSyncRouteImport } from './routes/api/public/brevo-listes-sync'
 import { Route as ApiPublicBootstrapAdminRouteImport } from './routes/api/public/bootstrap-admin'
 import { Route as AuthenticatedEspaceUtilisateursRouteImport } from './routes/_authenticated/espace.utilisateurs'
 import { Route as AuthenticatedEspaceTachesRouteImport } from './routes/_authenticated/espace.taches'
@@ -139,6 +140,12 @@ const ApiPublicDevoirsConseilEnvoisRoute =
   ApiPublicDevoirsConseilEnvoisRouteImport.update({
     id: '/api/public/devoirs-conseil-envois',
     path: '/api/public/devoirs-conseil-envois',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicBrevoListesSyncRoute =
+  ApiPublicBrevoListesSyncRouteImport.update({
+    id: '/api/public/brevo-listes-sync',
+    path: '/api/public/brevo-listes-sync',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicBootstrapAdminRoute = ApiPublicBootstrapAdminRouteImport.update({
@@ -342,6 +349,7 @@ export interface FileRoutesByFullPath {
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
+  '/api/public/brevo-listes-sync': typeof ApiPublicBrevoListesSyncRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
@@ -388,6 +396,7 @@ export interface FileRoutesByTo {
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
+  '/api/public/brevo-listes-sync': typeof ApiPublicBrevoListesSyncRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
@@ -437,6 +446,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/_authenticated/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
+  '/api/public/brevo-listes-sync': typeof ApiPublicBrevoListesSyncRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
@@ -486,6 +496,7 @@ export interface FileRouteTypes {
     | '/espace/taches'
     | '/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
+    | '/api/public/brevo-listes-sync'
     | '/api/public/devoirs-conseil-envois'
     | '/api/public/envois-planifies'
     | '/api/public/leads'
@@ -532,6 +543,7 @@ export interface FileRouteTypes {
     | '/espace/taches'
     | '/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
+    | '/api/public/brevo-listes-sync'
     | '/api/public/devoirs-conseil-envois'
     | '/api/public/envois-planifies'
     | '/api/public/leads'
@@ -580,6 +592,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/taches'
     | '/_authenticated/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
+    | '/api/public/brevo-listes-sync'
     | '/api/public/devoirs-conseil-envois'
     | '/api/public/envois-planifies'
     | '/api/public/leads'
@@ -612,6 +625,7 @@ export interface RootRouteChildren {
   EspaceCguRoute: typeof EspaceCguRoute
   EspaceConfidentialiteRoute: typeof EspaceConfidentialiteRoute
   ApiPublicBootstrapAdminRoute: typeof ApiPublicBootstrapAdminRoute
+  ApiPublicBrevoListesSyncRoute: typeof ApiPublicBrevoListesSyncRoute
   ApiPublicDevoirsConseilEnvoisRoute: typeof ApiPublicDevoirsConseilEnvoisRoute
   ApiPublicEnvoisPlanifiesRoute: typeof ApiPublicEnvoisPlanifiesRoute
   ApiPublicLeadsRoute: typeof ApiPublicLeadsRoute
@@ -739,6 +753,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/devoirs-conseil-envois'
       fullPath: '/api/public/devoirs-conseil-envois'
       preLoaderRoute: typeof ApiPublicDevoirsConseilEnvoisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/brevo-listes-sync': {
+      id: '/api/public/brevo-listes-sync'
+      path: '/api/public/brevo-listes-sync'
+      fullPath: '/api/public/brevo-listes-sync'
+      preLoaderRoute: typeof ApiPublicBrevoListesSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/bootstrap-admin': {
@@ -1049,6 +1070,7 @@ const rootRouteChildren: RootRouteChildren = {
   EspaceCguRoute: EspaceCguRoute,
   EspaceConfidentialiteRoute: EspaceConfidentialiteRoute,
   ApiPublicBootstrapAdminRoute: ApiPublicBootstrapAdminRoute,
+  ApiPublicBrevoListesSyncRoute: ApiPublicBrevoListesSyncRoute,
   ApiPublicDevoirsConseilEnvoisRoute: ApiPublicDevoirsConseilEnvoisRoute,
   ApiPublicEnvoisPlanifiesRoute: ApiPublicEnvoisPlanifiesRoute,
   ApiPublicLeadsRoute: ApiPublicLeadsRoute,
