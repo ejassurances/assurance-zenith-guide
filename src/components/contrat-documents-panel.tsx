@@ -7,7 +7,20 @@ type Doc = {
   file_size: number | null;
   storage_path: string;
   created_at: string;
+  type_document: string | null;
 };
+
+/** Typologie des pièces contractuelles archivées sur un contrat. */
+const TYPES_DOCUMENT = [
+  { code: "attestation_assurance", libelle: "Attestation d'assurance" },
+  { code: "avis_echeance", libelle: "Avis d'échéance" },
+  { code: "conditions_particulieres", libelle: "Conditions particulières" },
+  { code: "autre", libelle: "Autre" },
+] as const;
+
+function libelleType(code: string | null): string {
+  return TYPES_DOCUMENT.find((t) => t.code === code)?.libelle ?? "Type non précisé";
+}
 
 /**
  * Archivage libre des documents d'un contrat (police, avis d'échéance,
@@ -25,7 +38,9 @@ export function ContratDocumentsPanel({
   const [docs, setDocs] = useState<Doc[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [type, setType] = useState<string>("attestation_assurance");
   const fileRef = useRef<HTMLInputElement>(null);
+
 
   const load = async () => {
     const { data } = await supabase
