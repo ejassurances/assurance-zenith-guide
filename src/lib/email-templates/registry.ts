@@ -422,10 +422,10 @@ function SuiviContratsEmail(props: { prenom?: string; listeContrats?: string }) 
   const style = { fontFamily: "Arial, sans-serif", color: "#1a1a1a", fontSize: "15px", lineHeight: "1.6" };
   const paragraphes = [
     "Bonjour " + (props.prenom || "") + ",",
-    "Dans le cadre du suivi que nous assurons sur vos contrats d'assurance, nous faisons un point regulier pour verifier qu'ils correspondent toujours a votre situation.",
-    "Vous etes actuellement couvert(e) chez nous pour : " + (props.listeContrats || "") + ".",
-    "Votre situation personnelle, familiale ou professionnelle a-t-elle evolue depuis la souscription (demenagement, changement familial, nouveaux besoins) ? Si c'est le cas, ou si vous avez simplement une question sur vos garanties actuelles, il vous suffit de repondre a cet email — nous reviendrons vers vous rapidement.",
-    "Si votre situation n'a pas change, vous n'avez rien a faire : vos contrats continuent normalement.",
+    "Dans le cadre du suivi que nous assurons sur vos contrats d'assurance, nous faisons un point régulier pour vérifier qu'ils correspondent toujours à votre situation.",
+    "Vous êtes actuellement couvert(e) chez nous pour : " + (props.listeContrats || "") + ".",
+    "Votre situation personnelle, familiale ou professionnelle a-t-elle évolué depuis la souscription (déménagement, changement familial, nouveaux besoins) ? Si c'est le cas, ou si vous avez simplement une question sur vos garanties actuelles, il vous suffit de répondre à cet email — nous reviendrons vers vous rapidement.",
+    "Si votre situation n'a pas changé, vous n'avez rien à faire : vos contrats continuent normalement.",
   ];
   return React.createElement(
     "div",
