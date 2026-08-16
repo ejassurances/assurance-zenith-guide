@@ -22,6 +22,78 @@ export interface ResultatAgents {
 
 }
 
+/**
+ * Rattachement automatique d'un lot de messages : expéditeur connu d'un client,
+ * ou domaine d'une compagnie partenaire. Sert au job planifié (l'onglet Emails
+ * fait ce rattachement dans son propre flux).
+ */
+export async function rattacherLot(
+  admin: Admin,
+  params: { messages: EmailResume[]; userId: string },
+): Promise<{ rattaches_client: number; rattaches_compagnie: number }> {
+  const { messages, userId } = params;
+  const ids = messages.map((m) => m.id);
+  if (!ids.length) return { rattaches_client: 0, rattaches_compagnie: 0 };
+
+  const { data: liens } = await admin.from("crm_emails").select("gmail_message_id").in("gmail_message_id", ids);
+  const dejaLies = new Set((liens ?? []).map((l) => l.gmail_message_id));
+
+  const [{ data: clients }, { data: compagnies }] = await Promise.all([
+    admin.from("clients").select("id, email, email2"),
+    admin.from("compagnies").select("id, contact_email, site_web"),
+  ]);
+
+  const clientParEmail = new Map<string, string>();
+  for (const c of clients ?? []) {
+    for (const e of [c.email, c.email2]) if (e) clientParEmail.set(e.toLowerCase().trim(), c.id);
+  }
+  const domaine = (v: string | null) => {
+    if (!v) return null;
+    const m = v.toLowerCase().match(/([a-z0-9-]+\.[a-z.]{2,})/);
+    return m ? m[1]!.replace(/^www\./, "") : null;
+  };
+  const compagnieParDomaine = new Map<string, string>();
+  for (const cp of compagnies ?? []) {
+    for (const d of [domaine(cp.contact_email), domaine(cp.site_web)]) if (d) compagnieParDomaine.set(d, cp.id);
+  }
+
+  let rattachesClient = 0;
+  let rattachesCompagnie = 0;
+  for (const m of messages) {
+    if (dejaLies.has(m.id) || !m.expediteur_email) continue;
+    const expediteur = m.expediteur_email.toLowerCase().trim();
+    const clientId = clientParEmail.get(expediteur) ?? null;
+    const compagnieId = clientId ? null : compagnieParDomaine.get(domaine(expediteur) ?? "") ?? null;
+    if (!clientId && !compagnieId) continue;
+
+    const { error } = await admin.from("crm_emails").upsert(
+      {
+        gmail_message_id: m.id,
+        gmail_thread_id: m.thread_id ?? null,
+        direction: m.etiquettes.includes("SENT") ? "sortant" : "entrant",
+        recu_le: m.date ?? null,
+        client_id: clientId,
+        compagnie_id: compagnieId,
+        notes: clientId
+          ? "Rattaché automatiquement (tri planifié — email client connu)"
+          : "Rattaché automatiquement (tri planifié — domaine compagnie)",
+        created_by: userId,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "gmail_message_id" },
+    );
+    if (error) {
+      console.error("[scan-emails] rattachement", m.id, error.message);
+      continue;
+    }
+    if (clientId) rattachesClient++;
+    else rattachesCompagnie++;
+  }
+
+  return { rattaches_client: rattachesClient, rattaches_compagnie: rattachesCompagnie };
+}
+
+
 export async function executerAgents(
   admin: Admin,
   params: { messages: EmailResume[]; ids: string[]; userId: string },
