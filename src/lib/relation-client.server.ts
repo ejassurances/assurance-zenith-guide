@@ -166,6 +166,11 @@ export async function analyserEmailClient(email: EmailClient): Promise<Classific
             !!p.nom && ["cni", "justificatif_domicile", "rib", "kbis"].includes(p.type),
         );
 
+      const pretsBrut = Array.isArray(brut["pieces_pret"]) ? (brut["pieces_pret"] as any[]) : [];
+      const pieces_pret = pretsBrut
+        .map((p) => ({ nom: texteOuNull(typeof p === "string" ? p : p?.nom, 250) ?? "" }))
+        .filter((p) => !!p.nom);
+
       const sousTypeBrut = texteOuNull(brut["sous_type"], 30)?.toLowerCase() ?? null;
       const sous_type: SousTypeNiveau0 =
         niveau === "niveau_0" &&
@@ -184,10 +189,12 @@ export async function analyserEmailClient(email: EmailClient): Promise<Classific
 
         piece_jointe_kyc: brut["piece_jointe_kyc"] === true || pieces_kyc.length > 0,
         pieces_kyc,
+        pieces_pret,
         confiance,
         resume: texteOuNull(brut["resume"], 400) ?? "",
         modele,
       };
+
     }
     derniere = `${res.status} ${await res.text()}`;
     if (res.status === 429) throw new Error("Analyse IA momentanément saturée.");
