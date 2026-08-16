@@ -129,6 +129,10 @@ function ConformitePage() {
         <TabsContent value="veille" className="mt-6">
           <VeilleReglementairePanel canManage={role === "admin"} />
         </TabsContent>
+
+        <TabsContent value="controle-interne" className="mt-6">
+          <ControleInternePanel isAdmin={role === "admin"} />
+        </TabsContent>
       </Tabs>
     </div>
   );
