@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { RegistreClientsConformite } from "@/components/registre-clients-conformite";
 import { VeilleReglementairePanel } from "@/components/veille-reglementaire-panel";
 import { ControleInternePanel } from "@/components/controle-interne-panel";
+import { CartographieRisquesPanel } from "@/components/cartographie-risques-panel";
 
 export const Route = createFileRoute("/_authenticated/espace/conformite")({
   component: ConformitePage,

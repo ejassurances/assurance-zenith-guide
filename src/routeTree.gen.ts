@@ -27,6 +27,7 @@ import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
 import { Route as ApiPublicEnvoisPlanifiesRouteImport } from './routes/api/public/envois-planifies'
 import { Route as ApiPublicDevoirsConseilEnvoisRouteImport } from './routes/api/public/devoirs-conseil-envois'
 import { Route as ApiPublicControleInterneRappelRouteImport } from './routes/api/public/controle-interne-rappel'
+import { Route as ApiPublicCartographieRisquesRevisionRouteImport } from './routes/api/public/cartographie-risques-revision'
 import { Route as ApiPublicBrevoListesSyncRouteImport } from './routes/api/public/brevo-listes-sync'
 import { Route as ApiPublicBootstrapAdminRouteImport } from './routes/api/public/bootstrap-admin'
 import { Route as AuthenticatedEspaceUtilisateursRouteImport } from './routes/_authenticated/espace.utilisateurs'
@@ -153,6 +154,12 @@ const ApiPublicControleInterneRappelRoute =
   ApiPublicControleInterneRappelRouteImport.update({
     id: '/api/public/controle-interne-rappel',
     path: '/api/public/controle-interne-rappel',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicCartographieRisquesRevisionRoute =
+  ApiPublicCartographieRisquesRevisionRouteImport.update({
+    id: '/api/public/cartographie-risques-revision',
+    path: '/api/public/cartographie-risques-revision',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicBrevoListesSyncRoute =
@@ -363,6 +370,7 @@ export interface FileRoutesByFullPath {
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
   '/api/public/brevo-listes-sync': typeof ApiPublicBrevoListesSyncRoute
+  '/api/public/cartographie-risques-revision': typeof ApiPublicCartographieRisquesRevisionRoute
   '/api/public/controle-interne-rappel': typeof ApiPublicControleInterneRappelRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
@@ -412,6 +420,7 @@ export interface FileRoutesByTo {
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
   '/api/public/brevo-listes-sync': typeof ApiPublicBrevoListesSyncRoute
+  '/api/public/cartographie-risques-revision': typeof ApiPublicCartographieRisquesRevisionRoute
   '/api/public/controle-interne-rappel': typeof ApiPublicControleInterneRappelRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
@@ -464,6 +473,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
   '/api/public/brevo-listes-sync': typeof ApiPublicBrevoListesSyncRoute
+  '/api/public/cartographie-risques-revision': typeof ApiPublicCartographieRisquesRevisionRoute
   '/api/public/controle-interne-rappel': typeof ApiPublicControleInterneRappelRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
@@ -516,6 +526,7 @@ export interface FileRouteTypes {
     | '/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
     | '/api/public/brevo-listes-sync'
+    | '/api/public/cartographie-risques-revision'
     | '/api/public/controle-interne-rappel'
     | '/api/public/devoirs-conseil-envois'
     | '/api/public/envois-planifies'
@@ -565,6 +576,7 @@ export interface FileRouteTypes {
     | '/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
     | '/api/public/brevo-listes-sync'
+    | '/api/public/cartographie-risques-revision'
     | '/api/public/controle-interne-rappel'
     | '/api/public/devoirs-conseil-envois'
     | '/api/public/envois-planifies'
@@ -616,6 +628,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
     | '/api/public/brevo-listes-sync'
+    | '/api/public/cartographie-risques-revision'
     | '/api/public/controle-interne-rappel'
     | '/api/public/devoirs-conseil-envois'
     | '/api/public/envois-planifies'
@@ -651,6 +664,7 @@ export interface RootRouteChildren {
   EspaceConfidentialiteRoute: typeof EspaceConfidentialiteRoute
   ApiPublicBootstrapAdminRoute: typeof ApiPublicBootstrapAdminRoute
   ApiPublicBrevoListesSyncRoute: typeof ApiPublicBrevoListesSyncRoute
+  ApiPublicCartographieRisquesRevisionRoute: typeof ApiPublicCartographieRisquesRevisionRoute
   ApiPublicControleInterneRappelRoute: typeof ApiPublicControleInterneRappelRoute
   ApiPublicDevoirsConseilEnvoisRoute: typeof ApiPublicDevoirsConseilEnvoisRoute
   ApiPublicEnvoisPlanifiesRoute: typeof ApiPublicEnvoisPlanifiesRoute
@@ -794,6 +808,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/controle-interne-rappel'
       fullPath: '/api/public/controle-interne-rappel'
       preLoaderRoute: typeof ApiPublicControleInterneRappelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/cartographie-risques-revision': {
+      id: '/api/public/cartographie-risques-revision'
+      path: '/api/public/cartographie-risques-revision'
+      fullPath: '/api/public/cartographie-risques-revision'
+      preLoaderRoute: typeof ApiPublicCartographieRisquesRevisionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/brevo-listes-sync': {
@@ -1112,6 +1133,8 @@ const rootRouteChildren: RootRouteChildren = {
   EspaceConfidentialiteRoute: EspaceConfidentialiteRoute,
   ApiPublicBootstrapAdminRoute: ApiPublicBootstrapAdminRoute,
   ApiPublicBrevoListesSyncRoute: ApiPublicBrevoListesSyncRoute,
+  ApiPublicCartographieRisquesRevisionRoute:
+    ApiPublicCartographieRisquesRevisionRoute,
   ApiPublicControleInterneRappelRoute: ApiPublicControleInterneRappelRoute,
   ApiPublicDevoirsConseilEnvoisRoute: ApiPublicDevoirsConseilEnvoisRoute,
   ApiPublicEnvoisPlanifiesRoute: ApiPublicEnvoisPlanifiesRoute,
