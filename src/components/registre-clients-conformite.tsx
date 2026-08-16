@@ -208,6 +208,23 @@ export function RegistreClientsConformite({ isAdmin }: { isAdmin: boolean }) {
             <input type="checkbox" checked={revueRetard} onChange={(e) => setRevueRetard(e.target.checked)} />
             Revue en retard uniquement
           </label>
+          {isAdmin && (
+            <div className="ml-auto flex flex-col items-end gap-1">
+              <Button onClick={lancerEvaluation} disabled={processing || loading} size="sm">
+                {processing
+                  ? `Calcul en cours… ${progress.current}/${progress.total}`
+                  : "Calculer le risque LCB-FT — clients non évalués"}
+              </Button>
+              {summary && (
+                <p className="text-xs text-ink-muted">
+                  {summary.traites} client{summary.traites > 1 ? "s" : ""} évalué
+                  {summary.traites > 1 ? "s" : ""}
+                  {summary.renforcee > 0 ? `, ${summary.renforcee} en vigilance renforcée` : ""}
+                  {summary.erreurs.length > 0 ? `, ${summary.erreurs.length} erreur(s)` : ""}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="mt-6 overflow-x-auto">
