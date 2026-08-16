@@ -63,7 +63,7 @@ function ClientsList() {
     const { data } = await supabase
       .from("clients")
       .select(
-        "id,reference,civilite,prenom,nom,email,mobile,ville,statut,origine,marque,besoins,conformite_score,conformite_niveau,created_at",
+        "id,reference,civilite,prenom,nom,email,mobile,ville,statut,origine,marque,besoins,conformite_score,conformite_niveau,created_at,client_risque_lcbft(score_risque,niveau_vigilance)",
       )
 
       .order("created_at", { ascending: false })
