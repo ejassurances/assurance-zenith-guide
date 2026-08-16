@@ -4043,12 +4043,15 @@ export type Database = {
       }
       sinistres: {
         Row: {
+          action_recommandee: string | null
+          analyse_couverture: string | null
           branche: string | null
           client_id: string
           clos_le: string | null
-          contrat_id: string
+          contrat_id: string | null
           created_at: string
           created_by: string | null
+          date_ouverture: string
           date_survenance: string | null
           declare_compagnie_le: string | null
           declare_le: string | null
@@ -4056,22 +4059,28 @@ export type Database = {
           description: string | null
           etape: string
           gestionnaire: string | null
+          gmail_message_id: string | null
           id: string
           montant: number | null
           montant_indemnise: number | null
+          notes: string | null
           numero_compagnie: string | null
           reference: string | null
+          resume: string | null
           statut: string
           type: string | null
           updated_at: string
         }
         Insert: {
+          action_recommandee?: string | null
+          analyse_couverture?: string | null
           branche?: string | null
           client_id: string
           clos_le?: string | null
-          contrat_id: string
+          contrat_id?: string | null
           created_at?: string
           created_by?: string | null
+          date_ouverture?: string
           date_survenance?: string | null
           declare_compagnie_le?: string | null
           declare_le?: string | null
@@ -4079,22 +4088,28 @@ export type Database = {
           description?: string | null
           etape?: string
           gestionnaire?: string | null
+          gmail_message_id?: string | null
           id?: string
           montant?: number | null
           montant_indemnise?: number | null
+          notes?: string | null
           numero_compagnie?: string | null
           reference?: string | null
+          resume?: string | null
           statut?: string
           type?: string | null
           updated_at?: string
         }
         Update: {
+          action_recommandee?: string | null
+          analyse_couverture?: string | null
           branche?: string | null
           client_id?: string
           clos_le?: string | null
-          contrat_id?: string
+          contrat_id?: string | null
           created_at?: string
           created_by?: string | null
+          date_ouverture?: string
           date_survenance?: string | null
           declare_compagnie_le?: string | null
           declare_le?: string | null
@@ -4102,11 +4117,14 @@ export type Database = {
           description?: string | null
           etape?: string
           gestionnaire?: string | null
+          gmail_message_id?: string | null
           id?: string
           montant?: number | null
           montant_indemnise?: number | null
+          notes?: string | null
           numero_compagnie?: string | null
           reference?: string | null
+          resume?: string | null
           statut?: string
           type?: string | null
           updated_at?: string
