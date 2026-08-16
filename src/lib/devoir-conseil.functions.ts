@@ -25,6 +25,8 @@ const saisieSchema = z.object({
   cotisation_mensuelle: z.number().nullable().optional(),
   frais_dossier: z.number().nullable().optional(),
   frais_souscription: z.number().nullable().optional(),
+  frais_courtage: z.number().nullable().optional(),
+  frais_adhesion: z.number().nullable().optional(),
   economie_estimee: z.number().nullable().optional(),
   garanties: z.string().max(5000).optional(),
   exigences_client: z.string().max(5000).optional(),

@@ -112,6 +112,8 @@ export function DevoirConseilPanel({
     cotisation_mensuelle: "",
     frais_dossier: "",
     frais_souscription: "",
+    frais_courtage: "",
+    frais_adhesion: "",
     economie_estimee: "",
     assiette: "capital_restant_du" as "capital_initial" | "capital_restant_du",
     capital_assure: "",
@@ -325,6 +327,8 @@ export function DevoirConseilPanel({
           cotisation_mensuelle: form.cotisation_mensuelle ? Number(form.cotisation_mensuelle) : null,
           frais_dossier: form.frais_dossier ? Number(form.frais_dossier) : null,
           frais_souscription: form.frais_souscription ? Number(form.frais_souscription) : null,
+          frais_courtage: form.frais_courtage ? Number(form.frais_courtage) : null,
+          frais_adhesion: form.frais_adhesion ? Number(form.frais_adhesion) : null,
           economie_estimee: form.economie_estimee ? Number(form.economie_estimee) : null,
           offres:
             offresRemplies.length > 0
@@ -748,14 +752,32 @@ export function DevoirConseilPanel({
                 className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
               />
             </Field>
-            <Field label="Économie estimée (€)">
+            <Field label="Frais de courtage (€)">
               <input
                 type="number"
-                value={form.economie_estimee}
-                onChange={(e) => setForm({ ...form, economie_estimee: e.target.value })}
+                value={form.frais_courtage}
+                onChange={(e) => setForm({ ...form, frais_courtage: e.target.value })}
                 className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
               />
             </Field>
+            <Field label="Frais d'adhésion (€)">
+              <input
+                type="number"
+                value={form.frais_adhesion}
+                onChange={(e) => setForm({ ...form, frais_adhesion: e.target.value })}
+                className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+              />
+            </Field>
+            {emprunteur && (
+              <Field label="Économie estimée (€)">
+                <input
+                  type="number"
+                  value={form.economie_estimee}
+                  onChange={(e) => setForm({ ...form, economie_estimee: e.target.value })}
+                  className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+                />
+              </Field>
+            )}
           </div>
 
           <Field label="Garanties retenues">
