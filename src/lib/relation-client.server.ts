@@ -33,6 +33,8 @@ export const TYPE_ATTESTATION = "attestation_assurance";
 
 export type NiveauRelation = "niveau_0" | "niveau_1" | "niveau_2";
 export type IntentionRelation = "info_contrat" | "info_garanties" | "attestation" | null;
+/** Sous-type précisant la nature d'un email niveau 0. */
+export type SousTypeNiveau0 = "sinistre" | "reclamation" | "resiliation" | "sante" | "paiement" | null;
 
 export interface EmailClient {
   sujet: string | null;
@@ -44,6 +46,7 @@ export interface EmailClient {
 
 export interface ClassificationRelation {
   niveau: NiveauRelation;
+  sous_type: SousTypeNiveau0;
   intention: IntentionRelation;
   piece_jointe_kyc: boolean;
   pieces_kyc: { nom: string; type: "cni" | "justificatif_domicile" | "rib" | "kbis" }[];
@@ -51,6 +54,7 @@ export interface ClassificationRelation {
   resume: string;
   modele: string | null;
 }
+
 
 function extraireJson(texte: string): Record<string, unknown> {
   const nettoye = texte.replace(/```json/gi, "").replace(/```/g, "").trim();
