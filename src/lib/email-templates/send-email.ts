@@ -24,7 +24,10 @@ export interface SendTemplateEmailOptions {
   /** Conservé pour compatibilité des appels existants (dédoublonnage applicatif). */
   idempotencyKey?: string
   replyTo?: string
+  /** Pièces jointes (contenu encodé en base64). */
+  attachments?: { name: string; base64: string }[]
 }
+
 
 /**
  * Rend un template enregistré et l'envoie via le connecteur Brevo
