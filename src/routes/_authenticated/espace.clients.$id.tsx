@@ -826,6 +826,9 @@ function HistoriqueTab({ clientId }: { clientId: string }) {
               </div>
               {a.titre && <p className="mt-2 text-sm font-medium text-ink">{a.titre}</p>}
               {a.contenu && <p className="mt-1 whitespace-pre-wrap text-sm text-ink-soft">{a.contenu}</p>}
+              {estReponseAutomatique(a) && (
+                <SignalementReponse clientId={clientId} activite={a} onDone={load} />
+              )}
             </div>
           ))
         )}
