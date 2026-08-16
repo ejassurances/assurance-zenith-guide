@@ -5,6 +5,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { EmailComposeDialog } from "@/components/email-compose-dialog";
+import { ReponsesIaPanel } from "@/components/reponses-ia-panel";
+
 import {
   boiteReception,
   messageComplet,
