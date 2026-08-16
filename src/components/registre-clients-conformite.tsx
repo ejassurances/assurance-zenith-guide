@@ -205,17 +205,6 @@ export function RegistreClientsConformite() {
                     </div>
                     <div className="text-xs text-ink-muted">{l.reference ?? "—"}</div>
                   </TableCell>
-                  <TableCell>
-                    {l.conformite_score === null ? (
-                      <span className="text-sm text-ink-muted">—</span>
-                    ) : (
-                      <span
-                        className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${NIVEAU_BADGE[niveauFromScore(l.conformite_score)]}`}
-                      >
-                        {l.conformite_score}%
-                      </span>
-                    )}
-                  </TableCell>
                   <TableCell className="text-sm">
                     {l.score_risque === null ? (
                       <span className="text-ink-muted">Non évalué</span>
