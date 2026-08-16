@@ -197,12 +197,90 @@ export const boiteReception = createServerFn({ method: "POST" })
       }
     }
 
+    // Agent relation client : emails rattachés à un client existant et pas
+    // encore analysés. Niveau 0 (sinistre/réclamation/santé/paiement) -> tâche
+    // urgente ; niveau 1 -> réponse automatique cadrée ; sinon brouillon.
+    let reponsesAuto = 0;
+    let brouillons = 0;
+    const { data: liensClients } = ids.length
+      ? await supabaseAdmin
+          .from("crm_emails")
+          .select("gmail_message_id, client_id, triage_ia")
+          .in("gmail_message_id", ids)
+          .not("client_id", "is", null)
+      : { data: [] };
+    const aRepondre = ((liensClients ?? []) as { gmail_message_id: string; client_id: string; triage_ia: unknown }[])
+      .filter((l) => !l.triage_ia)
+      .filter((l) => {
+        const m = messages.find((x) => x.id === l.gmail_message_id);
+        return !!m && !m.etiquettes.includes("SENT") && !!m.expediteur_email;
+      })
+      .slice(0, 5);
+
+    if (aRepondre.length) {
+      const { lireMessage } = await import("@/lib/gmail.server");
+      const { traiterEmailClient } = await import("@/lib/relation-client.server");
+      const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
+      for (const lien of aRepondre) {
+        const m = messages.find((x) => x.id === lien.gmail_message_id)!;
+        try {
+          const detail = await lireMessage(m.id);
+          const resultat = await traiterEmailClient(supabaseAdmin, {
+            client_id: lien.client_id,
+            email: {
+              sujet: detail.sujet ?? null,
+              expediteur_nom: detail.expediteur_nom ?? null,
+              expediteur_email: detail.expediteur_email ?? null,
+              texte: detail.texte ?? detail.snippet ?? null,
+              pieces_jointes: detail.pieces_jointes.map((p) => ({
+                nom: p.nom,
+                mime: p.mime,
+                attachment_id: p.attachment_id,
+              })),
+            },
+            gmail_message_id: m.id,
+            gmail_thread_id: m.thread_id ?? null,
+            userId: context.userId,
+          });
+          if (resultat.action === "reponse_envoyee") reponsesAuto++;
+          if (resultat.action === "brouillon") brouillons++;
+          await supabaseAdmin
+            .from("crm_emails")
+            .update({
+              triage_ia: JSON.parse(JSON.stringify({ agent: "relation_client", ...resultat })),
+              triage_le: new Date().toISOString(),
+            })
+            .eq("gmail_message_id", m.id);
+        } catch (e) {
+          console.error("[agent-relation-client] traitement email", m.id, e);
+          await creerTacheAdmin(supabaseAdmin, {
+            titre: `Email client non traité automatiquement — ${m.expediteur_email ?? "expéditeur inconnu"}`,
+            description: [
+              `Objet : ${m.sujet ?? "(sans objet)"}`,
+              `Erreur : ${e instanceof Error ? e.message : "erreur inconnue"}`,
+              "Email à traiter manuellement depuis l'onglet Emails.",
+            ].join("\n"),
+            client_id: lien.client_id,
+            created_by: context.userId,
+          });
+        }
+      }
+    }
+
     const selectComplet = `${selectLiens}, triage_ia, triage_le`;
     const { data: liensFinaux } = ids.length
       ? await supabaseAdmin.from("crm_emails").select(selectComplet).in("gmail_message_id", ids)
       : { data: [] };
 
-    return { messages, nextPageToken, liens: liensFinaux ?? [], nouveaux, dossiers_crees: dossiersCrees };
+    return {
+      messages,
+      nextPageToken,
+      liens: liensFinaux ?? [],
+      nouveaux,
+      dossiers_crees: dossiersCrees,
+      reponses_auto: reponsesAuto,
+      brouillons_reponses: brouillons,
+    };
   });
 
 

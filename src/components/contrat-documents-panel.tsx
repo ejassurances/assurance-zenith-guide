@@ -144,7 +144,7 @@ export function ContratDocumentsPanel({
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-ink">{d.file_name}</p>
               <p className="text-xs text-ink-muted">
-                {libelleType(d.type_document)} · 
+                {libelleType(d.type_document)}{" · "}
                 {d.file_size ? `${(d.file_size / 1024).toFixed(0)} Ko · ` : ""}
                 {new Date(d.created_at).toLocaleDateString("fr-FR")}
               </p>
