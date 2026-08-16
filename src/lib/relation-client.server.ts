@@ -454,27 +454,59 @@ export async function traiterEmailClient(
 
   // ---- Niveau 0 : aucune automatisation, tâche urgente.
   if (classification.niveau === "niveau_0") {
+    // Sous-type sinistre : ouverture d'un dossier dédié + analyse de couverture.
+    let sinistre: { sinistre_id: string; action_recommandee: string; analyse_couverture: string } | null = null;
+    if (classification.sous_type === "sinistre") {
+      try {
+        const { ouvrirSinistreDepuisEmail } = await import("@/lib/sinistres-agent.server");
+        sinistre = await ouvrirSinistreDepuisEmail(admin, {
+          client_id: client.id,
+          resume: classification.resume,
+          texte_email: email.texte,
+          sujet: email.sujet,
+          gmail_message_id,
+          userId: params.userId,
+        });
+      } catch (e) {
+        console.error("[agent-relation-client] ouverture sinistre impossible", e);
+      }
+    }
+
     await creerTacheAdmin(admin as never, {
-      titre: `Sinistre/réclamation reçu — ${nomComplet(client)}`,
+      titre: sinistre
+        ? `Sinistre déclaré — ${nomComplet(client)}`
+        : `Sinistre/réclamation reçu — ${nomComplet(client)}`,
       description: [
         `Objet : ${email.sujet ?? "(sans objet)"}`,
         `Résumé IA : ${classification.resume || "non fourni"}`,
         `Email : ${lienMail(gmail_message_id)}`,
+        ...(sinistre
+          ? [
+              `Fiche sinistre : /espace/sinistres/${sinistre.sinistre_id}`,
+              `Action recommandée : ${sinistre.action_recommandee}`,
+              `Analyse de couverture : ${sinistre.analyse_couverture}`,
+            ]
+          : []),
         "Aucune réponse automatique n'a été envoyée : traitement humain obligatoire.",
       ].join("\n"),
       client_id: client.id,
       priorite: "urgente",
       created_by: params.userId,
     });
-    await enregistrerReponse(admin, { ...base, statut: "aucune_reponse", motif: "Niveau 0 — traitement humain" });
+    await enregistrerReponse(admin, {
+      ...base,
+      statut: "aucune_reponse",
+      motif: sinistre ? "Niveau 0 — sinistre : dossier ouvert, traitement humain" : "Niveau 0 — traitement humain",
+    });
     await journaliser(
       admin,
       client.id,
-      "Email sensible reçu — traitement humain requis",
-      `${classification.resume}\nEmail : ${lienMail(gmail_message_id)}`,
+      sinistre ? "Sinistre déclaré par email — dossier ouvert" : "Email sensible reçu — traitement humain requis",
+      `${classification.resume}\nEmail : ${lienMail(gmail_message_id)}${sinistre ? `\n\n${sinistre.analyse_couverture}` : ""}`,
     );
     return { niveau: "niveau_0", intention: null, action: "tache_urgente", pieces_kyc: piecesKyc };
   }
+
 
   const objetReponse = `Votre demande — ${email.sujet ?? "votre contrat"}`.slice(0, 200);
 
