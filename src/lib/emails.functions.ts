@@ -92,7 +92,7 @@ export const boiteReception = createServerFn({ method: "POST" })
           client_id: cl.id,
           type: "email",
           titre: "Email rattaché automatiquement",
-          contenu: `De ${m.expediteur_email}\nObjet : ${m.sujet ?? "(sans objet)"}\n\n${m.snippet ?? ""}`,
+          contenu: `De ${m.expediteur_email}\nObjet : ${m.sujet ?? "(sans objet)"}\nEmail : https://mail.google.com/mail/u/0/#all/${m.id}`,
           created_by: context.userId,
         });
       }
@@ -352,7 +352,7 @@ export const rattacherMessage = createServerFn({ method: "POST" })
         client_id: data.client_id,
         type: "email",
         titre: `Email reçu : ${data.sujet ?? "(sans objet)"}`,
-        contenu: `De ${data.expediteur_email ?? "inconnu"}\n\n${data.snippet ?? ""}`,
+        contenu: `De ${data.expediteur_email ?? "inconnu"}\nEmail : https://mail.google.com/mail/u/0/#all/${data.gmail_message_id}`,
         created_by: context.userId,
       });
     }
@@ -466,7 +466,7 @@ export const creerFicheDepuisEmail = createServerFn({ method: "POST" })
       client_id: clientId,
       type: "email",
       titre: `Fiche créée depuis un email : ${data.sujet ?? "(sans objet)"}`,
-      contenu: data.snippet ?? null,
+      contenu: `Email : https://mail.google.com/mail/u/0/#all/${data.gmail_message_id}`,
       created_by: context.userId,
     });
 
@@ -744,7 +744,7 @@ export const scannerBoiteCrm = createServerFn({ method: "POST" })
             client_id: client.id,
             type: "email",
             titre: "Email rattaché automatiquement (scan)",
-            contenu: `De ${m.expediteur_email ?? "?"}\nObjet : ${m.sujet ?? "(sans objet)"}\n\n${m.snippet ?? ""}`,
+            contenu: `De ${m.expediteur_email ?? "?"}\nObjet : ${m.sujet ?? "(sans objet)"}\nEmail : https://mail.google.com/mail/u/0/#all/${m.id}`,
             created_by: context.userId,
           });
         } else {
