@@ -635,8 +635,40 @@ export const envoyerEmailCrm = createServerFn({ method: "POST" })
         type: "email",
         titre: `Email envoyé : ${data.sujet}`,
         contenu: data.message,
+        contrat_id: data.contrat_id ?? null,
         created_by: context.userId,
-      });
+      } as never);
+
+      // Conseil dans la durée : si un retour client au point de suivi attend une
+      // réponse, on trace automatiquement la réponse apportée sur le contrat.
+      const { TITRE_NOTE_RETOUR_SUIVI, TITRE_NOTE_REPONSE_SUIVI } = await import("@/lib/suivi-contrats");
+      const { data: notes } = await supabaseAdmin
+        .from("activites")
+        .select("id, contrat_id, titre, created_at")
+        .eq("client_id", data.client_id)
+        .in("titre", [TITRE_NOTE_RETOUR_SUIVI, TITRE_NOTE_REPONSE_SUIVI])
+        .order("created_at", { ascending: false })
+        .limit(20);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const derniere = ((notes ?? []) as any[])[0];
+      if (derniere && derniere.titre === TITRE_NOTE_RETOUR_SUIVI) {
+        const contratsANoter = [
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ...new Set(((notes ?? []) as any[])
+            .filter((n) => n.titre === TITRE_NOTE_RETOUR_SUIVI && n.created_at === derniere.created_at)
+            .map((n) => n.contrat_id as string | null)),
+        ];
+        for (const contratId of contratsANoter) {
+          await supabaseAdmin.from("activites").insert({
+            client_id: data.client_id,
+            contrat_id: contratId,
+            type: "systeme",
+            titre: TITRE_NOTE_REPONSE_SUIVI,
+            contenu: `Une réponse a été apportée au client le ${new Date().toLocaleDateString("fr-FR")} (objet : ${data.sujet}).`,
+            created_by: context.userId,
+          } as never);
+        }
+      }
     }
 
     return { id: envoye.id, thread_id: envoye.threadId };
