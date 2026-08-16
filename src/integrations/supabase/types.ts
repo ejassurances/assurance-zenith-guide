@@ -731,6 +731,62 @@ export type Database = {
           },
         ]
       }
+      client_risque_lcbft: {
+        Row: {
+          client_id: string
+          created_at: string
+          decide_le: string | null
+          decide_par: string | null
+          facteurs: Json
+          id: string
+          justification: string | null
+          niveau_vigilance: string
+          ppe_detecte: boolean
+          prochaine_revue_le: string | null
+          score_risque: number
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          decide_le?: string | null
+          decide_par?: string | null
+          facteurs?: Json
+          id?: string
+          justification?: string | null
+          niveau_vigilance?: string
+          ppe_detecte?: boolean
+          prochaine_revue_le?: string | null
+          score_risque?: number
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          decide_le?: string | null
+          decide_par?: string | null
+          facteurs?: Json
+          id?: string
+          justification?: string | null
+          niveau_vigilance?: string
+          ppe_detecte?: boolean
+          prochaine_revue_le?: string | null
+          score_risque?: number
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_risque_lcbft_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           adresse: string | null
@@ -4296,6 +4352,30 @@ export type Database = {
     }
     Functions: {
       branche_contrat: { Args: { _contrat_id: string }; Returns: string }
+      calculer_risque_lcbft: {
+        Args: { _client_id: string }
+        Returns: {
+          client_id: string
+          created_at: string
+          decide_le: string | null
+          decide_par: string | null
+          facteurs: Json
+          id: string
+          justification: string | null
+          niveau_vigilance: string
+          ppe_detecte: boolean
+          prochaine_revue_le: string | null
+          score_risque: number
+          statut: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "client_risque_lcbft"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       calculer_score_conformite_client: {
         Args: { _client_id: string }
         Returns: number
