@@ -77,6 +77,7 @@ function ContratDetail() {
   const navigate = useNavigate();
   const { role, user } = useAuth();
   const canEdit = role === "admin" || role === "mandataire";
+  const syncBrevo = useServerFn(synchroniserContactBrevoClient);
 
   const [c, setC] = useState<Contrat | null>(null);
   const [client, setClient] = useState<ClientLite | null>(null);
