@@ -135,6 +135,10 @@ function ConformitePage() {
         <TabsContent value="controle-interne" className="mt-6">
           <ControleInternePanel isAdmin={role === "admin"} />
         </TabsContent>
+
+        <TabsContent value="cartographie" className="mt-6">
+          <CartographieRisquesPanel isAdmin={role === "admin"} />
+        </TabsContent>
       </Tabs>
     </div>
   );
