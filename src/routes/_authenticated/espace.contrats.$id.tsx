@@ -173,6 +173,7 @@ function ContratDetail() {
         taux_assurance_annuel: c.taux_assurance_annuel,
         quotite: c.quotite,
         assiette: c.assiette,
+        recommandation_personnalisee: c.recommandation_personnalisee ?? false,
         ...economiePayload(forceEconomie),
       } as never)
       .eq("id", c.id);
