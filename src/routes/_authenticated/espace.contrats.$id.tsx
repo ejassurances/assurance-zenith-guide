@@ -41,6 +41,9 @@ type Contrat = {
   economie_cout_delegue: number | null;
   economie_realisee: number | null;
   economie_calculee_le: string | null;
+  prochain_suivi_le: string | null;
+  dernier_suivi_le: string | null;
+  recommandation_personnalisee: boolean | null;
 };
 
 type Echeance = {
