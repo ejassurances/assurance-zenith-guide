@@ -85,7 +85,11 @@ export async function sendTemplateEmail(
       textContent: withTextSignature(text),
       ...(options.brevoParams ? { params: options.brevoParams } : {}),
       ...(options.replyTo ? { replyTo: { email: options.replyTo } } : {}),
+      ...(options.attachments && options.attachments.length
+        ? { attachment: options.attachments.map((a) => ({ name: a.name, content: a.base64 })) }
+        : {}),
       tags: [templateName],
+
     }),
   })
 
