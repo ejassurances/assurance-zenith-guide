@@ -101,6 +101,10 @@ function consigne(email: EmailClient): string {
     "  ou intention ci-dessus mais dont tu n'es pas certain).",
     "Indique aussi si l'email contient une pièce KYC en pièce jointe (pièce d'identité, justificatif de",
     "domicile, RIB, Kbis) d'après les noms de fichiers. Cela se cumule avec le niveau.",
+    'Liste séparément dans "pieces_pret" les pièces jointes qui ressemblent à un document de prêt',
+    "(tableau d'amortissement, offre de prêt, échéancier de crédit) d'après leur nom de fichier.",
+    "Classe chaque pièce jointe dans une seule liste au maximum ; laisse hors des listes les pièces dont",
+    "tu ne reconnais pas la nature.",
     "En cas de doute, réponds toujours niveau_2. N'invente rien.",
     "",
     `Expéditeur : ${email.expediteur_nom ?? ""} <${email.expediteur_email ?? ""}>`,
@@ -113,7 +117,9 @@ function consigne(email: EmailClient): string {
     '"sous_type":"sinistre|reclamation|resiliation|sante|paiement|null",',
     '"intention":"info_contrat|info_garanties|attestation|null","piece_jointe_kyc":false,',
     '"pieces_kyc":[{"nom":"fichier.pdf","type":"cni|justificatif_domicile|rib|kbis"}],',
+    '"pieces_pret":[{"nom":"fichier.pdf"}],',
     '"confiance":0.0,"resume":"une phrase"}',
+
   ].join("\n");
 }
 
