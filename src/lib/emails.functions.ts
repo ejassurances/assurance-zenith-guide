@@ -227,6 +227,9 @@ export const boiteReception = createServerFn({ method: "POST" })
           const resultat = await traiterEmailClient(supabaseAdmin, {
             client_id: lien.client_id,
             email: {
+              sujet: detail.sujet ?? null,
+              expediteur_nom: detail.expediteur_nom ?? null,
+              expediteur_email: detail.expediteur_email ?? null,
               texte: detail.texte ?? detail.snippet ?? null,
               pieces_jointes: detail.pieces_jointes.map((p) => ({
                 nom: p.nom,
@@ -558,6 +561,7 @@ export const envoyerEmailCrm = createServerFn({ method: "POST" })
     const envoye = await envoyerMessage({
       to: data.to,
       cc: data.cc || null,
+      sujet: data.sujet,
       html,
       threadId: data.thread_id || null,
     });

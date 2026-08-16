@@ -59,6 +59,9 @@ export function normaliserBranche(valeur: string | null): BrancheAuto | null {
 
 
 export interface TriageEmail {
+  sujet: string | null;
+  expediteur_nom: string | null;
+  expediteur_email: string | null;
   texte: string | null;
   pieces_jointes: { nom: string; mime: string | null }[];
 }
