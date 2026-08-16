@@ -509,12 +509,8 @@ function EmailsPage() {
                 </div>
               </div>
 
-              <EtiquettesBloc
-                message={selected}
-                clients={clients}
-                compagnies={compagnies}
-                onEtiqueter={(e) => etiqueter(selected, e)}
-              />
+              <EtiquettesBloc message={selected} onEtiqueter={(e) => etiqueter(selected, e)} />
+
 
 
               <RattachementPanel
