@@ -357,6 +357,64 @@ function SouscriptionSignatureClientEmail(props: {
   return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
 }
 
+/** Reponse de l'agent relation client : paragraphes + tableau de donnees reelles. */
+function RelationClientReponseEmail(props: {
+  clientName?: string;
+  cabinetName?: string;
+  titre?: string;
+  paragraphes?: string[];
+  lignes?: { libelle: string; valeur: string }[];
+}) {
+  const nom = props.cabinetName || "EJ Partners Assurances";
+  const style = { fontFamily: "Arial, sans-serif", color: "#1a1a1a", fontSize: "15px", lineHeight: "1.6" };
+  const paragraphes = Array.isArray(props.paragraphes) ? props.paragraphes : [];
+  const lignes = Array.isArray(props.lignes) ? props.lignes : [];
+  return React.createElement(
+    "div",
+    { style: style },
+    props.titre
+      ? React.createElement("p", { key: "titre", style: { fontWeight: 600, margin: "0 0 12px" } }, props.titre)
+      : null,
+    React.createElement("p", { key: "intro" }, "Bonjour " + (props.clientName || "") + ","),
+    paragraphes.map((p, i) => React.createElement("p", { key: "p" + i }, p)),
+    lignes.length
+      ? React.createElement(
+          "table",
+          { key: "table", style: { borderCollapse: "collapse", margin: "8px 0 16px", width: "100%" } },
+          React.createElement(
+            "tbody",
+            null,
+            lignes.map((l, i) =>
+              React.createElement(
+                "tr",
+                { key: "l" + i },
+                React.createElement(
+                  "td",
+                  {
+                    style: {
+                      padding: "6px 10px",
+                      borderBottom: "1px solid #e5e7eb",
+                      color: "#374151",
+                      width: "45%",
+                    },
+                  },
+                  l.libelle,
+                ),
+                React.createElement(
+                  "td",
+                  { style: { padding: "6px 10px", borderBottom: "1px solid #e5e7eb", fontWeight: 600 } },
+                  l.valeur,
+                ),
+              ),
+            ),
+          ),
+        )
+      : null,
+    React.createElement("p", { key: "signature" }, "Cordialement,", React.createElement("br"), "L'equipe " + nom),
+  );
+}
+
+
 export const TEMPLATES: Record<string, TemplateEntry> = {
   "lien-connexion": {
     component: LienConnexionEmail,
