@@ -36,10 +36,26 @@ type ClientRow = {
   conformite_score: number | null;
   conformite_niveau: string | null;
   created_at: string;
+  client_risque_lcbft: {
+    score_risque: number;
+    niveau_vigilance: "simplifiee" | "standard" | "renforcee";
+  } | null;
 };
 
 
 const STATUTS = ["prospect", "actif", "inactif", "perdu", "ancien"] as const;
+
+const NIVEAU_LABEL: Record<"simplifiee" | "standard" | "renforcee", string> = {
+  simplifiee: "Vigilance simplifiée",
+  standard: "Vigilance standard",
+  renforcee: "Vigilance renforcée",
+};
+
+const NIVEAU_STYLE: Record<"simplifiee" | "standard" | "renforcee", string> = {
+  simplifiee: "bg-emerald-100 text-emerald-900 border-emerald-300",
+  standard: "bg-amber-100 text-amber-900 border-amber-300",
+  renforcee: "bg-red-100 text-red-900 border-red-300",
+};
 
 function ClientsList() {
   const { role } = useAuth();
@@ -59,7 +75,7 @@ function ClientsList() {
     const { data } = await supabase
       .from("clients")
       .select(
-        "id,reference,civilite,prenom,nom,email,mobile,ville,statut,origine,marque,besoins,conformite_score,conformite_niveau,created_at",
+        "id,reference,civilite,prenom,nom,email,mobile,ville,statut,origine,marque,besoins,conformite_score,conformite_niveau,created_at,client_risque_lcbft(score_risque,niveau_vigilance)",
       )
 
       .order("created_at", { ascending: false })
@@ -220,7 +236,20 @@ function ClientsList() {
                     <div className="text-xs text-ink-muted">{c.mobile ?? ""}</div>
                   </td>
                   <td className="px-4 py-3">
-                    <ScoreRings size={48} valeur={scoresValeur[c.id] ?? 0} />
+                    <div className="flex items-center gap-3">
+                      <ScoreRings size={48} valeur={scoresValeur[c.id] ?? 0} />
+                      {c.client_risque_lcbft ? (
+                        <span
+                          className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase ${NIVEAU_STYLE[c.client_risque_lcbft.niveau_vigilance]}`}
+                        >
+                          {c.client_risque_lcbft.score_risque}/100 · {NIVEAU_LABEL[c.client_risque_lcbft.niveau_vigilance]}
+                        </span>
+                      ) : (
+                        <span className="rounded-full border border-line bg-surface px-2.5 py-1 text-[11px] font-medium text-ink-muted">
+                          Non évalué
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
 
