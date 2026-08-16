@@ -17,6 +17,7 @@ import { Route as EspaceConfidentialiteRouteImport } from './routes/espace.confi
 import { Route as EspaceCguRouteImport } from './routes/espace.cgu'
 import { Route as AuthenticatedEspaceRouteImport } from './routes/_authenticated/espace'
 import { Route as AuthenticatedEspaceIndexRouteImport } from './routes/_authenticated/espace.index'
+import { Route as ApiPublicSuiviContratsRouteImport } from './routes/api/public/suivi-contrats'
 import { Route as ApiPublicRelanceSouscriptionRouteImport } from './routes/api/public/relance-souscription'
 import { Route as ApiPublicRelanceSinistresRouteImport } from './routes/api/public/relance-sinistres'
 import { Route as ApiPublicRelancePiecesRouteImport } from './routes/api/public/relance-pieces'
@@ -95,6 +96,11 @@ const AuthenticatedEspaceIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const ApiPublicSuiviContratsRoute = ApiPublicSuiviContratsRouteImport.update({
+  id: '/api/public/suivi-contrats',
+  path: '/api/public/suivi-contrats',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicRelanceSouscriptionRoute =
   ApiPublicRelanceSouscriptionRouteImport.update({
     id: '/api/public/relance-souscription',
@@ -343,6 +349,7 @@ export interface FileRoutesByFullPath {
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
+  '/api/public/suivi-contrats': typeof ApiPublicSuiviContratsRoute
   '/espace/': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
@@ -388,6 +395,7 @@ export interface FileRoutesByTo {
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
+  '/api/public/suivi-contrats': typeof ApiPublicSuiviContratsRoute
   '/espace': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
@@ -436,6 +444,7 @@ export interface FileRoutesById {
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
+  '/api/public/suivi-contrats': typeof ApiPublicSuiviContratsRoute
   '/_authenticated/espace/': typeof AuthenticatedEspaceIndexRoute
   '/_authenticated/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/_authenticated/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
@@ -484,6 +493,7 @@ export interface FileRouteTypes {
     | '/api/public/relance-pieces'
     | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
+    | '/api/public/suivi-contrats'
     | '/espace/'
     | '/espace/clients/$id'
     | '/espace/compagnies/$id'
@@ -529,6 +539,7 @@ export interface FileRouteTypes {
     | '/api/public/relance-pieces'
     | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
+    | '/api/public/suivi-contrats'
     | '/espace'
     | '/espace/clients/$id'
     | '/espace/compagnies/$id'
@@ -576,6 +587,7 @@ export interface FileRouteTypes {
     | '/api/public/relance-pieces'
     | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
+    | '/api/public/suivi-contrats'
     | '/_authenticated/espace/'
     | '/_authenticated/espace/clients/$id'
     | '/_authenticated/espace/compagnies/$id'
@@ -607,6 +619,7 @@ export interface RootRouteChildren {
   ApiPublicRelancePiecesRoute: typeof ApiPublicRelancePiecesRoute
   ApiPublicRelanceSinistresRoute: typeof ApiPublicRelanceSinistresRoute
   ApiPublicRelanceSouscriptionRoute: typeof ApiPublicRelanceSouscriptionRoute
+  ApiPublicSuiviContratsRoute: typeof ApiPublicSuiviContratsRoute
   ApiPublicWebhooksCrmRoute: typeof ApiPublicWebhooksCrmRoute
   ApiPublicWebhooksNeolianeRoute: typeof ApiPublicWebhooksNeolianeRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -671,6 +684,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/espace/'
       preLoaderRoute: typeof AuthenticatedEspaceIndexRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
+    }
+    '/api/public/suivi-contrats': {
+      id: '/api/public/suivi-contrats'
+      path: '/api/public/suivi-contrats'
+      fullPath: '/api/public/suivi-contrats'
+      preLoaderRoute: typeof ApiPublicSuiviContratsRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/relance-souscription': {
       id: '/api/public/relance-souscription'
@@ -1036,6 +1056,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicRelancePiecesRoute: ApiPublicRelancePiecesRoute,
   ApiPublicRelanceSinistresRoute: ApiPublicRelanceSinistresRoute,
   ApiPublicRelanceSouscriptionRoute: ApiPublicRelanceSouscriptionRoute,
+  ApiPublicSuiviContratsRoute: ApiPublicSuiviContratsRoute,
   ApiPublicWebhooksCrmRoute: ApiPublicWebhooksCrmRoute,
   ApiPublicWebhooksNeolianeRoute: ApiPublicWebhooksNeolianeRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
