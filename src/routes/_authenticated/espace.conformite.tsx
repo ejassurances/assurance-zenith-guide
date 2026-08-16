@@ -105,6 +105,7 @@ function ConformitePage() {
           <TabsTrigger value="partenariats">Partenariats compagnies</TabsTrigger>
           <TabsTrigger value="registre-clients">Registre clients</TabsTrigger>
           <TabsTrigger value="veille">Veille réglementaire</TabsTrigger>
+          <TabsTrigger value="controle-interne">Contrôle interne</TabsTrigger>
         </TabsList>
 
         <TabsContent value="mes-documents" className="mt-6">
