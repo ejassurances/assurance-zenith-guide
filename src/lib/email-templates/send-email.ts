@@ -24,7 +24,10 @@ export interface SendTemplateEmailOptions {
   /** Conservé pour compatibilité des appels existants (dédoublonnage applicatif). */
   idempotencyKey?: string
   replyTo?: string
+  /** Pièces jointes (contenu encodé en base64). */
+  attachments?: { name: string; base64: string }[]
 }
+
 
 /**
  * Rend un template enregistré et l'envoie via le connecteur Brevo
@@ -82,7 +85,11 @@ export async function sendTemplateEmail(
       textContent: withTextSignature(text),
       ...(options.brevoParams ? { params: options.brevoParams } : {}),
       ...(options.replyTo ? { replyTo: { email: options.replyTo } } : {}),
+      ...(options.attachments && options.attachments.length
+        ? { attachment: options.attachments.map((a) => ({ name: a.name, content: a.base64 })) }
+        : {}),
       tags: [templateName],
+
     }),
   })
 

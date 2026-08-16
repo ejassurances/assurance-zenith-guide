@@ -7,7 +7,20 @@ type Doc = {
   file_size: number | null;
   storage_path: string;
   created_at: string;
+  type_document: string | null;
 };
+
+/** Typologie des pièces contractuelles archivées sur un contrat. */
+const TYPES_DOCUMENT = [
+  { code: "attestation_assurance", libelle: "Attestation d'assurance" },
+  { code: "avis_echeance", libelle: "Avis d'échéance" },
+  { code: "conditions_particulieres", libelle: "Conditions particulières" },
+  { code: "autre", libelle: "Autre" },
+] as const;
+
+function libelleType(code: string | null): string {
+  return TYPES_DOCUMENT.find((t) => t.code === code)?.libelle ?? "Type non précisé";
+}
 
 /**
  * Archivage libre des documents d'un contrat (police, avis d'échéance,
@@ -25,12 +38,14 @@ export function ContratDocumentsPanel({
   const [docs, setDocs] = useState<Doc[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [type, setType] = useState<string>("attestation_assurance");
   const fileRef = useRef<HTMLInputElement>(null);
+
 
   const load = async () => {
     const { data } = await supabase
       .from("documents")
-      .select("id,file_name,file_size,storage_path,created_at")
+      .select("id,file_name,file_size,storage_path,created_at,type_document")
       .eq("contrat_id", contratId)
       .order("created_at", { ascending: false });
     setDocs((data ?? []) as Doc[]);
@@ -59,6 +74,7 @@ export function ContratDocumentsPanel({
       file_name: file.name,
       file_size: file.size,
       mime_type: file.type,
+      type_document: type,
     });
     setUploading(false);
     if (dbErr) {
@@ -99,6 +115,17 @@ export function ContratDocumentsPanel({
 
       {canEdit && (
         <div className="flex flex-wrap items-center gap-3">
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+            className="rounded-md border border-line bg-background px-3 py-2 text-sm"
+          >
+            {TYPES_DOCUMENT.map((t) => (
+              <option key={t.code} value={t.code}>
+                {t.libelle}
+              </option>
+            ))}
+          </select>
           <label className="cursor-pointer rounded-full bg-ink px-4 py-2 text-sm font-medium text-primary-foreground">
             {uploading ? "Envoi…" : "Ajouter un document"}
             <input ref={fileRef} type="file" onChange={onUpload} className="hidden" disabled={uploading} />
@@ -117,6 +144,7 @@ export function ContratDocumentsPanel({
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-ink">{d.file_name}</p>
               <p className="text-xs text-ink-muted">
+                {libelleType(d.type_document)}{" · "}
                 {d.file_size ? `${(d.file_size / 1024).toFixed(0)} Ko · ` : ""}
                 {new Date(d.created_at).toLocaleDateString("fr-FR")}
               </p>

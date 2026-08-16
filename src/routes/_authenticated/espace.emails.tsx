@@ -5,6 +5,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { EmailComposeDialog } from "@/components/email-compose-dialog";
+import { ReponsesIaPanel } from "@/components/reponses-ia-panel";
+
 import {
   boiteReception,
   messageComplet,
@@ -335,6 +337,10 @@ function EmailsPage() {
       </form>
 
       {error && <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+
+      <ReponsesIaPanel />
+
+
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_1fr]">
         <div className={CARTE + " overflow-hidden"}>
