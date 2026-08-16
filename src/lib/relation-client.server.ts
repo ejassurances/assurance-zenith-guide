@@ -518,10 +518,11 @@ export async function traiterEmailClient(
     userId: string;
   },
 ): Promise<ResultatRelationClient> {
-  const resultat = await traiterEmailClientInterne(admin, params);
+  const pieces = { pret: 0, non_classees: 0 };
+  const resultat = await traiterEmailClientInterne(admin, params, pieces);
   const { marquerAgentArchive } = await import("@/lib/gmail.server");
   await marquerAgentArchive(params.gmail_message_id, "relation_client");
-  return resultat;
+  return { ...resultat, pieces_pret: pieces.pret, pieces_non_classees: pieces.non_classees };
 }
 
 async function traiterEmailClientInterne(
@@ -533,7 +534,9 @@ async function traiterEmailClientInterne(
     gmail_thread_id?: string | null;
     userId: string;
   },
+  pieces: { pret: number; non_classees: number },
 ): Promise<ResultatRelationClient> {
+
   const { email, gmail_message_id } = params;
 
   const { data: clientRow } = await admin
