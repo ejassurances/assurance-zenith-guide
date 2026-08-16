@@ -11,6 +11,8 @@ import { RegistreClientsConformite } from "@/components/registre-clients-conform
 import { VeilleReglementairePanel } from "@/components/veille-reglementaire-panel";
 import { ControleInternePanel } from "@/components/controle-interne-panel";
 import { CartographieRisquesPanel } from "@/components/cartographie-risques-panel";
+import { RegistreRgpdPanel } from "@/components/registre-rgpd-panel";
+import { FormationsPersonnelPanel } from "@/components/formations-personnel-panel";
 
 export const Route = createFileRoute("/_authenticated/espace/conformite")({
   component: ConformitePage,
@@ -108,6 +110,8 @@ function ConformitePage() {
           <TabsTrigger value="veille">Veille réglementaire</TabsTrigger>
           <TabsTrigger value="controle-interne">Contrôle interne</TabsTrigger>
           <TabsTrigger value="cartographie">Cartographie des risques</TabsTrigger>
+          <TabsTrigger value="registre-rgpd">Registre RGPD</TabsTrigger>
+          <TabsTrigger value="formations">Formation du personnel</TabsTrigger>
         </TabsList>
 
         <TabsContent value="mes-documents" className="mt-6">
@@ -138,6 +142,14 @@ function ConformitePage() {
 
         <TabsContent value="cartographie" className="mt-6">
           <CartographieRisquesPanel isAdmin={role === "admin"} />
+        </TabsContent>
+
+        <TabsContent value="registre-rgpd" className="mt-6">
+          <RegistreRgpdPanel isAdmin={role === "admin"} />
+        </TabsContent>
+
+        <TabsContent value="formations" className="mt-6">
+          <FormationsPersonnelPanel isAdmin={role === "admin"} />
         </TabsContent>
       </Tabs>
     </div>
