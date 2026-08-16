@@ -625,6 +625,90 @@ export type Database = {
           },
         ]
       }
+      client_reponses_ia: {
+        Row: {
+          categorie: string
+          client_id: string
+          confiance: number | null
+          contrat_id: string | null
+          corps: string | null
+          created_at: string
+          created_by: string | null
+          destinataire: string | null
+          email_sujet: string | null
+          envoye_le: string | null
+          envoye_par: string | null
+          gmail_message_id: string | null
+          gmail_thread_id: string | null
+          id: string
+          intention: string | null
+          motif: string | null
+          objet: string | null
+          resume: string | null
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          categorie: string
+          client_id: string
+          confiance?: number | null
+          contrat_id?: string | null
+          corps?: string | null
+          created_at?: string
+          created_by?: string | null
+          destinataire?: string | null
+          email_sujet?: string | null
+          envoye_le?: string | null
+          envoye_par?: string | null
+          gmail_message_id?: string | null
+          gmail_thread_id?: string | null
+          id?: string
+          intention?: string | null
+          motif?: string | null
+          objet?: string | null
+          resume?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          categorie?: string
+          client_id?: string
+          confiance?: number | null
+          contrat_id?: string | null
+          corps?: string | null
+          created_at?: string
+          created_by?: string | null
+          destinataire?: string | null
+          email_sujet?: string | null
+          envoye_le?: string | null
+          envoye_par?: string | null
+          gmail_message_id?: string | null
+          gmail_thread_id?: string | null
+          id?: string
+          intention?: string | null
+          motif?: string | null
+          objet?: string | null
+          resume?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_reponses_ia_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_reponses_ia_contrat_id_fkey"
+            columns: ["contrat_id"]
+            isOneToOne: false
+            referencedRelation: "contrats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           adresse: string | null
@@ -1936,6 +2020,7 @@ export type Database = {
           mime_type: string | null
           rappel_expiration_envoye_le: string | null
           storage_path: string
+          type_document: string | null
           uploader_id: string
         }
         Insert: {
@@ -1951,6 +2036,7 @@ export type Database = {
           mime_type?: string | null
           rappel_expiration_envoye_le?: string | null
           storage_path: string
+          type_document?: string | null
           uploader_id: string
         }
         Update: {
@@ -1966,6 +2052,7 @@ export type Database = {
           mime_type?: string | null
           rappel_expiration_envoye_le?: string | null
           storage_path?: string
+          type_document?: string | null
           uploader_id?: string
         }
         Relationships: [
