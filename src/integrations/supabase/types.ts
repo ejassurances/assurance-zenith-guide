@@ -1754,6 +1754,62 @@ export type Database = {
           },
         ]
       }
+      controles_internes: {
+        Row: {
+          actions_correctives: string | null
+          anomalies_constatees: string | null
+          client_id: string
+          controleur_id: string | null
+          created_at: string
+          date_controle: string | null
+          id: string
+          mode_selection: string
+          motif_ciblage: string | null
+          periode: string
+          resultat: string
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          actions_correctives?: string | null
+          anomalies_constatees?: string | null
+          client_id: string
+          controleur_id?: string | null
+          created_at?: string
+          date_controle?: string | null
+          id?: string
+          mode_selection?: string
+          motif_ciblage?: string | null
+          periode: string
+          resultat?: string
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          actions_correctives?: string | null
+          anomalies_constatees?: string | null
+          client_id?: string
+          controleur_id?: string | null
+          created_at?: string
+          date_controle?: string | null
+          id?: string
+          mode_selection?: string
+          motif_ciblage?: string | null
+          periode?: string
+          resultat?: string
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "controles_internes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_emails: {
         Row: {
           client_id: string | null
