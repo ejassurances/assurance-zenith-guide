@@ -22,6 +22,8 @@ import {
 
 } from "@/lib/emails.functions";
 import { importerFactureDepuisEmail } from "@/lib/factures-achat.functions";
+import { LABELS_CABINET } from "@/lib/gmail-labels";
+
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/espace/emails")({
