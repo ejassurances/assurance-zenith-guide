@@ -127,7 +127,7 @@ function SignerDevoirConseil() {
           <Bloc titre="Solution recommandée">
             {[conseil.compagnie, conseil.produit].filter(Boolean).join(" — ")}
             {conseil.cotisation_mensuelle ? ` · ${conseil.cotisation_mensuelle} €/mois` : ""}
-            {conseil.economie_estimee
+            {devoir.type_assurance === "emprunteur" && conseil.economie_estimee
               ? ` · économie estimée ${Number(conseil.economie_estimee).toLocaleString("fr-FR")} €`
               : ""}
           </Bloc>
