@@ -36,6 +36,10 @@ type ClientRow = {
   conformite_score: number | null;
   conformite_niveau: string | null;
   created_at: string;
+  client_risque_lcbft: {
+    score_risque: number;
+    niveau_vigilance: "simplifiee" | "standard" | "renforcee";
+  } | null;
 };
 
 
