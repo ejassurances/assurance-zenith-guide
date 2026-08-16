@@ -270,79 +270,86 @@ export async function marquerLu(id: string, lu: boolean): Promise<void> {
 
 type GmailLabel = { id: string; name: string };
 
-/** Récupère (ou crée) une étiquette Gmail par nom, imbriquée avec « / ». */
-export async function assurerLabel(nom: string): Promise<string> {
+/**
+ * Étiquettes réellement utilisées par le cabinet dans Gmail. Les agents du CRM
+ * se posent EXCLUSIVEMENT sur cette arborescence existante : aucune branche
+ * parallèle « Agent X/… » n'est créée.
+ */
+export const LABELS_CABINET = {
+  prospect_formulaire: "Prospects/Formulaire_Site",
+  prospect_direct: "Prospects/Contact_Direct",
+  prospect_traite_ia: "01_PROSPECTS_B2C/02_Traites_IA",
+  prospect_a_relancer: "01_PROSPECTS_B2C/03_A_Relancer",
+  a_ignorer: "A_Ignorer/Accuses_Reception",
+  facture_fournisseur: "COMPTABILITE/01_Factures_Fournisseurs",
+  bordereau_commissions: "COMPTABILITE/02_Bordereaux_Commissions",
+  sinistre_reclamation: "Reclamations_Sinistres",
+  compagnie_dossier: "Compagnies/Suivi_Dossier",
+  compagnie_actualite: "ASSURANCES/02_Compagnies_Actualites",
+  veille_reglementaire: "ASSURANCES/01_Veille_Reglementaire",
+  veille_non_impactee: "A_Ignorer/Veille_Non_Impactee",
+  relation_client_a_valider: "ASSURANCES/03_Relation_Client_A_Valider",
+} as const;
+export type LabelCabinet = keyof typeof LABELS_CABINET;
+
+/**
+ * Seules étiquettes que le code est autorisé à créer (sous-libellés validés
+ * par le cabinet, rattachés à des parents déjà existants). Tout le reste doit
+ * exister dans Gmail : sinon l'erreur remonte, jamais de doublon créé.
+ */
+const LABELS_CREABLES: readonly string[] = [
+  LABELS_CABINET.veille_reglementaire,
+  LABELS_CABINET.veille_non_impactee,
+  LABELS_CABINET.relation_client_a_valider,
+];
+
+async function listerLabels(): Promise<GmailLabel[]> {
   const { labels } = await gmailFetch<{ labels?: GmailLabel[] }>("/users/me/labels");
-  const existant = (labels ?? []).find((l) => l.name.toLowerCase() === nom.toLowerCase());
+  return labels ?? [];
+}
+
+/**
+ * Résolution STRICTE d'une étiquette par son nom exact : renvoie l'identifiant
+ * de l'étiquette existante, ou la crée uniquement si elle fait partie des
+ * sous-libellés validés. Sinon l'erreur est propagée (pas de doublon silencieux).
+ */
+export async function resoudreLabel(nom: string): Promise<string> {
+  const labels = await listerLabels();
+  const existant = labels.find((l) => l.name.toLowerCase() === nom.toLowerCase());
   if (existant) return existant.id;
+  if (!LABELS_CREABLES.includes(nom)) {
+    throw new Error(
+      `Étiquette Gmail « ${nom} » introuvable dans la boîte du cabinet : aucune étiquette n'a été créée ni posée.`,
+    );
+  }
   const cree = await gmailFetch<GmailLabel>("/users/me/labels", {
     method: "POST",
-    body: JSON.stringify({
-      name: nom,
-      labelListVisibility: "labelShow",
-      messageListVisibility: "show",
-    }),
+    body: JSON.stringify({ name: nom, labelListVisibility: "labelShow", messageListVisibility: "show" }),
   });
   return cree.id;
 }
 
-/** Applique une étiquette CRM (créée si besoin) à un message. */
+/**
+ * Applique une étiquette du cabinet à un message (et retire éventuellement des
+ * étiquettes devenues obsolètes). Aucune erreur n'est avalée : un échec
+ * d'étiquetage fait échouer l'étape appelante, qui le journalise et le remonte.
+ */
+export async function poserLabelCabinet(
+  id: string,
+  cle: LabelCabinet,
+  options?: { retirer?: LabelCabinet[] },
+): Promise<void> {
+  const ajouter = await resoudreLabel(LABELS_CABINET[cle]);
+  const retirer = await Promise.all((options?.retirer ?? []).map((c) => resoudreLabel(LABELS_CABINET[c])));
+  await modifierLabels(id, { ajouter: [ajouter], retirer });
+}
+
+/** Applique une étiquette Gmail existante, désignée par son nom exact. */
 export async function etiqueterMessage(id: string, nom: string): Promise<void> {
-  const labelId = await assurerLabel(nom);
+  const labelId = await resoudreLabel(nom);
   await modifierLabels(id, { ajouter: [labelId] });
 }
 
-/** Agents du CRM disposant d'une paire d'étiquettes Gmail dédiée. */
-export const AGENTS_GMAIL = {
-  commercial: "Agent Commercial",
-  conformite: "Agent Conformité",
-  finance: "Agent Finance",
-  relation_client: "Agent Relation client",
-} as const;
-export type AgentGmail = keyof typeof AGENTS_GMAIL;
-
-const LABEL_A_TRAITER = "À traiter";
-const LABEL_ARCHIVE = "Archivé";
-
-function labelAgent(agent: AgentGmail, etat: "a_traiter" | "archive"): string {
-  return `${AGENTS_GMAIL[agent]}/${etat === "a_traiter" ? LABEL_A_TRAITER : LABEL_ARCHIVE}`;
-}
-
-/** Crée si besoin les 4 paires d'étiquettes « À traiter » / « Archivé ». */
-export async function assurerLabelsAgents(): Promise<void> {
-  for (const agent of Object.keys(AGENTS_GMAIL) as AgentGmail[]) {
-    // Le libellé parent doit exister pour que Gmail imbrique proprement.
-    await assurerLabel(AGENTS_GMAIL[agent]);
-    await assurerLabel(labelAgent(agent, "a_traiter"));
-    await assurerLabel(labelAgent(agent, "archive"));
-  }
-}
-
-/** Marque un message comme pris en charge par un agent (« À traiter »). */
-export async function marquerAgentATraiter(id: string, agent: AgentGmail): Promise<void> {
-  try {
-    const [aTraiter, archive] = await Promise.all([
-      assurerLabel(labelAgent(agent, "a_traiter")),
-      assurerLabel(labelAgent(agent, "archive")),
-    ]);
-    await modifierLabels(id, { ajouter: [aTraiter], retirer: [archive] });
-  } catch (e) {
-    console.error("[gmail] étiquette « À traiter » non appliquée", e);
-  }
-}
-
-/** Traitement terminé par l'agent : « À traiter » retiré, « Archivé » posé. */
-export async function marquerAgentArchive(id: string, agent: AgentGmail): Promise<void> {
-  try {
-    const [aTraiter, archive] = await Promise.all([
-      assurerLabel(labelAgent(agent, "a_traiter")),
-      assurerLabel(labelAgent(agent, "archive")),
-    ]);
-    await modifierLabels(id, { ajouter: [archive], retirer: [aTraiter] });
-  } catch (e) {
-    console.error("[gmail] étiquette « Archivé » non appliquée", e);
-  }
-}
 
 
 /** Étiquettes lisibles d'un message (hors étiquettes système). */
