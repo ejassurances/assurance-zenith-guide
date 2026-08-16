@@ -226,14 +226,12 @@ export async function traiterEmailVeille(
     });
   }
 
-  try {
-    await etiqueterMessage(
-      params.gmail_message_id,
-      analyse.impact_assurance ? LABEL_VEILLE_A_EXAMINER : LABEL_VEILLE_NON_IMPACTE,
-    );
-  } catch (e) {
-    console.error("[veille] étiquette Gmail non appliquée", e);
-  }
+  // Étiquetage Gmail : toute erreur remonte à l'appelant (jamais avalée).
+  await poserLabelCabinet(
+    params.gmail_message_id,
+    analyse.impact_assurance ? "veille_reglementaire" : "veille_non_impactee",
+  );
+
 
   return {
     action: "veille_creee",
