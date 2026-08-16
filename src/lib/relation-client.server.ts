@@ -157,9 +157,22 @@ export async function analyserEmailClient(email: EmailClient): Promise<Classific
             !!p.nom && ["cni", "justificatif_domicile", "rib", "kbis"].includes(p.type),
         );
 
+      const sousTypeBrut = texteOuNull(brut["sous_type"], 30)?.toLowerCase() ?? null;
+      const sous_type: SousTypeNiveau0 =
+        niveau === "niveau_0" &&
+        (sousTypeBrut === "sinistre" ||
+          sousTypeBrut === "reclamation" ||
+          sousTypeBrut === "resiliation" ||
+          sousTypeBrut === "sante" ||
+          sousTypeBrut === "paiement")
+          ? sousTypeBrut
+          : null;
+
       return {
         niveau,
+        sous_type,
         intention: niveau === "niveau_1" ? intention : intention,
+
         piece_jointe_kyc: brut["piece_jointe_kyc"] === true || pieces_kyc.length > 0,
         pieces_kyc,
         confiance,
