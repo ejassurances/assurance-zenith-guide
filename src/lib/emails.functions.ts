@@ -180,6 +180,9 @@ export const boiteReception = createServerFn({ method: "POST" })
               userId: context.userId,
             });
           }
+          // Traitement terminé : « À traiter » retiré, « Archivé » posé.
+          await marquerAgentArchive(m.id, "commercial");
+
         } catch (e) {
           console.error("[agent-commercial] triage email", m.id, e);
           // Aucune étape ne doit échouer silencieusement : une tâche décrit l'erreur.
