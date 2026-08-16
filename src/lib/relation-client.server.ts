@@ -50,10 +50,13 @@ export interface ClassificationRelation {
   intention: IntentionRelation;
   piece_jointe_kyc: boolean;
   pieces_kyc: { nom: string; type: "cni" | "justificatif_domicile" | "rib" | "kbis" }[];
+  /** Pièces jointes reconnues comme document de prêt (tableau d'amortissement, offre de prêt). */
+  pieces_pret: { nom: string }[];
   confiance: number;
   resume: string;
   modele: string | null;
 }
+
 
 
 function extraireJson(texte: string): Record<string, unknown> {
