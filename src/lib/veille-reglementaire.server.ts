@@ -178,7 +178,15 @@ export async function traiterEmailVeille(
   const { email } = params;
   if (!estEmailVeilleAcpr(email)) return { action: "ignore" };
 
-  const { etiqueterMessage } = await import("@/lib/gmail.server");
+  const { assurerLabel, etiqueterMessage } = await import("@/lib/gmail.server");
+  // Les deux étiquettes de veille (et leur parent) doivent exister.
+  try {
+    await assurerLabel("Veille");
+    await assurerLabel(LABEL_VEILLE_A_EXAMINER);
+    await assurerLabel(LABEL_VEILLE_NON_IMPACTE);
+  } catch (e) {
+    console.error("[veille] étiquettes Gmail non créées", e);
+  }
 
   const urls = liensPdf(email.texte);
   const documents: { nom: string; base64: string }[] = [];
