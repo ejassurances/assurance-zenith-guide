@@ -18,6 +18,7 @@ import { Route as EspaceCguRouteImport } from './routes/espace.cgu'
 import { Route as AuthenticatedEspaceRouteImport } from './routes/_authenticated/espace'
 import { Route as AuthenticatedEspaceIndexRouteImport } from './routes/_authenticated/espace.index'
 import { Route as ApiPublicSuiviContratsRouteImport } from './routes/api/public/suivi-contrats'
+import { Route as ApiPublicRevueLcbftRouteImport } from './routes/api/public/revue-lcbft'
 import { Route as ApiPublicRelanceSouscriptionRouteImport } from './routes/api/public/relance-souscription'
 import { Route as ApiPublicRelanceSinistresRouteImport } from './routes/api/public/relance-sinistres'
 import { Route as ApiPublicRelancePiecesRouteImport } from './routes/api/public/relance-pieces'
@@ -100,6 +101,11 @@ const AuthenticatedEspaceIndexRoute =
 const ApiPublicSuiviContratsRoute = ApiPublicSuiviContratsRouteImport.update({
   id: '/api/public/suivi-contrats',
   path: '/api/public/suivi-contrats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicRevueLcbftRoute = ApiPublicRevueLcbftRouteImport.update({
+  id: '/api/public/revue-lcbft',
+  path: '/api/public/revue-lcbft',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicRelanceSouscriptionRoute =
@@ -357,6 +363,7 @@ export interface FileRoutesByFullPath {
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
+  '/api/public/revue-lcbft': typeof ApiPublicRevueLcbftRoute
   '/api/public/suivi-contrats': typeof ApiPublicSuiviContratsRoute
   '/espace/': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
@@ -404,6 +411,7 @@ export interface FileRoutesByTo {
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
+  '/api/public/revue-lcbft': typeof ApiPublicRevueLcbftRoute
   '/api/public/suivi-contrats': typeof ApiPublicSuiviContratsRoute
   '/espace': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
@@ -454,6 +462,7 @@ export interface FileRoutesById {
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
+  '/api/public/revue-lcbft': typeof ApiPublicRevueLcbftRoute
   '/api/public/suivi-contrats': typeof ApiPublicSuiviContratsRoute
   '/_authenticated/espace/': typeof AuthenticatedEspaceIndexRoute
   '/_authenticated/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
@@ -504,6 +513,7 @@ export interface FileRouteTypes {
     | '/api/public/relance-pieces'
     | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
+    | '/api/public/revue-lcbft'
     | '/api/public/suivi-contrats'
     | '/espace/'
     | '/espace/clients/$id'
@@ -551,6 +561,7 @@ export interface FileRouteTypes {
     | '/api/public/relance-pieces'
     | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
+    | '/api/public/revue-lcbft'
     | '/api/public/suivi-contrats'
     | '/espace'
     | '/espace/clients/$id'
@@ -600,6 +611,7 @@ export interface FileRouteTypes {
     | '/api/public/relance-pieces'
     | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
+    | '/api/public/revue-lcbft'
     | '/api/public/suivi-contrats'
     | '/_authenticated/espace/'
     | '/_authenticated/espace/clients/$id'
@@ -633,6 +645,7 @@ export interface RootRouteChildren {
   ApiPublicRelancePiecesRoute: typeof ApiPublicRelancePiecesRoute
   ApiPublicRelanceSinistresRoute: typeof ApiPublicRelanceSinistresRoute
   ApiPublicRelanceSouscriptionRoute: typeof ApiPublicRelanceSouscriptionRoute
+  ApiPublicRevueLcbftRoute: typeof ApiPublicRevueLcbftRoute
   ApiPublicSuiviContratsRoute: typeof ApiPublicSuiviContratsRoute
   ApiPublicWebhooksCrmRoute: typeof ApiPublicWebhooksCrmRoute
   ApiPublicWebhooksNeolianeRoute: typeof ApiPublicWebhooksNeolianeRoute
@@ -704,6 +717,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/suivi-contrats'
       fullPath: '/api/public/suivi-contrats'
       preLoaderRoute: typeof ApiPublicSuiviContratsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/revue-lcbft': {
+      id: '/api/public/revue-lcbft'
+      path: '/api/public/revue-lcbft'
+      fullPath: '/api/public/revue-lcbft'
+      preLoaderRoute: typeof ApiPublicRevueLcbftRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/relance-souscription': {
@@ -1078,6 +1098,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicRelancePiecesRoute: ApiPublicRelancePiecesRoute,
   ApiPublicRelanceSinistresRoute: ApiPublicRelanceSinistresRoute,
   ApiPublicRelanceSouscriptionRoute: ApiPublicRelanceSouscriptionRoute,
+  ApiPublicRevueLcbftRoute: ApiPublicRevueLcbftRoute,
   ApiPublicSuiviContratsRoute: ApiPublicSuiviContratsRoute,
   ApiPublicWebhooksCrmRoute: ApiPublicWebhooksCrmRoute,
   ApiPublicWebhooksNeolianeRoute: ApiPublicWebhooksNeolianeRoute,

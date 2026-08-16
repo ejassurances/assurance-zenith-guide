@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { rechercherSanctionsPPE, marquerVerificationLCB } from "@/lib/lcb-ft.functions";
 import { traiterPieceIdentite } from "@/lib/cni-extraction.functions";
 import { DerStatusCard } from "@/components/der-status-card";
+import { RisqueLcbftCard } from "@/components/risque-lcbft-card";
 import { detailConformite, NIVEAU_BAR, SEUIL_BLOCAGE_CONTRAT, type NiveauConformite } from "@/lib/conformite-score";
 
 
@@ -293,6 +294,7 @@ export function ConformiteClientTab({
         </p>
       </div>
 
+      <RisqueLcbftCard clientId={clientId} />
 
       <DerStatusCard clientId={clientId} clientEmail={clientEmail} canEdit={canEdit} />
 
