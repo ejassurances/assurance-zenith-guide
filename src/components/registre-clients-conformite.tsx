@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  evaluerRisqueLcbftClient,
+  listerClientsRisqueNonEvalues,
+} from "@/lib/risque-lcbft.functions";
+import { useServerFn } from "@tanstack/react-start";
 
 /* Registre clients de l'onglet Conformité : vue d'ensemble ACPR (score KYC, risque LCB-FT, vigilance, revues). */
 
