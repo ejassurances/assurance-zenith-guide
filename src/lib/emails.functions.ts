@@ -132,14 +132,21 @@ export const boiteReception = createServerFn({ method: "POST" })
         creerFicheProspectIncertaine,
       } = await import("@/lib/email-triage.server");
       const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
+      const { marquerAgentATraiter, marquerAgentArchive } = await import("@/lib/gmail.server");
       for (const m of aTrier) {
         try {
           const detail = await lireMessage(m.id);
           const entree = {
+            sujet: detail.sujet ?? null,
+            expediteur_nom: detail.expediteur_nom ?? null,
+            expediteur_email: detail.expediteur_email ?? null,
             texte: detail.texte ?? detail.snippet ?? null,
             pieces_jointes: detail.pieces_jointes.map((p) => ({ nom: p.nom, mime: p.mime })),
           };
           const triage = await analyserEmailProspect(entree);
+          // Catégorisation faite : le mail est pris en charge par l'agent commercial.
+          await marquerAgentATraiter(m.id, "commercial");
+
 
           if (estPublicite(triage)) {
             // Publicité / newsletter / spam : ni fiche client, ni tâche.
