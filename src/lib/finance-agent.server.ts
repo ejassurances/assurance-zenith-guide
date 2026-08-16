@@ -165,7 +165,7 @@ export interface ResultatFinance {
 /**
  * Traitement complet d'un email finance : classification puis extraction du
  * document, création de la facture d'achat ou du bordereau de commissions.
- * Le label Gmail « Agent Finance » suit le cycle À traiter → Archivé.
+ * Le message est classé dans l'arborescence COMPTABILITE du cabinet.
  */
 export async function traiterEmailFinance(
   admin: Admin,
@@ -183,21 +183,22 @@ export async function traiterEmailFinance(
   const piece = choisirPiece(email, classification.piece);
   if (!piece || !piece.attachment_id) return { categorie: "autre", action: "ignore" };
 
-  const { marquerAgentATraiter, marquerAgentArchive, telechargerPieceJointe } = await import("@/lib/gmail.server");
-  // Catégorisation faite : le mail est pris en charge par l'agent finance.
-  await marquerAgentATraiter(params.gmail_message_id, "finance");
+  const { poserLabelCabinet, telechargerPieceJointe } = await import("@/lib/gmail.server");
 
-  try {
-    const { base64 } = await telechargerPieceJointe(params.gmail_message_id, piece.attachment_id);
-    const resultat =
-      classification.categorie === "facture_fournisseur"
-        ? await traiterFacture(admin, { ...params, classification, piece, base64 })
-        : await traiterBordereau(admin, { ...params, classification, piece, base64 });
-    return resultat;
-  } finally {
-    await marquerAgentArchive(params.gmail_message_id, "finance");
-  }
+  const { base64 } = await telechargerPieceJointe(params.gmail_message_id, piece.attachment_id);
+  const resultat =
+    classification.categorie === "facture_fournisseur"
+      ? await traiterFacture(admin, { ...params, classification, piece, base64 })
+      : await traiterBordereau(admin, { ...params, classification, piece, base64 });
+
+  // Classement dans l'arborescence comptable du cabinet.
+  await poserLabelCabinet(
+    params.gmail_message_id,
+    classification.categorie === "facture_fournisseur" ? "facture_fournisseur" : "bordereau_commissions",
+  );
+  return resultat;
 }
+
 
 const lienFacture = "/espace/comptabilite";
 

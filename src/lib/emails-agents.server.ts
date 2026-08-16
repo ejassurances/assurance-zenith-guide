@@ -17,6 +17,9 @@ export interface ResultatAgents {
   veilles_creees: number;
   reponses_auto: number;
   brouillons_reponses: number;
+  /** Emails dont le traitement automatique (dont l'étiquetage Gmail) a échoué. */
+  erreurs: number;
+
 }
 
 export async function executerAgents(
@@ -29,6 +32,8 @@ export async function executerAgents(
     // client sont analysés par l'IA. Classification confiante -> prospect,
     // dossier, recueil et lettre de mission créés ; sinon suggestion affichée.
     let dossiersCrees = 0;
+    let erreurs = 0;
+
     let facturesCreees = 0;
     let bordereauxCrees = 0;
     let veillesCreees = 0;
@@ -253,6 +258,7 @@ export async function executerAgents(
             })
             .eq("gmail_message_id", m.id);
         } catch (e) {
+          erreurs++;
           console.error("[agent-relation-client] traitement email", m.id, e);
           await creerTacheAdmin(admin, {
             titre: `Email client non traité automatiquement — ${m.expediteur_email ?? "expéditeur inconnu"}`,
@@ -274,5 +280,7 @@ export async function executerAgents(
     veilles_creees: veillesCreees,
     reponses_auto: reponsesAuto,
     brouillons_reponses: brouillons,
+    erreurs,
+
   };
 }
