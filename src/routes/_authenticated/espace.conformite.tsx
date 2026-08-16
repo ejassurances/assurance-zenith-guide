@@ -123,7 +123,7 @@ function ConformitePage() {
         </TabsContent>
 
         <TabsContent value="registre-clients" className="mt-6">
-          <RegistreClientsConformite />
+          <RegistreClientsConformite isAdmin={role === "admin"} />
         </TabsContent>
 
         <TabsContent value="veille" className="mt-6">
