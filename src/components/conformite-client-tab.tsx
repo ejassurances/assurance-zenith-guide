@@ -230,14 +230,15 @@ export function ConformiteClientTab({
 
   return (
     <div className="space-y-6">
-      {/* Score */}
-      <div className={`rounded-2xl border p-5 ${NIVEAU_COLOR[niveau] ?? NIVEAU_COLOR.rouge}`}>
+      {/* Pièces du dossier — la complétude alimente le score de risque LCB-FT
+          (bloc ci-dessous), elle n'est plus affichée comme un score séparé. */}
+      <div className="rounded-2xl border border-line bg-surface-elevated p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide opacity-70">Score de conformité</p>
-            <p className="mt-1 font-serif text-4xl font-medium">{score}/100</p>
-            <p className="text-xs opacity-80">
-              {estPro ? "Barème professionnel (100 pts)" : "Barème particulier (80 pts ramenés sur 100)"}
+            <p className="text-xs font-medium uppercase tracking-wide opacity-70">Pièces du dossier</p>
+            <p className="mt-1 text-xs opacity-80">
+              {estPro ? "Barème professionnel" : "Barème particulier"} · la complétude est intégrée au score de risque
+              LCB-FT
             </p>
           </div>
           <div className="text-right text-xs">
@@ -253,13 +254,7 @@ export function ConformiteClientTab({
                 ? new Date(client.conformite_prochaine_verif).toLocaleDateString("fr-FR")
                 : "—"}
             </p>
-            <p className="mt-1 uppercase font-semibold">Niveau {niveau}</p>
           </div>
-        </div>
-
-        {/* Jauge */}
-        <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-black/10">
-          <div className={`h-full rounded-full ${NIVEAU_BAR[niveau]}`} style={{ width: `${score}%` }} />
         </div>
 
         {/* Détail du barème */}
@@ -288,9 +283,8 @@ export function ConformiteClientTab({
         </ul>
 
         <p className="mt-3 text-xs opacity-80">
-          Sous {SEUIL_BLOCAGE_CONTRAT} % 🔴 la création de contrat est bloquée · {SEUIL_BLOCAGE_CONTRAT}-89 % 🟡 en
-          attente de pièces · 90-100 % 🟢 conforme. Le score est recalculé automatiquement à chaque pièce validée ou
-          vérification LCB-FT.
+          Un dossier incomplet interdit la vigilance simplifiée et pèse sur le score de risque LCB-FT. Sous{" "}
+          {SEUIL_BLOCAGE_CONTRAT} % de complétude, la création de contrat reste bloquée par sécurité.
         </p>
       </div>
 

@@ -4346,6 +4346,48 @@ export type Database = {
         }
         Relationships: []
       }
+      veille_reglementaire: {
+        Row: {
+          created_at: string
+          date_reception: string
+          document_source_url: string | null
+          gmail_message_id: string | null
+          id: string
+          impact_assurance: boolean
+          resume: string | null
+          source: string
+          statut: string
+          sujet: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date_reception?: string
+          document_source_url?: string | null
+          gmail_message_id?: string | null
+          id?: string
+          impact_assurance?: boolean
+          resume?: string | null
+          source?: string
+          statut?: string
+          sujet: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date_reception?: string
+          document_source_url?: string | null
+          gmail_message_id?: string | null
+          id?: string
+          impact_assurance?: boolean
+          resume?: string | null
+          source?: string
+          statut?: string
+          sujet?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

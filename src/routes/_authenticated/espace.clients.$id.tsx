@@ -176,13 +176,7 @@ function ClientDetail() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <ScoreRings
-            conformite={(client as { conformite_score?: number | null }).conformite_score ?? 0}
-            valeur={scoreValeur ?? 0}
-            niveau={
-              ((client as { conformite_niveau?: string | null }).conformite_niveau as NiveauConformite | null) ?? null
-            }
-          />
+          <ScoreRings valeur={scoreValeur ?? 0} />
           <span className="rounded-full border border-line bg-surface-elevated px-3 py-1 text-xs font-medium">
             {client.statut}
           </span>

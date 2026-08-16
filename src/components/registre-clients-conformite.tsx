@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { NIVEAU_BADGE, niveauFromScore } from "@/lib/conformite-score";
 
 /* Registre clients de l'onglet Conformité : vue d'ensemble ACPR (score KYC, risque LCB-FT, vigilance, revues). */
 
@@ -15,7 +14,6 @@ type Ligne = {
   reference: string | null;
   nom: string;
   prenom: string | null;
-  conformite_score: number | null;
   score_risque: number | null;
   niveau_vigilance: Vigilance | null;
   ppe_detecte: boolean;
@@ -57,7 +55,7 @@ export function RegistreClientsConformite() {
       setLoading(true);
       const { data: clients } = await supabase
         .from("clients")
-        .select("id,reference,nom,prenom,conformite_score")
+        .select("id,reference,nom,prenom")
         .order("nom", { ascending: true });
 
       const ids = (clients ?? []).map((c) => c.id);
@@ -90,7 +88,6 @@ export function RegistreClientsConformite() {
             reference: c.reference ?? null,
             nom: c.nom,
             prenom: c.prenom ?? null,
-            conformite_score: c.conformite_score ?? null,
             score_risque: r?.score_risque ?? null,
             niveau_vigilance: (r?.niveau_vigilance as Vigilance | undefined) ?? null,
             ppe_detecte: Boolean(r?.ppe_detecte),
@@ -173,7 +170,6 @@ export function RegistreClientsConformite() {
             <TableHeader>
               <TableRow>
                 <TableHead>Client</TableHead>
-                <TableHead>Score KYC</TableHead>
                 <TableHead>Risque LCB-FT</TableHead>
                 <TableHead>Vigilance</TableHead>
                 <TableHead>Prochaine revue</TableHead>
@@ -184,14 +180,14 @@ export function RegistreClientsConformite() {
             <TableBody>
               {loading && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-sm text-ink-muted">
+                  <TableCell colSpan={6} className="text-sm text-ink-muted">
                     Chargement…
                   </TableCell>
                 </TableRow>
               )}
               {!loading && filtrees.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-sm text-ink-muted">
+                  <TableCell colSpan={6} className="text-sm text-ink-muted">
                     Aucun client ne correspond aux filtres.
                   </TableCell>
                 </TableRow>
@@ -204,17 +200,6 @@ export function RegistreClientsConformite() {
                       {l.nom}
                     </div>
                     <div className="text-xs text-ink-muted">{l.reference ?? "—"}</div>
-                  </TableCell>
-                  <TableCell>
-                    {l.conformite_score === null ? (
-                      <span className="text-sm text-ink-muted">—</span>
-                    ) : (
-                      <span
-                        className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${NIVEAU_BADGE[niveauFromScore(l.conformite_score)]}`}
-                      >
-                        {l.conformite_score}%
-                      </span>
-                    )}
                   </TableCell>
                   <TableCell className="text-sm">
                     {l.score_risque === null ? (

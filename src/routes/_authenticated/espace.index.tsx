@@ -193,12 +193,7 @@ function Dashboard() {
                     </span>
                   </div>
                   <div className="mt-5">
-                    <ScoreRings
-                      size={52}
-                      conformite={t.clients?.conformite_score ?? 0}
-                      valeur={(t.client_id && scoresValeur[t.client_id]) || 0}
-                      niveau={(t.clients?.conformite_niveau as NiveauConformite | null) ?? null}
-                    />
+                    <ScoreRings size={52} valeur={(t.client_id && scoresValeur[t.client_id]) || 0} />
                   </div>
                 </article>
               );

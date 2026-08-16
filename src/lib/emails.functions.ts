@@ -104,6 +104,7 @@ export const boiteReception = createServerFn({ method: "POST" })
     let dossiersCrees = 0;
     let facturesCreees = 0;
     let bordereauxCrees = 0;
+    let veillesCreees = 0;
     const { data: dejaTriage } = ids.length
       ? await supabaseAdmin.from("crm_emails").select("gmail_message_id").in("gmail_message_id", ids).not("triage_ia", "is", null)
       : { data: [] };
@@ -136,6 +137,7 @@ export const boiteReception = createServerFn({ method: "POST" })
       const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
       const { marquerAgentATraiter, marquerAgentArchive } = await import("@/lib/gmail.server");
       const { traiterEmailFinance } = await import("@/lib/finance-agent.server");
+      const { traiterEmailVeille } = await import("@/lib/veille-reglementaire.server");
       for (const m of aTrier) {
         try {
           const detail = await lireMessage(m.id);
@@ -147,7 +149,34 @@ export const boiteReception = createServerFn({ method: "POST" })
             pieces_jointes: detail.pieces_jointes.map((p) => ({ nom: p.nom, mime: p.mime })),
           };
 
-          // Agent finance en premier : facture fournisseur ou bordereau de
+          // Agent veille réglementaire : newsletter ACPR (aucun traitement CRM
+          // commercial ou comptable sur ces mails).
+          const veille = await traiterEmailVeille(supabaseAdmin, {
+            email: entree,
+            gmail_message_id: m.id,
+            recu_le: m.date ?? null,
+            userId: context.userId,
+          });
+          if (veille.action !== "ignore") {
+            veillesCreees++;
+            await supabaseAdmin.from("crm_emails").upsert(
+              {
+                gmail_message_id: m.id,
+                gmail_thread_id: m.thread_id ?? null,
+                direction: "entrant",
+                recu_le: m.date ?? null,
+                notes: `Agent veille réglementaire — ${veille.impact_assurance ? "impact assurance" : "non impacté"}`,
+                triage_ia: JSON.parse(JSON.stringify({ agent: "veille", ...veille })),
+                triage_le: new Date().toISOString(),
+                created_by: context.userId,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: "gmail_message_id" },
+            );
+            continue;
+          }
+
+          // Agent finance ensuite : facture fournisseur ou bordereau de
           // commissions. Si ce n'est pas du ressort de la finance, le tri
           // prospect (agent commercial) prend la suite.
           const finance = await traiterEmailFinance(supabaseAdmin, {
@@ -323,6 +352,7 @@ export const boiteReception = createServerFn({ method: "POST" })
       dossiers_crees: dossiersCrees,
       factures_creees: facturesCreees,
       bordereaux_crees: bordereauxCrees,
+      veilles_creees: veillesCreees,
       reponses_auto: reponsesAuto,
       brouillons_reponses: brouillons,
     };
