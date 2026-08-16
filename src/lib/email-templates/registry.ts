@@ -553,4 +553,22 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
       link: "https://example.com/espace/signer-souscription",
     },
   },
+  "relation-client-reponse": {
+    component: RelationClientReponseEmail,
+    subject: (data: Record<string, any>) =>
+      (data && data.titre ? data.titre : "Votre demande") +
+      " - " +
+      (data && data.cabinetName ? data.cabinetName : "EJ Partners Assurances"),
+    displayName: "Relation client - Reponse automatique",
+    previewData: {
+      clientName: "Jean Dupont",
+      cabinetName: "EJ Partners Assurances",
+      titre: "Les informations de votre contrat en cours",
+      paragraphes: ["Vous trouverez ci-dessous les informations de votre contrat en cours."],
+      lignes: [
+        { libelle: "Numero de contrat", valeur: "C-2025-001" },
+        { libelle: "Cotisation annuelle", valeur: "480,00 EUR" },
+      ],
+    },
+  },
 };
