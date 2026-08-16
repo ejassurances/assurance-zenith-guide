@@ -33,6 +33,8 @@ export const TYPE_ATTESTATION = "attestation_assurance";
 
 export type NiveauRelation = "niveau_0" | "niveau_1" | "niveau_2";
 export type IntentionRelation = "info_contrat" | "info_garanties" | "attestation" | null;
+/** Sous-type précisant la nature d'un email niveau 0. */
+export type SousTypeNiveau0 = "sinistre" | "reclamation" | "resiliation" | "sante" | "paiement" | null;
 
 export interface EmailClient {
   sujet: string | null;
@@ -44,6 +46,7 @@ export interface EmailClient {
 
 export interface ClassificationRelation {
   niveau: NiveauRelation;
+  sous_type: SousTypeNiveau0;
   intention: IntentionRelation;
   piece_jointe_kyc: boolean;
   pieces_kyc: { nom: string; type: "cni" | "justificatif_domicile" | "rib" | "kbis" }[];
@@ -51,6 +54,7 @@ export interface ClassificationRelation {
   resume: string;
   modele: string | null;
 }
+
 
 function extraireJson(texte: string): Record<string, unknown> {
   const nettoye = texte.replace(/```json/gi, "").replace(/```/g, "").trim();
@@ -79,6 +83,12 @@ function consigne(email: EmailClient): string {
     '- "niveau_0" : sinistre, déclaration de dommage, réclamation, mécontentement, résiliation,',
     "  sujet de santé (maladie, hospitalisation, arrêt de travail, remboursement de soins),",
     "  ou sujet de paiement (prélèvement, impayé, remboursement, cotisation non passée).",
+    '  Pour le niveau_0 UNIQUEMENT, précise le sous-type dans "sous_type" :',
+    '  * "sinistre" : le client déclare un sinistre / un dommage survenu et attend une prise en charge',
+    '  * "reclamation" : mécontentement, litige, réclamation',
+    '  * "resiliation" : demande de résiliation',
+    '  * "sante" : sujet médical ou de remboursement de soins',
+    '  * "paiement" : prélèvement, impayé, cotisation, remboursement de cotisation',
     '- "niveau_1" : UNIQUEMENT si la demande correspond exactement à une de ces trois intentions,',
     "  sans aucune ambiguïté et sans autre demande associée :",
     '  * "info_contrat" : demande d\'information sur le contrat en cours (numéro, compagnie, cotisation, date d\'effet)',
@@ -97,11 +107,13 @@ function consigne(email: EmailClient): string {
     (email.texte ?? "").slice(0, 6000),
     "",
     'Réponds STRICTEMENT en JSON : {"niveau":"niveau_0|niveau_1|niveau_2",',
+    '"sous_type":"sinistre|reclamation|resiliation|sante|paiement|null",',
     '"intention":"info_contrat|info_garanties|attestation|null","piece_jointe_kyc":false,',
     '"pieces_kyc":[{"nom":"fichier.pdf","type":"cni|justificatif_domicile|rib|kbis"}],',
     '"confiance":0.0,"resume":"une phrase"}',
   ].join("\n");
 }
+
 
 /** Analyse IA d'un email client. Toute incertitude retombe en niveau_2. */
 export async function analyserEmailClient(email: EmailClient): Promise<ClassificationRelation> {
@@ -145,9 +157,22 @@ export async function analyserEmailClient(email: EmailClient): Promise<Classific
             !!p.nom && ["cni", "justificatif_domicile", "rib", "kbis"].includes(p.type),
         );
 
+      const sousTypeBrut = texteOuNull(brut["sous_type"], 30)?.toLowerCase() ?? null;
+      const sous_type: SousTypeNiveau0 =
+        niveau === "niveau_0" &&
+        (sousTypeBrut === "sinistre" ||
+          sousTypeBrut === "reclamation" ||
+          sousTypeBrut === "resiliation" ||
+          sousTypeBrut === "sante" ||
+          sousTypeBrut === "paiement")
+          ? sousTypeBrut
+          : null;
+
       return {
         niveau,
+        sous_type,
         intention: niveau === "niveau_1" ? intention : intention,
+
         piece_jointe_kyc: brut["piece_jointe_kyc"] === true || pieces_kyc.length > 0,
         pieces_kyc,
         confiance,
@@ -429,27 +454,59 @@ export async function traiterEmailClient(
 
   // ---- Niveau 0 : aucune automatisation, tâche urgente.
   if (classification.niveau === "niveau_0") {
+    // Sous-type sinistre : ouverture d'un dossier dédié + analyse de couverture.
+    let sinistre: { sinistre_id: string; action_recommandee: string; analyse_couverture: string } | null = null;
+    if (classification.sous_type === "sinistre") {
+      try {
+        const { ouvrirSinistreDepuisEmail } = await import("@/lib/sinistres-agent.server");
+        sinistre = await ouvrirSinistreDepuisEmail(admin, {
+          client_id: client.id,
+          resume: classification.resume,
+          texte_email: email.texte,
+          sujet: email.sujet,
+          gmail_message_id,
+          userId: params.userId,
+        });
+      } catch (e) {
+        console.error("[agent-relation-client] ouverture sinistre impossible", e);
+      }
+    }
+
     await creerTacheAdmin(admin as never, {
-      titre: `Sinistre/réclamation reçu — ${nomComplet(client)}`,
+      titre: sinistre
+        ? `Sinistre déclaré — ${nomComplet(client)}`
+        : `Sinistre/réclamation reçu — ${nomComplet(client)}`,
       description: [
         `Objet : ${email.sujet ?? "(sans objet)"}`,
         `Résumé IA : ${classification.resume || "non fourni"}`,
         `Email : ${lienMail(gmail_message_id)}`,
+        ...(sinistre
+          ? [
+              `Fiche sinistre : /espace/sinistres/${sinistre.sinistre_id}`,
+              `Action recommandée : ${sinistre.action_recommandee}`,
+              `Analyse de couverture : ${sinistre.analyse_couverture}`,
+            ]
+          : []),
         "Aucune réponse automatique n'a été envoyée : traitement humain obligatoire.",
       ].join("\n"),
       client_id: client.id,
       priorite: "urgente",
       created_by: params.userId,
     });
-    await enregistrerReponse(admin, { ...base, statut: "aucune_reponse", motif: "Niveau 0 — traitement humain" });
+    await enregistrerReponse(admin, {
+      ...base,
+      statut: "aucune_reponse",
+      motif: sinistre ? "Niveau 0 — sinistre : dossier ouvert, traitement humain" : "Niveau 0 — traitement humain",
+    });
     await journaliser(
       admin,
       client.id,
-      "Email sensible reçu — traitement humain requis",
-      `${classification.resume}\nEmail : ${lienMail(gmail_message_id)}`,
+      sinistre ? "Sinistre déclaré par email — dossier ouvert" : "Email sensible reçu — traitement humain requis",
+      `${classification.resume}\nEmail : ${lienMail(gmail_message_id)}${sinistre ? `\n\n${sinistre.analyse_couverture}` : ""}`,
     );
     return { niveau: "niveau_0", intention: null, action: "tache_urgente", pieces_kyc: piecesKyc };
   }
+
 
   const objetReponse = `Votre demande — ${email.sujet ?? "votre contrat"}`.slice(0, 200);
 
