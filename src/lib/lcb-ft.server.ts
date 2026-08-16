@@ -165,6 +165,14 @@ export async function executerRechercheLCB(
     .single();
   if (insErr) throw new Error(insErr.message);
 
+  // Score de risque LCB-FT recalculé à chaque nouveau contrôle (best-effort).
+  try {
+    const { evaluerRisqueLcbft } = await import("@/lib/risque-lcbft.server");
+    await evaluerRisqueLcbft(supabase, input.client_id);
+  } catch (e) {
+    console.error("[risque-lcbft] évaluation post-contrôle échouée", input.client_id, e);
+  }
+
   return {
     verification_id: inserted.id,
     matches: enrichis,
