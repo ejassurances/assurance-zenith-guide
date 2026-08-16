@@ -102,6 +102,8 @@ export const boiteReception = createServerFn({ method: "POST" })
     // client sont analysés par l'IA. Classification confiante -> prospect,
     // dossier, recueil et lettre de mission créés ; sinon suggestion affichée.
     let dossiersCrees = 0;
+    let facturesCreees = 0;
+    let bordereauxCrees = 0;
     const { data: dejaTriage } = ids.length
       ? await supabaseAdmin.from("crm_emails").select("gmail_message_id").in("gmail_message_id", ids).not("triage_ia", "is", null)
       : { data: [] };
@@ -319,6 +321,8 @@ export const boiteReception = createServerFn({ method: "POST" })
       liens: liensFinaux ?? [],
       nouveaux,
       dossiers_crees: dossiersCrees,
+      factures_creees: facturesCreees,
+      bordereaux_crees: bordereauxCrees,
       reponses_auto: reponsesAuto,
       brouillons_reponses: brouillons,
     };
