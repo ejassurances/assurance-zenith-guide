@@ -1,3 +1,5 @@
+import { LABELS_CABINET, LABELS_CREABLES, type LabelCabinet } from "@/lib/gmail-labels";
+
 /**
  * Accès Gmail (boîte du cabinet) via la passerelle de connecteurs Lovable.
  * Server-only : n'importez jamais ce fichier depuis un composant.
@@ -269,8 +271,6 @@ export async function marquerLu(id: string, lu: boolean): Promise<void> {
 }
 
 type GmailLabel = { id: string; name: string };
-
-import { LABELS_CABINET, LABELS_CREABLES, type LabelCabinet } from "@/lib/gmail-labels";
 
 export { LABELS_CABINET, type LabelCabinet };
 
