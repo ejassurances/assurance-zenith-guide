@@ -650,14 +650,13 @@ export const envoyerEmailCrm = createServerFn({ method: "POST" })
         .order("created_at", { ascending: false })
         .limit(20);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const derniere = ((notes ?? []) as any[])[0];
-      if (derniere && derniere.titre === TITRE_NOTE_RETOUR_SUIVI) {
-        const contratsANoter = [
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ...new Set(((notes ?? []) as any[])
-            .filter((n) => n.titre === TITRE_NOTE_RETOUR_SUIVI && n.created_at === derniere.created_at)
-            .map((n) => n.contrat_id as string | null)),
-        ];
+      const lignes = ((notes ?? []) as any[]);
+      const derniereReponse = lignes.find((n) => n.titre === TITRE_NOTE_REPONSE_SUIVI)?.created_at ?? null;
+      const enAttente = lignes.filter(
+        (n) => n.titre === TITRE_NOTE_RETOUR_SUIVI && (!derniereReponse || n.created_at > derniereReponse),
+      );
+      if (enAttente.length > 0) {
+        const contratsANoter = [...new Set(enAttente.map((n) => n.contrat_id as string | null))];
         for (const contratId of contratsANoter) {
           await supabaseAdmin.from("activites").insert({
             client_id: data.client_id,
