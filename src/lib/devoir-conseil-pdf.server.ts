@@ -434,7 +434,19 @@ export async function genererPdfDevoirConseil(input: DevoirPdfInput): Promise<Ui
   if (conseil.frais_dossier != null) kv("Frais de dossier", euro(Number(conseil.frais_dossier)));
   if (conseil.frais_souscription != null)
     kv("Frais de souscription", euro(Number(conseil.frais_souscription)));
-  if (conseil.economie_estimee != null) kv("Economie estimee", euro(Number(conseil.economie_estimee)));
+  if (conseil.frais_courtage != null) kv("Frais de courtage", euro(Number(conseil.frais_courtage)));
+  if (conseil.frais_adhesion != null) kv("Frais d'adhesion", euro(Number(conseil.frais_adhesion)));
+  if (
+    (conseil.frais_courtage != null && Number(conseil.frais_courtage) > 0) ||
+    (conseil.frais_adhesion != null && Number(conseil.frais_adhesion) > 0)
+  ) {
+    para(
+      "Le cabinet propose, dans le cadre de ce dossier, une solution permettant de reduire ou de prendre en charge tout ou partie de ses frais de courtage habituellement factures au client. Le detail de cette prise en charge est precise ci-dessus. Ces frais sont distincts de la commission percue par le cabinet aupres de la compagnie, qui reste interne et n'est jamais affichee au client.",
+      { size: 8.5, color: MUTED, gap: 4 },
+    );
+  }
+  if (input.type_assurance === "emprunteur" && conseil.economie_estimee != null)
+    kv("Economie estimee", euro(Number(conseil.economie_estimee)));
   y -= 4;
   para(String(input.recommandation ?? "-"), { gap: 4 });
 
