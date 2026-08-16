@@ -86,6 +86,11 @@ export const Route = createFileRoute("/api/public/webhooks/crm")({
             nom: values.nom,
             prenom: values.prenom ?? null,
           });
+
+          // Listes Brevo : synchro immédiate du contact (best-effort).
+          const { synchroniserContactBrevoSansEchec } = await import("@/lib/brevo-listes.server");
+          await synchroniserContactBrevoSansEchec(supabaseAdmin as never, clientId);
+
         }
 
         if (clientId) {

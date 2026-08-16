@@ -189,3 +189,60 @@ export async function synchroniserListesBrevo(
 
   return { listes: Object.keys(listes).length, contacts: contacts.size, erreurs };
 }
+
+/**
+ * Synchronisation ciblée d'un seul client vers ses listes Brevo.
+ * Best-effort : à appeler sans bloquer l'action métier appelante.
+ */
+export async function synchroniserContactBrevo(
+  admin: Admin,
+  clientId: string,
+): Promise<{ ok: boolean; listes?: string[]; raison?: string }> {
+  const { data: client, error } = await admin
+    .from("clients")
+    .select("id, nom, prenom, email, statut")
+    .eq("id", clientId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  const c = client as any;
+  const email = (c?.email ?? "").trim().toLowerCase();
+  if (!c || !email || !email.includes("@")) return { ok: false, raison: "email absent" };
+
+  const noms = new Set<string>();
+  if (c.statut === "actif") noms.add(LISTE_CLIENTS_ACTIFS);
+  if (c.statut === "prospect") noms.add(LISTE_PROSPECTS);
+
+  const [{ data: dossiers }, { data: contratsEmprunteur }] = await Promise.all([
+    admin.from("dossiers").select("type_assurance").eq("client_id", clientId).limit(200),
+    admin.from("contrats").select("id").eq("client_id", clientId).eq("is_emprunteur", true).limit(200),
+  ]);
+  for (const d of ((dossiers ?? []) as any[])) {
+    for (const liste of LISTES_BRANCHES) {
+      if (liste.branches.includes(String(d.type_assurance ?? ""))) noms.add(liste.nom);
+    }
+  }
+  if (((contratsEmprunteur ?? []) as any[]).length > 0) noms.add("Emprunteur");
+
+  if (noms.size === 0) return { ok: false, raison: "aucune liste applicable" };
+
+  const listes = await assurerListes();
+  const listIds = [...noms].map((n) => listes[n]).filter((v): v is number => Number.isFinite(v));
+  if (listIds.length === 0) return { ok: false, raison: "listes Brevo introuvables" };
+
+  await appel("POST", "/contacts", {
+    email,
+    attributes: { PRENOM: c.prenom ?? "", NOM: c.nom ?? "" },
+    listIds,
+    updateEnabled: true,
+  });
+  return { ok: true, listes: [...noms] };
+}
+
+/** Variante best-effort : journalise l'erreur sans jamais la propager. */
+export async function synchroniserContactBrevoSansEchec(admin: Admin, clientId: string): Promise<void> {
+  try {
+    await synchroniserContactBrevo(admin, clientId);
+  } catch (e) {
+    console.error(`[brevo-listes] synchro contact ${clientId} échouée`, e);
+  }
+}
