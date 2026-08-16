@@ -236,7 +236,20 @@ function ClientsList() {
                     <div className="text-xs text-ink-muted">{c.mobile ?? ""}</div>
                   </td>
                   <td className="px-4 py-3">
-                    <ScoreRings size={48} valeur={scoresValeur[c.id] ?? 0} />
+                    <div className="flex items-center gap-3">
+                      <ScoreRings size={48} valeur={scoresValeur[c.id] ?? 0} />
+                      {c.client_risque_lcbft ? (
+                        <span
+                          className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase ${NIVEAU_STYLE[c.client_risque_lcbft.niveau_vigilance]}`}
+                        >
+                          {c.client_risque_lcbft.score_risque}/100 · {NIVEAU_LABEL[c.client_risque_lcbft.niveau_vigilance]}
+                        </span>
+                      ) : (
+                        <span className="rounded-full border border-line bg-surface px-2.5 py-1 text-[11px] font-medium text-ink-muted">
+                          Non évalué
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
 
