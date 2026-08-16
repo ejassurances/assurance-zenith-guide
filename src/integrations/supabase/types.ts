@@ -257,6 +257,54 @@ export type Database = {
         }
         Relationships: []
       }
+      cartographie_risques: {
+        Row: {
+          categorie: string
+          created_at: string
+          created_by: string | null
+          facteur: string
+          id: string
+          impact: number
+          mesures_maitrise: string | null
+          niveau_maitrise: number
+          probabilite: number
+          revise_le: string | null
+          risque_residuel: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          categorie: string
+          created_at?: string
+          created_by?: string | null
+          facteur: string
+          id?: string
+          impact?: number
+          mesures_maitrise?: string | null
+          niveau_maitrise?: number
+          probabilite?: number
+          revise_le?: string | null
+          risque_residuel?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          categorie?: string
+          created_at?: string
+          created_by?: string | null
+          facteur?: string
+          id?: string
+          impact?: number
+          mesures_maitrise?: string | null
+          niveau_maitrise?: number
+          probabilite?: number
+          revise_le?: string | null
+          risque_residuel?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       client_conjoint: {
         Row: {
           client_id: string
@@ -4473,6 +4521,14 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      calculer_risque_residuel: {
+        Args: {
+          _impact: number
+          _niveau_maitrise: number
+          _probabilite: number
+        }
+        Returns: string
       }
       calculer_score_conformite_client: {
         Args: { _client_id: string }
