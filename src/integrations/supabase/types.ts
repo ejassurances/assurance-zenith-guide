@@ -643,8 +643,12 @@ export type Database = {
           id: string
           intention: string | null
           motif: string | null
+          motif_signalement: string | null
           objet: string | null
           resume: string | null
+          signalee_incorrecte: boolean
+          signalee_le: string | null
+          signalee_par: string | null
           statut: string
           updated_at: string
         }
@@ -665,8 +669,12 @@ export type Database = {
           id?: string
           intention?: string | null
           motif?: string | null
+          motif_signalement?: string | null
           objet?: string | null
           resume?: string | null
+          signalee_incorrecte?: boolean
+          signalee_le?: string | null
+          signalee_par?: string | null
           statut?: string
           updated_at?: string
         }
@@ -687,8 +695,12 @@ export type Database = {
           id?: string
           intention?: string | null
           motif?: string | null
+          motif_signalement?: string | null
           objet?: string | null
           resume?: string | null
+          signalee_incorrecte?: boolean
+          signalee_le?: string | null
+          signalee_par?: string | null
           statut?: string
           updated_at?: string
         }
@@ -4065,6 +4077,7 @@ export type Database = {
           montant_indemnise: number | null
           notes: string | null
           numero_compagnie: string | null
+          rappel_sans_action_le: string | null
           reference: string | null
           resume: string | null
           statut: string
@@ -4094,6 +4107,7 @@ export type Database = {
           montant_indemnise?: number | null
           notes?: string | null
           numero_compagnie?: string | null
+          rappel_sans_action_le?: string | null
           reference?: string | null
           resume?: string | null
           statut?: string
@@ -4123,6 +4137,7 @@ export type Database = {
           montant_indemnise?: number | null
           notes?: string | null
           numero_compagnie?: string | null
+          rappel_sans_action_le?: string | null
           reference?: string | null
           resume?: string | null
           statut?: string

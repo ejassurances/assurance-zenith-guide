@@ -18,6 +18,7 @@ import { Route as EspaceCguRouteImport } from './routes/espace.cgu'
 import { Route as AuthenticatedEspaceRouteImport } from './routes/_authenticated/espace'
 import { Route as AuthenticatedEspaceIndexRouteImport } from './routes/_authenticated/espace.index'
 import { Route as ApiPublicRelanceSouscriptionRouteImport } from './routes/api/public/relance-souscription'
+import { Route as ApiPublicRelanceSinistresRouteImport } from './routes/api/public/relance-sinistres'
 import { Route as ApiPublicRelancePiecesRouteImport } from './routes/api/public/relance-pieces'
 import { Route as ApiPublicRappelsExpirationRouteImport } from './routes/api/public/rappels-expiration'
 import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
@@ -98,6 +99,12 @@ const ApiPublicRelanceSouscriptionRoute =
   ApiPublicRelanceSouscriptionRouteImport.update({
     id: '/api/public/relance-souscription',
     path: '/api/public/relance-souscription',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicRelanceSinistresRoute =
+  ApiPublicRelanceSinistresRouteImport.update({
+    id: '/api/public/relance-sinistres',
+    path: '/api/public/relance-sinistres',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicRelancePiecesRoute = ApiPublicRelancePiecesRouteImport.update({
@@ -334,6 +341,7 @@ export interface FileRoutesByFullPath {
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
+  '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
   '/espace/': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
@@ -378,6 +386,7 @@ export interface FileRoutesByTo {
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
+  '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
   '/espace': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
@@ -425,6 +434,7 @@ export interface FileRoutesById {
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
+  '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
   '/_authenticated/espace/': typeof AuthenticatedEspaceIndexRoute
   '/_authenticated/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
@@ -472,6 +482,7 @@ export interface FileRouteTypes {
     | '/api/public/leads'
     | '/api/public/rappels-expiration'
     | '/api/public/relance-pieces'
+    | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
     | '/espace/'
     | '/espace/clients/$id'
@@ -516,6 +527,7 @@ export interface FileRouteTypes {
     | '/api/public/leads'
     | '/api/public/rappels-expiration'
     | '/api/public/relance-pieces'
+    | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
     | '/espace'
     | '/espace/clients/$id'
@@ -562,6 +574,7 @@ export interface FileRouteTypes {
     | '/api/public/leads'
     | '/api/public/rappels-expiration'
     | '/api/public/relance-pieces'
+    | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
     | '/_authenticated/espace/'
     | '/_authenticated/espace/clients/$id'
@@ -592,6 +605,7 @@ export interface RootRouteChildren {
   ApiPublicLeadsRoute: typeof ApiPublicLeadsRoute
   ApiPublicRappelsExpirationRoute: typeof ApiPublicRappelsExpirationRoute
   ApiPublicRelancePiecesRoute: typeof ApiPublicRelancePiecesRoute
+  ApiPublicRelanceSinistresRoute: typeof ApiPublicRelanceSinistresRoute
   ApiPublicRelanceSouscriptionRoute: typeof ApiPublicRelanceSouscriptionRoute
   ApiPublicWebhooksCrmRoute: typeof ApiPublicWebhooksCrmRoute
   ApiPublicWebhooksNeolianeRoute: typeof ApiPublicWebhooksNeolianeRoute
@@ -663,6 +677,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/relance-souscription'
       fullPath: '/api/public/relance-souscription'
       preLoaderRoute: typeof ApiPublicRelanceSouscriptionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/relance-sinistres': {
+      id: '/api/public/relance-sinistres'
+      path: '/api/public/relance-sinistres'
+      fullPath: '/api/public/relance-sinistres'
+      preLoaderRoute: typeof ApiPublicRelanceSinistresRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/relance-pieces': {
@@ -1013,6 +1034,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicLeadsRoute: ApiPublicLeadsRoute,
   ApiPublicRappelsExpirationRoute: ApiPublicRappelsExpirationRoute,
   ApiPublicRelancePiecesRoute: ApiPublicRelancePiecesRoute,
+  ApiPublicRelanceSinistresRoute: ApiPublicRelanceSinistresRoute,
   ApiPublicRelanceSouscriptionRoute: ApiPublicRelanceSouscriptionRoute,
   ApiPublicWebhooksCrmRoute: ApiPublicWebhooksCrmRoute,
   ApiPublicWebhooksNeolianeRoute: ApiPublicWebhooksNeolianeRoute,

@@ -376,6 +376,38 @@ async function routerPiecesKyc(
   return deposees;
 }
 
+/**
+ * Accusé de réception générique envoyé immédiatement en niveau 2.
+ * Strictement neutre : aucun conseil, aucune donnée de dossier.
+ */
+async function envoyerAccuseReception(
+  admin: Admin,
+  client: ClientMini,
+  gmailMessageId: string | null,
+): Promise<void> {
+  if (!client.email) return;
+  try {
+    await envoyerReponse(client.email, {
+      clientName: nomComplet(client),
+      titre: "Nous avons bien reçu votre message",
+      paragraphes: [
+        "Nous avons bien reçu votre message et revenons vers vous rapidement.",
+        `Ce message est un accusé de réception automatique : il ne contient aucune réponse à votre demande.`,
+        `L'équipe ${CABINET}`,
+      ],
+    });
+    await journaliser(
+      admin,
+      client.id,
+      "Accusé de réception automatique envoyé au client",
+      `Accusé de réception neutre envoyé à ${client.email}.\nEmail d'origine : ${lienMail(gmailMessageId)}`,
+    );
+  } catch (e) {
+    console.error("[agent-relation-client] accusé de réception non envoyé", e);
+  }
+}
+
+
 export interface ResultatRelationClient {
   niveau: NiveauRelation;
   intention: IntentionRelation;
@@ -443,6 +475,7 @@ export async function traiterEmailClient(
       "Réponse préparée en brouillon (à valider)",
       `${motif}\nEmail : ${lienMail(gmail_message_id)}\n\n${corps}`,
     );
+    await envoyerAccuseReception(admin, client, gmail_message_id);
     return {
       niveau: "niveau_2",
       intention: classification.intention,

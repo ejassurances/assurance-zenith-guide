@@ -119,3 +119,81 @@ export const abandonnerReponse = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/**
+ * Signalement d'une réponse automatique (niveau 1) comme incorrecte.
+ * Traçabilité seule : la réponse est marquée et une tâche admin est créée,
+ * aucune action corrective automatique n'est déclenchée.
+ */
+export const signalerReponseIncorrecte = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        client_id: z.string().uuid(),
+        activite_le: z.string().min(1),
+        activite_titre: z.string().max(300).optional().nullable(),
+        motif: z.string().trim().min(3).max(2000),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await exigerStaff(context.supabase, context.userId);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Réponse automatique la plus proche (envoyée avant l'activité journalisée).
+    const borne = new Date(new Date(data.activite_le).getTime() + 60_000).toISOString();
+    const { data: rows } = await (supabaseAdmin as any)
+      .from("client_reponses_ia")
+      .select("id, objet, categorie, intention, envoye_le")
+      .eq("client_id", data.client_id)
+      .eq("statut", "envoye")
+      .lte("envoye_le", borne)
+      .order("envoye_le", { ascending: false })
+      .limit(1);
+    const reponse = ((rows ?? []) as any[])[0] as { id: string; intention: string | null } | undefined;
+
+    if (reponse) {
+      await (supabaseAdmin as any)
+        .from("client_reponses_ia")
+        .update({
+          signalee_incorrecte: true,
+          motif_signalement: data.motif,
+          signalee_le: new Date().toISOString(),
+          signalee_par: context.userId,
+        })
+        .eq("id", reponse.id);
+    }
+
+    const { data: cli } = await (supabaseAdmin as any)
+      .from("clients")
+      .select("nom, prenom")
+      .eq("id", data.client_id)
+      .maybeSingle();
+    const nom = [(cli as any)?.prenom, (cli as any)?.nom].filter(Boolean).join(" ") || "Client";
+
+    const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
+    await creerTacheAdmin(supabaseAdmin as never, {
+      titre: `Réponse automatique signalée incorrecte — ${nom}`,
+      description: [
+        `Activité : ${data.activite_titre ?? "réponse automatique"}`,
+        `Date de la réponse : ${new Date(data.activite_le).toLocaleString("fr-FR")}`,
+        reponse ? `Réponse concernée : ${reponse.id} (intention ${reponse.intention ?? "—"})` : "Réponse d'origine non retrouvée en base.",
+        "",
+        `Motif du signalement : ${data.motif}`,
+      ].join("\n"),
+      client_id: data.client_id,
+      priorite: "haute",
+      created_by: context.userId,
+    });
+
+    await (supabaseAdmin as any).from("activites").insert({
+      client_id: data.client_id,
+      type: "systeme",
+      titre: "Réponse automatique signalée comme incorrecte",
+      contenu: `Motif : ${data.motif}`,
+      created_by: context.userId,
+    });
+
+    return { ok: true, reponse_id: reponse?.id ?? null };
+  });
