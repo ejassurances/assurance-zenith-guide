@@ -55,5 +55,9 @@ export const creerClientManuel = createServerFn({ method: "POST" })
       prenom: data.prenom ?? null,
     });
 
+    // Listes Brevo : synchro immédiate du nouveau prospect (best-effort).
+    const { synchroniserContactBrevoSansEchec } = await import("@/lib/brevo-listes.server");
+    await synchroniserContactBrevoSansEchec(supabaseAdmin as never, cree.id);
+
     return { id: cree.id };
   });
