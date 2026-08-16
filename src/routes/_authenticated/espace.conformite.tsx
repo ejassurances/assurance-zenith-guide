@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { RegistreClientsConformite } from "@/components/registre-clients-conformite";
 
 export const Route = createFileRoute("/_authenticated/espace/conformite")({
   component: ConformitePage,
@@ -91,7 +92,8 @@ function ConformitePage() {
     <div>
       <h1 className="font-serif text-3xl font-medium text-ink">Conformité</h1>
       <p className="mt-1 text-sm text-ink-muted">
-        Documents obligatoires du cabinet et de ses mandataires, contrats de partenariat compagnies.
+        Point d'entrée unique en cas de contrôle ACPR : documents obligatoires du cabinet et de ses mandataires,
+        contrats de partenariat compagnies, registre de conformité clients (KYC, risque LCB-FT, vigilance).
       </p>
 
       <Tabs defaultValue="mes-documents" className="mt-6">
@@ -99,6 +101,7 @@ function ConformitePage() {
           <TabsTrigger value="mes-documents">Mes documents</TabsTrigger>
           {role === "admin" && <TabsTrigger value="equipe">Équipe & mandataires</TabsTrigger>}
           <TabsTrigger value="partenariats">Partenariats compagnies</TabsTrigger>
+          <TabsTrigger value="registre-clients">Registre clients</TabsTrigger>
         </TabsList>
 
         <TabsContent value="mes-documents" className="mt-6">
@@ -113,6 +116,10 @@ function ConformitePage() {
 
         <TabsContent value="partenariats" className="mt-6">
           <Partenariats canManage={role === "admin"} />
+        </TabsContent>
+
+        <TabsContent value="registre-clients" className="mt-6">
+          <RegistreClientsConformite />
         </TabsContent>
       </Tabs>
     </div>
