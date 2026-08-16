@@ -443,6 +443,7 @@ export async function traiterEmailClient(
       "Réponse préparée en brouillon (à valider)",
       `${motif}\nEmail : ${lienMail(gmail_message_id)}\n\n${corps}`,
     );
+    await envoyerAccuseReception(admin, client, gmail_message_id);
     return {
       niveau: "niveau_2",
       intention: classification.intention,
