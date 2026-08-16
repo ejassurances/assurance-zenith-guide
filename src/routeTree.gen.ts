@@ -48,6 +48,7 @@ import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/em
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as ApiPublicWebhooksNeolianeRouteImport } from './routes/api/public/webhooks/neoliane'
 import { Route as ApiPublicWebhooksCrmRouteImport } from './routes/api/public/webhooks/crm'
+import { Route as AuthenticatedEspaceSinistresIdRouteImport } from './routes/_authenticated/espace.sinistres.$id'
 import { Route as AuthenticatedEspaceDossiersIdRouteImport } from './routes/_authenticated/espace.dossiers.$id'
 import { Route as AuthenticatedEspaceContratsIdRouteImport } from './routes/_authenticated/espace.contrats.$id'
 import { Route as AuthenticatedEspaceCompagniesIdRouteImport } from './routes/_authenticated/espace.compagnies.$id'
@@ -273,6 +274,12 @@ const ApiPublicWebhooksCrmRoute = ApiPublicWebhooksCrmRouteImport.update({
   path: '/api/public/webhooks/crm',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedEspaceSinistresIdRoute =
+  AuthenticatedEspaceSinistresIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedEspaceSinistresRoute,
+  } as any)
 const AuthenticatedEspaceDossiersIdRoute =
   AuthenticatedEspaceDossiersIdRouteImport.update({
     id: '/dossiers/$id',
@@ -318,7 +325,7 @@ export interface FileRoutesByFullPath {
   '/espace/signer-devoir-conseil': typeof AuthenticatedEspaceSignerDevoirConseilRoute
   '/espace/signer-lettre-mission': typeof AuthenticatedEspaceSignerLettreMissionRoute
   '/espace/signer-souscription': typeof AuthenticatedEspaceSignerSouscriptionRoute
-  '/espace/sinistres': typeof AuthenticatedEspaceSinistresRoute
+  '/espace/sinistres': typeof AuthenticatedEspaceSinistresRouteWithChildren
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
@@ -333,6 +340,7 @@ export interface FileRoutesByFullPath {
   '/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
   '/espace/contrats/$id': typeof AuthenticatedEspaceContratsIdRoute
   '/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
+  '/espace/sinistres/$id': typeof AuthenticatedEspaceSinistresIdRoute
   '/api/public/webhooks/crm': typeof ApiPublicWebhooksCrmRoute
   '/api/public/webhooks/neoliane': typeof ApiPublicWebhooksNeolianeRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -361,7 +369,7 @@ export interface FileRoutesByTo {
   '/espace/signer-devoir-conseil': typeof AuthenticatedEspaceSignerDevoirConseilRoute
   '/espace/signer-lettre-mission': typeof AuthenticatedEspaceSignerLettreMissionRoute
   '/espace/signer-souscription': typeof AuthenticatedEspaceSignerSouscriptionRoute
-  '/espace/sinistres': typeof AuthenticatedEspaceSinistresRoute
+  '/espace/sinistres': typeof AuthenticatedEspaceSinistresRouteWithChildren
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
@@ -376,6 +384,7 @@ export interface FileRoutesByTo {
   '/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
   '/espace/contrats/$id': typeof AuthenticatedEspaceContratsIdRoute
   '/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
+  '/espace/sinistres/$id': typeof AuthenticatedEspaceSinistresIdRoute
   '/api/public/webhooks/crm': typeof ApiPublicWebhooksCrmRoute
   '/api/public/webhooks/neoliane': typeof ApiPublicWebhooksNeolianeRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -407,7 +416,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/signer-devoir-conseil': typeof AuthenticatedEspaceSignerDevoirConseilRoute
   '/_authenticated/espace/signer-lettre-mission': typeof AuthenticatedEspaceSignerLettreMissionRoute
   '/_authenticated/espace/signer-souscription': typeof AuthenticatedEspaceSignerSouscriptionRoute
-  '/_authenticated/espace/sinistres': typeof AuthenticatedEspaceSinistresRoute
+  '/_authenticated/espace/sinistres': typeof AuthenticatedEspaceSinistresRouteWithChildren
   '/_authenticated/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/_authenticated/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
@@ -422,6 +431,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
   '/_authenticated/espace/contrats/$id': typeof AuthenticatedEspaceContratsIdRoute
   '/_authenticated/espace/dossiers/$id': typeof AuthenticatedEspaceDossiersIdRoute
+  '/_authenticated/espace/sinistres/$id': typeof AuthenticatedEspaceSinistresIdRoute
   '/api/public/webhooks/crm': typeof ApiPublicWebhooksCrmRoute
   '/api/public/webhooks/neoliane': typeof ApiPublicWebhooksNeolianeRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -468,6 +478,7 @@ export interface FileRouteTypes {
     | '/espace/compagnies/$id'
     | '/espace/contrats/$id'
     | '/espace/dossiers/$id'
+    | '/espace/sinistres/$id'
     | '/api/public/webhooks/crm'
     | '/api/public/webhooks/neoliane'
     | '/lovable/email/auth/preview'
@@ -511,6 +522,7 @@ export interface FileRouteTypes {
     | '/espace/compagnies/$id'
     | '/espace/contrats/$id'
     | '/espace/dossiers/$id'
+    | '/espace/sinistres/$id'
     | '/api/public/webhooks/crm'
     | '/api/public/webhooks/neoliane'
     | '/lovable/email/auth/preview'
@@ -556,6 +568,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/compagnies/$id'
     | '/_authenticated/espace/contrats/$id'
     | '/_authenticated/espace/dossiers/$id'
+    | '/_authenticated/espace/sinistres/$id'
     | '/api/public/webhooks/crm'
     | '/api/public/webhooks/neoliane'
     | '/lovable/email/auth/preview'
@@ -862,6 +875,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhooksCrmRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/espace/sinistres/$id': {
+      id: '/_authenticated/espace/sinistres/$id'
+      path: '/$id'
+      fullPath: '/espace/sinistres/$id'
+      preLoaderRoute: typeof AuthenticatedEspaceSinistresIdRouteImport
+      parentRoute: typeof AuthenticatedEspaceSinistresRoute
+    }
     '/_authenticated/espace/dossiers/$id': {
       id: '/_authenticated/espace/dossiers/$id'
       path: '/dossiers/$id'
@@ -893,6 +913,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedEspaceSinistresRouteChildren {
+  AuthenticatedEspaceSinistresIdRoute: typeof AuthenticatedEspaceSinistresIdRoute
+}
+
+const AuthenticatedEspaceSinistresRouteChildren: AuthenticatedEspaceSinistresRouteChildren =
+  {
+    AuthenticatedEspaceSinistresIdRoute: AuthenticatedEspaceSinistresIdRoute,
+  }
+
+const AuthenticatedEspaceSinistresRouteWithChildren =
+  AuthenticatedEspaceSinistresRoute._addFileChildren(
+    AuthenticatedEspaceSinistresRouteChildren,
+  )
+
 interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceAuditLogsRoute: typeof AuthenticatedEspaceAuditLogsRoute
   AuthenticatedEspaceCommissionsRoute: typeof AuthenticatedEspaceCommissionsRoute
@@ -907,7 +941,7 @@ interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceSignerDevoirConseilRoute: typeof AuthenticatedEspaceSignerDevoirConseilRoute
   AuthenticatedEspaceSignerLettreMissionRoute: typeof AuthenticatedEspaceSignerLettreMissionRoute
   AuthenticatedEspaceSignerSouscriptionRoute: typeof AuthenticatedEspaceSignerSouscriptionRoute
-  AuthenticatedEspaceSinistresRoute: typeof AuthenticatedEspaceSinistresRoute
+  AuthenticatedEspaceSinistresRoute: typeof AuthenticatedEspaceSinistresRouteWithChildren
   AuthenticatedEspaceTachesRoute: typeof AuthenticatedEspaceTachesRoute
   AuthenticatedEspaceUtilisateursRoute: typeof AuthenticatedEspaceUtilisateursRoute
   AuthenticatedEspaceIndexRoute: typeof AuthenticatedEspaceIndexRoute
@@ -937,7 +971,8 @@ const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
     AuthenticatedEspaceSignerLettreMissionRoute,
   AuthenticatedEspaceSignerSouscriptionRoute:
     AuthenticatedEspaceSignerSouscriptionRoute,
-  AuthenticatedEspaceSinistresRoute: AuthenticatedEspaceSinistresRoute,
+  AuthenticatedEspaceSinistresRoute:
+    AuthenticatedEspaceSinistresRouteWithChildren,
   AuthenticatedEspaceTachesRoute: AuthenticatedEspaceTachesRoute,
   AuthenticatedEspaceUtilisateursRoute: AuthenticatedEspaceUtilisateursRoute,
   AuthenticatedEspaceIndexRoute: AuthenticatedEspaceIndexRoute,
