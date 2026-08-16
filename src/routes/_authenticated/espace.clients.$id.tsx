@@ -749,6 +749,91 @@ function TachesTab({ clientId, canEdit }: { clientId: string; canEdit: boolean }
 
 /* -------------------- HISTORIQUE -------------------- */
 
+/** Activité correspondant à une réponse automatique de l'agent relation client. */
+function estReponseAutomatique(a: Activite): boolean {
+  const t = (a.titre ?? "").toLowerCase();
+  return t.startsWith("réponse automatique envoyée") || t.startsWith("attestation d'assurance envoyée automatiquement");
+}
+
+/** Signalement d'une réponse automatique incorrecte (traçabilité + tâche admin). */
+function SignalementReponse({
+  clientId,
+  activite,
+  onDone,
+}: {
+  clientId: string;
+  activite: Activite;
+  onDone: () => void;
+}) {
+  const signaler = useServerFn(signalerReponseIncorrecte);
+  const [ouvert, setOuvert] = useState(false);
+  const [motif, setMotif] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const envoyer = async () => {
+    if (motif.trim().length < 3) return;
+    setBusy(true);
+    try {
+      await signaler({
+        data: {
+          client_id: clientId,
+          activite_le: activite.created_at,
+          activite_titre: activite.titre,
+          motif: motif.trim(),
+        },
+      });
+      toast.success("Signalement enregistré");
+      setOuvert(false);
+      setMotif("");
+      onDone();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Signalement impossible");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!ouvert) {
+    return (
+      <button
+        onClick={() => setOuvert(true)}
+        className="mt-3 rounded-full border border-line px-3 py-1.5 text-xs text-destructive hover:bg-surface"
+      >
+        Signaler cette réponse comme incorrecte
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-3 space-y-2">
+      <textarea
+        autoFocus
+        rows={3}
+        value={motif}
+        onChange={(e) => setMotif(e.target.value)}
+        placeholder="Précisez le problème constaté sur cette réponse automatique…"
+        className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+      />
+      <div className="flex gap-2">
+        <button
+          onClick={envoyer}
+          disabled={busy || motif.trim().length < 3}
+          className="rounded-full bg-ink px-4 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
+        >
+          {busy ? "…" : "Enregistrer le signalement"}
+        </button>
+        <button
+          onClick={() => setOuvert(false)}
+          className="rounded-full border border-line px-4 py-1.5 text-xs hover:bg-surface"
+        >
+          Annuler
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
 function HistoriqueTab({ clientId }: { clientId: string }) {
   const [items, setItems] = useState<Activite[]>([]);
   const [form, setForm] = useState({ type: "note", titre: "", contenu: "" });
