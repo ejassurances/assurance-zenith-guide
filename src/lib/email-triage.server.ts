@@ -59,9 +59,6 @@ export function normaliserBranche(valeur: string | null): BrancheAuto | null {
 
 
 export interface TriageEmail {
-  sujet: string | null;
-  expediteur_nom: string | null;
-  expediteur_email: string | null;
   texte: string | null;
   pieces_jointes: { nom: string; mime: string | null }[];
 }
@@ -231,10 +228,6 @@ export async function marquerEmailPublicite(
       gmail_message_id: params.gmail_message_id,
       gmail_thread_id: params.gmail_thread_id ?? null,
       direction: "entrant",
-      expediteur_nom: email.expediteur_nom,
-      expediteur_email: email.expediteur_email,
-      sujet: email.sujet,
-      snippet: (email.texte ?? "").slice(0, 500) || null,
       recu_le: params.recu_le ?? null,
       notes: "Publicité / newsletter — aucun traitement CRM",
       triage_ia: JSON.parse(JSON.stringify(triage)),
@@ -362,10 +355,6 @@ export async function creerDossierDepuisEmail(
       gmail_message_id: params.gmail_message_id,
       gmail_thread_id: params.gmail_thread_id ?? null,
       direction: "entrant",
-      expediteur_nom: email.expediteur_nom,
-      expediteur_email: email.expediteur_email,
-      sujet: email.sujet,
-      snippet: (email.texte ?? "").slice(0, 500) || null,
       recu_le: params.recu_le ?? null,
       client_id: clientId,
       dossier_id: dossier.id,
@@ -474,10 +463,6 @@ export async function creerFicheProspectIncertaine(
       gmail_message_id: params.gmail_message_id,
       gmail_thread_id: params.gmail_thread_id ?? null,
       direction: "entrant",
-      expediteur_nom: email.expediteur_nom,
-      expediteur_email: email.expediteur_email,
-      sujet: email.sujet,
-      snippet: (email.texte ?? "").slice(0, 500) || null,
       recu_le: params.recu_le ?? null,
       client_id: clientId,
       notes: "Fiche prospect créée automatiquement — qualification humaine requise",
