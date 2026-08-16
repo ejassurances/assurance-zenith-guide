@@ -131,7 +131,10 @@ function ClientDetail() {
   const { role } = useAuth();
   const navigate = useNavigate();
   const [client, setClient] = useState<Client | null>(null);
-  const [tab, setTab] = useState<Tab>("identite");
+  const search = Route.useSearch();
+  const [tab, setTab] = useState<Tab>(
+    search.tab === "conformite" ? "conformite" : "identite",
+  );
   const scoreValeur = useScoreValeur(id);
   const [loading, setLoading] = useState(true);
 
