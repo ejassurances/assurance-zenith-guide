@@ -220,15 +220,7 @@ function ClientsList() {
                     <div className="text-xs text-ink-muted">{c.mobile ?? ""}</div>
                   </td>
                   <td className="px-4 py-3">
-                    <ScoreRings
-                      size={48}
-                      conformite={c.conformite_score ?? 0}
-                      valeur={scoresValeur[c.id] ?? 0}
-                      niveau={
-                        (c.conformite_niveau as NiveauConformite | null) ??
-                        niveauFromScore(c.conformite_score ?? 0)
-                      }
-                    />
+                    <ScoreRings size={48} valeur={scoresValeur[c.id] ?? 0} />
                   </td>
                   <td className="px-4 py-3">
 
