@@ -28,6 +28,9 @@ import {
 import { ClientOriginePicker } from "@/components/client-origine-picker";
 
 export const Route = createFileRoute("/_authenticated/espace/clients/$id")({
+  validateSearch: (search: Record<string, unknown>): { tab?: string } => ({
+    tab: typeof search.tab === "string" ? search.tab : undefined,
+  }),
   component: ClientDetail,
 });
 
