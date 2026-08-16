@@ -187,13 +187,10 @@ export const rattacherMessage = createServerFn({ method: "POST" })
         .select("nom, prenom")
         .eq("id", data.client_id)
         .maybeSingle();
-      if (cl) {
-        const { etiqueterMessage } = await import("@/lib/gmail.server");
-        await etiqueterMessage(
-          data.gmail_message_id,
-          `CRM/Clients/${[cl.prenom, cl.nom].filter(Boolean).join(" ").replace(/\//g, "-")}`,
-        ).catch((e) => console.error("Étiquette Gmail:", e));
-      }
+      // Pas d'étiquette Gmail par client : l'arborescence du cabinet ne comporte
+      // pas de branche par fiche client (aucune branche parallèle créée).
+      void cl;
+
       await supabaseAdmin.from("activites").insert({
         client_id: data.client_id,
         type: "email",
@@ -359,11 +356,11 @@ export const rattacherCompagnie = createServerFn({ method: "POST" })
       .eq("id", data.compagnie_id)
       .maybeSingle();
     if (cie) {
-      const { etiqueterMessage } = await import("@/lib/gmail.server");
-      await etiqueterMessage(data.gmail_message_id, `CRM/Partenaires/${cie.nom.replace(/\//g, "-")}`).catch((e) =>
-        console.error("Étiquette Gmail:", e),
-      );
+      // Suivi de dossier compagnie dans l'arborescence du cabinet.
+      const { poserLabelCabinet } = await import("@/lib/gmail.server");
+      await poserLabelCabinet(data.gmail_message_id, "compagnie_dossier");
     }
+
     return { ok: true };
   });
 
