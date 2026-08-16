@@ -1686,18 +1686,13 @@ export type Database = {
           contrat_id: string | null
           created_at: string
           created_by: string | null
-          destinataires: string | null
           direction: string
           dossier_id: string | null
-          expediteur_email: string | null
-          expediteur_nom: string | null
           gmail_message_id: string
           gmail_thread_id: string | null
           id: string
           notes: string | null
           recu_le: string | null
-          snippet: string | null
-          sujet: string | null
           triage_ia: Json | null
           triage_le: string | null
           updated_at: string
@@ -1708,18 +1703,13 @@ export type Database = {
           contrat_id?: string | null
           created_at?: string
           created_by?: string | null
-          destinataires?: string | null
           direction?: string
           dossier_id?: string | null
-          expediteur_email?: string | null
-          expediteur_nom?: string | null
           gmail_message_id: string
           gmail_thread_id?: string | null
           id?: string
           notes?: string | null
           recu_le?: string | null
-          snippet?: string | null
-          sujet?: string | null
           triage_ia?: Json | null
           triage_le?: string | null
           updated_at?: string
@@ -1730,18 +1720,13 @@ export type Database = {
           contrat_id?: string | null
           created_at?: string
           created_by?: string | null
-          destinataires?: string | null
           direction?: string
           dossier_id?: string | null
-          expediteur_email?: string | null
-          expediteur_nom?: string | null
           gmail_message_id?: string
           gmail_thread_id?: string | null
           id?: string
           notes?: string | null
           recu_le?: string | null
-          snippet?: string | null
-          sujet?: string | null
           triage_ia?: Json | null
           triage_le?: string | null
           updated_at?: string

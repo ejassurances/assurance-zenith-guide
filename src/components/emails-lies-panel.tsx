@@ -1,24 +1,30 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { messageComplet } from "@/lib/emails.functions";
 import { EmailComposeDialog, type EmailLiens } from "@/components/email-compose-dialog";
 
-type CrmEmail = {
+type LienEmail = {
   id: string;
   gmail_message_id: string;
   direction: string;
-  expediteur_nom: string | null;
-  expediteur_email: string | null;
-  destinataires: string | null;
-  sujet: string | null;
-  snippet: string | null;
   recu_le: string | null;
   notes: string | null;
   created_at: string;
 };
 
+type EmailAffiche = LienEmail & {
+  sujet: string | null;
+  expediteur_nom: string | null;
+  expediteur_email: string | null;
+  destinataires: string | null;
+  extrait: string | null;
+  erreur?: string | null;
+};
+
 /**
  * Liste des emails rattachés à un client, un dossier, un contrat ou une
- * compagnie, avec bouton d'envoi depuis la boîte du cabinet.
+ * compagnie. Seul le lien vers le message Gmail est conservé en base : le
+ * contenu est lu en direct via l'API Gmail à l'affichage.
  */
 export function EmailsLiesPanel({
   liens,
@@ -31,19 +37,49 @@ export function EmailsLiesPanel({
   titre?: string;
   canEdit?: boolean;
 }) {
-  const [emails, setEmails] = useState<CrmEmail[]>([]);
+  const [emails, setEmails] = useState<EmailAffiche[]>([]);
   const [loading, setLoading] = useState(true);
   const [compose, setCompose] = useState(false);
 
   const load = async () => {
     setLoading(true);
-    let query = supabase.from("crm_emails").select("*").order("recu_le", { ascending: false, nullsFirst: false });
+    let query = supabase
+      .from("crm_emails")
+      .select("id, gmail_message_id, direction, recu_le, notes, created_at")
+      .order("recu_le", { ascending: false, nullsFirst: false });
     if (liens.client_id) query = query.eq("client_id", liens.client_id);
     if (liens.dossier_id) query = query.eq("dossier_id", liens.dossier_id);
     if (liens.contrat_id) query = query.eq("contrat_id", liens.contrat_id);
     if (liens.compagnie_id) query = query.eq("compagnie_id", liens.compagnie_id);
     const { data } = await query;
-    setEmails((data ?? []) as CrmEmail[]);
+    const lignes = (data ?? []) as LienEmail[];
+
+    const enrichis = await Promise.all(
+      lignes.map(async (l): Promise<EmailAffiche> => {
+        try {
+          const { message } = await messageComplet({ data: { id: l.gmail_message_id } });
+          return {
+            ...l,
+            sujet: message.sujet ?? null,
+            expediteur_nom: message.expediteur_nom ?? null,
+            expediteur_email: message.expediteur_email ?? null,
+            destinataires: message.destinataires ?? null,
+            extrait: (message.texte ?? message.snippet ?? null)?.slice(0, 600) ?? null,
+          };
+        } catch {
+          return {
+            ...l,
+            sujet: null,
+            expediteur_nom: null,
+            expediteur_email: null,
+            destinataires: null,
+            extrait: null,
+            erreur: "Contenu indisponible (message introuvable dans la boîte du cabinet).",
+          };
+        }
+      }),
+    );
+    setEmails(enrichis);
     setLoading(false);
   };
 
@@ -95,8 +131,17 @@ export function EmailsLiesPanel({
                   ? `À ${m.destinataires ?? "—"}`
                   : `De ${m.expediteur_nom ?? ""} ${m.expediteur_email ? `<${m.expediteur_email}>` : ""}`}
               </p>
-              {m.snippet && <p className="mt-2 whitespace-pre-wrap text-sm text-ink-soft">{m.snippet}</p>}
+              {m.extrait && <p className="mt-2 whitespace-pre-wrap text-sm text-ink-soft">{m.extrait}</p>}
+              {m.erreur && <p className="mt-2 text-xs italic text-ink-muted">{m.erreur}</p>}
               {m.notes && <p className="mt-2 text-xs italic text-ink-muted">{m.notes}</p>}
+              <a
+                href={`https://mail.google.com/mail/u/0/#all/${m.gmail_message_id}`}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 inline-block text-xs underline text-ink-muted"
+              >
+                Ouvrir dans Gmail
+              </a>
             </li>
           ))}
         </ul>

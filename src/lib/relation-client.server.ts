@@ -50,10 +50,13 @@ export interface ClassificationRelation {
   intention: IntentionRelation;
   piece_jointe_kyc: boolean;
   pieces_kyc: { nom: string; type: "cni" | "justificatif_domicile" | "rib" | "kbis" }[];
+  /** Pièces jointes reconnues comme document de prêt (tableau d'amortissement, offre de prêt). */
+  pieces_pret: { nom: string }[];
   confiance: number;
   resume: string;
   modele: string | null;
 }
+
 
 
 function extraireJson(texte: string): Record<string, unknown> {
@@ -98,6 +101,10 @@ function consigne(email: EmailClient): string {
     "  ou intention ci-dessus mais dont tu n'es pas certain).",
     "Indique aussi si l'email contient une pièce KYC en pièce jointe (pièce d'identité, justificatif de",
     "domicile, RIB, Kbis) d'après les noms de fichiers. Cela se cumule avec le niveau.",
+    'Liste séparément dans "pieces_pret" les pièces jointes qui ressemblent à un document de prêt',
+    "(tableau d'amortissement, offre de prêt, échéancier de crédit) d'après leur nom de fichier.",
+    "Classe chaque pièce jointe dans une seule liste au maximum ; laisse hors des listes les pièces dont",
+    "tu ne reconnais pas la nature.",
     "En cas de doute, réponds toujours niveau_2. N'invente rien.",
     "",
     `Expéditeur : ${email.expediteur_nom ?? ""} <${email.expediteur_email ?? ""}>`,
@@ -110,7 +117,9 @@ function consigne(email: EmailClient): string {
     '"sous_type":"sinistre|reclamation|resiliation|sante|paiement|null",',
     '"intention":"info_contrat|info_garanties|attestation|null","piece_jointe_kyc":false,',
     '"pieces_kyc":[{"nom":"fichier.pdf","type":"cni|justificatif_domicile|rib|kbis"}],',
+    '"pieces_pret":[{"nom":"fichier.pdf"}],',
     '"confiance":0.0,"resume":"une phrase"}',
+
   ].join("\n");
 }
 
@@ -157,6 +166,11 @@ export async function analyserEmailClient(email: EmailClient): Promise<Classific
             !!p.nom && ["cni", "justificatif_domicile", "rib", "kbis"].includes(p.type),
         );
 
+      const pretsBrut = Array.isArray(brut["pieces_pret"]) ? (brut["pieces_pret"] as any[]) : [];
+      const pieces_pret = pretsBrut
+        .map((p) => ({ nom: texteOuNull(typeof p === "string" ? p : p?.nom, 250) ?? "" }))
+        .filter((p) => !!p.nom);
+
       const sousTypeBrut = texteOuNull(brut["sous_type"], 30)?.toLowerCase() ?? null;
       const sous_type: SousTypeNiveau0 =
         niveau === "niveau_0" &&
@@ -175,10 +189,12 @@ export async function analyserEmailClient(email: EmailClient): Promise<Classific
 
         piece_jointe_kyc: brut["piece_jointe_kyc"] === true || pieces_kyc.length > 0,
         pieces_kyc,
+        pieces_pret,
         confiance,
         resume: texteOuNull(brut["resume"], 400) ?? "",
         modele,
       };
+
     }
     derniere = `${res.status} ${await res.text()}`;
     if (res.status === 429) throw new Error("Analyse IA momentanément saturée.");
@@ -408,16 +424,88 @@ async function envoyerAccuseReception(
 }
 
 
+/**
+ * Classification pièce par pièce des pièces jointes NON KYC : document de prêt
+ * reconnu, ou pièce non reconnue. Aucune pièce ne doit être ignorée en silence.
+ */
+async function routerAutresPieces(
+  admin: Admin,
+  params: {
+    client: ClientMini;
+    email: EmailClient;
+    classification: ClassificationRelation;
+    gmail_message_id: string;
+    userId: string;
+  },
+): Promise<{ pret: number; non_classees: number }> {
+  const { client, email, classification } = params;
+  const clef = (n: string) => n.trim().toLowerCase();
+  const kyc = new Set(classification.pieces_kyc.map((p) => clef(p.nom)));
+  const pret = new Set(classification.pieces_pret.map((p) => clef(p.nom)));
+
+  let nbPret = 0;
+  let nbNonClassees = 0;
+
+  for (const piece of email.pieces_jointes) {
+    const nom = clef(piece.nom);
+    if (kyc.has(nom)) continue;
+
+    if (pret.has(nom)) {
+      nbPret += 1;
+      await creerTacheAdmin(admin as never, {
+        titre: `Document de prêt reçu — à vérifier`,
+        description: [
+          `Client : ${nomComplet(client)}`,
+          `Fichier : ${piece.nom}`,
+          `Objet du mail : ${email.sujet ?? "(sans objet)"}`,
+          `Email : ${lienMail(params.gmail_message_id)}`,
+          "Action : vérifier le tableau d'amortissement / l'offre de prêt et compléter le dossier emprunteur.",
+        ].join("\n"),
+        client_id: client.id,
+        created_by: params.userId,
+      });
+      await journaliser(
+        admin,
+        client.id,
+        "Document de prêt reçu par email",
+        `Fichier : ${piece.nom}\nEmail : ${lienMail(params.gmail_message_id)}`,
+        "systeme",
+      );
+      continue;
+    }
+
+    nbNonClassees += 1;
+    await creerTacheAdmin(admin as never, {
+      titre: `Pièce jointe non classée reçue — ${piece.nom}`.slice(0, 200),
+      description: [
+        `Client : ${nomComplet(client)}`,
+        `Fichier : ${piece.nom}${piece.mime ? ` (${piece.mime})` : ""}`,
+        `Objet du mail : ${email.sujet ?? "(sans objet)"}`,
+        `Email : ${lienMail(params.gmail_message_id)}`,
+        "Action : la classification automatique n'a pas reconnu ce document — traitement manuel requis.",
+      ].join("\n"),
+      client_id: client.id,
+      created_by: params.userId,
+    });
+  }
+
+  return { pret: nbPret, non_classees: nbNonClassees };
+}
+
 export interface ResultatRelationClient {
   niveau: NiveauRelation;
   intention: IntentionRelation;
   action: "tache_urgente" | "reponse_envoyee" | "brouillon" | "rien";
   pieces_kyc: number;
+  pieces_pret?: number;
+  pieces_non_classees?: number;
   motif?: string;
 }
 
 /**
  * Traite un email entrant rattaché à un client existant.
+ * L'agent pose son étiquette Gmail « À traiter » dès la catégorisation, puis
+ * « Archivé » une fois le traitement terminé.
  * Aucune étape ne doit échouer silencieusement : toute erreur crée une tâche.
  */
 export async function traiterEmailClient(
@@ -430,6 +518,25 @@ export async function traiterEmailClient(
     userId: string;
   },
 ): Promise<ResultatRelationClient> {
+  const pieces = { pret: 0, non_classees: 0 };
+  const resultat = await traiterEmailClientInterne(admin, params, pieces);
+  const { marquerAgentArchive } = await import("@/lib/gmail.server");
+  await marquerAgentArchive(params.gmail_message_id, "relation_client");
+  return { ...resultat, pieces_pret: pieces.pret, pieces_non_classees: pieces.non_classees };
+}
+
+async function traiterEmailClientInterne(
+  admin: Admin,
+  params: {
+    client_id: string;
+    email: EmailClient;
+    gmail_message_id: string;
+    gmail_thread_id?: string | null;
+    userId: string;
+  },
+  pieces: { pret: number; non_classees: number },
+): Promise<ResultatRelationClient> {
+
   const { email, gmail_message_id } = params;
 
   const { data: clientRow } = await admin
@@ -441,6 +548,11 @@ export async function traiterEmailClient(
   if (!client) throw new Error("Fiche client introuvable");
 
   const classification = await analyserEmailClient(email);
+
+  // Dès la catégorisation : le mail est marqué « À traiter » pour cet agent.
+  const { marquerAgentATraiter } = await import("@/lib/gmail.server");
+  await marquerAgentATraiter(gmail_message_id, "relation_client");
+
   const base = {
     client_id: client.id,
     gmail_message_id,
@@ -459,6 +571,21 @@ export async function traiterEmailClient(
   const piecesKyc = classification.piece_jointe_kyc
     ? await routerPiecesKyc(admin, { client, email, classification, gmail_message_id, userId: params.userId })
     : 0;
+
+  // Autres pièces jointes : document de prêt ou pièce non reconnue → tâche admin.
+  if (email.pieces_jointes.length) {
+    const compte = await routerAutresPieces(admin, {
+      client,
+      email,
+      classification,
+      gmail_message_id,
+      userId: params.userId,
+    });
+    pieces.pret = compte.pret;
+    pieces.non_classees = compte.non_classees;
+  }
+
+
 
   const brouillon = async (motif: string, objet: string, corps: string): Promise<ResultatRelationClient> => {
     await enregistrerReponse(admin, {

@@ -75,11 +75,6 @@ export const boiteReception = createServerFn({ method: "POST" })
             gmail_message_id: m.id,
             gmail_thread_id: m.thread_id ?? null,
             direction: "entrant",
-            expediteur_nom: m.expediteur_nom ?? null,
-            expediteur_email: m.expediteur_email ?? null,
-            destinataires: m.destinataires ?? null,
-            sujet: m.sujet ?? null,
-            snippet: m.snippet ?? null,
             recu_le: m.date ?? null,
             client_id: cl.id,
             notes: "Rattaché automatiquement (email expéditeur connu)",
@@ -97,7 +92,7 @@ export const boiteReception = createServerFn({ method: "POST" })
           client_id: cl.id,
           type: "email",
           titre: "Email rattaché automatiquement",
-          contenu: `De ${m.expediteur_email}\nObjet : ${m.sujet ?? "(sans objet)"}\n\n${m.snippet ?? ""}`,
+          contenu: `De ${m.expediteur_email}\nObjet : ${m.sujet ?? "(sans objet)"}\nEmail : https://mail.google.com/mail/u/0/#all/${m.id}`,
           created_by: context.userId,
         });
       }
@@ -137,6 +132,7 @@ export const boiteReception = createServerFn({ method: "POST" })
         creerFicheProspectIncertaine,
       } = await import("@/lib/email-triage.server");
       const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
+      const { marquerAgentATraiter, marquerAgentArchive } = await import("@/lib/gmail.server");
       for (const m of aTrier) {
         try {
           const detail = await lireMessage(m.id);
@@ -148,6 +144,9 @@ export const boiteReception = createServerFn({ method: "POST" })
             pieces_jointes: detail.pieces_jointes.map((p) => ({ nom: p.nom, mime: p.mime })),
           };
           const triage = await analyserEmailProspect(entree);
+          // Catégorisation faite : le mail est pris en charge par l'agent commercial.
+          await marquerAgentATraiter(m.id, "commercial");
+
 
           if (estPublicite(triage)) {
             // Publicité / newsletter / spam : ni fiche client, ni tâche.
@@ -181,6 +180,9 @@ export const boiteReception = createServerFn({ method: "POST" })
               userId: context.userId,
             });
           }
+          // Traitement terminé : « À traiter » retiré, « Archivé » posé.
+          await marquerAgentArchive(m.id, "commercial");
+
         } catch (e) {
           console.error("[agent-commercial] triage email", m.id, e);
           // Aucune étape ne doit échouer silencieusement : une tâche décrit l'erreur.
@@ -331,11 +333,6 @@ export const rattacherMessage = createServerFn({ method: "POST" })
           gmail_message_id: data.gmail_message_id,
           gmail_thread_id: data.gmail_thread_id ?? null,
           direction: "entrant",
-          expediteur_nom: data.expediteur_nom ?? null,
-          expediteur_email: data.expediteur_email ?? null,
-          destinataires: data.destinataires ?? null,
-          sujet: data.sujet ?? null,
-          snippet: data.snippet ?? null,
           recu_le: data.recu_le ?? null,
           client_id: data.client_id ?? null,
           dossier_id: data.dossier_id ?? null,
@@ -368,7 +365,7 @@ export const rattacherMessage = createServerFn({ method: "POST" })
         client_id: data.client_id,
         type: "email",
         titre: `Email reçu : ${data.sujet ?? "(sans objet)"}`,
-        contenu: `De ${data.expediteur_email ?? "inconnu"}\n\n${data.snippet ?? ""}`,
+        contenu: `De ${data.expediteur_email ?? "inconnu"}\nEmail : https://mail.google.com/mail/u/0/#all/${data.gmail_message_id}`,
         created_by: context.userId,
       });
     }
@@ -469,10 +466,6 @@ export const creerFicheDepuisEmail = createServerFn({ method: "POST" })
         gmail_message_id: data.gmail_message_id,
         gmail_thread_id: data.gmail_thread_id ?? null,
         direction: "entrant",
-        expediteur_email: data.email,
-        expediteur_nom: [data.prenom, data.nom].filter(Boolean).join(" ") || null,
-        sujet: data.sujet ?? null,
-        snippet: data.snippet ?? null,
         recu_le: data.recu_le ?? null,
         client_id: clientId,
         dossier_id: dossierId,
@@ -486,7 +479,7 @@ export const creerFicheDepuisEmail = createServerFn({ method: "POST" })
       client_id: clientId,
       type: "email",
       titre: `Fiche créée depuis un email : ${data.sujet ?? "(sans objet)"}`,
-      contenu: data.snippet ?? null,
+      contenu: `Email : https://mail.google.com/mail/u/0/#all/${data.gmail_message_id}`,
       created_by: context.userId,
     });
 
@@ -519,10 +512,6 @@ export const rattacherCompagnie = createServerFn({ method: "POST" })
         gmail_thread_id: data.gmail_thread_id ?? null,
         direction: "entrant",
         compagnie_id: data.compagnie_id,
-        expediteur_nom: data.expediteur_nom ?? null,
-        expediteur_email: data.expediteur_email ?? null,
-        sujet: data.sujet ?? null,
-        snippet: data.snippet ?? null,
         recu_le: data.recu_le ?? null,
         created_by: context.userId,
         updated_at: new Date().toISOString(),
@@ -586,9 +575,6 @@ export const envoyerEmailCrm = createServerFn({ method: "POST" })
         gmail_message_id: envoye.id,
         gmail_thread_id: envoye.threadId,
         direction: "sortant",
-        destinataires: [data.to, data.cc].filter(Boolean).join(", "),
-        sujet: data.sujet,
-        snippet: data.message.slice(0, 300),
         recu_le: new Date().toISOString(),
         client_id: data.client_id ?? null,
         dossier_id: data.dossier_id ?? null,
@@ -751,11 +737,6 @@ export const scannerBoiteCrm = createServerFn({ method: "POST" })
             gmail_message_id: m.id,
             gmail_thread_id: m.thread_id ?? null,
             direction: m.etiquettes.includes("SENT") ? "sortant" : "entrant",
-            expediteur_nom: m.expediteur_nom ?? null,
-            expediteur_email: m.expediteur_email ?? null,
-            destinataires: m.destinataires ?? null,
-            sujet: m.sujet ?? null,
-            snippet: m.snippet ?? null,
             recu_le: m.date ?? null,
             client_id: client?.id ?? null,
             compagnie_id: compagnie?.id ?? null,
@@ -777,7 +758,7 @@ export const scannerBoiteCrm = createServerFn({ method: "POST" })
             client_id: client.id,
             type: "email",
             titre: "Email rattaché automatiquement (scan)",
-            contenu: `De ${m.expediteur_email ?? "?"}\nObjet : ${m.sujet ?? "(sans objet)"}\n\n${m.snippet ?? ""}`,
+            contenu: `De ${m.expediteur_email ?? "?"}\nObjet : ${m.sujet ?? "(sans objet)"}\nEmail : https://mail.google.com/mail/u/0/#all/${m.id}`,
             created_by: context.userId,
           });
         } else {

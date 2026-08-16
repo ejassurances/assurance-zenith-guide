@@ -292,6 +292,59 @@ export async function etiqueterMessage(id: string, nom: string): Promise<void> {
   await modifierLabels(id, { ajouter: [labelId] });
 }
 
+/** Agents du CRM disposant d'une paire d'étiquettes Gmail dédiée. */
+export const AGENTS_GMAIL = {
+  commercial: "Agent Commercial",
+  conformite: "Agent Conformité",
+  finance: "Agent Finance",
+  relation_client: "Agent Relation client",
+} as const;
+export type AgentGmail = keyof typeof AGENTS_GMAIL;
+
+const LABEL_A_TRAITER = "À traiter";
+const LABEL_ARCHIVE = "Archivé";
+
+function labelAgent(agent: AgentGmail, etat: "a_traiter" | "archive"): string {
+  return `${AGENTS_GMAIL[agent]}/${etat === "a_traiter" ? LABEL_A_TRAITER : LABEL_ARCHIVE}`;
+}
+
+/** Crée si besoin les 4 paires d'étiquettes « À traiter » / « Archivé ». */
+export async function assurerLabelsAgents(): Promise<void> {
+  for (const agent of Object.keys(AGENTS_GMAIL) as AgentGmail[]) {
+    // Le libellé parent doit exister pour que Gmail imbrique proprement.
+    await assurerLabel(AGENTS_GMAIL[agent]);
+    await assurerLabel(labelAgent(agent, "a_traiter"));
+    await assurerLabel(labelAgent(agent, "archive"));
+  }
+}
+
+/** Marque un message comme pris en charge par un agent (« À traiter »). */
+export async function marquerAgentATraiter(id: string, agent: AgentGmail): Promise<void> {
+  try {
+    const [aTraiter, archive] = await Promise.all([
+      assurerLabel(labelAgent(agent, "a_traiter")),
+      assurerLabel(labelAgent(agent, "archive")),
+    ]);
+    await modifierLabels(id, { ajouter: [aTraiter], retirer: [archive] });
+  } catch (e) {
+    console.error("[gmail] étiquette « À traiter » non appliquée", e);
+  }
+}
+
+/** Traitement terminé par l'agent : « À traiter » retiré, « Archivé » posé. */
+export async function marquerAgentArchive(id: string, agent: AgentGmail): Promise<void> {
+  try {
+    const [aTraiter, archive] = await Promise.all([
+      assurerLabel(labelAgent(agent, "a_traiter")),
+      assurerLabel(labelAgent(agent, "archive")),
+    ]);
+    await modifierLabels(id, { ajouter: [archive], retirer: [aTraiter] });
+  } catch (e) {
+    console.error("[gmail] étiquette « Archivé » non appliquée", e);
+  }
+}
+
+
 /** Étiquettes lisibles d'un message (hors étiquettes système). */
 export async function etiquettesMessage(id: string): Promise<string[]> {
   const [msg, { labels }] = await Promise.all([
