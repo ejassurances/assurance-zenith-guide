@@ -41,6 +41,9 @@ type Contrat = {
   economie_cout_delegue: number | null;
   economie_realisee: number | null;
   economie_calculee_le: string | null;
+  prochain_suivi_le: string | null;
+  dernier_suivi_le: string | null;
+  recommandation_personnalisee: boolean | null;
 };
 
 type Echeance = {
@@ -170,6 +173,7 @@ function ContratDetail() {
         taux_assurance_annuel: c.taux_assurance_annuel,
         quotite: c.quotite,
         assiette: c.assiette,
+        recommandation_personnalisee: c.recommandation_personnalisee ?? false,
         ...economiePayload(forceEconomie),
       } as never)
       .eq("id", c.id);
@@ -318,6 +322,34 @@ function ContratDetail() {
             <option value="signe">Signé</option>
             <option value="resilie">Résilié</option>
           </select>
+        </F>
+      </section>
+
+      {/* Conseil dans la durée */}
+      <section className="grid gap-4 rounded-lg border border-line bg-surface p-5 md:grid-cols-3">
+        <div className="md:col-span-3">
+          <h3 className="font-serif text-lg">Conseil dans la durée</h3>
+          <p className="text-xs text-ink-muted">
+            Le point de suivi périodique est envoyé automatiquement au client dès que la date est dépassée
+            (regroupé avec ses autres contrats actifs).
+          </p>
+        </div>
+        <F label="Prochain point de suivi">
+          <input value={c.prochain_suivi_le ?? "—"} readOnly className={inp} />
+        </F>
+        <F label="Dernier point de suivi">
+          <input value={c.dernier_suivi_le ?? "—"} readOnly className={inp} />
+        </F>
+        <F label="Recommandation personnalisée fournie">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={Boolean(c.recommandation_personnalisee)}
+              onChange={(e) => setC({ ...c, recommandation_personnalisee: e.target.checked })}
+              disabled={!canEdit}
+            />
+            <span className="text-ink-muted">Ramène le suivi épargne/retraite à 2 ans</span>
+          </label>
         </F>
       </section>
 

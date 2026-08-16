@@ -17,6 +17,7 @@ import { Route as EspaceConfidentialiteRouteImport } from './routes/espace.confi
 import { Route as EspaceCguRouteImport } from './routes/espace.cgu'
 import { Route as AuthenticatedEspaceRouteImport } from './routes/_authenticated/espace'
 import { Route as AuthenticatedEspaceIndexRouteImport } from './routes/_authenticated/espace.index'
+import { Route as ApiPublicSuiviContratsRouteImport } from './routes/api/public/suivi-contrats'
 import { Route as ApiPublicRelanceSouscriptionRouteImport } from './routes/api/public/relance-souscription'
 import { Route as ApiPublicRelanceSinistresRouteImport } from './routes/api/public/relance-sinistres'
 import { Route as ApiPublicRelancePiecesRouteImport } from './routes/api/public/relance-pieces'
@@ -24,6 +25,7 @@ import { Route as ApiPublicRappelsExpirationRouteImport } from './routes/api/pub
 import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
 import { Route as ApiPublicEnvoisPlanifiesRouteImport } from './routes/api/public/envois-planifies'
 import { Route as ApiPublicDevoirsConseilEnvoisRouteImport } from './routes/api/public/devoirs-conseil-envois'
+import { Route as ApiPublicBrevoListesSyncRouteImport } from './routes/api/public/brevo-listes-sync'
 import { Route as ApiPublicBootstrapAdminRouteImport } from './routes/api/public/bootstrap-admin'
 import { Route as AuthenticatedEspaceUtilisateursRouteImport } from './routes/_authenticated/espace.utilisateurs'
 import { Route as AuthenticatedEspaceTachesRouteImport } from './routes/_authenticated/espace.taches'
@@ -95,6 +97,11 @@ const AuthenticatedEspaceIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const ApiPublicSuiviContratsRoute = ApiPublicSuiviContratsRouteImport.update({
+  id: '/api/public/suivi-contrats',
+  path: '/api/public/suivi-contrats',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicRelanceSouscriptionRoute =
   ApiPublicRelanceSouscriptionRouteImport.update({
     id: '/api/public/relance-souscription',
@@ -133,6 +140,12 @@ const ApiPublicDevoirsConseilEnvoisRoute =
   ApiPublicDevoirsConseilEnvoisRouteImport.update({
     id: '/api/public/devoirs-conseil-envois',
     path: '/api/public/devoirs-conseil-envois',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicBrevoListesSyncRoute =
+  ApiPublicBrevoListesSyncRouteImport.update({
+    id: '/api/public/brevo-listes-sync',
+    path: '/api/public/brevo-listes-sync',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicBootstrapAdminRoute = ApiPublicBootstrapAdminRouteImport.update({
@@ -336,6 +349,7 @@ export interface FileRoutesByFullPath {
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
+  '/api/public/brevo-listes-sync': typeof ApiPublicBrevoListesSyncRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
@@ -343,6 +357,7 @@ export interface FileRoutesByFullPath {
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
+  '/api/public/suivi-contrats': typeof ApiPublicSuiviContratsRoute
   '/espace/': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
@@ -381,6 +396,7 @@ export interface FileRoutesByTo {
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
+  '/api/public/brevo-listes-sync': typeof ApiPublicBrevoListesSyncRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
@@ -388,6 +404,7 @@ export interface FileRoutesByTo {
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
+  '/api/public/suivi-contrats': typeof ApiPublicSuiviContratsRoute
   '/espace': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
@@ -429,6 +446,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/_authenticated/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
+  '/api/public/brevo-listes-sync': typeof ApiPublicBrevoListesSyncRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
@@ -436,6 +454,7 @@ export interface FileRoutesById {
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
+  '/api/public/suivi-contrats': typeof ApiPublicSuiviContratsRoute
   '/_authenticated/espace/': typeof AuthenticatedEspaceIndexRoute
   '/_authenticated/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/_authenticated/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
@@ -477,6 +496,7 @@ export interface FileRouteTypes {
     | '/espace/taches'
     | '/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
+    | '/api/public/brevo-listes-sync'
     | '/api/public/devoirs-conseil-envois'
     | '/api/public/envois-planifies'
     | '/api/public/leads'
@@ -484,6 +504,7 @@ export interface FileRouteTypes {
     | '/api/public/relance-pieces'
     | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
+    | '/api/public/suivi-contrats'
     | '/espace/'
     | '/espace/clients/$id'
     | '/espace/compagnies/$id'
@@ -522,6 +543,7 @@ export interface FileRouteTypes {
     | '/espace/taches'
     | '/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
+    | '/api/public/brevo-listes-sync'
     | '/api/public/devoirs-conseil-envois'
     | '/api/public/envois-planifies'
     | '/api/public/leads'
@@ -529,6 +551,7 @@ export interface FileRouteTypes {
     | '/api/public/relance-pieces'
     | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
+    | '/api/public/suivi-contrats'
     | '/espace'
     | '/espace/clients/$id'
     | '/espace/compagnies/$id'
@@ -569,6 +592,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/taches'
     | '/_authenticated/espace/utilisateurs'
     | '/api/public/bootstrap-admin'
+    | '/api/public/brevo-listes-sync'
     | '/api/public/devoirs-conseil-envois'
     | '/api/public/envois-planifies'
     | '/api/public/leads'
@@ -576,6 +600,7 @@ export interface FileRouteTypes {
     | '/api/public/relance-pieces'
     | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
+    | '/api/public/suivi-contrats'
     | '/_authenticated/espace/'
     | '/_authenticated/espace/clients/$id'
     | '/_authenticated/espace/compagnies/$id'
@@ -600,6 +625,7 @@ export interface RootRouteChildren {
   EspaceCguRoute: typeof EspaceCguRoute
   EspaceConfidentialiteRoute: typeof EspaceConfidentialiteRoute
   ApiPublicBootstrapAdminRoute: typeof ApiPublicBootstrapAdminRoute
+  ApiPublicBrevoListesSyncRoute: typeof ApiPublicBrevoListesSyncRoute
   ApiPublicDevoirsConseilEnvoisRoute: typeof ApiPublicDevoirsConseilEnvoisRoute
   ApiPublicEnvoisPlanifiesRoute: typeof ApiPublicEnvoisPlanifiesRoute
   ApiPublicLeadsRoute: typeof ApiPublicLeadsRoute
@@ -607,6 +633,7 @@ export interface RootRouteChildren {
   ApiPublicRelancePiecesRoute: typeof ApiPublicRelancePiecesRoute
   ApiPublicRelanceSinistresRoute: typeof ApiPublicRelanceSinistresRoute
   ApiPublicRelanceSouscriptionRoute: typeof ApiPublicRelanceSouscriptionRoute
+  ApiPublicSuiviContratsRoute: typeof ApiPublicSuiviContratsRoute
   ApiPublicWebhooksCrmRoute: typeof ApiPublicWebhooksCrmRoute
   ApiPublicWebhooksNeolianeRoute: typeof ApiPublicWebhooksNeolianeRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -672,6 +699,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceIndexRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/api/public/suivi-contrats': {
+      id: '/api/public/suivi-contrats'
+      path: '/api/public/suivi-contrats'
+      fullPath: '/api/public/suivi-contrats'
+      preLoaderRoute: typeof ApiPublicSuiviContratsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/relance-souscription': {
       id: '/api/public/relance-souscription'
       path: '/api/public/relance-souscription'
@@ -719,6 +753,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/devoirs-conseil-envois'
       fullPath: '/api/public/devoirs-conseil-envois'
       preLoaderRoute: typeof ApiPublicDevoirsConseilEnvoisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/brevo-listes-sync': {
+      id: '/api/public/brevo-listes-sync'
+      path: '/api/public/brevo-listes-sync'
+      fullPath: '/api/public/brevo-listes-sync'
+      preLoaderRoute: typeof ApiPublicBrevoListesSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/bootstrap-admin': {
@@ -1029,6 +1070,7 @@ const rootRouteChildren: RootRouteChildren = {
   EspaceCguRoute: EspaceCguRoute,
   EspaceConfidentialiteRoute: EspaceConfidentialiteRoute,
   ApiPublicBootstrapAdminRoute: ApiPublicBootstrapAdminRoute,
+  ApiPublicBrevoListesSyncRoute: ApiPublicBrevoListesSyncRoute,
   ApiPublicDevoirsConseilEnvoisRoute: ApiPublicDevoirsConseilEnvoisRoute,
   ApiPublicEnvoisPlanifiesRoute: ApiPublicEnvoisPlanifiesRoute,
   ApiPublicLeadsRoute: ApiPublicLeadsRoute,
@@ -1036,6 +1078,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicRelancePiecesRoute: ApiPublicRelancePiecesRoute,
   ApiPublicRelanceSinistresRoute: ApiPublicRelanceSinistresRoute,
   ApiPublicRelanceSouscriptionRoute: ApiPublicRelanceSouscriptionRoute,
+  ApiPublicSuiviContratsRoute: ApiPublicSuiviContratsRoute,
   ApiPublicWebhooksCrmRoute: ApiPublicWebhooksCrmRoute,
   ApiPublicWebhooksNeolianeRoute: ApiPublicWebhooksNeolianeRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,

@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           client_id: string
           contenu: string | null
+          contrat_id: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -27,6 +28,7 @@ export type Database = {
         Insert: {
           client_id: string
           contenu?: string | null
+          contrat_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -36,6 +38,7 @@ export type Database = {
         Update: {
           client_id?: string
           contenu?: string | null
+          contrat_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -48,6 +51,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activites_contrat_id_fkey"
+            columns: ["contrat_id"]
+            isOneToOne: false
+            referencedRelation: "contrats"
             referencedColumns: ["id"]
           },
         ]
@@ -1533,6 +1543,7 @@ export type Database = {
           created_by: string | null
           date_echeance: string | null
           date_effet: string | null
+          dernier_suivi_le: string | null
           dossier_id: string | null
           duree_mois: number | null
           economie_base: Json | null
@@ -1552,10 +1563,12 @@ export type Database = {
           numero: string | null
           prescripteur_id: string | null
           prime_annuelle: number | null
+          prochain_suivi_le: string | null
           produit: string
           produit_id: string | null
           projet_id: string | null
           quotite: number | null
+          recommandation_personnalisee: boolean
           statut: string
           taux_assurance_annuel: number | null
           taux_pret: number | null
@@ -1573,6 +1586,7 @@ export type Database = {
           created_by?: string | null
           date_echeance?: string | null
           date_effet?: string | null
+          dernier_suivi_le?: string | null
           dossier_id?: string | null
           duree_mois?: number | null
           economie_base?: Json | null
@@ -1592,10 +1606,12 @@ export type Database = {
           numero?: string | null
           prescripteur_id?: string | null
           prime_annuelle?: number | null
+          prochain_suivi_le?: string | null
           produit: string
           produit_id?: string | null
           projet_id?: string | null
           quotite?: number | null
+          recommandation_personnalisee?: boolean
           statut?: string
           taux_assurance_annuel?: number | null
           taux_pret?: number | null
@@ -1613,6 +1629,7 @@ export type Database = {
           created_by?: string | null
           date_echeance?: string | null
           date_effet?: string | null
+          dernier_suivi_le?: string | null
           dossier_id?: string | null
           duree_mois?: number | null
           economie_base?: Json | null
@@ -1632,10 +1649,12 @@ export type Database = {
           numero?: string | null
           prescripteur_id?: string | null
           prime_annuelle?: number | null
+          prochain_suivi_le?: string | null
           produit?: string
           produit_id?: string | null
           projet_id?: string | null
           quotite?: number | null
+          recommandation_personnalisee?: boolean
           statut?: string
           taux_assurance_annuel?: number | null
           taux_pret?: number | null
@@ -4276,6 +4295,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      branche_contrat: { Args: { _contrat_id: string }; Returns: string }
       calculer_score_conformite_client: {
         Args: { _client_id: string }
         Returns: number
@@ -4313,11 +4333,19 @@ export type Database = {
         Returns: undefined
       }
       neoliane_reduire_json: { Args: { _data: Json }; Returns: Json }
+      periodicite_suivi_mois: {
+        Args: { _branche: string; _recommandation: boolean }
+        Returns: number
+      }
       purger_neoliane_evenements: { Args: never; Returns: undefined }
       purger_simulassur_evenements: { Args: never; Returns: undefined }
       recalculer_echeances_contrat: {
         Args: { _contrat_id: string }
         Returns: undefined
+      }
+      replanifier_suivi_client: {
+        Args: { _client_id: string }
+        Returns: number
       }
       score_conformite_cabinet: {
         Args: never

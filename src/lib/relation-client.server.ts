@@ -547,6 +547,30 @@ async function traiterEmailClientInterne(
   const client = (clientRow as ClientMini | null) ?? null;
   if (!client) throw new Error("Fiche client introuvable");
 
+  // Cas dédié : réponse du client à l'email de point de suivi périodique.
+  // Traitement spécifique (tâche + note factuelle sur les contrats), jamais de
+  // réponse ni de brouillon automatique — différent du niveau 2 générique.
+  const { sujetEstSuiviContrats } = await import("@/lib/suivi-contrats");
+  if (sujetEstSuiviContrats(email.sujet)) {
+    const { marquerAgentATraiter: marquerSuivi } = await import("@/lib/gmail.server");
+    await marquerSuivi(gmail_message_id, "relation_client");
+    const { traiterRetourSuiviContrats } = await import("@/lib/suivi-contrats.server");
+    await traiterRetourSuiviContrats(admin, {
+      client,
+      sujet: email.sujet,
+      texte: email.texte,
+      gmail_message_id,
+      userId: params.userId,
+    });
+    return {
+      niveau: "niveau_2",
+      intention: null,
+      action: "tache_urgente",
+      pieces_kyc: 0,
+      motif: "Retour du client sur le point de suivi périodique : tâche et note de contrat créées.",
+    };
+  }
+
   const classification = await analyserEmailClient(email);
 
   // Dès la catégorisation : le mail est marqué « À traiter » pour cet agent.

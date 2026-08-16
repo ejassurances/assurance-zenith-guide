@@ -414,8 +414,44 @@ function RelationClientReponseEmail(props: {
   );
 }
 
+/**
+ * Conseil dans la duree — point de suivi periodique sur les contrats du client.
+ * Texte valide par le cabinet : ne pas modifier la formulation.
+ */
+function SuiviContratsEmail(props: { prenom?: string; listeContrats?: string }) {
+  const style = { fontFamily: "Arial, sans-serif", color: "#1a1a1a", fontSize: "15px", lineHeight: "1.6" };
+  const paragraphes = [
+    "Bonjour " + (props.prenom || "") + ",",
+    "Dans le cadre du suivi que nous assurons sur vos contrats d'assurance, nous faisons un point régulier pour vérifier qu'ils correspondent toujours à votre situation.",
+    "Vous êtes actuellement couvert(e) chez nous pour : " + (props.listeContrats || "") + ".",
+    "Votre situation personnelle, familiale ou professionnelle a-t-elle évolué depuis la souscription (déménagement, changement familial, nouveaux besoins) ? Si c'est le cas, ou si vous avez simplement une question sur vos garanties actuelles, il vous suffit de répondre à cet email — nous reviendrons vers vous rapidement.",
+    "Si votre situation n'a pas changé, vous n'avez rien à faire : vos contrats continuent normalement.",
+  ];
+  return React.createElement(
+    "div",
+    { style: style },
+    ...paragraphes.map((p, i) => React.createElement("p", { key: "p" + i }, p)),
+    React.createElement(
+      "p",
+      { key: "signature" },
+      "Cordialement,",
+      React.createElement("br"),
+      "L'equipe EJ Partners Assurances",
+    ),
+  );
+}
+
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
+  "suivi-contrats": {
+    component: SuiviContratsEmail,
+    subject: "Point sur votre/vos contrat(s) d'assurance — EJ Partners Assurances",
+    displayName: "Conseil dans la duree - Point de suivi contrats",
+    previewData: {
+      prenom: "Jean",
+      listeContrats: "votre complementaire sante et votre assurance emprunteur",
+    },
+  },
   "lien-connexion": {
     component: LienConnexionEmail,
     subject: (data: Record<string, any>) =>
