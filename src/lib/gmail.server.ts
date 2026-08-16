@@ -270,38 +270,10 @@ export async function marquerLu(id: string, lu: boolean): Promise<void> {
 
 type GmailLabel = { id: string; name: string };
 
-/**
- * Étiquettes réellement utilisées par le cabinet dans Gmail. Les agents du CRM
- * se posent EXCLUSIVEMENT sur cette arborescence existante : aucune branche
- * parallèle « Agent X/… » n'est créée.
- */
-export const LABELS_CABINET = {
-  prospect_formulaire: "Prospects/Formulaire_Site",
-  prospect_direct: "Prospects/Contact_Direct",
-  prospect_traite_ia: "01_PROSPECTS_B2C/02_Traites_IA",
-  prospect_a_relancer: "01_PROSPECTS_B2C/03_A_Relancer",
-  a_ignorer: "A_Ignorer/Accuses_Reception",
-  facture_fournisseur: "COMPTABILITE/01_Factures_Fournisseurs",
-  bordereau_commissions: "COMPTABILITE/02_Bordereaux_Commissions",
-  sinistre_reclamation: "Reclamations_Sinistres",
-  compagnie_dossier: "Compagnies/Suivi_Dossier",
-  compagnie_actualite: "ASSURANCES/02_Compagnies_Actualites",
-  veille_reglementaire: "ASSURANCES/01_Veille_Reglementaire",
-  veille_non_impactee: "A_Ignorer/Veille_Non_Impactee",
-  relation_client_a_valider: "ASSURANCES/03_Relation_Client_A_Valider",
-} as const;
-export type LabelCabinet = keyof typeof LABELS_CABINET;
+import { LABELS_CABINET, LABELS_CREABLES, type LabelCabinet } from "@/lib/gmail-labels";
 
-/**
- * Seules étiquettes que le code est autorisé à créer (sous-libellés validés
- * par le cabinet, rattachés à des parents déjà existants). Tout le reste doit
- * exister dans Gmail : sinon l'erreur remonte, jamais de doublon créé.
- */
-const LABELS_CREABLES: readonly string[] = [
-  LABELS_CABINET.veille_reglementaire,
-  LABELS_CABINET.veille_non_impactee,
-  LABELS_CABINET.relation_client_a_valider,
-];
+export { LABELS_CABINET, type LabelCabinet };
+
 
 async function listerLabels(): Promise<GmailLabel[]> {
   const { labels } = await gmailFetch<{ labels?: GmailLabel[] }>("/users/me/labels");
