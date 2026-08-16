@@ -1,16 +1,8 @@
 /**
- * Anneaux de score : conformité KYC/LCB-FT et valeur client.
+ * Anneau de score : valeur client.
  * Le score de valeur client est calculé à la volée en base
  * (fonction SQL `score_valeur_client`), il n'est jamais stocké.
  */
-import { niveauFromScore, type NiveauConformite } from "@/lib/conformite-score";
-
-const NIVEAU_STROKE: Record<NiveauConformite, string> = {
-  vert: "#10b981",
-  orange: "#f59e0b",
-  rouge: "#ef4444",
-};
-
 export function ScoreRing({
   value,
   label,
@@ -55,22 +47,14 @@ export function ScoreRing({
   );
 }
 
-/** Conformité (couleur par niveau) + Valeur client (doré), côte à côte. */
-export function ScoreRings({
-  conformite,
-  valeur,
-  niveau,
-  size = 56,
-}: {
-  conformite: number;
-  valeur: number;
-  niveau?: NiveauConformite | null;
-  size?: number;
-}) {
-  const niv = niveau ?? niveauFromScore(conformite);
+/**
+ * Valeur client (doré). La conformité n'est plus affichée ici : un seul score
+ * de conformité existe désormais, celui du risque LCB-FT (bloc « Risque
+ * LCB-FT » de l'onglet Conformité de la fiche client).
+ */
+export function ScoreRings({ valeur, size = 56 }: { valeur: number; size?: number }) {
   return (
     <div className="flex items-start gap-4">
-      <ScoreRing value={conformite} label="Conformité" color={NIVEAU_STROKE[niv]} size={size} />
       <ScoreRing value={valeur} label="Valeur client" color="#D4AF37" size={size} />
     </div>
   );
