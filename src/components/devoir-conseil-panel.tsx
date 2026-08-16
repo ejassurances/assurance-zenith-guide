@@ -112,6 +112,8 @@ export function DevoirConseilPanel({
     cotisation_mensuelle: "",
     frais_dossier: "",
     frais_souscription: "",
+    frais_courtage: "",
+    frais_adhesion: "",
     economie_estimee: "",
     assiette: "capital_restant_du" as "capital_initial" | "capital_restant_du",
     capital_assure: "",
