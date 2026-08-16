@@ -504,8 +504,9 @@ export interface ResultatRelationClient {
 
 /**
  * Traite un email entrant rattaché à un client existant.
- * L'agent pose son étiquette Gmail « À traiter » dès la catégorisation, puis
- * « Archivé » une fois le traitement terminé.
+ * À l'issue du traitement, le message est classé dans l'arborescence Gmail du
+ * cabinet : Reclamations_Sinistres (niveau 0), ASSURANCES/03_Relation_Client_A_Valider
+ * (brouillon à valider), 01_PROSPECTS_B2C/02_Traites_IA (réponse automatique envoyée).
  * Aucune étape ne doit échouer silencieusement : toute erreur crée une tâche.
  */
 export async function traiterEmailClient(
@@ -520,10 +521,19 @@ export async function traiterEmailClient(
 ): Promise<ResultatRelationClient> {
   const pieces = { pret: 0, non_classees: 0 };
   const resultat = await traiterEmailClientInterne(admin, params, pieces);
-  const { marquerAgentArchive } = await import("@/lib/gmail.server");
-  await marquerAgentArchive(params.gmail_message_id, "relation_client");
+  const { poserLabelCabinet } = await import("@/lib/gmail.server");
+  const cle =
+    resultat.niveau === "niveau_0"
+      ? "sinistre_reclamation"
+      : resultat.action === "brouillon"
+        ? "relation_client_a_valider"
+        : resultat.action === "reponse_envoyee"
+          ? "prospect_traite_ia"
+          : "prospect_a_relancer";
+  await poserLabelCabinet(params.gmail_message_id, cle);
   return { ...resultat, pieces_pret: pieces.pret, pieces_non_classees: pieces.non_classees };
 }
+
 
 async function traiterEmailClientInterne(
   admin: Admin,
@@ -552,9 +562,8 @@ async function traiterEmailClientInterne(
   // réponse ni de brouillon automatique — différent du niveau 2 générique.
   const { sujetEstSuiviContrats } = await import("@/lib/suivi-contrats");
   if (sujetEstSuiviContrats(email.sujet)) {
-    const { marquerAgentATraiter: marquerSuivi } = await import("@/lib/gmail.server");
-    await marquerSuivi(gmail_message_id, "relation_client");
     const { traiterRetourSuiviContrats } = await import("@/lib/suivi-contrats.server");
+
     await traiterRetourSuiviContrats(admin, {
       client,
       sujet: email.sujet,
@@ -573,9 +582,7 @@ async function traiterEmailClientInterne(
 
   const classification = await analyserEmailClient(email);
 
-  // Dès la catégorisation : le mail est marqué « À traiter » pour cet agent.
-  const { marquerAgentATraiter } = await import("@/lib/gmail.server");
-  await marquerAgentATraiter(gmail_message_id, "relation_client");
+
 
   const base = {
     client_id: client.id,

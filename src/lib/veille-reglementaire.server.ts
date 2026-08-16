@@ -16,8 +16,8 @@ const MODELES = ["google/gemini-3.6-flash", "google/gemini-2.5-flash"];
 
 type Admin = SupabaseClient<Database>;
 
-export const LABEL_VEILLE_A_EXAMINER = "Veille/À examiner";
-export const LABEL_VEILLE_NON_IMPACTE = "Veille/Non impacté";
+// Étiquettes Gmail réelles du cabinet (voir LABELS_CABINET).
+
 
 export interface EmailVeille {
   sujet: string | null;
@@ -178,15 +178,8 @@ export async function traiterEmailVeille(
   const { email } = params;
   if (!estEmailVeilleAcpr(email)) return { action: "ignore" };
 
-  const { assurerLabel, etiqueterMessage } = await import("@/lib/gmail.server");
-  // Les deux étiquettes de veille (et leur parent) doivent exister.
-  try {
-    await assurerLabel("Veille");
-    await assurerLabel(LABEL_VEILLE_A_EXAMINER);
-    await assurerLabel(LABEL_VEILLE_NON_IMPACTE);
-  } catch (e) {
-    console.error("[veille] étiquettes Gmail non créées", e);
-  }
+  const { poserLabelCabinet } = await import("@/lib/gmail.server");
+
 
   const urls = liensPdf(email.texte);
   const documents: { nom: string; base64: string }[] = [];
@@ -233,14 +226,12 @@ export async function traiterEmailVeille(
     });
   }
 
-  try {
-    await etiqueterMessage(
-      params.gmail_message_id,
-      analyse.impact_assurance ? LABEL_VEILLE_A_EXAMINER : LABEL_VEILLE_NON_IMPACTE,
-    );
-  } catch (e) {
-    console.error("[veille] étiquette Gmail non appliquée", e);
-  }
+  // Étiquetage Gmail : toute erreur remonte à l'appelant (jamais avalée).
+  await poserLabelCabinet(
+    params.gmail_message_id,
+    analyse.impact_assurance ? "veille_reglementaire" : "veille_non_impactee",
+  );
+
 
   return {
     action: "veille_creee",

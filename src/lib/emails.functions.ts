@@ -98,246 +98,10 @@ export const boiteReception = createServerFn({ method: "POST" })
       }
     }
 
-    // Agent commercial : les messages entrants qui ne correspondent à aucun
-    // client sont analysés par l'IA. Classification confiante -> prospect,
-    // dossier, recueil et lettre de mission créés ; sinon suggestion affichée.
-    let dossiersCrees = 0;
-    let facturesCreees = 0;
-    let bordereauxCrees = 0;
-    let veillesCreees = 0;
-    const { data: dejaTriage } = ids.length
-      ? await supabaseAdmin.from("crm_emails").select("gmail_message_id").in("gmail_message_id", ids).not("triage_ia", "is", null)
-      : { data: [] };
-    const triageFaits = new Set((dejaTriage ?? []).map((r) => r.gmail_message_id));
-    const { data: liensApres } = ids.length
-      ? await supabaseAdmin.from("crm_emails").select("gmail_message_id, client_id").in("gmail_message_id", ids)
-      : { data: [] };
-    const avecClient = new Set((liensApres ?? []).filter((l) => l.client_id).map((l) => l.gmail_message_id));
-
-    const aTrier = messages
-      .filter(
-        (m) =>
-          !!m.expediteur_email &&
-          !m.etiquettes.includes("SENT") &&
-          !avecClient.has(m.id) &&
-          !triageFaits.has(m.id),
-      )
-      .slice(0, 5);
-
-    if (aTrier.length) {
-      const { lireMessage } = await import("@/lib/gmail.server");
-      const {
-        analyserEmailProspect,
-        classificationConfiante,
-        estPublicite,
-        marquerEmailPublicite,
-        creerDossierDepuisEmail,
-        creerFicheProspectIncertaine,
-      } = await import("@/lib/email-triage.server");
-      const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
-      const { marquerAgentATraiter, marquerAgentArchive } = await import("@/lib/gmail.server");
-      const { traiterEmailFinance } = await import("@/lib/finance-agent.server");
-      const { traiterEmailVeille } = await import("@/lib/veille-reglementaire.server");
-      for (const m of aTrier) {
-        try {
-          const detail = await lireMessage(m.id);
-          const entree = {
-            sujet: detail.sujet ?? null,
-            expediteur_nom: detail.expediteur_nom ?? null,
-            expediteur_email: detail.expediteur_email ?? null,
-            texte: detail.texte ?? detail.snippet ?? null,
-            pieces_jointes: detail.pieces_jointes.map((p) => ({ nom: p.nom, mime: p.mime })),
-          };
-
-          // Agent veille réglementaire : newsletter ACPR (aucun traitement CRM
-          // commercial ou comptable sur ces mails).
-          const veille = await traiterEmailVeille(supabaseAdmin, {
-            email: entree,
-            gmail_message_id: m.id,
-            recu_le: m.date ?? null,
-            userId: context.userId,
-          });
-          if (veille.action !== "ignore") {
-            veillesCreees++;
-            await supabaseAdmin.from("crm_emails").upsert(
-              {
-                gmail_message_id: m.id,
-                gmail_thread_id: m.thread_id ?? null,
-                direction: "entrant",
-                recu_le: m.date ?? null,
-                notes: `Agent veille réglementaire — ${veille.impact_assurance ? "impact assurance" : "non impacté"}`,
-                triage_ia: JSON.parse(JSON.stringify({ agent: "veille", ...veille })),
-                triage_le: new Date().toISOString(),
-                created_by: context.userId,
-                updated_at: new Date().toISOString(),
-              },
-              { onConflict: "gmail_message_id" },
-            );
-            continue;
-          }
-
-          // Agent finance ensuite : facture fournisseur ou bordereau de
-          // commissions. Si ce n'est pas du ressort de la finance, le tri
-          // prospect (agent commercial) prend la suite.
-          const finance = await traiterEmailFinance(supabaseAdmin, {
-            email: {
-              ...entree,
-              pieces_jointes: detail.pieces_jointes.map((p) => ({
-                nom: p.nom,
-                mime: p.mime,
-                attachment_id: p.attachment_id,
-              })),
-            },
-            gmail_message_id: m.id,
-            recu_le: m.date ?? null,
-            userId: context.userId,
-          });
-          if (finance.action !== "ignore") {
-            if (finance.action === "facture_creee") facturesCreees++;
-            if (finance.action === "bordereau_cree") bordereauxCrees++;
-            await supabaseAdmin.from("crm_emails").upsert(
-              {
-                gmail_message_id: m.id,
-                gmail_thread_id: m.thread_id ?? null,
-                direction: "entrant",
-                recu_le: m.date ?? null,
-                notes: `Agent finance — ${finance.categorie} (${finance.action})`,
-                triage_ia: JSON.parse(JSON.stringify({ agent: "finance", ...finance })),
-                triage_le: new Date().toISOString(),
-                created_by: context.userId,
-                updated_at: new Date().toISOString(),
-              },
-              { onConflict: "gmail_message_id" },
-            );
-            continue;
-          }
-
-          const triage = await analyserEmailProspect(entree);
-          // Catégorisation faite : le mail est pris en charge par l'agent commercial.
-          await marquerAgentATraiter(m.id, "commercial");
-
-
-
-          if (estPublicite(triage)) {
-            // Publicité / newsletter / spam : ni fiche client, ni tâche.
-            await marquerEmailPublicite(supabaseAdmin, {
-              email: entree,
-              triage,
-              gmail_message_id: m.id,
-              gmail_thread_id: m.thread_id ?? null,
-              recu_le: m.date ?? null,
-              userId: context.userId,
-            });
-          } else if (classificationConfiante(triage)) {
-            await creerDossierDepuisEmail(supabaseAdmin, {
-              email: entree,
-              triage,
-              gmail_message_id: m.id,
-              gmail_thread_id: m.thread_id ?? null,
-              recu_le: m.date ?? null,
-              userId: context.userId,
-            });
-            dossiersCrees++;
-          } else {
-            // Classification incertaine : fiche prospect + LCB-FT + tâche
-            // humaine de qualification, mais aucun dossier créé.
-            await creerFicheProspectIncertaine(supabaseAdmin, {
-              email: entree,
-              triage,
-              gmail_message_id: m.id,
-              gmail_thread_id: m.thread_id ?? null,
-              recu_le: m.date ?? null,
-              userId: context.userId,
-            });
-          }
-          // Traitement terminé : « À traiter » retiré, « Archivé » posé.
-          await marquerAgentArchive(m.id, "commercial");
-
-        } catch (e) {
-          console.error("[agent-commercial] triage email", m.id, e);
-          // Aucune étape ne doit échouer silencieusement : une tâche décrit l'erreur.
-          await creerTacheAdmin(supabaseAdmin, {
-            titre: `Traitement automatique d'un email entrant impossible — ${m.expediteur_email ?? "expéditeur inconnu"}`,
-            description: [
-              `Objet : ${m.sujet ?? "(sans objet)"}`,
-              `Erreur : ${e instanceof Error ? e.message : "erreur inconnue"}`,
-              "Email à qualifier manuellement depuis l'onglet Emails.",
-            ].join("\n"),
-            created_by: context.userId,
-          });
-        }
-      }
-    }
-
-    // Agent relation client : emails rattachés à un client existant et pas
-    // encore analysés. Niveau 0 (sinistre/réclamation/santé/paiement) -> tâche
-    // urgente ; niveau 1 -> réponse automatique cadrée ; sinon brouillon.
-    let reponsesAuto = 0;
-    let brouillons = 0;
-    const { data: liensClients } = ids.length
-      ? await supabaseAdmin
-          .from("crm_emails")
-          .select("gmail_message_id, client_id, triage_ia")
-          .in("gmail_message_id", ids)
-          .not("client_id", "is", null)
-      : { data: [] };
-    const aRepondre = ((liensClients ?? []) as { gmail_message_id: string; client_id: string; triage_ia: unknown }[])
-      .filter((l) => !l.triage_ia)
-      .filter((l) => {
-        const m = messages.find((x) => x.id === l.gmail_message_id);
-        return !!m && !m.etiquettes.includes("SENT") && !!m.expediteur_email;
-      })
-      .slice(0, 5);
-
-    if (aRepondre.length) {
-      const { lireMessage } = await import("@/lib/gmail.server");
-      const { traiterEmailClient } = await import("@/lib/relation-client.server");
-      const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
-      for (const lien of aRepondre) {
-        const m = messages.find((x) => x.id === lien.gmail_message_id)!;
-        try {
-          const detail = await lireMessage(m.id);
-          const resultat = await traiterEmailClient(supabaseAdmin, {
-            client_id: lien.client_id,
-            email: {
-              sujet: detail.sujet ?? null,
-              expediteur_nom: detail.expediteur_nom ?? null,
-              expediteur_email: detail.expediteur_email ?? null,
-              texte: detail.texte ?? detail.snippet ?? null,
-              pieces_jointes: detail.pieces_jointes.map((p) => ({
-                nom: p.nom,
-                mime: p.mime,
-                attachment_id: p.attachment_id,
-              })),
-            },
-            gmail_message_id: m.id,
-            gmail_thread_id: m.thread_id ?? null,
-            userId: context.userId,
-          });
-          if (resultat.action === "reponse_envoyee") reponsesAuto++;
-          if (resultat.action === "brouillon") brouillons++;
-          await supabaseAdmin
-            .from("crm_emails")
-            .update({
-              triage_ia: JSON.parse(JSON.stringify({ agent: "relation_client", ...resultat })),
-              triage_le: new Date().toISOString(),
-            })
-            .eq("gmail_message_id", m.id);
-        } catch (e) {
-          console.error("[agent-relation-client] traitement email", m.id, e);
-          await creerTacheAdmin(supabaseAdmin, {
-            titre: `Email client non traité automatiquement — ${m.expediteur_email ?? "expéditeur inconnu"}`,
-            description: [
-              `Objet : ${m.sujet ?? "(sans objet)"}`,
-              `Erreur : ${e instanceof Error ? e.message : "erreur inconnue"}`,
-              "Email à traiter manuellement depuis l'onglet Emails.",
-            ].join("\n"),
-            client_id: lien.client_id,
-            created_by: context.userId,
-          });
-        }
-      }
-    }
+    // Agents IA (veille, finance, commercial, relation client) sur ce lot.
+    // Logique partagée avec le job planifié /api/public/scan-emails.
+    const { executerAgents } = await import("@/lib/emails-agents.server");
+    const agents = await executerAgents(supabaseAdmin, { messages, ids, userId: context.userId });
 
     const selectComplet = `${selectLiens}, triage_ia, triage_le`;
     const { data: liensFinaux } = ids.length
@@ -349,13 +113,9 @@ export const boiteReception = createServerFn({ method: "POST" })
       nextPageToken,
       liens: liensFinaux ?? [],
       nouveaux,
-      dossiers_crees: dossiersCrees,
-      factures_creees: facturesCreees,
-      bordereaux_crees: bordereauxCrees,
-      veilles_creees: veillesCreees,
-      reponses_auto: reponsesAuto,
-      brouillons_reponses: brouillons,
+      ...agents,
     };
+
   });
 
 
@@ -427,13 +187,10 @@ export const rattacherMessage = createServerFn({ method: "POST" })
         .select("nom, prenom")
         .eq("id", data.client_id)
         .maybeSingle();
-      if (cl) {
-        const { etiqueterMessage } = await import("@/lib/gmail.server");
-        await etiqueterMessage(
-          data.gmail_message_id,
-          `CRM/Clients/${[cl.prenom, cl.nom].filter(Boolean).join(" ").replace(/\//g, "-")}`,
-        ).catch((e) => console.error("Étiquette Gmail:", e));
-      }
+      // Pas d'étiquette Gmail par client : l'arborescence du cabinet ne comporte
+      // pas de branche par fiche client (aucune branche parallèle créée).
+      void cl;
+
       await supabaseAdmin.from("activites").insert({
         client_id: data.client_id,
         type: "email",
@@ -599,11 +356,11 @@ export const rattacherCompagnie = createServerFn({ method: "POST" })
       .eq("id", data.compagnie_id)
       .maybeSingle();
     if (cie) {
-      const { etiqueterMessage } = await import("@/lib/gmail.server");
-      await etiqueterMessage(data.gmail_message_id, `CRM/Partenaires/${cie.nom.replace(/\//g, "-")}`).catch((e) =>
-        console.error("Étiquette Gmail:", e),
-      );
+      // Suivi de dossier compagnie dans l'arborescence du cabinet.
+      const { poserLabelCabinet } = await import("@/lib/gmail.server");
+      await poserLabelCabinet(data.gmail_message_id, "compagnie_dossier");
     }
+
     return { ok: true };
   });
 

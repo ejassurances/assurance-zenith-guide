@@ -22,6 +22,8 @@ import {
 
 } from "@/lib/emails.functions";
 import { importerFactureDepuisEmail } from "@/lib/factures-achat.functions";
+import { LABELS_CABINET } from "@/lib/gmail-labels";
+
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/espace/emails")({
@@ -509,12 +511,8 @@ function EmailsPage() {
                 </div>
               </div>
 
-              <EtiquettesBloc
-                message={selected}
-                clients={clients}
-                compagnies={compagnies}
-                onEtiqueter={(e) => etiqueter(selected, e)}
-              />
+              <EtiquettesBloc message={selected} onEtiqueter={(e) => etiqueter(selected, e)} />
+
 
 
               <RattachementPanel
@@ -949,28 +947,16 @@ function RattachementPanel({
 }
 
 
-/** Étiquetage Gmail rapide : clients, partenaires, prescripteurs ou libellé libre. */
+/** Étiquetage Gmail rapide : uniquement des étiquettes existantes du cabinet. */
 function EtiquettesBloc({
   message,
-  clients,
-  compagnies,
   onEtiqueter,
 }: {
   message: Resume;
-  clients: ClientLite[];
-  compagnies: CompagnieLite[];
   onEtiqueter: (etiquette: string) => Promise<void>;
 }) {
   const [libre, setLibre] = useState("");
-  const [categorie, setCategorie] = useState<"Clients" | "Partenaires" | "Prescripteurs">("Clients");
-  const [cible, setCible] = useState("");
-
-  const options =
-    categorie === "Partenaires"
-      ? compagnies.map((c) => c.nom)
-      : categorie === "Clients"
-      ? clients.map((c) => [c.prenom, c.nom].filter(Boolean).join(" "))
-      : [];
+  const [choix, setChoix] = useState<string>(LABELS_CABINET.prospect_direct);
 
   return (
     <div className={CARTE + " p-5"}>
@@ -988,45 +974,14 @@ function EtiquettesBloc({
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <select
-          value={categorie}
-          onChange={(e) => {
-            setCategorie(e.target.value as typeof categorie);
-            setCible("");
-          }}
-          className={CHAMP}
-        >
-          <option value="Clients">Clients</option>
-          <option value="Partenaires">Partenaires</option>
-          <option value="Prescripteurs">Prescripteurs</option>
+        <select value={choix} onChange={(e) => setChoix(e.target.value)} className={CHAMP + " min-w-64"}>
+          {Object.values(LABELS_CABINET).map((nom) => (
+            <option key={nom} value={nom}>
+              {nom}
+            </option>
+          ))}
         </select>
-
-        {options.length > 0 ? (
-          <select
-            value={cible}
-            onChange={(e) => setCible(e.target.value)}
-            className={CHAMP + " min-w-40"}
-          >
-            <option value="">— sous-étiquette (facultatif) —</option>
-            {options.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <input
-            value={cible}
-            onChange={(e) => setCible(e.target.value)}
-            placeholder="Nom (facultatif)"
-            className={CHAMP}
-          />
-        )}
-
-        <button
-          onClick={() => onEtiqueter(`CRM/${categorie}${cible ? `/${cible.replace(/\//g, "-")}` : ""}`)}
-          className={BTN_PRIMAIRE}
-        >
+        <button onClick={() => onEtiqueter(choix)} className={BTN_PRIMAIRE}>
           Étiqueter
         </button>
       </div>
@@ -1035,7 +990,7 @@ function EtiquettesBloc({
         <input
           value={libre}
           onChange={(e) => setLibre(e.target.value)}
-          placeholder="Étiquette libre (ex. À relancer)"
+          placeholder="Autre étiquette existante (nom exact)"
           className={CHAMP}
         />
         <button
@@ -1050,9 +1005,10 @@ function EtiquettesBloc({
         </button>
       </div>
       <p className="mt-3 text-xs text-ink-muted">
-        Les étiquettes sont créées directement dans Gmail (arborescence « CRM / Clients », « CRM / Partenaires »,
-        « CRM / Prescripteurs ») et le rattachement à une fiche l'applique automatiquement.
+        Les étiquettes utilisées sont celles de votre arborescence Gmail existante : aucune nouvelle branche n'est
+        créée. Une étiquette saisie manuellement doit exister à l'identique dans Gmail, sinon l'action échoue.
       </p>
     </div>
   );
 }
+
