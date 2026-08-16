@@ -352,6 +352,7 @@ export const boiteReception = createServerFn({ method: "POST" })
       dossiers_crees: dossiersCrees,
       factures_creees: facturesCreees,
       bordereaux_crees: bordereauxCrees,
+      veilles_creees: veillesCreees,
       reponses_auto: reponsesAuto,
       brouillons_reponses: brouillons,
     };
