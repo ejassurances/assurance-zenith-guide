@@ -573,10 +573,18 @@ async function traiterEmailClientInterne(
     : 0;
 
   // Autres pièces jointes : document de prêt ou pièce non reconnue → tâche admin.
-  const autresPieces = email.pieces_jointes.length
-    ? await routerAutresPieces(admin, { client, email, classification, gmail_message_id, userId: params.userId })
-    : { pret: 0, non_classees: 0 };
-  void autresPieces;
+  if (email.pieces_jointes.length) {
+    const compte = await routerAutresPieces(admin, {
+      client,
+      email,
+      classification,
+      gmail_message_id,
+      userId: params.userId,
+    });
+    pieces.pret = compte.pret;
+    pieces.non_classees = compte.non_classees;
+  }
+
 
 
   const brouillon = async (motif: string, objet: string, corps: string): Promise<ResultatRelationClient> => {
