@@ -237,3 +237,12 @@ export async function synchroniserContactBrevo(
   });
   return { ok: true, listes: [...noms] };
 }
+
+/** Variante best-effort : journalise l'erreur sans jamais la propager. */
+export async function synchroniserContactBrevoSansEchec(admin: Admin, clientId: string): Promise<void> {
+  try {
+    await synchroniserContactBrevo(admin, clientId);
+  } catch (e) {
+    console.error(`[brevo-listes] synchro contact ${clientId} échouée`, e);
+  }
+}
