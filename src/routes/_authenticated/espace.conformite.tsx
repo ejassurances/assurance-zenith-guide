@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RegistreClientsConformite } from "@/components/registre-clients-conformite";
 import { VeilleReglementairePanel } from "@/components/veille-reglementaire-panel";
+import { ControleInternePanel } from "@/components/controle-interne-panel";
 
 export const Route = createFileRoute("/_authenticated/espace/conformite")({
   component: ConformitePage,
