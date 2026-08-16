@@ -325,6 +325,34 @@ function ContratDetail() {
         </F>
       </section>
 
+      {/* Conseil dans la durée */}
+      <section className="grid gap-4 rounded-lg border border-line bg-surface p-5 md:grid-cols-3">
+        <div className="md:col-span-3">
+          <h3 className="font-serif text-lg">Conseil dans la durée</h3>
+          <p className="text-xs text-ink-muted">
+            Le point de suivi périodique est envoyé automatiquement au client dès que la date est dépassée
+            (regroupé avec ses autres contrats actifs).
+          </p>
+        </div>
+        <F label="Prochain point de suivi">
+          <input value={c.prochain_suivi_le ?? "—"} readOnly className={inp} />
+        </F>
+        <F label="Dernier point de suivi">
+          <input value={c.dernier_suivi_le ?? "—"} readOnly className={inp} />
+        </F>
+        <F label="Recommandation personnalisée fournie">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={Boolean(c.recommandation_personnalisee)}
+              onChange={(e) => setC({ ...c, recommandation_personnalisee: e.target.checked })}
+              disabled={!canEdit}
+            />
+            <span className="text-ink-muted">Ramène le suivi épargne/retraite à 2 ans</span>
+          </label>
+        </F>
+      </section>
+
       {/* Bloc emprunteur */}
       {c.is_emprunteur && (
         <section className="grid gap-4 rounded-lg border border-line bg-surface p-5 md:grid-cols-3">
