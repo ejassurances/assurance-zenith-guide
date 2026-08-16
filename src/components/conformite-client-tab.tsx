@@ -293,6 +293,7 @@ export function ConformiteClientTab({
         </p>
       </div>
 
+      <RisqueLcbftCard clientId={clientId} />
 
       <DerStatusCard clientId={clientId} clientEmail={clientEmail} canEdit={canEdit} />
 
