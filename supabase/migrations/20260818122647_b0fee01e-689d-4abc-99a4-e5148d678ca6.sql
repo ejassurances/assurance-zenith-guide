@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS veille_reglementaire_gmail_message_id_key ON public.veille_reglementaire (gmail_message_id) WHERE gmail_message_id IS NOT NULL;
