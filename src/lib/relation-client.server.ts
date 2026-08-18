@@ -743,7 +743,14 @@ async function traiterEmailClientInterne(
           : ""
       }`,
     );
-    return { niveau: "niveau_0", intention: null, action: "tache_urgente", pieces_kyc: piecesKyc };
+    return {
+      niveau: "niveau_0",
+      intention: null,
+      action: "tache_urgente",
+      pieces_kyc: piecesKyc,
+      sous_type: classification.sous_type,
+    };
+
   }
 
 
