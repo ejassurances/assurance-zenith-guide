@@ -500,6 +500,8 @@ export interface ResultatRelationClient {
   pieces_pret?: number;
   pieces_non_classees?: number;
   motif?: string;
+  /** Sous-type retenu pour un email niveau 0 (sinistre, réclamation, …). */
+  sous_type?: SousTypeNiveau0;
 }
 
 /**
@@ -507,7 +509,9 @@ export interface ResultatRelationClient {
  * À l'issue du traitement, le message est classé dans « Direction Commerciale/
  * Service Client » : A_Traiter à la prise en charge, puis Archive (réponse
  * automatique envoyée) ou En_Attente_De_Validation (brouillon à valider).
- * Le niveau 0 (sinistre / réclamation) reste piloté par le module sinistres.
+ * Le niveau 0 « sinistre » reste piloté par le module sinistres et le niveau 0
+ * « réclamation » par le module réclamations (Service Réclamation), qui posent
+ * eux-mêmes leurs propres étiquettes.
  * Aucune étape ne doit échouer silencieusement : toute erreur crée une tâche.
  */
 
@@ -524,17 +528,20 @@ export async function traiterEmailClient(
   const pieces = { pret: 0, non_classees: 0 };
   const resultat = await traiterEmailClientInterne(admin, params, pieces);
   const { poserLabelCabinet } = await import("@/lib/gmail.server");
-  // Service Client : « À traiter » à la prise en charge, puis étape suivante selon
-  // l'issue. Le niveau 0 (sinistre / réclamation) reste piloté par le module
-  // sinistres, qui pose lui-même « En attente de validation » puis « Archive ».
-  await poserLabelCabinet(params.gmail_message_id, "sc_a_traiter");
-  if (resultat.niveau !== "niveau_0") {
-    await poserLabelCabinet(
-      params.gmail_message_id,
-      resultat.action === "reponse_envoyee" ? "sc_archive" : "sc_attente_validation",
-      { retirer: ["sc_a_traiter"] },
-    );
+  // Une réclamation ne passe jamais par le Service Client : son circuit propre
+  // (Direction Juridique et Conformité / Service Réclamation) est posé par le
+  // module réclamations.
+  if (resultat.sous_type !== "reclamation") {
+    await poserLabelCabinet(params.gmail_message_id, "sc_a_traiter");
+    if (resultat.niveau !== "niveau_0") {
+      await poserLabelCabinet(
+        params.gmail_message_id,
+        resultat.action === "reponse_envoyee" ? "sc_archive" : "sc_attente_validation",
+        { retirer: ["sc_a_traiter"] },
+      );
+    }
   }
+
 
   return { ...resultat, pieces_pret: pieces.pret, pieces_non_classees: pieces.non_classees };
 }
