@@ -227,10 +227,15 @@ export async function traiterEmailVeille(
   }
 
   // Étiquetage Gmail : toute erreur remonte à l'appelant (jamais avalée).
-  await poserLabelCabinet(
-    params.gmail_message_id,
-    analyse.impact_assurance ? "veille_reglementaire" : "veille_non_impactee",
-  );
+  // Service Conformité : A_Traiter à la réception puis Archive (la veille ne
+  // bloque sur aucune validation). Hors périmètre assurance : label « à ignorer ».
+  if (analyse.impact_assurance) {
+    await poserLabelCabinet(params.gmail_message_id, "veille_a_traiter");
+    await poserLabelCabinet(params.gmail_message_id, "veille_archive", { retirer: ["veille_a_traiter"] });
+  } else {
+    await poserLabelCabinet(params.gmail_message_id, "veille_non_impactee");
+  }
+
 
 
   return {
