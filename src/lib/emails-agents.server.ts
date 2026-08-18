@@ -376,6 +376,11 @@ export async function executerAgents(
               triage_le: new Date().toISOString(),
             })
             .eq("gmail_message_id", m.id);
+          if (rattrapage.has(m.id)) {
+            await retirerRattrapageClient(m.id);
+            rattrapagesTraites++;
+          }
+
         } catch (e) {
           erreurs++;
           console.error("[agent-relation-client] traitement email", m.id, e);
