@@ -25,11 +25,19 @@ export const LABELS_CABINET = {
   sp_archive: "Direction Commerciale/Service Partenaire/Archive",
   // Inchangé : publicité / accusés de réception.
   a_ignorer: "A_Ignorer/Accuses_Reception",
-  // Inchangé : agent finance.
-  facture_fournisseur: "COMPTABILITE/01_Factures_Fournisseurs",
-  bordereau_commissions: "COMPTABILITE/02_Bordereaux_Commissions",
-  // Inchangé : veille réglementaire.
-  veille_reglementaire: "ASSURANCES/01_Veille_Reglementaire",
+  // Agent finance : achats (factures fournisseurs) et commissions.
+  achat_a_traiter: "Direction Financiere/Service Achat/A_Traiter",
+  achat_archive: "Direction Financiere/Service Achat/Archive",
+  commission_a_traiter: "Direction Financiere/Service Commission/A_Traiter",
+  commission_archive: "Direction Financiere/Service Commission/Archive",
+  // Module réclamations (circuit conformité, distinct des sinistres).
+  rec_a_traiter: "Direction Juridique et Conformite/Service Reclamation/A_Traiter",
+  rec_attente_validation:
+    "Direction Juridique et Conformite/Service Reclamation/En_Attente_De_Validation",
+  rec_archive: "Direction Juridique et Conformite/Service Reclamation/Archive",
+  // Veille réglementaire (service conformité : à traiter puis archive).
+  veille_a_traiter: "Direction Juridique et Conformite/Service Conformite/A_Traiter",
+  veille_archive: "Direction Juridique et Conformite/Service Conformite/Archive",
   veille_non_impactee: "A_Ignorer/Veille_Non_Impactee",
 } as const;
 
@@ -40,7 +48,5 @@ export type LabelCabinet = keyof typeof LABELS_CABINET;
  * par le cabinet, rattachés à des parents déjà existants. Toutes les autres
  * doivent exister dans Gmail, sinon l'erreur remonte (jamais de doublon).
  */
-export const LABELS_CREABLES: readonly string[] = [
-  LABELS_CABINET.veille_reglementaire,
-  LABELS_CABINET.veille_non_impactee,
-];
+export const LABELS_CREABLES: readonly string[] = [LABELS_CABINET.veille_non_impactee];
+
