@@ -522,15 +522,18 @@ export async function traiterEmailClient(
   const pieces = { pret: 0, non_classees: 0 };
   const resultat = await traiterEmailClientInterne(admin, params, pieces);
   const { poserLabelCabinet } = await import("@/lib/gmail.server");
-  const cle =
-    resultat.niveau === "niveau_0"
-      ? "sinistre_reclamation"
-      : resultat.action === "brouillon"
-        ? "relation_client_a_valider"
-        : resultat.action === "reponse_envoyee"
-          ? "prospect_traite_ia"
-          : "prospect_a_relancer";
-  await poserLabelCabinet(params.gmail_message_id, cle);
+  // Service Client : « À traiter » à la prise en charge, puis étape suivante selon
+  // l'issue. Le niveau 0 (sinistre / réclamation) reste piloté par le module
+  // sinistres, qui pose lui-même « En attente de validation » puis « Archive ».
+  await poserLabelCabinet(params.gmail_message_id, "sc_a_traiter");
+  if (resultat.niveau !== "niveau_0") {
+    await poserLabelCabinet(
+      params.gmail_message_id,
+      resultat.action === "reponse_envoyee" ? "sc_archive" : "sc_attente_validation",
+      { retirer: ["sc_a_traiter"] },
+    );
+  }
+
   return { ...resultat, pieces_pret: pieces.pret, pieces_non_classees: pieces.non_classees };
 }
 
