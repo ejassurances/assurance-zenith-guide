@@ -19,6 +19,11 @@ export interface ResultatAgents {
   brouillons_reponses: number;
   /** Emails dont le traitement automatique (dont l'étiquetage Gmail) a échoué. */
   erreurs: number;
+  /** Mails repris via le label parent « Direction Commerciale » (rattrapage manuel). */
+  rattrapages_traites: number;
+  /** Mails de rattrapage jugés sans importance et mis à la corbeille Gmail. */
+  mis_corbeille: number;
+
 
 }
 
