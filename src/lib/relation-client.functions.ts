@@ -95,6 +95,13 @@ export const envoyerReponseValidee = createServerFn({ method: "POST" })
       .from("client_reponses_ia")
       .update({ statut: "envoye", envoye_le: new Date().toISOString(), envoye_par: context.userId })
       .eq("id", r.id);
+    // Service Client : brouillon validé et envoyé → Archive.
+    if (r.gmail_message_id) {
+      const { poserLabelCabinet } = await import("@/lib/gmail.server");
+      await poserLabelCabinet(r.gmail_message_id, "sc_archive", {
+        retirer: ["sc_a_traiter", "sc_attente_validation"],
+      });
+    }
     await (supabaseAdmin as any).from("activites").insert({
       client_id: r.client_id,
       type: "email",
