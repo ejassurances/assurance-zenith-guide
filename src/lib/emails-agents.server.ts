@@ -335,24 +335,43 @@ export async function executerAgents(
     // Agent relation client : emails rattachés à un client existant et pas
     // encore analysés. Niveau 0 (sinistre/réclamation/santé/paiement) -> tâche
     // urgente ; niveau 1 -> réponse automatique cadrée ; sinon brouillon.
+    //
+    // Le rattachement (rattacherLot, ou création de fiche par l'agent
+    // commercial) va plus vite que l'analyse : on reprend donc TOUS les mails
+    // rattachés à un client dont l'agent relation client n'a pas encore
+    // tourné, indépendamment du lot Gmail courant. Un `triage_ia` posé par un
+    // autre agent (commercial, finance, veille) ne compte pas comme analyse
+    // relation client. Borne de travail par passage : `limite * 10`.
     let reponsesAuto = 0;
     let brouillons = 0;
-    const { data: liensClients } = ids.length
-      ? await admin
-          .from("crm_emails")
-          .select("gmail_message_id, client_id, triage_ia")
-          .in("gmail_message_id", ids)
-          .not("client_id", "is", null)
-      : { data: [] };
-    const aRepondre = ((liensClients ?? []) as { gmail_message_id: string; client_id: string; triage_ia: unknown }[])
-      // Un mail en rattrapage est réanalysé même s'il a déjà été trié.
-      .filter((l) => !l.triage_ia || rattrapage.has(l.gmail_message_id))
+    const plafondClient = Math.max(limite, limite * 10);
+    type LienClient = {
+      gmail_message_id: string;
+      client_id: string;
+      triage_ia: { agent?: string } | null;
+      direction: string | null;
+    };
+    const { data: liensClients } = await admin
+      .from("crm_emails")
+      .select("gmail_message_id, client_id, triage_ia, direction, recu_le")
+      .not("client_id", "is", null)
+      .neq("direction", "sortant")
+      .order("recu_le", { ascending: true, nullsFirst: false })
+      .limit(500);
+
+    const analyseFaite = (l: LienClient) =>
+      !!l.triage_ia && (l.triage_ia as { agent?: string }).agent === "relation_client";
+
+    const aRepondre = ((liensClients ?? []) as unknown as LienClient[])
+      .filter((l) => !analyseFaite(l) || rattrapage.has(l.gmail_message_id))
       .filter((l) => {
+        // Un mail sortant du lot courant est exclu ; les mails hors lot sont
+        // repris (leur direction en base a déjà été filtrée).
         const m = messages.find((x) => x.id === l.gmail_message_id);
-        return !!m && !m.etiquettes.includes("SENT") && !!m.expediteur_email;
+        return !m || !m.etiquettes.includes("SENT");
       })
       .sort((a, b) => Number(rattrapage.has(b.gmail_message_id)) - Number(rattrapage.has(a.gmail_message_id)))
-      .slice(0, limite);
+      .slice(0, plafondClient);
 
     if (aRepondre.length) {
       const { lireMessage, retirerLabelRattrapage: retirerRattrapageClient } = await import("@/lib/gmail.server");
@@ -360,9 +379,10 @@ export async function executerAgents(
       const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
 
       for (const lien of aRepondre) {
-        const m = messages.find((x) => x.id === lien.gmail_message_id)!;
+        const messageId = lien.gmail_message_id;
+        const resume = messages.find((x) => x.id === messageId) ?? null;
         try {
-          const detail = await lireMessage(m.id);
+          const detail = await lireMessage(messageId);
           const resultat = await traiterEmailClient(admin, {
             client_id: lien.client_id,
             email: {
@@ -376,8 +396,8 @@ export async function executerAgents(
                 attachment_id: p.attachment_id,
               })),
             },
-            gmail_message_id: m.id,
-            gmail_thread_id: m.thread_id ?? null,
+            gmail_message_id: messageId,
+            gmail_thread_id: detail.thread_id ?? resume?.thread_id ?? null,
             userId: userId,
           });
           if (resultat.action === "reponse_envoyee") reponsesAuto++;
@@ -388,19 +408,20 @@ export async function executerAgents(
               triage_ia: JSON.parse(JSON.stringify({ agent: "relation_client", ...resultat })),
               triage_le: new Date().toISOString(),
             })
-            .eq("gmail_message_id", m.id);
-          if (rattrapage.has(m.id)) {
-            await retirerRattrapageClient(m.id);
+            .eq("gmail_message_id", messageId);
+          if (rattrapage.has(messageId)) {
+            await retirerRattrapageClient(messageId);
             rattrapagesTraites++;
           }
 
         } catch (e) {
           erreurs++;
-          console.error("[agent-relation-client] traitement email", m.id, e);
+          console.error("[agent-relation-client] traitement email", messageId, e);
           await creerTacheAdmin(admin, {
-            titre: `Email client non traité automatiquement — ${m.expediteur_email ?? "expéditeur inconnu"}`,
+            titre: `Email client non traité automatiquement — ${resume?.expediteur_email ?? "expéditeur inconnu"}`,
             description: [
-              `Objet : ${m.sujet ?? "(sans objet)"}`,
+              `Objet : ${resume?.sujet ?? "(sans objet)"}`,
+              `Identifiant Gmail : ${messageId}`,
               `Erreur : ${e instanceof Error ? e.message : "erreur inconnue"}`,
               "Email à traiter manuellement depuis l'onglet Emails.",
             ].join("\n"),
