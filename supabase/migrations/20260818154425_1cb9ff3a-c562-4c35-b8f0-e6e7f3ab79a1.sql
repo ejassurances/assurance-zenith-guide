@@ -1,0 +1,4 @@
+DROP INDEX IF EXISTS public.veille_reglementaire_gmail_uniq;
+ALTER TABLE public.veille_reglementaire DROP CONSTRAINT IF EXISTS veille_reglementaire_gmail_message_id_key;
+DROP INDEX IF EXISTS public.veille_reglementaire_gmail_message_id_key;
+CREATE UNIQUE INDEX veille_reglementaire_gmail_message_id_key ON public.veille_reglementaire (gmail_message_id);
