@@ -87,8 +87,13 @@ function consigne(email: EmailClient): string {
     "  sujet de santé (maladie, hospitalisation, arrêt de travail, remboursement de soins),",
     "  ou sujet de paiement (prélèvement, impayé, remboursement, cotisation non passée).",
     '  Pour le niveau_0 UNIQUEMENT, précise le sous-type dans "sous_type" :',
-    '  * "sinistre" : le client déclare un sinistre / un dommage survenu et attend une prise en charge',
-    '  * "reclamation" : mécontentement, litige, réclamation',
+    '  * "sinistre" : le client déclare un sinistre / un dommage survenu et attend une indemnisation',
+    '    ou une prise en charge au titre d\'un événement assuré',
+    '  * "reclamation" : plainte, mécontentement ou litige visant le cabinet (conseil donné, délai de',
+    "    traitement, erreur) ou la gestion d'un dossier par la compagnie — SANS demande d'indemnisation",
+    "    sur un événement assuré. Ne confonds jamais « reclamation » et « sinistre » : s'il s'agit d'un",
+    '    événement assuré à indemniser, réponds "sinistre".',
+
     '  * "resiliation" : demande de résiliation',
     '  * "sante" : sujet médical ou de remboursement de soins',
     '  * "paiement" : prélèvement, impayé, cotisation, remboursement de cotisation',
@@ -500,6 +505,8 @@ export interface ResultatRelationClient {
   pieces_pret?: number;
   pieces_non_classees?: number;
   motif?: string;
+  /** Sous-type retenu pour un email niveau 0 (sinistre, réclamation, …). */
+  sous_type?: SousTypeNiveau0;
 }
 
 /**
@@ -507,7 +514,9 @@ export interface ResultatRelationClient {
  * À l'issue du traitement, le message est classé dans « Direction Commerciale/
  * Service Client » : A_Traiter à la prise en charge, puis Archive (réponse
  * automatique envoyée) ou En_Attente_De_Validation (brouillon à valider).
- * Le niveau 0 (sinistre / réclamation) reste piloté par le module sinistres.
+ * Le niveau 0 « sinistre » reste piloté par le module sinistres et le niveau 0
+ * « réclamation » par le module réclamations (Service Réclamation), qui posent
+ * eux-mêmes leurs propres étiquettes.
  * Aucune étape ne doit échouer silencieusement : toute erreur crée une tâche.
  */
 
@@ -524,17 +533,20 @@ export async function traiterEmailClient(
   const pieces = { pret: 0, non_classees: 0 };
   const resultat = await traiterEmailClientInterne(admin, params, pieces);
   const { poserLabelCabinet } = await import("@/lib/gmail.server");
-  // Service Client : « À traiter » à la prise en charge, puis étape suivante selon
-  // l'issue. Le niveau 0 (sinistre / réclamation) reste piloté par le module
-  // sinistres, qui pose lui-même « En attente de validation » puis « Archive ».
-  await poserLabelCabinet(params.gmail_message_id, "sc_a_traiter");
-  if (resultat.niveau !== "niveau_0") {
-    await poserLabelCabinet(
-      params.gmail_message_id,
-      resultat.action === "reponse_envoyee" ? "sc_archive" : "sc_attente_validation",
-      { retirer: ["sc_a_traiter"] },
-    );
+  // Une réclamation ne passe jamais par le Service Client : son circuit propre
+  // (Direction Juridique et Conformité / Service Réclamation) est posé par le
+  // module réclamations.
+  if (resultat.sous_type !== "reclamation") {
+    await poserLabelCabinet(params.gmail_message_id, "sc_a_traiter");
+    if (resultat.niveau !== "niveau_0") {
+      await poserLabelCabinet(
+        params.gmail_message_id,
+        resultat.action === "reponse_envoyee" ? "sc_archive" : "sc_attente_validation",
+        { retirer: ["sc_a_traiter"] },
+      );
+    }
   }
+
 
   return { ...resultat, pieces_pret: pieces.pret, pieces_non_classees: pieces.non_classees };
 }
@@ -668,40 +680,84 @@ async function traiterEmailClientInterne(
       }
     }
 
-    await creerTacheAdmin(admin as never, {
-      titre: sinistre
-        ? `Sinistre déclaré — ${nomComplet(client)}`
-        : `Sinistre/réclamation reçu — ${nomComplet(client)}`,
-      description: [
-        `Objet : ${email.sujet ?? "(sans objet)"}`,
-        `Résumé IA : ${classification.resume || "non fourni"}`,
-        `Email : ${lienMail(gmail_message_id)}`,
-        ...(sinistre
-          ? [
-              `Fiche sinistre : /espace/sinistres/${sinistre.sinistre_id}`,
-              `Action recommandée : ${sinistre.action_recommandee}`,
-              `Analyse de couverture : ${sinistre.analyse_couverture}`,
-            ]
-          : []),
-        "Aucune réponse automatique n'a été envoyée : traitement humain obligatoire.",
-      ].join("\n"),
-      client_id: client.id,
-      priorite: "urgente",
-      created_by: params.userId,
-    });
+    // Sous-type réclamation : circuit conformité dédié (module réclamations),
+    // totalement distinct du module sinistres. La tâche et l'étiquetage Gmail
+    // sont pris en charge par le module lui-même.
+    let reclamation: { reclamation_id: string; concerne: string; solution_proposee: string | null } | null = null;
+    if (classification.sous_type === "reclamation") {
+      try {
+        const { ouvrirReclamationDepuisEmail } = await import("@/lib/reclamations-agent.server");
+        reclamation = await ouvrirReclamationDepuisEmail(admin, {
+          client_id: client.id,
+          resume: classification.resume,
+          texte_email: email.texte,
+          sujet: email.sujet,
+          gmail_message_id,
+          userId: params.userId,
+        });
+      } catch (e) {
+        console.error("[agent-relation-client] ouverture réclamation impossible", e);
+      }
+    }
+
+    if (!reclamation) {
+      await creerTacheAdmin(admin as never, {
+        titre: sinistre
+          ? `Sinistre déclaré — ${nomComplet(client)}`
+          : classification.sous_type === "reclamation"
+            ? `Réclamation reçue — ${nomComplet(client)}`
+            : `Email sensible reçu — ${nomComplet(client)}`,
+        description: [
+          `Objet : ${email.sujet ?? "(sans objet)"}`,
+          `Résumé IA : ${classification.resume || "non fourni"}`,
+          `Email : ${lienMail(gmail_message_id)}`,
+          ...(sinistre
+            ? [
+                `Fiche sinistre : /espace/sinistres/${sinistre.sinistre_id}`,
+                `Action recommandée : ${sinistre.action_recommandee}`,
+                `Analyse de couverture : ${sinistre.analyse_couverture}`,
+              ]
+            : []),
+          "Aucune réponse automatique n'a été envoyée : traitement humain obligatoire.",
+        ].join("\n"),
+        client_id: client.id,
+        priorite: "urgente",
+        created_by: params.userId,
+      });
+    }
     await enregistrerReponse(admin, {
       ...base,
       statut: "aucune_reponse",
-      motif: sinistre ? "Niveau 0 — sinistre : dossier ouvert, traitement humain" : "Niveau 0 — traitement humain",
+      motif: sinistre
+        ? "Niveau 0 — sinistre : dossier ouvert, traitement humain"
+        : reclamation
+          ? "Niveau 0 — réclamation : dossier conformité ouvert, traitement humain"
+          : "Niveau 0 — traitement humain",
     });
     await journaliser(
       admin,
       client.id,
-      sinistre ? "Sinistre déclaré par email — dossier ouvert" : "Email sensible reçu — traitement humain requis",
-      `${classification.resume}\nEmail : ${lienMail(gmail_message_id)}${sinistre ? `\n\n${sinistre.analyse_couverture}` : ""}`,
+      sinistre
+        ? "Sinistre déclaré par email — dossier ouvert"
+        : reclamation
+          ? "Réclamation reçue par email — dossier conformité ouvert"
+          : "Email sensible reçu — traitement humain requis",
+      `${classification.resume}\nEmail : ${lienMail(gmail_message_id)}${sinistre ? `\n\n${sinistre.analyse_couverture}` : ""}${
+        reclamation
+          ? `\n\nPérimètre : ${reclamation.concerne}${reclamation.solution_proposee ? `\nProposition à valider : ${reclamation.solution_proposee}` : ""}`
+          : ""
+      }`,
     );
-    return { niveau: "niveau_0", intention: null, action: "tache_urgente", pieces_kyc: piecesKyc };
+    return {
+      niveau: "niveau_0",
+      intention: null,
+      action: "tache_urgente",
+      pieces_kyc: piecesKyc,
+      sous_type: classification.sous_type,
+    };
+
   }
+
 
 
   const objetReponse = `Votre demande — ${email.sujet ?? "votre contrat"}`.slice(0, 200);

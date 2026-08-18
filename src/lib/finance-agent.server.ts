@@ -191,11 +191,13 @@ export async function traiterEmailFinance(
       ? await traiterFacture(admin, { ...params, classification, piece, base64 })
       : await traiterBordereau(admin, { ...params, classification, piece, base64 });
 
-  // Classement dans l'arborescence comptable du cabinet.
-  await poserLabelCabinet(
-    params.gmail_message_id,
-    classification.categorie === "facture_fournisseur" ? "facture_fournisseur" : "bordereau_commissions",
-  );
+  // Classement dans l'arborescence financière du cabinet : A_Traiter puis Archive
+  // dans le service concerné (Achat pour les factures, Commission pour les bordereaux).
+  const aTraiter = classification.categorie === "facture_fournisseur" ? "achat_a_traiter" : "commission_a_traiter";
+  const archive = classification.categorie === "facture_fournisseur" ? "achat_archive" : "commission_archive";
+  await poserLabelCabinet(params.gmail_message_id, aTraiter);
+  await poserLabelCabinet(params.gmail_message_id, archive, { retirer: [aTraiter] });
+
   return resultat;
 }
 

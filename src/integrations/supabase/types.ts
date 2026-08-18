@@ -1346,6 +1346,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          email_reclamations: string | null
           id: string
           logo_url: string | null
           nom: string
@@ -1364,6 +1365,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          email_reclamations?: string | null
           id?: string
           logo_url?: string | null
           nom: string
@@ -1382,6 +1384,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          email_reclamations?: string | null
           id?: string
           logo_url?: string | null
           nom?: string
@@ -4011,6 +4014,72 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reclamations: {
+        Row: {
+          client_id: string
+          concerne: string
+          contrat_id: string | null
+          created_at: string
+          created_by: string | null
+          date_accuse_reception: string | null
+          date_cloture: string | null
+          date_ouverture: string
+          gmail_message_id: string | null
+          id: string
+          resume: string | null
+          solution_proposee: string | null
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          concerne?: string
+          contrat_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_accuse_reception?: string | null
+          date_cloture?: string | null
+          date_ouverture?: string
+          gmail_message_id?: string | null
+          id?: string
+          resume?: string | null
+          solution_proposee?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          concerne?: string
+          contrat_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_accuse_reception?: string | null
+          date_cloture?: string | null
+          date_ouverture?: string
+          gmail_message_id?: string | null
+          id?: string
+          resume?: string | null
+          solution_proposee?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reclamations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reclamations_contrat_id_fkey"
+            columns: ["contrat_id"]
+            isOneToOne: false
+            referencedRelation: "contrats"
             referencedColumns: ["id"]
           },
         ]

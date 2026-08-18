@@ -9,6 +9,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RegistreClientsConformite } from "@/components/registre-clients-conformite";
 import { VeilleReglementairePanel } from "@/components/veille-reglementaire-panel";
+import { ReclamationsPanel } from "@/components/reclamations-panel";
+
 import { ControleInternePanel } from "@/components/controle-interne-panel";
 import { CartographieRisquesPanel } from "@/components/cartographie-risques-panel";
 import { RegistreRgpdPanel } from "@/components/registre-rgpd-panel";
@@ -107,7 +109,9 @@ function ConformitePage() {
           {role === "admin" && <TabsTrigger value="equipe">Équipe & mandataires</TabsTrigger>}
           <TabsTrigger value="partenariats">Partenariats compagnies</TabsTrigger>
           <TabsTrigger value="registre-clients">Registre clients</TabsTrigger>
+          <TabsTrigger value="reclamations">Réclamations</TabsTrigger>
           <TabsTrigger value="veille">Veille réglementaire</TabsTrigger>
+
           <TabsTrigger value="controle-interne">Contrôle interne</TabsTrigger>
           <TabsTrigger value="cartographie">Cartographie des risques</TabsTrigger>
           <TabsTrigger value="registre-rgpd">Registre RGPD</TabsTrigger>
@@ -132,9 +136,14 @@ function ConformitePage() {
           <RegistreClientsConformite isAdmin={role === "admin"} />
         </TabsContent>
 
+        <TabsContent value="reclamations" className="mt-6">
+          <ReclamationsPanel canManage={role === "admin" || role === "mandataire"} />
+        </TabsContent>
+
         <TabsContent value="veille" className="mt-6">
           <VeilleReglementairePanel canManage={role === "admin"} />
         </TabsContent>
+
 
         <TabsContent value="controle-interne" className="mt-6">
           <ControleInternePanel isAdmin={role === "admin"} />
