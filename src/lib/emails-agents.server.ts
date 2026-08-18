@@ -146,17 +146,45 @@ export async function executerAgents(
       : { data: [] };
     const avecClient = new Set((liensApres ?? []).filter((l) => l.client_id).map((l) => l.gmail_message_id));
 
-    const aTrier = messages
-      .filter(
-        (m) =>
-          !!m.expediteur_email &&
-          !m.etiquettes.includes("SENT") &&
-          !avecClient.has(m.id) &&
-          // Un mail en rattrapage est réanalysé même s'il a déjà été trié.
-          (!triageFaits.has(m.id) || rattrapage.has(m.id)),
-      )
+    const candidats = messages.filter(
+      (m) =>
+        !!m.expediteur_email &&
+        !m.etiquettes.includes("SENT") &&
+        !avecClient.has(m.id) &&
+        // Un mail en rattrapage est réanalysé même s'il a déjà été trié.
+        (!triageFaits.has(m.id) || rattrapage.has(m.id)),
+    );
+
+    // Reprise du retard : tout mail enregistré sans client rattaché et sans
+    // analyse d'agent (commercial / veille / finance) est repris même s'il ne
+    // fait plus partie du lot Gmail courant.
+    const { data: enAttenteBase } = await admin
+      .from("crm_emails")
+      .select("gmail_message_id, gmail_thread_id, recu_le, triage_ia")
+      .is("client_id", null)
+      .order("recu_le", { ascending: true, nullsFirst: false })
+      .limit(200);
+    const dejaCandidat = new Set(candidats.map((m) => m.id));
+    const backlog: EmailResume[] = (enAttenteBase ?? [])
+      .filter((l) => {
+        const agent = (l.triage_ia as { agent?: string } | null)?.agent;
+        return !agent && !dejaCandidat.has(l.gmail_message_id);
+      })
+      .map((l) => ({
+        id: l.gmail_message_id,
+        thread_id: l.gmail_thread_id ?? null,
+        date: l.recu_le ?? null,
+        sujet: null,
+        expediteur_nom: null,
+        expediteur_email: null,
+        snippet: null,
+        etiquettes: [],
+      }) as unknown as EmailResume);
+
+    const aTrier = [...candidats, ...backlog]
       .sort((a, b) => Number(rattrapage.has(b.id)) - Number(rattrapage.has(a.id)))
-      .slice(0, limite);
+      .slice(0, limite * 10);
+
 
 
     if (aTrier.length) {
