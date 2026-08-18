@@ -134,9 +134,14 @@ function ConformitePage() {
           <RegistreClientsConformite isAdmin={role === "admin"} />
         </TabsContent>
 
+        <TabsContent value="reclamations" className="mt-6">
+          <ReclamationsPanel canManage={role === "admin" || role === "mandataire"} />
+        </TabsContent>
+
         <TabsContent value="veille" className="mt-6">
           <VeilleReglementairePanel canManage={role === "admin"} />
         </TabsContent>
+
 
         <TabsContent value="controle-interne" className="mt-6">
           <ControleInternePanel isAdmin={role === "admin"} />
