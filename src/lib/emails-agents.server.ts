@@ -96,10 +96,22 @@ export async function rattacherLot(
 
 export async function executerAgents(
   admin: Admin,
-  params: { messages: EmailResume[]; ids: string[]; userId: string },
+  params: {
+    messages: EmailResume[];
+    ids: string[];
+    userId: string;
+    /**
+     * Messages posés manuellement par le staff sur le seul label parent
+     * « Direction Commerciale » (filet de rattrapage) : le label est retiré
+     * après traitement, et un mail jugé sans importance part à la corbeille.
+     */
+    rattrapage?: string[];
+  },
 ): Promise<ResultatAgents> {
   const { messages, ids } = params;
   const { userId } = params;
+  const rattrapage = new Set(params.rattrapage ?? []);
+
     // Agent commercial : les messages entrants qui ne correspondent à aucun
     // client sont analysés par l'IA. Classification confiante -> prospect,
     // dossier, recueil et lettre de mission créés ; sinon suggestion affichée.
