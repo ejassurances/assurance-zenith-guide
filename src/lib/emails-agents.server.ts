@@ -19,6 +19,11 @@ export interface ResultatAgents {
   brouillons_reponses: number;
   /** Emails dont le traitement automatique (dont l'étiquetage Gmail) a échoué. */
   erreurs: number;
+  /** Mails repris via le label parent « Direction Commerciale » (rattrapage manuel). */
+  rattrapages_traites: number;
+  /** Mails de rattrapage jugés sans importance et mis à la corbeille Gmail. */
+  mis_corbeille: number;
+
 
 }
 
@@ -96,15 +101,30 @@ export async function rattacherLot(
 
 export async function executerAgents(
   admin: Admin,
-  params: { messages: EmailResume[]; ids: string[]; userId: string },
+  params: {
+    messages: EmailResume[];
+    ids: string[];
+    userId: string;
+    /**
+     * Messages posés manuellement par le staff sur le seul label parent
+     * « Direction Commerciale » (filet de rattrapage) : le label est retiré
+     * après traitement, et un mail jugé sans importance part à la corbeille.
+     */
+    rattrapage?: string[];
+  },
 ): Promise<ResultatAgents> {
   const { messages, ids } = params;
   const { userId } = params;
+  const rattrapage = new Set(params.rattrapage ?? []);
+
     // Agent commercial : les messages entrants qui ne correspondent à aucun
     // client sont analysés par l'IA. Classification confiante -> prospect,
     // dossier, recueil et lettre de mission créés ; sinon suggestion affichée.
     let dossiersCrees = 0;
     let erreurs = 0;
+    let corbeille = 0;
+    let rattrapagesTraites = 0;
+
 
     let facturesCreees = 0;
     let bordereauxCrees = 0;
@@ -124,9 +144,12 @@ export async function executerAgents(
           !!m.expediteur_email &&
           !m.etiquettes.includes("SENT") &&
           !avecClient.has(m.id) &&
-          !triageFaits.has(m.id),
+          // Un mail en rattrapage est réanalysé même s'il a déjà été trié.
+          (!triageFaits.has(m.id) || rattrapage.has(m.id)),
       )
+      .sort((a, b) => Number(rattrapage.has(b.id)) - Number(rattrapage.has(a.id)))
       .slice(0, 5);
+
 
     if (aTrier.length) {
       const { lireMessage } = await import("@/lib/gmail.server");
@@ -139,7 +162,7 @@ export async function executerAgents(
         creerFicheProspectIncertaine,
       } = await import("@/lib/email-triage.server");
       const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
-      const { poserLabelCabinet } = await import("@/lib/gmail.server");
+      const { poserLabelCabinet, mettreCorbeille, retirerLabelRattrapage } = await import("@/lib/gmail.server");
       const { traiterEmailFinance } = await import("@/lib/finance-agent.server");
       const { traiterEmailVeille } = await import("@/lib/veille-reglementaire.server");
       for (const m of aTrier) {
@@ -177,7 +200,12 @@ export async function executerAgents(
               },
               { onConflict: "gmail_message_id" },
             );
+            if (rattrapage.has(m.id)) {
+              await retirerLabelRattrapage(m.id);
+              rattrapagesTraites++;
+            }
             continue;
+
           }
 
           // Agent finance ensuite : facture fournisseur ou bordereau de
@@ -213,7 +241,12 @@ export async function executerAgents(
               },
               { onConflict: "gmail_message_id" },
             );
+            if (rattrapage.has(m.id)) {
+              await retirerLabelRattrapage(m.id);
+              rattrapagesTraites++;
+            }
             continue;
+
           }
 
           const triage = await analyserEmailProspect(entree);
@@ -230,7 +263,18 @@ export async function executerAgents(
               recu_le: m.date ?? null,
               userId: userId,
             });
-            await poserLabelCabinet(m.id, "a_ignorer", { retirer: ["gc_a_traiter"] });
+            if (rattrapage.has(m.id)) {
+              // Rattrapage manuel + mail sans importance : corbeille Gmail.
+              await mettreCorbeille(m.id);
+              corbeille++;
+              console.info(
+                `[rattrapage] mail sans importance mis à la corbeille — id=${m.id} · expéditeur=${
+                  m.expediteur_email ?? "inconnu"
+                } · objet=${m.sujet ?? "(sans objet)"} · analyse=${triage.prospect} — ${triage.resume}`,
+              );
+            } else {
+              await poserLabelCabinet(m.id, "a_ignorer", { retirer: ["gc_a_traiter"] });
+            }
           } else if (classificationConfiante(triage)) {
             await creerDossierDepuisEmail(admin, {
               email: entree,
@@ -257,6 +301,11 @@ export async function executerAgents(
             // Qualification humaine attendue : à relancer.
             await poserLabelCabinet(m.id, "gc_archive", { retirer: ["gc_a_traiter"] });
           }
+          if (rattrapage.has(m.id)) {
+            await retirerLabelRattrapage(m.id);
+            rattrapagesTraites++;
+          }
+
         } catch (e) {
           erreurs++;
           console.error("[agent-commercial] triage email", m.id, e);
@@ -288,17 +337,20 @@ export async function executerAgents(
           .not("client_id", "is", null)
       : { data: [] };
     const aRepondre = ((liensClients ?? []) as { gmail_message_id: string; client_id: string; triage_ia: unknown }[])
-      .filter((l) => !l.triage_ia)
+      // Un mail en rattrapage est réanalysé même s'il a déjà été trié.
+      .filter((l) => !l.triage_ia || rattrapage.has(l.gmail_message_id))
       .filter((l) => {
         const m = messages.find((x) => x.id === l.gmail_message_id);
         return !!m && !m.etiquettes.includes("SENT") && !!m.expediteur_email;
       })
+      .sort((a, b) => Number(rattrapage.has(b.gmail_message_id)) - Number(rattrapage.has(a.gmail_message_id)))
       .slice(0, 5);
 
     if (aRepondre.length) {
-      const { lireMessage } = await import("@/lib/gmail.server");
+      const { lireMessage, retirerLabelRattrapage: retirerRattrapageClient } = await import("@/lib/gmail.server");
       const { traiterEmailClient } = await import("@/lib/relation-client.server");
       const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
+
       for (const lien of aRepondre) {
         const m = messages.find((x) => x.id === lien.gmail_message_id)!;
         try {
@@ -329,6 +381,11 @@ export async function executerAgents(
               triage_le: new Date().toISOString(),
             })
             .eq("gmail_message_id", m.id);
+          if (rattrapage.has(m.id)) {
+            await retirerRattrapageClient(m.id);
+            rattrapagesTraites++;
+          }
+
         } catch (e) {
           erreurs++;
           console.error("[agent-relation-client] traitement email", m.id, e);
@@ -353,6 +410,9 @@ export async function executerAgents(
     reponses_auto: reponsesAuto,
     brouillons_reponses: brouillons,
     erreurs,
+    rattrapages_traites: rattrapagesTraites,
+    mis_corbeille: corbeille,
+
 
   };
 }

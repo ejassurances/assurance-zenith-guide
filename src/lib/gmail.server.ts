@@ -145,6 +145,53 @@ export async function listerBoitePrincipale(params: {
   };
 }
 
+/**
+ * Étiquette parent servant de filet de rattrapage manuel : le staff pose
+ * « Direction Commerciale » SEUL (sans sous-étiquette) sur un message mal
+ * classé ou non classé pour demander sa réanalyse par le job de tri.
+ */
+export const LABEL_PARENT_RATTRAPAGE = "Direction Commerciale";
+
+/**
+ * Messages en rattrapage : porteurs du seul label parent « Direction
+ * Commerciale », sans aucune sous-étiquette de service. Indépendant du statut
+ * lu / non lu et de la présence dans la boîte de réception.
+ */
+export async function listerRattrapage(params?: { maxResults?: number }): Promise<EmailResume[]> {
+  const search = new URLSearchParams({
+    q: `label:"${LABEL_PARENT_RATTRAPAGE}"`,
+    maxResults: String(params?.maxResults ?? 15),
+  });
+  const list = await gmailFetch<{ messages?: { id: string }[] }>(`/users/me/messages?${search.toString()}`);
+  const ids = (list.messages ?? []).map((m) => m.id);
+  if (!ids.length) return [];
+
+  const details = await Promise.all(
+    ids.map((id) =>
+      gmailFetch<GmailMessage>(
+        `/users/me/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`,
+      ).catch(() => null),
+    ),
+  );
+  const { labels } = await gmailFetch<{ labels?: { id: string; name: string }[] }>("/users/me/labels").catch(() => ({
+    labels: [] as { id: string; name: string }[],
+  }));
+  const nomsLabels = new Map((labels ?? []).map((l) => [l.id, l.name] as const));
+
+  const prefixe = `${LABEL_PARENT_RATTRAPAGE.toLowerCase()}/`;
+  return details
+    .filter((m): m is GmailMessage => !!m)
+    .map((m) => toResume(m, nomsLabels))
+    .filter((m) => !m.etiquettes.some((n) => n.toLowerCase().startsWith(prefixe)));
+}
+
+/** Retire l'étiquette de rattrapage « Direction Commerciale » d'un message. */
+export async function retirerLabelRattrapage(id: string): Promise<void> {
+  const labelId = await resoudreLabel(LABEL_PARENT_RATTRAPAGE);
+  await modifierLabels(id, { retirer: [labelId] });
+}
+
+
 function collecterCorps(part: GmailPart | undefined, out: { texte: string[]; html: string[] }) {
   if (!part) return;
   if (part.body?.data && !part.filename) {
