@@ -195,7 +195,12 @@ export async function executerAgents(
               },
               { onConflict: "gmail_message_id" },
             );
+            if (rattrapage.has(m.id)) {
+              await retirerLabelRattrapage(m.id);
+              rattrapagesTraites++;
+            }
             continue;
+
           }
 
           // Agent finance ensuite : facture fournisseur ou bordereau de
