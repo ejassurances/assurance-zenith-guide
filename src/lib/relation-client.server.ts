@@ -504,11 +504,13 @@ export interface ResultatRelationClient {
 
 /**
  * Traite un email entrant rattaché à un client existant.
- * À l'issue du traitement, le message est classé dans l'arborescence Gmail du
- * cabinet : Reclamations_Sinistres (niveau 0), ASSURANCES/03_Relation_Client_A_Valider
- * (brouillon à valider), 01_PROSPECTS_B2C/02_Traites_IA (réponse automatique envoyée).
+ * À l'issue du traitement, le message est classé dans « Direction Commerciale/
+ * Service Client » : A_Traiter à la prise en charge, puis Archive (réponse
+ * automatique envoyée) ou En_Attente_De_Validation (brouillon à valider).
+ * Le niveau 0 (sinistre / réclamation) reste piloté par le module sinistres.
  * Aucune étape ne doit échouer silencieusement : toute erreur crée une tâche.
  */
+
 export async function traiterEmailClient(
   admin: Admin,
   params: {
