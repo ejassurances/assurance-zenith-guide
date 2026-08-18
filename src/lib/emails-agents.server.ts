@@ -218,7 +218,7 @@ export async function executerAgents(
 
           const triage = await analyserEmailProspect(entree);
           // Catégorisation faite : prospect entrant spontané.
-          await poserLabelCabinet(m.id, "prospect_direct");
+          await poserLabelCabinet(m.id, "gc_a_traiter");
 
           if (estPublicite(triage)) {
             // Publicité / newsletter / spam : ni fiche client, ni tâche.
@@ -230,7 +230,7 @@ export async function executerAgents(
               recu_le: m.date ?? null,
               userId: userId,
             });
-            await poserLabelCabinet(m.id, "a_ignorer", { retirer: ["prospect_direct"] });
+            await poserLabelCabinet(m.id, "a_ignorer", { retirer: ["gc_a_traiter"] });
           } else if (classificationConfiante(triage)) {
             await creerDossierDepuisEmail(admin, {
               email: entree,
@@ -242,7 +242,7 @@ export async function executerAgents(
             });
             dossiersCrees++;
             // Traitement automatique complet : prospect traité par l'IA.
-            await poserLabelCabinet(m.id, "prospect_traite_ia");
+            await poserLabelCabinet(m.id, "gc_archive", { retirer: ["gc_a_traiter"] });
           } else {
             // Classification incertaine : fiche prospect + LCB-FT + tâche
             // humaine de qualification, mais aucun dossier créé.
@@ -255,7 +255,7 @@ export async function executerAgents(
               userId: userId,
             });
             // Qualification humaine attendue : à relancer.
-            await poserLabelCabinet(m.id, "prospect_a_relancer");
+            await poserLabelCabinet(m.id, "gc_archive", { retirer: ["gc_a_traiter"] });
           }
         } catch (e) {
           erreurs++;

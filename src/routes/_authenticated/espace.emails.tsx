@@ -956,7 +956,7 @@ function EtiquettesBloc({
   onEtiqueter: (etiquette: string) => Promise<void>;
 }) {
   const [libre, setLibre] = useState("");
-  const [choix, setChoix] = useState<string>(LABELS_CABINET.prospect_direct);
+  const [choix, setChoix] = useState<string>(LABELS_CABINET.gc_a_traiter);
 
   return (
     <div className={CARTE + " p-5"}>
