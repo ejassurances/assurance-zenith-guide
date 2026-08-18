@@ -245,7 +245,18 @@ export async function executerAgents(
               recu_le: m.date ?? null,
               userId: userId,
             });
-            await poserLabelCabinet(m.id, "a_ignorer", { retirer: ["gc_a_traiter"] });
+            if (rattrapage.has(m.id)) {
+              // Rattrapage manuel + mail sans importance : corbeille Gmail.
+              await mettreCorbeille(m.id);
+              corbeille++;
+              console.info(
+                `[rattrapage] mail sans importance mis à la corbeille — id=${m.id} · expéditeur=${
+                  m.expediteur_email ?? "inconnu"
+                } · objet=${m.sujet ?? "(sans objet)"} · catégorie=${triage.categorie ?? "publicite"}`,
+              );
+            } else {
+              await poserLabelCabinet(m.id, "a_ignorer", { retirer: ["gc_a_traiter"] });
+            }
           } else if (classificationConfiante(triage)) {
             await creerDossierDepuisEmail(admin, {
               email: entree,
@@ -272,6 +283,11 @@ export async function executerAgents(
             // Qualification humaine attendue : à relancer.
             await poserLabelCabinet(m.id, "gc_archive", { retirer: ["gc_a_traiter"] });
           }
+          if (rattrapage.has(m.id)) {
+            await retirerLabelRattrapage(m.id);
+            rattrapagesTraites++;
+          }
+
         } catch (e) {
           erreurs++;
           console.error("[agent-commercial] triage email", m.id, e);
