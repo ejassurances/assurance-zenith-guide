@@ -171,6 +171,11 @@ export const cloturerSinistre = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await exigerStaff(context.supabase, context.userId);
     const maintenant = new Date().toISOString();
+    const { data: avant } = await (context.supabase as any)
+      .from("sinistres")
+      .select("gmail_message_id")
+      .eq("id", data.id)
+      .maybeSingle();
     const { error } = await (context.supabase as any)
       .from("sinistres")
       .update({
@@ -182,5 +187,14 @@ export const cloturerSinistre = createServerFn({ method: "POST" })
       })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
+
+    // Service Client : dossier clos → Archive.
+    const gmailId = (avant as { gmail_message_id: string | null } | null)?.gmail_message_id ?? null;
+    if (gmailId) {
+      const { poserLabelCabinet } = await import("@/lib/gmail.server");
+      await poserLabelCabinet(gmailId, "sc_archive", {
+        retirer: ["sc_a_traiter", "sc_attente_validation"],
+      });
+    }
     return { ok: true };
   });

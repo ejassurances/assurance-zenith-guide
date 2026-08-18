@@ -4,21 +4,33 @@
  * étiquettes : aucune branche parallèle « Agent X/… » n'est créée.
  *
  * Module client-safe : réutilisé côté serveur (gmail.server) et côté UI.
+ *
+ * Arborescence « Direction Commerciale » : trois services (Gestion Commerciale,
+ * Service Client, Service Partenaire) avec trois étapes chacun (A_Traiter,
+ * En_Attente_De_Validation, Archive). Le passage d'étape ne dépend jamais du
+ * statut lu / non lu du message et ne le modifie jamais.
  */
 export const LABELS_CABINET = {
-  prospect_formulaire: "Prospects/Formulaire_Site",
-  prospect_direct: "Prospects/Contact_Direct",
-  prospect_traite_ia: "01_PROSPECTS_B2C/02_Traites_IA",
-  prospect_a_relancer: "01_PROSPECTS_B2C/03_A_Relancer",
+  // Agent commercial (prospects).
+  gc_a_traiter: "Direction Commerciale/Gestion Commerciale/A_Traiter",
+  gc_attente_validation: "Direction Commerciale/Gestion Commerciale/En_Attente_De_Validation",
+  gc_archive: "Direction Commerciale/Gestion Commerciale/Archive",
+  // Agent relation client + sinistres.
+  sc_a_traiter: "Direction Commerciale/Service Client/A_Traiter",
+  sc_attente_validation: "Direction Commerciale/Service Client/En_Attente_De_Validation",
+  sc_archive: "Direction Commerciale/Service Client/Archive",
+  // Échanges et actualités compagnies / partenaires.
+  sp_a_traiter: "Direction Commerciale/Service Partenaire/A_Traiter",
+  sp_attente_validation: "Direction Commerciale/Service Partenaire/En_Attente_De_Validation",
+  sp_archive: "Direction Commerciale/Service Partenaire/Archive",
+  // Inchangé : publicité / accusés de réception.
   a_ignorer: "A_Ignorer/Accuses_Reception",
+  // Inchangé : agent finance.
   facture_fournisseur: "COMPTABILITE/01_Factures_Fournisseurs",
   bordereau_commissions: "COMPTABILITE/02_Bordereaux_Commissions",
-  sinistre_reclamation: "Reclamations_Sinistres",
-  compagnie_dossier: "Compagnies/Suivi_Dossier",
-  compagnie_actualite: "ASSURANCES/02_Compagnies_Actualites",
+  // Inchangé : veille réglementaire.
   veille_reglementaire: "ASSURANCES/01_Veille_Reglementaire",
   veille_non_impactee: "A_Ignorer/Veille_Non_Impactee",
-  relation_client_a_valider: "ASSURANCES/03_Relation_Client_A_Valider",
 } as const;
 
 export type LabelCabinet = keyof typeof LABELS_CABINET;
@@ -31,5 +43,4 @@ export type LabelCabinet = keyof typeof LABELS_CABINET;
 export const LABELS_CREABLES: readonly string[] = [
   LABELS_CABINET.veille_reglementaire,
   LABELS_CABINET.veille_non_impactee,
-  LABELS_CABINET.relation_client_a_valider,
 ];

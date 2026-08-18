@@ -504,11 +504,13 @@ export interface ResultatRelationClient {
 
 /**
  * Traite un email entrant rattaché à un client existant.
- * À l'issue du traitement, le message est classé dans l'arborescence Gmail du
- * cabinet : Reclamations_Sinistres (niveau 0), ASSURANCES/03_Relation_Client_A_Valider
- * (brouillon à valider), 01_PROSPECTS_B2C/02_Traites_IA (réponse automatique envoyée).
+ * À l'issue du traitement, le message est classé dans « Direction Commerciale/
+ * Service Client » : A_Traiter à la prise en charge, puis Archive (réponse
+ * automatique envoyée) ou En_Attente_De_Validation (brouillon à valider).
+ * Le niveau 0 (sinistre / réclamation) reste piloté par le module sinistres.
  * Aucune étape ne doit échouer silencieusement : toute erreur crée une tâche.
  */
+
 export async function traiterEmailClient(
   admin: Admin,
   params: {
@@ -522,15 +524,18 @@ export async function traiterEmailClient(
   const pieces = { pret: 0, non_classees: 0 };
   const resultat = await traiterEmailClientInterne(admin, params, pieces);
   const { poserLabelCabinet } = await import("@/lib/gmail.server");
-  const cle =
-    resultat.niveau === "niveau_0"
-      ? "sinistre_reclamation"
-      : resultat.action === "brouillon"
-        ? "relation_client_a_valider"
-        : resultat.action === "reponse_envoyee"
-          ? "prospect_traite_ia"
-          : "prospect_a_relancer";
-  await poserLabelCabinet(params.gmail_message_id, cle);
+  // Service Client : « À traiter » à la prise en charge, puis étape suivante selon
+  // l'issue. Le niveau 0 (sinistre / réclamation) reste piloté par le module
+  // sinistres, qui pose lui-même « En attente de validation » puis « Archive ».
+  await poserLabelCabinet(params.gmail_message_id, "sc_a_traiter");
+  if (resultat.niveau !== "niveau_0") {
+    await poserLabelCabinet(
+      params.gmail_message_id,
+      resultat.action === "reponse_envoyee" ? "sc_archive" : "sc_attente_validation",
+      { retirer: ["sc_a_traiter"] },
+    );
+  }
+
   return { ...resultat, pieces_pret: pieces.pret, pieces_non_classees: pieces.non_classees };
 }
 

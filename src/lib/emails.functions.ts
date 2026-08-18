@@ -358,7 +358,8 @@ export const rattacherCompagnie = createServerFn({ method: "POST" })
     if (cie) {
       // Suivi de dossier compagnie dans l'arborescence du cabinet.
       const { poserLabelCabinet } = await import("@/lib/gmail.server");
-      await poserLabelCabinet(data.gmail_message_id, "compagnie_dossier");
+      await poserLabelCabinet(data.gmail_message_id, "sp_a_traiter");
+      await poserLabelCabinet(data.gmail_message_id, "sp_archive", { retirer: ["sp_a_traiter"] });
     }
 
     return { ok: true };
