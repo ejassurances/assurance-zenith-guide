@@ -107,7 +107,9 @@ function ConformitePage() {
           {role === "admin" && <TabsTrigger value="equipe">Équipe & mandataires</TabsTrigger>}
           <TabsTrigger value="partenariats">Partenariats compagnies</TabsTrigger>
           <TabsTrigger value="registre-clients">Registre clients</TabsTrigger>
+          <TabsTrigger value="reclamations">Réclamations</TabsTrigger>
           <TabsTrigger value="veille">Veille réglementaire</TabsTrigger>
+
           <TabsTrigger value="controle-interne">Contrôle interne</TabsTrigger>
           <TabsTrigger value="cartographie">Cartographie des risques</TabsTrigger>
           <TabsTrigger value="registre-rgpd">Registre RGPD</TabsTrigger>
