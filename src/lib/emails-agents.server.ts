@@ -405,6 +405,9 @@ export async function executerAgents(
     reponses_auto: reponsesAuto,
     brouillons_reponses: brouillons,
     erreurs,
+    rattrapages_traites: rattrapagesTraites,
+    mis_corbeille: corbeille,
+
 
   };
 }
