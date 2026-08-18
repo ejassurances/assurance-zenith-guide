@@ -117,6 +117,9 @@ export async function executerAgents(
     // dossier, recueil et lettre de mission créés ; sinon suggestion affichée.
     let dossiersCrees = 0;
     let erreurs = 0;
+    let corbeille = 0;
+    let rattrapagesTraites = 0;
+
 
     let facturesCreees = 0;
     let bordereauxCrees = 0;
