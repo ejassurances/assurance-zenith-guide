@@ -332,17 +332,20 @@ export async function executerAgents(
           .not("client_id", "is", null)
       : { data: [] };
     const aRepondre = ((liensClients ?? []) as { gmail_message_id: string; client_id: string; triage_ia: unknown }[])
-      .filter((l) => !l.triage_ia)
+      // Un mail en rattrapage est réanalysé même s'il a déjà été trié.
+      .filter((l) => !l.triage_ia || rattrapage.has(l.gmail_message_id))
       .filter((l) => {
         const m = messages.find((x) => x.id === l.gmail_message_id);
         return !!m && !m.etiquettes.includes("SENT") && !!m.expediteur_email;
       })
+      .sort((a, b) => Number(rattrapage.has(b.gmail_message_id)) - Number(rattrapage.has(a.gmail_message_id)))
       .slice(0, 5);
 
     if (aRepondre.length) {
-      const { lireMessage } = await import("@/lib/gmail.server");
+      const { lireMessage, retirerLabelRattrapage: retirerRattrapageClient } = await import("@/lib/gmail.server");
       const { traiterEmailClient } = await import("@/lib/relation-client.server");
       const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
+
       for (const lien of aRepondre) {
         const m = messages.find((x) => x.id === lien.gmail_message_id)!;
         try {
