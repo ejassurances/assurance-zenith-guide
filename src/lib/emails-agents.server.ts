@@ -252,7 +252,7 @@ export async function executerAgents(
               console.info(
                 `[rattrapage] mail sans importance mis à la corbeille — id=${m.id} · expéditeur=${
                   m.expediteur_email ?? "inconnu"
-                } · objet=${m.sujet ?? "(sans objet)"} · catégorie=${triage.categorie ?? "publicite"}`,
+                } · objet=${m.sujet ?? "(sans objet)"} · analyse=${triage.prospect} — ${triage.resume}`,
               );
             } else {
               await poserLabelCabinet(m.id, "a_ignorer", { retirer: ["gc_a_traiter"] });
