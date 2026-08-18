@@ -111,11 +111,19 @@ export async function executerAgents(
      * après traitement, et un mail jugé sans importance part à la corbeille.
      */
     rattrapage?: string[];
+    /**
+     * Nombre maximum de mails traités par catégorie (commercial / relation
+     * client) sur un passage. Défaut 5 (cadence normale) ; une valeur plus
+     * haute sert au rattrapage d'un retard accumulé.
+     */
+    limite?: number;
   },
 ): Promise<ResultatAgents> {
   const { messages, ids } = params;
   const { userId } = params;
+  const limite = Math.max(1, Math.min(params.limite ?? 5, 30));
   const rattrapage = new Set(params.rattrapage ?? []);
+
 
     // Agent commercial : les messages entrants qui ne correspondent à aucun
     // client sont analysés par l'IA. Classification confiante -> prospect,
@@ -148,7 +156,7 @@ export async function executerAgents(
           (!triageFaits.has(m.id) || rattrapage.has(m.id)),
       )
       .sort((a, b) => Number(rattrapage.has(b.id)) - Number(rattrapage.has(a.id)))
-      .slice(0, 5);
+      .slice(0, limite);
 
 
     if (aTrier.length) {
@@ -344,7 +352,7 @@ export async function executerAgents(
         return !!m && !m.etiquettes.includes("SENT") && !!m.expediteur_email;
       })
       .sort((a, b) => Number(rattrapage.has(b.gmail_message_id)) - Number(rattrapage.has(a.gmail_message_id)))
-      .slice(0, 5);
+      .slice(0, limite);
 
     if (aRepondre.length) {
       const { lireMessage, retirerLabelRattrapage: retirerRattrapageClient } = await import("@/lib/gmail.server");

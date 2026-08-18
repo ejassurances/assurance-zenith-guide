@@ -33,11 +33,18 @@ export const Route = createFileRoute("/api/public/scan-emails")({
         const userId = (admins ?? [])[0]?.user_id;
         if (!userId) return Response.json({ error: "Aucun administrateur configuré." }, { status: 500 });
 
+        // Corps optionnel : { limite, maxResults } pour rattraper un retard.
+        const corps = (await request.json().catch(() => null)) as
+          | { limite?: number; maxResults?: number }
+          | null;
+        const limite = Math.max(1, Math.min(Number(corps?.limite) || 5, 30));
+        const maxResults = Math.max(5, Math.min(Number(corps?.maxResults) || 25, 100));
+
         try {
           const { listerBoitePrincipale, listerRattrapage } = await import("@/lib/gmail.server");
           const { rattacherLot, executerAgents } = await import("@/lib/emails-agents.server");
 
-          const { messages: boite } = await listerBoitePrincipale({ maxResults: 25 });
+          const { messages: boite } = await listerBoitePrincipale({ maxResults });
           // Filet de rattrapage manuel : messages marqués par le staff du seul
           // label parent « Direction Commerciale » (sans sous-étiquette).
           const rattrapage = await listerRattrapage({ maxResults: 15 }).catch((e) => {
@@ -58,7 +65,9 @@ export const Route = createFileRoute("/api/public/scan-emails")({
             ids,
             userId,
             rattrapage: rattrapage.map((m) => m.id),
+            limite,
           });
+
 
           return Response.json({ ok: true, messages: messages.length, ...suivi, ...agents });
 

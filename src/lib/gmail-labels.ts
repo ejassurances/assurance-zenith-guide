@@ -48,5 +48,10 @@ export type LabelCabinet = keyof typeof LABELS_CABINET;
  * par le cabinet, rattachés à des parents déjà existants. Toutes les autres
  * doivent exister dans Gmail, sinon l'erreur remonte (jamais de doublon).
  */
-export const LABELS_CREABLES: readonly string[] = [LABELS_CABINET.veille_non_impactee];
+export const LABELS_CREABLES: readonly string[] = [
+  LABELS_CABINET.veille_non_impactee,
+  // Même parent « A_Ignorer » : publicités et accusés de réception.
+  LABELS_CABINET.a_ignorer,
+];
+
 

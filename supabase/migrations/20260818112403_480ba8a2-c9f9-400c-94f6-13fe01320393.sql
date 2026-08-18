@@ -1,0 +1,2 @@
+DELETE FROM public.veille_reglementaire a USING public.veille_reglementaire b WHERE a.gmail_message_id IS NOT NULL AND a.gmail_message_id = b.gmail_message_id AND a.ctid > b.ctid;
+CREATE UNIQUE INDEX IF NOT EXISTS veille_reglementaire_gmail_message_id_key ON public.veille_reglementaire (gmail_message_id) WHERE gmail_message_id IS NOT NULL;
