@@ -136,9 +136,12 @@ export async function executerAgents(
           !!m.expediteur_email &&
           !m.etiquettes.includes("SENT") &&
           !avecClient.has(m.id) &&
-          !triageFaits.has(m.id),
+          // Un mail en rattrapage est réanalysé même s'il a déjà été trié.
+          (!triageFaits.has(m.id) || rattrapage.has(m.id)),
       )
+      .sort((a, b) => Number(rattrapage.has(b.id)) - Number(rattrapage.has(a.id)))
       .slice(0, 5);
+
 
     if (aTrier.length) {
       const { lireMessage } = await import("@/lib/gmail.server");
