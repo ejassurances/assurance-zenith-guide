@@ -34,15 +34,34 @@ export const Route = createFileRoute("/api/public/scan-emails")({
         if (!userId) return Response.json({ error: "Aucun administrateur configuré." }, { status: 500 });
 
         try {
-          const { listerBoitePrincipale } = await import("@/lib/gmail.server");
+          const { listerBoitePrincipale, listerRattrapage } = await import("@/lib/gmail.server");
           const { rattacherLot, executerAgents } = await import("@/lib/emails-agents.server");
 
-          const { messages } = await listerBoitePrincipale({ maxResults: 25 });
-          const ids = messages.map((m) => m.id);
-          const rattachement = await rattacherLot(supabaseAdmin, { messages, userId });
-          const agents = await executerAgents(supabaseAdmin, { messages, ids, userId });
+          const { messages: boite } = await listerBoitePrincipale({ maxResults: 25 });
+          // Filet de rattrapage manuel : messages marqués par le staff du seul
+          // label parent « Direction Commerciale » (sans sous-étiquette).
+          const rattrapage = await listerRattrapage({ maxResults: 15 }).catch((e) => {
+            console.error("[scan-emails] lecture des mails en rattrapage impossible", e);
+            return [];
+          });
+          if (rattrapage.length)
+            console.info(`[rattrapage] ${rattrapage.length} mail(s) marqué(s) « Direction Commerciale » à réanalyser`);
 
-          return Response.json({ ok: true, messages: messages.length, ...rattachement, ...agents });
+          const parId = new Map(boite.map((m) => [m.id, m] as const));
+          for (const m of rattrapage) parId.set(m.id, m);
+          const messages = [...parId.values()];
+          const ids = messages.map((m) => m.id);
+
+          const suivi = await rattacherLot(supabaseAdmin, { messages, userId });
+          const agents = await executerAgents(supabaseAdmin, {
+            messages,
+            ids,
+            userId,
+            rattrapage: rattrapage.map((m) => m.id),
+          });
+
+          return Response.json({ ok: true, messages: messages.length, ...suivi, ...agents });
+
         } catch (e) {
           const message = e instanceof Error ? e.message : "erreur inconnue";
           console.error("[scan-emails] échec du tri automatique", e);
