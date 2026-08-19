@@ -99,6 +99,10 @@ export async function envoyerLettreMission(
     lettreId = inserted.id;
   }
 
+  // Dossiers reconstitués a posteriori : e-mail d'introduction « mise en place
+  // de l'espace client » juste avant l'envoi de la lettre de mission.
+  await envoyerIntroEspaceClientSiReconstitue(supabase, d);
+
   const result = await sendTemplateEmail("lettre-mission-envoi", d.client_email, {
     templateData: {
       clientName: d.client_nom,
