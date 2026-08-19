@@ -443,9 +443,9 @@ export async function genererPdfDevoirConseil(input: DevoirPdfInput): Promise<Ui
     if (conseil.cotisation_mensuelle != null) {
       kv(
         "Cotisation mensuelle moyenne",
-        euro(Number(conseil.cotisation_mensuelle)) +
+        euro2(Number(conseil.cotisation_mensuelle)) +
           (min != null && max != null
-            ? ` (de ${euro(min)} a ${euro(max)} selon l'evolution du capital restant du)`
+            ? ` (de ${euro2(min)} a ${euro2(max)} selon l'evolution du capital restant du)`
             : ""),
       );
     }
@@ -454,7 +454,7 @@ export async function genererPdfDevoirConseil(input: DevoirPdfInput): Promise<Ui
       { size: 8.5, color: MUTED, gap: 4 },
     );
   } else if (conseil.cotisation_mensuelle != null) {
-    kv("Cotisation mensuelle", euro(Number(conseil.cotisation_mensuelle)));
+    kv("Cotisation mensuelle", euro2(Number(conseil.cotisation_mensuelle)));
     if (conseil.type_cotisation === "CI") {
       para(
         "Mode de calcul CI : la cotisation est calculee sur le capital initial emprunte et reste identique pendant toute la duree du pret.",
