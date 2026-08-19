@@ -179,6 +179,12 @@ export function DossierDevisPanel({
       | null;
     const recueil = (dossier?.recueil_besoins ?? {}) as Record<string, unknown>;
     const brancheDossier = dossier?.type_assurance ?? "";
+    const nb = (v: unknown) => {
+      const n = Number(v);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    };
+    setMoisRestants(nb(recueil["mois_restants"]) ?? nb(recueil["duree_mois"]));
+    setCrdRecueil(nb(recueil["capital_restant_du"]) ?? nb(recueil["capital"]));
     setNbAssuresApi(
       brancheTarifableNeoliane(brancheDossier) ? nbAssuresNeoliane(brancheDossier, recueil) : 0,
     );
