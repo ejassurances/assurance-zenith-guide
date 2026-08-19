@@ -262,6 +262,8 @@ export async function creerDossierDepuisEmail(
 ) {
   const { triage, email } = params;
   if (!email.expediteur_email) throw new Error("Email expéditeur manquant");
+  if (estEmailInterne(email.expediteur_email)) throw new Error("Expéditeur interne au cabinet — aucune fiche client créée");
+
   if (!classificationConfiante(triage)) throw new Error("Classification insuffisante");
 
   const { data: cree, error } = await admin
