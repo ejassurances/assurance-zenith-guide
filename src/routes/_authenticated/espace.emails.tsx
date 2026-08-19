@@ -19,6 +19,7 @@ import {
   supprimerMessageCrm,
   etiqueterMessageCrm,
   scannerBoiteCrm,
+  viderBoiteGeneraleCrm,
 
 } from "@/lib/emails.functions";
 import { importerFactureDepuisEmail } from "@/lib/factures-achat.functions";
@@ -110,7 +111,26 @@ function EmailsPage() {
   const etiqueterFn = useServerFn(etiqueterMessageCrm);
   const importerFacture = useServerFn(importerFactureDepuisEmail);
   const scanner = useServerFn(scannerBoiteCrm);
+  const viderBoiteFn = useServerFn(viderBoiteGeneraleCrm);
   const [scanBusy, setScanBusy] = useState(false);
+  const [videBusy, setVideBusy] = useState(false);
+
+  const viderBoite = async () => {
+    setVideBusy(true);
+    setError(null);
+    try {
+      const res = await viderBoiteFn({ data: {} });
+      toast.success(
+        `${res.sortis} mails sortis de la boîte générale (déjà pris en charge par un agent) — ${res.restants} en attente de triage.`,
+      );
+      await loadBoite();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Nettoyage de la boîte impossible");
+    } finally {
+      setVideBusy(false);
+    }
+  };
+
 
   const lancerScan = async () => {
     setScanBusy(true);
@@ -315,6 +335,12 @@ function EmailsPage() {
           <button onClick={lancerScan} disabled={scanBusy} className={BTN_SECONDAIRE}>
             {scanBusy ? "Scan en cours…" : "Scanner les mails (lus inclus)"}
           </button>
+          {staff && (
+            <button onClick={viderBoite} disabled={videBusy} className={BTN_SECONDAIRE}>
+              {videBusy ? "Nettoyage…" : "Vider la boîte générale"}
+            </button>
+          )}
+
           <button onClick={() => setCompose({ to: "", sujet: "", threadId: null })} className={BTN_PRIMAIRE}>
             Nouvel email
           </button>

@@ -373,22 +373,70 @@ export async function resoudreLabel(nom: string): Promise<string> {
  * Applique une étiquette du cabinet à un message (et retire éventuellement des
  * étiquettes devenues obsolètes). Aucune erreur n'est avalée : un échec
  * d'étiquetage fait échouer l'étape appelante, qui le journalise et le remonte.
+ *
+ * Règle cabinet : dès qu'un agent prend un message en charge, celui-ci quitte la
+ * boîte de réception générale (retrait de INBOX). Chaque agent travaille
+ * exclusivement dans SES étiquettes ; plus personne ne traite depuis la boîte
+ * générale. Passer `garderInbox: true` pour déroger ponctuellement.
  */
 export async function poserLabelCabinet(
   id: string,
   cle: LabelCabinet,
-  options?: { retirer?: LabelCabinet[] },
+  options?: { retirer?: LabelCabinet[]; garderInbox?: boolean },
 ): Promise<void> {
   const ajouter = await resoudreLabel(LABELS_CABINET[cle]);
   const retirer = await Promise.all((options?.retirer ?? []).map((c) => resoudreLabel(LABELS_CABINET[c])));
+  if (!options?.garderInbox) retirer.push("INBOX");
   await modifierLabels(id, { ajouter: [ajouter], retirer });
 }
 
-/** Applique une étiquette Gmail existante, désignée par son nom exact. */
-export async function etiqueterMessage(id: string, nom: string): Promise<void> {
+/**
+ * Applique une étiquette Gmail existante, désignée par son nom exact, et sort le
+ * message de la boîte générale (sauf `garderInbox`).
+ */
+export async function etiqueterMessage(
+  id: string,
+  nom: string,
+  options?: { garderInbox?: boolean },
+): Promise<void> {
   const labelId = await resoudreLabel(nom);
-  await modifierLabels(id, { ajouter: [labelId] });
+  await modifierLabels(id, {
+    ajouter: [labelId],
+    retirer: options?.garderInbox ? [] : ["INBOX"],
+  });
 }
+
+/**
+ * Rattrapage : sort de la boîte générale tous les messages déjà pris en charge
+ * par un agent (porteurs d'une étiquette métier « Direction … » ou « A_Ignorer …»).
+ */
+export async function viderBoiteGenerale(maxResults = 200): Promise<{ sortis: number; restants: number }> {
+  const search = new URLSearchParams({ q: "in:inbox", maxResults: String(Math.min(maxResults, 500)) });
+  const list = await gmailFetch<{ messages?: { id: string }[] }>(`/users/me/messages?${search.toString()}`);
+  const ids = (list.messages ?? []).map((m) => m.id);
+  if (!ids.length) return { sortis: 0, restants: 0 };
+
+  const labels = await listerLabels();
+  const parId = new Map(labels.map((l) => [l.id, l.name] as const));
+  const prefixes = ["direction ", "a_ignorer"];
+  const metier = (nom: string) => prefixes.some((p) => nom.toLowerCase().startsWith(p)) && nom.includes("/");
+
+  let sortis = 0;
+  let restants = 0;
+  for (const id of ids) {
+    const msg = await gmailFetch<GmailMessage>(`/users/me/messages/${id}?format=minimal`).catch(() => null);
+    if (!msg) continue;
+    const noms = (msg.labelIds ?? []).map((lid) => parId.get(lid)).filter((n): n is string => !!n);
+    if (noms.some(metier)) {
+      await modifierLabels(id, { retirer: ["INBOX"] });
+      sortis++;
+    } else {
+      restants++;
+    }
+  }
+  return { sortis, restants };
+}
+
 
 /**
  * Nettoyage fiable d'étiquettes : au lieu de résoudre des noms attendus (qui
