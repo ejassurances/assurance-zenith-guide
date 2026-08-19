@@ -124,19 +124,24 @@ export async function routerEmailPartenaire(
     { onConflict: "gmail_message_id" },
   );
 
-  const mauvais = params.nettoyer
-    ? ([
-        "gc_a_traiter",
-        "gc_attente_validation",
-        "gc_archive",
-        "sc_a_traiter",
-        "sc_attente_validation",
-        "sc_archive",
-      ] as const)
-    : ([] as const);
-
-  await poserLabelCabinet(params.gmail_message_id, "sp_a_traiter", { retirer: [...mauvais] });
+  // Étiquetage : « Service Partenaire/A_Traiter » puis « Archive ».
+  await poserLabelCabinet(params.gmail_message_id, "sp_a_traiter");
   await poserLabelCabinet(params.gmail_message_id, "sp_archive", { retirer: ["sp_a_traiter"] });
+
+  // Nettoyage EN DERNIER et sur la base des étiquettes réellement posées :
+  // toute étiquette « Gestion Commerciale » ou « Service Client » (y compris
+  // reposée entre-temps par un autre agent) est retirée, avec vérification.
+  if (params.nettoyer) {
+    const { retirerLabelsParPrefixe } = await import("@/lib/gmail.server");
+    const { retires } = await retirerLabelsParPrefixe(params.gmail_message_id, [
+      "Direction Commerciale/Gestion Commerciale",
+      "Direction Commerciale/Service Client",
+    ]);
+    if (retires.length) {
+      console.info(`[partenaires] étiquettes retirées sur ${params.gmail_message_id} : ${retires.join(", ")}`);
+    }
+  }
+
 }
 
 /**
@@ -151,11 +156,12 @@ export async function corrigerLabelsPartenaires(
 ): Promise<{
   examines: number;
   corriges: number;
+  nettoyes_retroactif: number;
   brouillons_supprimes: number;
   erreurs: number;
   details: { id: string; compagnie: string; expediteur: string | null; sujet: string | null }[];
 }> {
-  const { listerParLabel } = await import("@/lib/gmail.server");
+  const { listerParLabel, retirerLabelsParPrefixe } = await import("@/lib/gmail.server");
   const { LABELS_CABINET } = await import("@/lib/gmail-labels");
 
   const aExaminer = [
@@ -215,5 +221,42 @@ export async function corrigerLabelsPartenaires(
     }
   }
 
-  return { examines: parId.size, corriges, brouillons_supprimes: brouillons, erreurs, details };
+  // Second passage : TOUS les messages déjà routés « partenaire » en base, même
+  // s'ils ne remontent plus dans les listes d'étiquettes ci-dessus. On retire
+  // les doublons d'étiquettes commerciales / client restants.
+  let nettoyes = 0;
+  const { data: dejaPartenaires } = await admin
+    .from("crm_emails")
+    .select("gmail_message_id, triage_ia")
+    .not("triage_ia", "is", null)
+    .limit(1000);
+  for (const ligne of dejaPartenaires ?? []) {
+    const agent = (ligne.triage_ia as { agent?: string } | null)?.agent;
+    if (agent !== "partenaire") continue;
+    try {
+      const { retires } = await retirerLabelsParPrefixe(ligne.gmail_message_id, [
+        "Direction Commerciale/Gestion Commerciale",
+        "Direction Commerciale/Service Client",
+      ]);
+      if (retires.length) {
+        nettoyes++;
+        console.info(
+          `[partenaires] doublons retirés sur ${ligne.gmail_message_id} : ${retires.join(", ")}`,
+        );
+      }
+    } catch (e) {
+      erreurs++;
+      console.error("[partenaires] nettoyage rétroactif impossible", ligne.gmail_message_id, e);
+    }
+  }
+
+  return {
+    examines: parId.size,
+    corriges,
+    nettoyes_retroactif: nettoyes,
+    brouillons_supprimes: brouillons,
+    erreurs,
+    details,
+  };
 }
+

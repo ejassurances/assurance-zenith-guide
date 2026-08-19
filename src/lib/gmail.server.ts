@@ -390,6 +390,50 @@ export async function etiqueterMessage(id: string, nom: string): Promise<void> {
   await modifierLabels(id, { ajouter: [labelId] });
 }
 
+/**
+ * Nettoyage fiable d'étiquettes : au lieu de résoudre des noms attendus (qui
+ * peut échouer si une étiquette n'existe pas, et qui ne voit pas les étiquettes
+ * réellement posées), on lit les étiquettes RÉELLES du message et on retire
+ * toutes celles dont le nom commence par l'un des préfixes donnés. Le retrait
+ * est ensuite vérifié par relecture (une tentative de plus si nécessaire), pour
+ * qu'aucun doublon ne subsiste silencieusement (course avec un autre agent).
+ */
+export async function retirerLabelsParPrefixe(
+  id: string,
+  prefixes: string[],
+): Promise<{ retires: string[] }> {
+  const bas = prefixes.map((p) => p.toLowerCase());
+  const concerne = (nom: string) => bas.some((p) => nom.toLowerCase().startsWith(p));
+
+  const labels = await listerLabels();
+  const parId = new Map(labels.map((l) => [l.id, l.name] as const));
+  const retires: string[] = [];
+
+  for (let tentative = 0; tentative < 2; tentative++) {
+    const msg = await gmailFetch<GmailMessage>(`/users/me/messages/${id}?format=minimal`);
+    const aRetirer = (msg.labelIds ?? []).filter((lid) => {
+      const nom = parId.get(lid);
+      return !!nom && concerne(nom);
+    });
+    if (!aRetirer.length) return { retires };
+    await modifierLabels(id, { retirer: aRetirer });
+    for (const lid of aRetirer) {
+      const nom = parId.get(lid);
+      if (nom && !retires.includes(nom)) retires.push(nom);
+    }
+  }
+
+  const final = await gmailFetch<GmailMessage>(`/users/me/messages/${id}?format=minimal`);
+  const restants = (final.labelIds ?? [])
+    .map((lid) => parId.get(lid))
+    .filter((n): n is string => !!n && concerne(n));
+  if (restants.length) {
+    throw new Error(`Étiquettes non retirées sur ${id} : ${restants.join(", ")}`);
+  }
+  return { retires };
+}
+
+
 
 
 /** Étiquettes lisibles d'un message (hors étiquettes système). */
