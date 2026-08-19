@@ -74,6 +74,7 @@ export function ContratDocumentsPanel({
     }
     const { error: dbErr } = await supabase.from("documents").insert({
       contrat_id: contratId,
+      client_id: clientId,
       uploader_id: userId,
       storage_path: path,
       file_name: file.name,
