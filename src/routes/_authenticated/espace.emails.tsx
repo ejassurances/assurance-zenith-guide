@@ -110,7 +110,26 @@ function EmailsPage() {
   const etiqueterFn = useServerFn(etiqueterMessageCrm);
   const importerFacture = useServerFn(importerFactureDepuisEmail);
   const scanner = useServerFn(scannerBoiteCrm);
+  const viderBoiteFn = useServerFn(viderBoiteGeneraleCrm);
   const [scanBusy, setScanBusy] = useState(false);
+  const [videBusy, setVideBusy] = useState(false);
+
+  const viderBoite = async () => {
+    setVideBusy(true);
+    setError(null);
+    try {
+      const res = await viderBoiteFn({ data: {} });
+      toast.success(
+        `${res.sortis} mails sortis de la boîte générale (déjà pris en charge par un agent) — ${res.restants} en attente de triage.`,
+      );
+      await loadBoite();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Nettoyage de la boîte impossible");
+    } finally {
+      setVideBusy(false);
+    }
+  };
+
 
   const lancerScan = async () => {
     setScanBusy(true);
