@@ -352,6 +352,12 @@ export function DevoirConseilPanel({
           garanties: form.garanties.trim() || undefined,
           exigences_client: form.exigences_client.trim() || undefined,
           cotisation_mensuelle: form.cotisation_mensuelle ? Number(form.cotisation_mensuelle) : null,
+          type_cotisation: form.type_cotisation || null,
+          montant_total: form.montant_total ? Number(form.montant_total) : null,
+          cotisation_min:
+            form.type_cotisation === "CRD" && form.cotisation_min ? Number(form.cotisation_min) : null,
+          cotisation_max:
+            form.type_cotisation === "CRD" && form.cotisation_max ? Number(form.cotisation_max) : null,
           frais_dossier: form.frais_dossier ? Number(form.frais_dossier) : null,
           frais_souscription: form.frais_souscription ? Number(form.frais_souscription) : null,
           frais_courtage: form.frais_courtage ? Number(form.frais_courtage) : null,
