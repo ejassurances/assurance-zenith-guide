@@ -225,16 +225,23 @@ export function DevoirConseilPanel({
   }, [contreProposition?.key]);
 
 
-  // Devis saisis sur le dossier : base de pré-remplissage du tableau comparatif.
+  // Devis saisis sur le dossier + recueil de besoins : base de pré-remplissage automatique.
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("dossier_devis")
-        .select(
-          "id, cotisation_mensuelle, type_cotisation, cotisation_min, cotisation_max, montant_total_saisi, garanties_resume, compagnies:compagnie_id(nom), produits:produit_id(nom), produit_formules:formule_id(nom)",
-        )
-        .eq("dossier_id", dossierId)
-        .order("created_at", { ascending: true });
+      const [{ data }, dos] = await Promise.all([
+        supabase
+          .from("dossier_devis")
+          .select(
+            "id, cotisation_mensuelle, type_cotisation, cotisation_min, cotisation_max, montant_total_saisi, garanties_resume, compagnies:compagnie_id(nom), produits:produit_id(nom), produit_formules:formule_id(nom)",
+          )
+          .eq("dossier_id", dossierId)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("dossiers")
+          .select("compagnie_id, type_assurance, recueil_besoins, capital, duree_mois")
+          .eq("id", dossierId)
+          .maybeSingle(),
+      ]);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const list: DevisLigne[] = ((data as any[]) ?? []).map((d) => ({
         id: d.id as string,
@@ -249,9 +256,83 @@ export function DevoirConseilPanel({
         garanties_resume: (d.garanties_resume as string | null) ?? null,
       }));
       setDevisDossier(list);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const dosRow = (dos.data as any) ?? null;
+      if (dosRow) {
+        setDossier({
+          compagnie_id: dosRow.compagnie_id ?? null,
+          type_assurance: dosRow.type_assurance ?? null,
+          recueil_besoins: dosRow.recueil_besoins ?? null,
+        });
+        appliquerRecueil(dosRow);
+      }
+      if (list.length > 0) appliquerDevis(list);
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dossierId]);
 
+  /** Reprend les données du recueil de besoins (capital, CRD, quotité, durée, exigences). */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const appliquerRecueil = (dosRow: any) => {
+    const recueil = (dosRow?.recueil_besoins ?? {}) as Record<string, unknown>;
+    const nb = (v: unknown) => {
+      const n = Number(v);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    };
+    const capital = nb(recueil["capital_emprunte"]) ?? nb(recueil["capital"]) ?? nb(dosRow?.capital);
+    const crd = nb(recueil["capital_restant_du"]) ?? nb(recueil["crd"]);
+    const quotite = nb(recueil["quotite"]);
+    const duree = nb(recueil["mois_restants"]) ?? nb(recueil["duree_mois"]) ?? nb(dosRow?.duree_mois);
+    const exigences =
+      typeof recueil["exigences"] === "string"
+        ? (recueil["exigences"] as string)
+        : typeof recueil["besoins"] === "string"
+          ? (recueil["besoins"] as string)
+          : "";
+    setForm((f) => ({
+      ...f,
+      capital_assure: f.capital_assure || (capital != null ? String(capital) : ""),
+      capital_restant_du: f.capital_restant_du || (crd != null ? String(crd) : ""),
+      quotite: f.quotite || (quotite != null ? String(quotite) : ""),
+      duree_mois: f.duree_mois || (duree != null ? String(duree) : ""),
+      exigences_client: f.exigences_client || exigences,
+    }));
+  };
+
+  /** Reprend les devis du dossier dans le tableau comparatif et l'offre retenue. */
+  const appliquerDevis = (list: DevisLigne[]) => {
+    if (list.length === 0) return;
+    setOffres((prev) => {
+      const dejaSaisi = prev.some((o) => o.compagnie.trim() || o.produit.trim());
+      if (dejaSaisi) return prev;
+      return list.map((d, i) => ({
+        compagnie: d.compagnie,
+        produit: d.produit,
+        formule: d.formule,
+        cotisation_mensuelle: d.cotisation_mensuelle != null ? String(d.cotisation_mensuelle) : "",
+        cout_total: d.montant_total_saisi != null ? String(d.montant_total_saisi) : "",
+        statut: (i === 0 ? "retenue" : "equivalente") as StatutOffre,
+        commentaire: d.garanties_resume ?? "",
+      }));
+    });
+    // Devis retenu (le premier) : reprend le mode de calcul CI/CRD et les montants.
+    const retenu = list[0];
+    if (retenu) {
+      setForm((f) => ({
+        ...f,
+        compagnie: f.compagnie || retenu.compagnie,
+        produit: f.produit || retenu.produit,
+        type_cotisation: f.type_cotisation || (retenu.type_cotisation ?? f.type_cotisation),
+        montant_total: f.montant_total || (retenu.montant_total_saisi != null ? String(retenu.montant_total_saisi) : ""),
+        cotisation_mensuelle:
+          f.cotisation_mensuelle || (retenu.cotisation_mensuelle != null ? String(retenu.cotisation_mensuelle) : ""),
+        cotisation_min: f.cotisation_min || (retenu.cotisation_min != null ? String(retenu.cotisation_min) : ""),
+        cotisation_max: f.cotisation_max || (retenu.cotisation_max != null ? String(retenu.cotisation_max) : ""),
+      }));
+    }
+  };
+
+  /** Reprise manuelle (écrase le tableau comparatif avec les devis du dossier). */
   const prefillDepuisDevis = () => {
     if (devisDossier.length === 0) return;
     setOffres(
@@ -265,13 +346,12 @@ export function DevoirConseilPanel({
         commentaire: d.garanties_resume ?? "",
       })),
     );
-    // Devis retenu (le premier) : reprend le mode de calcul CI/CRD et les montants.
     const retenu = devisDossier[0];
     if (retenu) {
       setForm((f) => ({
         ...f,
-        compagnie: f.compagnie || retenu.compagnie,
-        produit: f.produit || retenu.produit,
+        compagnie: retenu.compagnie || f.compagnie,
+        produit: retenu.produit || f.produit,
         type_cotisation: retenu.type_cotisation ?? f.type_cotisation,
         montant_total: retenu.montant_total_saisi != null ? String(retenu.montant_total_saisi) : f.montant_total,
         cotisation_mensuelle:
