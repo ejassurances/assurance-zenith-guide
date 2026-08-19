@@ -260,11 +260,26 @@ export function DevoirConseilPanel({
         produit: d.produit,
         formule: d.formule,
         cotisation_mensuelle: d.cotisation_mensuelle != null ? String(d.cotisation_mensuelle) : "",
-        cout_total: "",
+        cout_total: d.montant_total_saisi != null ? String(d.montant_total_saisi) : "",
         statut: (i === 0 ? "retenue" : "equivalente") as StatutOffre,
         commentaire: d.garanties_resume ?? "",
       })),
     );
+    // Devis retenu (le premier) : reprend le mode de calcul CI/CRD et les montants.
+    const retenu = devisDossier[0];
+    if (retenu) {
+      setForm((f) => ({
+        ...f,
+        compagnie: f.compagnie || retenu.compagnie,
+        produit: f.produit || retenu.produit,
+        type_cotisation: retenu.type_cotisation ?? f.type_cotisation,
+        montant_total: retenu.montant_total_saisi != null ? String(retenu.montant_total_saisi) : f.montant_total,
+        cotisation_mensuelle:
+          retenu.cotisation_mensuelle != null ? String(retenu.cotisation_mensuelle) : f.cotisation_mensuelle,
+        cotisation_min: retenu.cotisation_min != null ? String(retenu.cotisation_min) : f.cotisation_min,
+        cotisation_max: retenu.cotisation_max != null ? String(retenu.cotisation_max) : f.cotisation_max,
+      }));
+    }
   };
 
   const offresRemplies = offres.filter((o) => o.compagnie.trim() && o.produit.trim());
