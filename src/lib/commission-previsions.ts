@@ -21,6 +21,12 @@ export interface CommissionPrevision {
   statut: string;
   /** Réduction commerciale des frais de courtage accordée au client (0 à 15 %). */
   reduction_courtage_pct?: number | null;
+  /**
+   * Décalage, en mois, entre le mois courant et le premier mois encore à
+   * encaisser (contrat à effet futur, ou mois déjà encaissés à ne pas
+   * recompter). 0 = versements dès le mois courant.
+   */
+  mois_debut_offset?: number | null;
 }
 
 /** Colonnes à lire pour tout calcul de prévisionnel. */
@@ -98,12 +104,14 @@ export interface CommissionEncaissee {
 
 const STATUTS_CONTRAT_ACTIF = new Set(["actif", "contrat_actif"]);
 
+function ecartMois(depuis: Date, vers: Date): number {
+  return (vers.getFullYear() - depuis.getFullYear()) * 12 + (vers.getMonth() - depuis.getMonth());
+}
+
 function moisEcoules(dateEffet: string, aujourdhui: Date): number {
   const d = new Date(dateEffet);
   if (Number.isNaN(d.getTime())) return 0;
-  const diff =
-    (aujourdhui.getFullYear() - d.getFullYear()) * 12 + (aujourdhui.getMonth() - d.getMonth());
-  return Math.max(0, diff);
+  return Math.max(0, ecartMois(d, aujourdhui));
 }
 
 /**
@@ -122,13 +130,16 @@ export function previsionsSynthetiques(
     previsionsExistantes.map((p) => p.contrat_id).filter((id): id is string => Boolean(id)),
   );
 
-  const parContrat = new Map<string, { total: number; mois: Set<string> }>();
+  const parContrat = new Map<string, { total: number; mois: Set<string>; dernierMois: string | null }>();
   for (const c of commissions) {
     if (!c.contrat_id || c.statut !== "versee") continue;
     const cle = (c.date_versement ?? "").slice(0, 7);
-    const agg = parContrat.get(c.contrat_id) ?? { total: 0, mois: new Set<string>() };
+    const agg = parContrat.get(c.contrat_id) ?? { total: 0, mois: new Set<string>(), dernierMois: null };
     agg.total += Number(c.montant ?? 0);
-    if (cle) agg.mois.add(cle);
+    if (cle) {
+      agg.mois.add(cle);
+      if (!agg.dernierMois || cle > agg.dernierMois) agg.dernierMois = cle;
+    }
     parContrat.set(c.contrat_id, agg);
   }
 
@@ -153,7 +164,22 @@ export function previsionsSynthetiques(
         : duree;
     if (restants == null || restants <= 0) continue;
 
+    // Premier mois encore à encaisser : jamais avant la date d'effet, jamais
+    // un mois déjà réglé par la compagnie (sinon double comptage avec le CA).
+    let offset = 0;
+    if (ct.date_effet) {
+      const eff = new Date(ct.date_effet);
+      if (!Number.isNaN(eff.getTime())) offset = Math.max(0, ecartMois(aujourdhui, eff));
+    }
+    if (hist?.dernierMois) {
+      const [an, mo] = hist.dernierMois.split("-").map(Number);
+      const suivant = new Date(an, (mo ?? 1) - 1 + 1, 1);
+      offset = Math.max(offset, ecartMois(aujourdhui, suivant));
+    }
+    offset = Math.max(0, offset);
+
     out.push({
+      mois_debut_offset: offset,
       id: `synth-${ct.id}`,
       dossier_id: ct.dossier_id ?? "",
       contrat_id: ct.id,
@@ -189,7 +215,8 @@ export function repartirTresorerie(
     const mensuel = mensuelEffectif(p);
     const mois = p.mois_restants_actuels ?? p.mois_restants_initial;
     if (mensuel == null || mois == null || mois <= 0) continue;
-    for (let i = 0; i < mois; i++) {
+    const offset = Math.max(0, Number(p.mois_debut_offset ?? 0));
+    for (let i = offset; i < offset + mois; i++) {
       const annee = anneeDebut + Math.floor((moisDebut + i) / 12);
       parAnnee.set(annee, (parAnnee.get(annee) ?? 0) + Number(mensuel));
     }
@@ -198,4 +225,38 @@ export function repartirTresorerie(
   return [...parAnnee.entries()]
     .sort((a, b) => a[0] - b[0])
     .map(([annee, montant]) => ({ annee, montant: Math.round(montant * 100) / 100 }));
+}
+
+
+/** Synthèse comptable d'une année civile : encaissé, restant à encaisser, total attendu. */
+export type SyntheseAnnee = {
+  annee: number;
+  encaisse: number;
+  previsionnelRestant: number;
+  totalAttendu: number;
+};
+
+/**
+ * Source unique de vérité pour la valorisation du cabinet : le CA d'une année
+ * est la somme des commissions réellement versées sur l'année, plus le
+ * prévisionnel des mois de l'année qui restent à encaisser.
+ */
+export function syntheseAnnee(
+  previsions: CommissionPrevision[],
+  commissions: CommissionEncaissee[],
+  annee = new Date().getFullYear(),
+  aujourdhui = new Date(),
+): SyntheseAnnee {
+  const encaisse = commissions
+    .filter((c) => c.statut === "versee" && (c.date_versement ?? "").slice(0, 4) === String(annee))
+    .reduce((s, c) => s + Number(c.montant ?? 0), 0);
+  const ligne = repartirTresorerie(previsions, aujourdhui).find((l) => l.annee === annee);
+  const previsionnelRestant = ligne?.montant ?? 0;
+  const r = (n: number) => Math.round(n * 100) / 100;
+  return {
+    annee,
+    encaisse: r(encaisse),
+    previsionnelRestant: r(previsionnelRestant),
+    totalAttendu: r(encaisse + previsionnelRestant),
+  };
 }
