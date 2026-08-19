@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { sendTemplateEmail } from "@/lib/email-templates/send-email";
 import { SITE } from "@/lib/site";
 import { appUrl } from "@/lib/app-url";
+import { envoyerIntroEspaceClientSiReconstitue } from "@/lib/espace-client-intro.server";
 
 /**
  * Création + envoi de la lettre de mission — logique partagée entre l'envoi
