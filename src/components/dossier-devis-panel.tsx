@@ -921,16 +921,93 @@ export function DossierDevisPanel({
             </select>
           </label>
         )}
+        <label className="block sm:col-span-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+            Montant total de l'assurance sur la durée du prêt (€)
+          </span>
+          <input
+            type="number"
+            step="0.01"
+            value={form.montant_total_saisi}
+            onChange={(e) => setForm({ ...form, montant_total_saisi: e.target.value })}
+            className={inp}
+          />
+          <span className="mt-1 block text-xs text-ink-muted">
+            Donnée d'entrée principale : c'est le montant figurant sur le devis de l'assureur pour la durée totale du
+            prêt.
+            {moisRestants
+              ? ` Recueil des besoins : ${moisRestants} mois restants${
+                  crdRecueil ? ` · capital restant dû ${crdRecueil.toLocaleString("fr-FR")} €` : ""
+                }.`
+              : " Renseignez « mois restants » dans le recueil des besoins pour dériver automatiquement le mensuel moyen."}
+            {mensuelMoyenDerive != null &&
+              ` Mensuel moyen calculé : ${mensuelMoyenDerive.toLocaleString("fr-FR", {
+                maximumFractionDigits: 2,
+              })} € / mois.`}
+          </span>
+        </label>
         <label className="block">
-          <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Cotisation (€ / mois)</span>
+          <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Mode de calcul (CI / CRD)</span>
+          <select
+            value={form.type_cotisation}
+            onChange={(e) =>
+              setForm({ ...form, type_cotisation: e.target.value as "" | "CI" | "CRD" })
+            }
+            className={inp}
+          >
+            <option value="">— À préciser —</option>
+            <option value="CI">CI — capital initial (cotisation constante)</option>
+            <option value="CRD">CRD — capital restant dû (cotisation dégressive)</option>
+          </select>
+        </label>
+        <label className="block">
+          <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+            Cotisation mensuelle {form.type_cotisation === "CRD" ? "moyenne " : ""}(€ / mois) — complémentaire
+          </span>
           <input
             type="number"
             step="0.01"
             value={form.cotisation_mensuelle}
             onChange={(e) => setForm({ ...form, cotisation_mensuelle: e.target.value })}
+            placeholder={
+              mensuelMoyenDerive != null
+                ? mensuelMoyenDerive.toLocaleString("fr-FR", { maximumFractionDigits: 2 })
+                : undefined
+            }
             className={inp}
           />
+          <span className="mt-1 block text-xs text-ink-muted">
+            Laissez vide pour reprendre automatiquement le mensuel moyen dérivé du montant total.
+          </span>
         </label>
+        {form.type_cotisation === "CRD" && (
+          <>
+            <label className="block">
+              <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+                Mensualité la plus basse (€)
+              </span>
+              <input
+                type="number"
+                step="0.01"
+                value={form.cotisation_min}
+                onChange={(e) => setForm({ ...form, cotisation_min: e.target.value })}
+                className={inp}
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+                Mensualité la plus haute (€)
+              </span>
+              <input
+                type="number"
+                step="0.01"
+                value={form.cotisation_max}
+                onChange={(e) => setForm({ ...form, cotisation_max: e.target.value })}
+                className={inp}
+              />
+            </label>
+          </>
+        )}
         {branche === "emprunteur" && (
           <label className="block">
             <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Quotité assurée (%)</span>
