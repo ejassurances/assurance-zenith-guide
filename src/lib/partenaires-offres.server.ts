@@ -267,7 +267,14 @@ async function trouverOuCreerCompagnie(
 ): Promise<{ id: string; nom: string; creee: boolean } | null> {
   const { data: existantes } = await admin.from("compagnies").select("id, nom");
   const cible = normaliser(params.nom);
-  const trouvee = (existantes ?? []).find((c) => normaliser(c.nom) === cible);
+  // Rapprochement tolérant : « Kereis Solutions » ne doit pas doubler « Kereis ».
+  const trouvee =
+    (existantes ?? []).find((c) => normaliser(c.nom) === cible) ??
+    (existantes ?? []).find((c) => {
+      const n = normaliser(c.nom);
+      if (n.length < 4 || cible.length < 4) return false;
+      return n.startsWith(`${cible} `) || cible.startsWith(`${n} `);
+    });
   if (trouvee) return { id: trouvee.id, nom: trouvee.nom, creee: false };
 
   const { data: cree, error } = await admin
