@@ -315,6 +315,12 @@ function EmailsPage() {
           <button onClick={lancerScan} disabled={scanBusy} className={BTN_SECONDAIRE}>
             {scanBusy ? "Scan en cours…" : "Scanner les mails (lus inclus)"}
           </button>
+          {staff && (
+            <button onClick={viderBoite} disabled={videBusy} className={BTN_SECONDAIRE}>
+              {videBusy ? "Nettoyage…" : "Vider la boîte générale"}
+            </button>
+          )}
+
           <button onClick={() => setCompose({ to: "", sujet: "", threadId: null })} className={BTN_PRIMAIRE}>
             Nouvel email
           </button>
