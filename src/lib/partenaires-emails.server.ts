@@ -76,6 +76,9 @@ export async function routerEmailPartenaire(
     gmail_thread_id?: string | null;
     recu_le?: string | null;
     sujet?: string | null;
+    /** Corps du mail si déjà lu (évite un second appel Gmail). */
+    texte?: string | null;
+
     expediteur_email?: string | null;
     compagnie: { id: string | null; nom: string };
     userId: string;
