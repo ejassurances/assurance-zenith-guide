@@ -23,6 +23,9 @@ export interface ResultatAgents {
   rattrapages_traites: number;
   /** Mails de rattrapage jugés sans importance et mis à la corbeille Gmail. */
   mis_corbeille: number;
+  /** Mails routés vers Service Partenaire d'après le domaine expéditeur. */
+  partenaires_routes: number;
+
 
 
 }
@@ -132,6 +135,16 @@ export async function executerAgents(
     let erreurs = 0;
     let corbeille = 0;
     let rattrapagesTraites = 0;
+    let partenairesRoutes = 0;
+
+    // Annuaire des domaines de compagnies / partenaires : sert de garde-fou en
+    // amont de toute classification IA prospect ou relation client.
+    const { chargerAnnuairePartenaires, compagnieDeExpediteur, routerEmailPartenaire } = await import(
+      "@/lib/partenaires-emails.server"
+    );
+    const annuairePartenaires = await chargerAnnuairePartenaires(admin);
+
+
 
 
     let facturesCreees = 0;
@@ -211,6 +224,31 @@ export async function executerAgents(
             texte: detail.texte ?? detail.snippet ?? null,
             pieces_jointes: detail.pieces_jointes.map((p) => ({ nom: p.nom, mime: p.mime })),
           };
+
+          // Contrôle du domaine expéditeur AVANT toute classification IA : un
+          // email de compagnie / partenaire connu n'est ni un prospect ni une
+          // demande client, il part directement en Service Partenaire.
+          const compagnieExp = compagnieDeExpediteur(annuairePartenaires, entree.expediteur_email);
+          if (compagnieExp) {
+            await routerEmailPartenaire(admin, {
+              gmail_message_id: m.id,
+              gmail_thread_id: detail.thread_id ?? m.thread_id ?? null,
+              recu_le: m.date ?? detail.date ?? null,
+              sujet: entree.sujet,
+              expediteur_email: entree.expediteur_email,
+              compagnie: compagnieExp,
+              userId,
+              nettoyer: true,
+            });
+            partenairesRoutes++;
+            if (rattrapage.has(m.id)) {
+              await retirerLabelRattrapage(m.id);
+              rattrapagesTraites++;
+            }
+            continue;
+          }
+
+
 
           // Agent veille réglementaire : newsletter ACPR (aucun traitement CRM
           // commercial ou comptable sur ces mails).
@@ -387,8 +425,12 @@ export async function executerAgents(
       .order("recu_le", { ascending: true, nullsFirst: false })
       .limit(500);
 
-    const analyseFaite = (l: LienClient) =>
-      !!l.triage_ia && (l.triage_ia as { agent?: string }).agent === "relation_client";
+    const analyseFaite = (l: LienClient) => {
+      const agent = (l.triage_ia as { agent?: string } | null)?.agent;
+      // Un mail déjà routé « partenaire » ne repasse jamais par l'agent client.
+      return agent === "relation_client" || agent === "partenaire";
+    };
+
 
     const aRepondre = ((liensClients ?? []) as unknown as LienClient[])
       .filter((l) => !analyseFaite(l) || rattrapage.has(l.gmail_message_id))
@@ -411,7 +453,32 @@ export async function executerAgents(
         const resume = messages.find((x) => x.id === messageId) ?? null;
         try {
           const detail = await lireMessage(messageId);
+
+          // Garde-fou : même rattaché à un client, un email envoyé par une
+          // compagnie / partenaire connu ne doit pas être traité comme une
+          // demande client (aucun brouillon de réponse généré).
+          const compagniePart = compagnieDeExpediteur(annuairePartenaires, detail.expediteur_email);
+          if (compagniePart) {
+            await routerEmailPartenaire(admin, {
+              gmail_message_id: messageId,
+              gmail_thread_id: detail.thread_id ?? resume?.thread_id ?? null,
+              recu_le: detail.date ?? resume?.date ?? null,
+              sujet: detail.sujet ?? null,
+              expediteur_email: detail.expediteur_email ?? null,
+              compagnie: compagniePart,
+              userId,
+              nettoyer: true,
+            });
+            partenairesRoutes++;
+            if (rattrapage.has(messageId)) {
+              await retirerRattrapageClient(messageId);
+              rattrapagesTraites++;
+            }
+            continue;
+          }
+
           const resultat = await traiterEmailClient(admin, {
+
             client_id: lien.client_id,
             email: {
               sujet: detail.sujet ?? null,
@@ -469,6 +536,8 @@ export async function executerAgents(
     erreurs,
     rattrapages_traites: rattrapagesTraites,
     mis_corbeille: corbeille,
+    partenaires_routes: partenairesRoutes,
+
 
 
   };
