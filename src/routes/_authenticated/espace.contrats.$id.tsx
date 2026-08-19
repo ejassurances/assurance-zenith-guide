@@ -494,7 +494,13 @@ function ContratDetail() {
             <option value="precompte">Précompte (une fois)</option>
           </select>
         </F>
-        <F label="Prime annuelle (contrats non-emprunteur)">
+        <F
+          label={
+            c.is_emprunteur
+              ? "Prime annuelle assureur (référence emprunteur — utilisée si le taux est absent)"
+              : "Prime annuelle"
+          }
+        >
           <input
             type="number"
             step="0.01"
