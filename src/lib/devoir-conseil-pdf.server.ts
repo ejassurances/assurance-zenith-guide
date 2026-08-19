@@ -59,6 +59,12 @@ const euro = (v?: number | null) =>
     ? `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(v)} EUR`
     : "-";
 
+/** Montant avec centimes (cotisations mensuelles). */
+const euro2 = (v?: number | null) =>
+  typeof v === "number" && Number.isFinite(v)
+    ? `${new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)} EUR`
+    : "-";
+
 const dateFr = (v?: string | null) => (v ? new Date(v).toLocaleDateString("fr-FR") : "-");
 const dateHeureFr = (v?: string | null) => (v ? new Date(v).toLocaleString("fr-FR") : "-");
 
