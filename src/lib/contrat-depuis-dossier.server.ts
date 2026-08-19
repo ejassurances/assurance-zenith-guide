@@ -1,0 +1,212 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+import { creerTacheAdmin } from "@/lib/agent-taches.server";
+
+/**
+ * Transformation d'un dossier confirmé par la compagnie en contrat du
+ * portefeuille.
+ *
+ * Dès que la compagnie confirme l'adhésion (retour compagnie, étape
+ * « contrat validé » ou « contrat actif »), le contrat doit exister dans le
+ * CRM : le client devient actif, le chiffre d'affaires et les commissions sont
+ * comptés, et le contrat porte une date de fin (échéance principale).
+ *
+ * La signature de la lettre de mission et du devoir de conseil ne conditionne
+ * PAS l'existence du contrat — l'assurance est en place. En revanche, si ces
+ * documents ne sont pas signés, une tâche de régularisation est créée pour que
+ * le dossier DDA soit complété sans délai.
+ */
+
+type Client = SupabaseClient<Database>;
+
+function ajouterMois(iso: string, mois: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  const jour = d.getUTCDate();
+  d.setUTCDate(1);
+  d.setUTCMonth(d.getUTCMonth() + mois);
+  const dernier = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+  d.setUTCDate(Math.min(jour, dernier));
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+export interface ResultatContratDossier {
+  contrat_id: string;
+  deja_existant: boolean;
+  prime_annuelle: number | null;
+  date_effet: string;
+  date_echeance: string;
+  dda_a_regulariser: boolean;
+}
+
+export async function creerContratDepuisDossier(
+  client: Client,
+  dossierId: string,
+  userId: string,
+  options?: { date_effet?: string | null; numero?: string | null; duree_mois?: number | null },
+): Promise<ResultatContratDossier> {
+  const { data: dossier, error } = await client
+    .from("dossiers")
+    .select("id, reference, client_id, type_assurance, duree_mois, capital, compagnie_id, produit_id")
+    .eq("id", dossierId)
+    .maybeSingle();
+  if (error || !dossier) throw new Error("Dossier introuvable ou accès refusé");
+  if (!dossier.client_id) throw new Error("Dossier sans fiche client : rattachez le client avant de créer le contrat.");
+
+  // Idempotence : un dossier ne produit qu'un contrat.
+  const { data: existant } = await client
+    .from("contrats")
+    .select("id, prime_annuelle, date_effet, date_echeance")
+    .eq("dossier_id", dossierId)
+    .limit(1)
+    .maybeSingle();
+  if (existant) {
+    return {
+      contrat_id: existant.id,
+      deja_existant: true,
+      prime_annuelle: existant.prime_annuelle,
+      date_effet: existant.date_effet ?? "",
+      date_echeance: existant.date_echeance ?? "",
+      dda_a_regulariser: false,
+    };
+  }
+
+  // Devis retenu au classement, sinon le dernier devis saisi.
+  const { data: classement } = await client
+    .from("dossier_devis_classements")
+    .select("devis_retenu_id")
+    .eq("dossier_id", dossierId)
+    .not("devis_retenu_id", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  let devis: {
+    compagnie_id: string | null;
+    produit_id: string | null;
+    cotisation_mensuelle: number | null;
+    montant_total_saisi: number | null;
+    quotite_pct: number | null;
+  } | null = null;
+
+  if (classement?.devis_retenu_id) {
+    const { data } = await client
+      .from("dossier_devis")
+      .select("compagnie_id, produit_id, cotisation_mensuelle, montant_total_saisi, quotite_pct")
+      .eq("id", classement.devis_retenu_id)
+      .maybeSingle();
+    devis = data ?? null;
+  }
+  if (!devis) {
+    const { data } = await client
+      .from("dossier_devis")
+      .select("compagnie_id, produit_id, cotisation_mensuelle, montant_total_saisi, quotite_pct")
+      .eq("dossier_id", dossierId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    devis = data ?? null;
+  }
+
+  const compagnieId = devis?.compagnie_id ?? dossier.compagnie_id ?? null;
+  const produitId = devis?.produit_id ?? dossier.produit_id ?? null;
+
+  const [compagnie, produit] = await Promise.all([
+    compagnieId
+      ? client.from("compagnies").select("nom").eq("id", compagnieId).maybeSingle()
+      : Promise.resolve({ data: null }),
+    produitId ? client.from("produits").select("nom").eq("id", produitId).maybeSingle() : Promise.resolve({ data: null }),
+  ]);
+
+  const estEmprunteur = dossier.type_assurance === "emprunteur";
+  const primeAnnuelle =
+    devis?.cotisation_mensuelle != null
+      ? Math.round(Number(devis.cotisation_mensuelle) * 12 * 100) / 100
+      : devis?.montant_total_saisi != null && !estEmprunteur
+        ? Number(devis.montant_total_saisi)
+        : null;
+
+  const dateEffet = options?.date_effet ?? new Date().toISOString().slice(0, 10);
+  const dureeMois = options?.duree_mois ?? (estEmprunteur ? dossier.duree_mois ?? 12 : 12);
+  const dateEcheance = ajouterMois(dateEffet, Math.max(1, dureeMois));
+
+  const { data: cree, error: insErr } = await client
+    .from("contrats")
+    .insert({
+      client_id: dossier.client_id,
+      dossier_id: dossierId,
+      numero: options?.numero ?? null,
+      assureur: compagnie.data?.nom ?? "À compléter",
+      produit: produit.data?.nom ?? dossier.type_assurance ?? "Contrat",
+      compagnie_id: compagnieId,
+      produit_id: produitId,
+      date_effet: dateEffet,
+      date_echeance: dateEcheance,
+      duree_mois: dureeMois,
+      prime_annuelle: primeAnnuelle,
+      fractionnement: devis?.cotisation_mensuelle != null ? "mensuel" : "annuel",
+      statut: "actif",
+      is_emprunteur: estEmprunteur,
+      capital_initial: estEmprunteur ? dossier.capital : null,
+      quotite: devis?.quotite_pct ?? null,
+      created_by: userId,
+    })
+    .select("id")
+    .single();
+  if (insErr || !cree) throw new Error(insErr?.message ?? "Création du contrat impossible");
+
+  // Le client produit du chiffre d'affaires : il n'est plus un prospect.
+  await client.from("clients").update({ statut: "actif" }).eq("id", dossier.client_id).eq("statut", "prospect");
+
+  // Contrôle DDA : lettre de mission et devoir de conseil signés ?
+  const [lm, dc] = await Promise.all([
+    client.from("lettres_mission").select("statut").eq("dossier_id", dossierId),
+    client.from("devoirs_conseil").select("statut").eq("dossier_id", dossierId),
+  ]);
+  const lmSignee = (lm.data ?? []).some((l) => l.statut === "signee");
+  const dcSigne = (dc.data ?? []).some((d) => d.statut === "signe");
+  const manquants = [
+    lmSignee ? null : (lm.data ?? []).length > 0 ? "lettre de mission envoyée, signature en attente" : "lettre de mission à envoyer",
+    dcSigne ? null : (dc.data ?? []).length > 0 ? "devoir de conseil envoyé, signature en attente" : "devoir de conseil à envoyer",
+  ].filter(Boolean) as string[];
+
+  if (manquants.length > 0) {
+    await creerTacheAdmin(client, {
+      titre: `Régulariser le dossier DDA — contrat en place — ${dossier.reference}`,
+      description: [
+        `Le contrat est confirmé par la compagnie et actif au portefeuille (${compagnie.data?.nom ?? "assureur à compléter"} — ${produit.data?.nom ?? dossier.type_assurance}).`,
+        `Effet : ${dateEffet} · Échéance : ${dateEcheance}${primeAnnuelle != null ? ` · Prime annuelle : ${primeAnnuelle} €` : ""}`,
+        `À régulariser : ${manquants.join(" ; ")}.`,
+        "Rappel ACPR : le contrat ne doit pas rester sans devoir de conseil signé.",
+      ].join("\n"),
+      client_id: dossier.client_id,
+      priorite: "urgente",
+      created_by: userId,
+    });
+  }
+
+  await client.from("activites").insert({
+    client_id: dossier.client_id,
+    type: "systeme",
+    titre: "Contrat créé au portefeuille (confirmation compagnie)",
+    contenu: [
+      `Dossier ${dossier.reference}`,
+      `${compagnie.data?.nom ?? "Assureur à compléter"} — ${produit.data?.nom ?? dossier.type_assurance}`,
+      `Effet ${dateEffet} · fin ${dateEcheance}`,
+      primeAnnuelle != null ? `Prime annuelle : ${primeAnnuelle} €` : null,
+      manquants.length > 0 ? `Documents DDA à régulariser : ${manquants.join(" ; ")}` : "Dossier DDA complet.",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    created_by: userId,
+  });
+
+  return {
+    contrat_id: cree.id,
+    deja_existant: false,
+    prime_annuelle: primeAnnuelle,
+    date_effet: dateEffet,
+    date_echeance: dateEcheance,
+    dda_a_regulariser: manquants.length > 0,
+  };
+}
