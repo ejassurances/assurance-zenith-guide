@@ -486,6 +486,23 @@ export const archiverMessageCrm = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Vide la boîte générale : sort de la boîte de réception tous les messages déjà
+ * pris en charge par un agent (étiquette métier posée). Chaque agent travaille
+ * ensuite exclusivement dans ses propres étiquettes.
+ */
+export const viderBoiteGeneraleCrm = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ max: z.number().int().min(1).max(500).optional() }).parse(input ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    await exigerStaff(context.supabase, context.userId);
+    const { viderBoiteGenerale } = await import("@/lib/gmail.server");
+    return await viderBoiteGenerale(data.max ?? 200);
+  });
+
+
 /** Met un message à la corbeille Gmail et supprime son rattachement CRM. */
 export const supprimerMessageCrm = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
