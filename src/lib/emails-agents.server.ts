@@ -325,7 +325,48 @@ export async function executerAgents(
 
           }
 
+          // Garde-fou INTERNE : un mail envoyé depuis une adresse du cabinet
+          // (transfert, note interne) n'est jamais un prospect. Aucune fiche
+          // client, aucun dossier : on dépose une tâche d'arbitrage humain.
+          if (estEmailInterne(entree.expediteur_email)) {
+            await poserLabelCabinet(m.id, "gc_a_traiter");
+            await creerTacheAdmin(admin, {
+              titre: `Mail interne à qualifier — ${entree.sujet ?? "(sans objet)"}`.slice(0, 200),
+              description: [
+                `Objet de la demande : ${entree.sujet ?? "(sans objet)"}`,
+                `Motif : mail envoyé depuis une adresse interne du cabinet (${entree.expediteur_email}) — probable transfert.`,
+                `Ce qui bloque : aucun agent ne peut décider à partir d'un expéditeur interne (ni prospect, ni client, ni partenaire identifiable automatiquement).`,
+                `Conseil : ouvrir le mail et indiquer la suite à donner (rattacher au client concerné, transmettre au service partenaire, ou saisir en comptabilité). Aucune fiche client n'a été créée.`,
+                `Email : https://mail.google.com/mail/u/0/#all/${m.id}`,
+              ].join("\n"),
+              priorite: "normale",
+              created_by: userId,
+            });
+            await admin.from("crm_emails").upsert(
+              {
+                gmail_message_id: m.id,
+                gmail_thread_id: detail.thread_id ?? m.thread_id ?? null,
+                direction: "entrant",
+                recu_le: m.date ?? detail.date ?? null,
+                notes: "Mail interne (expéditeur du cabinet) — aucune fiche client créée",
+                triage_ia: JSON.parse(
+                  JSON.stringify({ agent: "interne", expediteur: entree.expediteur_email, sujet: entree.sujet }),
+                ),
+                triage_le: new Date().toISOString(),
+                created_by: userId,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: "gmail_message_id" },
+            );
+            if (rattrapage.has(m.id)) {
+              await retirerLabelRattrapage(m.id);
+              rattrapagesTraites++;
+            }
+            continue;
+          }
+
           const triage = await analyserEmailProspect(entree);
+
           // Catégorisation faite : prospect entrant spontané.
           await poserLabelCabinet(m.id, "gc_a_traiter");
 
