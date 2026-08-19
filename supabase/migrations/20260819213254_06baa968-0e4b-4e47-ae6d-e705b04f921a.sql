@@ -1,0 +1,2 @@
+UPDATE public.crm_emails SET compagnie_id = (SELECT id FROM public.compagnies WHERE nom = 'Kereis' LIMIT 1) WHERE compagnie_id = (SELECT id FROM public.compagnies WHERE nom = 'Kereis Solutions' LIMIT 1);
+DELETE FROM public.compagnies WHERE nom = 'Kereis Solutions' AND NOT EXISTS (SELECT 1 FROM public.produits p WHERE p.compagnie_id = compagnies.id);
