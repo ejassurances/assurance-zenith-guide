@@ -1,0 +1,1 @@
+revoke execute on function public.trg_garde_fou_pipeline_documents() from public, anon, authenticated;
