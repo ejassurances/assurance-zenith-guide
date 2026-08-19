@@ -27,6 +27,12 @@ export interface ResultatAgents {
   mis_corbeille: number;
   /** Mails routés vers Service Partenaire d'après le domaine expéditeur. */
   partenaires_routes: number;
+  /** Emails partenaires porteurs d'une information exploitable (codes, offre, MAJ produit, challenge). */
+  offres_partenaires: number;
+  /** Fiches compagnie créées automatiquement (statut inactif). */
+  compagnies_creees: number;
+  /** Produits créés automatiquement (statut en test). */
+  produits_crees: number;
 
 
 
@@ -138,13 +144,18 @@ export async function executerAgents(
     let corbeille = 0;
     let rattrapagesTraites = 0;
     let partenairesRoutes = 0;
+    let offresPartenaires = 0;
+    let compagniesCreees = 0;
+    let produitsCrees = 0;
 
     // Annuaire des domaines de compagnies / partenaires : sert de garde-fou en
     // amont de toute classification IA prospect ou relation client.
     const { chargerAnnuairePartenaires, compagnieDeExpediteur, routerEmailPartenaire } = await import(
       "@/lib/partenaires-emails.server"
     );
+    const { traiterEmailPartenaireOffre } = await import("@/lib/partenaires-offres.server");
     const annuairePartenaires = await chargerAnnuairePartenaires(admin);
+
 
 
 
@@ -245,12 +256,34 @@ export async function executerAgents(
               nettoyer: true,
             });
             partenairesRoutes++;
+
+            // Le mail partenaire contient-il une information exploitable
+            // (codes courtier, offre, mise à jour produit, challenge) ? Dans ce
+            // cas il repasse en « Service Partenaire/A_Traiter ».
+            const offre = await traiterEmailPartenaireOffre(admin, {
+              email: entree,
+              gmail_message_id: m.id,
+              recu_le: m.date ?? detail.date ?? null,
+              userId,
+              compagnie_connue: compagnieExp,
+            }).catch((e: unknown) => {
+              console.error("[partenaires-offres] traitement impossible", m.id, e);
+              return null;
+            });
+            if (offre && offre.action !== "ignore") {
+              offresPartenaires++;
+              if (offre.compagnie_creee) compagniesCreees++;
+              produitsCrees += offre.produits_crees.length;
+              await poserLabelCabinet(m.id, "sp_a_traiter");
+            }
+
             if (rattrapage.has(m.id)) {
               await retirerLabelRattrapage(m.id);
               rattrapagesTraites++;
             }
             continue;
           }
+
 
 
 
@@ -326,6 +359,34 @@ export async function executerAgents(
             continue;
 
           }
+
+          // Agent Service Partenaire — expéditeur INCONNU de l'annuaire : le
+          // mail peut malgré tout apporter une information exploitable (codes
+          // courtier, offre de partenariat, mise à jour produit, challenge).
+          // Dans ce cas la compagnie et ses produits sont référencés (inactif /
+          // en test), une tâche décrit l'ajout, et le mail n'est JAMAIS ignoré.
+          const offreInconnue = await traiterEmailPartenaireOffre(admin, {
+            email: entree,
+            gmail_message_id: m.id,
+            recu_le: m.date ?? detail.date ?? null,
+            userId,
+          }).catch((e: unknown) => {
+            console.error("[partenaires-offres] traitement impossible", m.id, e);
+            return null;
+          });
+          if (offreInconnue && offreInconnue.action !== "ignore") {
+            offresPartenaires++;
+            if (offreInconnue.compagnie_creee) compagniesCreees++;
+            produitsCrees += offreInconnue.produits_crees.length;
+            await poserLabelCabinet(m.id, "sp_a_traiter");
+            if (rattrapage.has(m.id)) {
+              await retirerLabelRattrapage(m.id);
+              rattrapagesTraites++;
+            }
+            continue;
+          }
+
+
 
           // Garde-fou INTERNE : un mail envoyé depuis une adresse du cabinet
           // (transfert, note interne) n'est jamais un prospect. Aucune fiche
@@ -584,6 +645,9 @@ export async function executerAgents(
     rattrapages_traites: rattrapagesTraites,
     mis_corbeille: corbeille,
     partenaires_routes: partenairesRoutes,
+    offres_partenaires: offresPartenaires,
+    compagnies_creees: compagniesCreees,
+    produits_crees: produitsCrees,
 
 
 
