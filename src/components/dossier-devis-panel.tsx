@@ -140,7 +140,7 @@ export function DossierDevisPanel({
     const [d, c, p, cl, dos] = await Promise.all([
       supabase
         .from("dossier_devis")
-        .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,source,garanties_resume,quotite_pct,assureur_porteur,created_at")
+        .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,type_cotisation,cotisation_min,cotisation_max,montant_total_saisi,source,garanties_resume,quotite_pct,assureur_porteur,created_at")
         .eq("dossier_id", dossierId)
         .order("created_at", { ascending: true }),
       supabase.from("compagnies").select("id,nom").order("nom"),
