@@ -2262,46 +2262,58 @@ export type Database = {
         Row: {
           assureur_porteur: string | null
           compagnie_id: string | null
+          cotisation_max: number | null
           cotisation_mensuelle: number | null
+          cotisation_min: number | null
           created_at: string
           dossier_id: string
           formule_id: string | null
           garanties_resume: string | null
           id: string
+          montant_total_saisi: number | null
           produit_id: string | null
           quotite_pct: number | null
           saisi_par: string | null
           source: string
+          type_cotisation: string | null
           updated_at: string
         }
         Insert: {
           assureur_porteur?: string | null
           compagnie_id?: string | null
+          cotisation_max?: number | null
           cotisation_mensuelle?: number | null
+          cotisation_min?: number | null
           created_at?: string
           dossier_id: string
           formule_id?: string | null
           garanties_resume?: string | null
           id?: string
+          montant_total_saisi?: number | null
           produit_id?: string | null
           quotite_pct?: number | null
           saisi_par?: string | null
           source?: string
+          type_cotisation?: string | null
           updated_at?: string
         }
         Update: {
           assureur_porteur?: string | null
           compagnie_id?: string | null
+          cotisation_max?: number | null
           cotisation_mensuelle?: number | null
+          cotisation_min?: number | null
           created_at?: string
           dossier_id?: string
           formule_id?: string | null
           garanties_resume?: string | null
           id?: string
+          montant_total_saisi?: number | null
           produit_id?: string | null
           quotite_pct?: number | null
           saisi_par?: string | null
           source?: string
+          type_cotisation?: string | null
           updated_at?: string
         }
         Relationships: [

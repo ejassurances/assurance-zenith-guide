@@ -59,6 +59,12 @@ const euro = (v?: number | null) =>
     ? `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(v)} EUR`
     : "-";
 
+/** Montant avec centimes (cotisations mensuelles). */
+const euro2 = (v?: number | null) =>
+  typeof v === "number" && Number.isFinite(v)
+    ? `${new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)} EUR`
+    : "-";
+
 const dateFr = (v?: string | null) => (v ? new Date(v).toLocaleDateString("fr-FR") : "-");
 const dateHeureFr = (v?: string | null) => (v ? new Date(v).toLocaleString("fr-FR") : "-");
 
@@ -429,8 +435,33 @@ export async function genererPdfDevoirConseil(input: DevoirPdfInput): Promise<Ui
   titreSection("Notre recommandation");
   const solution = [conseil.compagnie, conseil.produit].filter(Boolean).join(" - ");
   if (solution) kv("Solution recommandee", solution, { color: OK });
-  if (conseil.cotisation_mensuelle != null)
-    kv("Cotisation mensuelle", euro(Number(conseil.cotisation_mensuelle)));
+  if (conseil.montant_total != null)
+    kv("Cout total de l'assurance sur la duree du pret", euro(Number(conseil.montant_total)));
+  if (conseil.type_cotisation === "CRD") {
+    const min = conseil.cotisation_min != null ? Number(conseil.cotisation_min) : null;
+    const max = conseil.cotisation_max != null ? Number(conseil.cotisation_max) : null;
+    if (conseil.cotisation_mensuelle != null) {
+      kv(
+        "Cotisation mensuelle moyenne",
+        euro2(Number(conseil.cotisation_mensuelle)) +
+          (min != null && max != null
+            ? ` (de ${euro2(min)} a ${euro2(max)} selon l'evolution du capital restant du)`
+            : ""),
+      );
+    }
+    para(
+      "Mode de calcul CRD : la cotisation est recalculee sur le capital restant du. Elle est donc degressive et diminue au fil du remboursement du pret.",
+      { size: 8.5, color: MUTED, gap: 4 },
+    );
+  } else if (conseil.cotisation_mensuelle != null) {
+    kv("Cotisation mensuelle", euro2(Number(conseil.cotisation_mensuelle)));
+    if (conseil.type_cotisation === "CI") {
+      para(
+        "Mode de calcul CI : la cotisation est calculee sur le capital initial emprunte et reste identique pendant toute la duree du pret.",
+        { size: 8.5, color: MUTED, gap: 4 },
+      );
+    }
+  }
   if (conseil.frais_dossier != null) kv("Frais de dossier", euro(Number(conseil.frais_dossier)));
   if (conseil.frais_souscription != null)
     kv("Frais de souscription", euro(Number(conseil.frais_souscription)));

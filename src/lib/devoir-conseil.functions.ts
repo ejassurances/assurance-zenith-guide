@@ -23,6 +23,11 @@ const saisieSchema = z.object({
   compagnie: z.string().max(200).optional(),
   produit: z.string().max(200).optional(),
   cotisation_mensuelle: z.number().nullable().optional(),
+  /** Mode de calcul de la cotisation emprunteur : CI (constante) ou CRD (dégressive). */
+  type_cotisation: z.enum(["CI", "CRD"]).nullable().optional(),
+  cotisation_min: z.number().nullable().optional(),
+  cotisation_max: z.number().nullable().optional(),
+  montant_total: z.number().nullable().optional(),
   frais_dossier: z.number().nullable().optional(),
   frais_souscription: z.number().nullable().optional(),
   frais_courtage: z.number().nullable().optional(),

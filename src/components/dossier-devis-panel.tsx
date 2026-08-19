@@ -26,6 +26,12 @@ export type DossierDevis = {
   produit_id: string | null;
   formule_id: string | null;
   cotisation_mensuelle: number | null;
+  /** Mode de calcul de la cotisation : CI (capital initial, constante) ou CRD (capital restant dû, dégressive). */
+  type_cotisation: "CI" | "CRD" | null;
+  cotisation_min: number | null;
+  cotisation_max: number | null;
+  /** Montant total de l'assurance sur la durée du prêt (point d'entrée de la saisie manuelle). */
+  montant_total_saisi: number | null;
   source: "manuel" | "api" | "pdf";
   garanties_resume: string | null;
   quotite_pct: number | null;
@@ -120,21 +126,34 @@ export function DossierDevisPanel({
   /** Comparatif : par défaut une seule offre par assureur porteur (doublons de canaux masqués). */
   const [afficherDoublons, setAfficherDoublons] = useState(false);
 
+  /** Base de comparaison issue du recueil des besoins emprunteur (pas de ressaisie). */
+  const [moisRestants, setMoisRestants] = useState<number | null>(null);
+  const [crdRecueil, setCrdRecueil] = useState<number | null>(null);
 
   const [form, setForm] = useState({
     compagnie_id: "",
     produit_id: "",
     formule_id: "",
+    montant_total_saisi: "",
+    type_cotisation: "" as "" | "CI" | "CRD",
     cotisation_mensuelle: "",
+    cotisation_min: "",
+    cotisation_max: "",
     quotite_pct: "",
     garanties_resume: "",
   });
+
+  /** Mensuel moyen dérivé : montant total sur la durée ÷ mois restants du recueil. */
+  const mensuelMoyenDerive =
+    form.montant_total_saisi && moisRestants && moisRestants > 0
+      ? Number(form.montant_total_saisi) / moisRestants
+      : null;
 
   const load = useCallback(async () => {
     const [d, c, p, cl, dos] = await Promise.all([
       supabase
         .from("dossier_devis")
-        .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,source,garanties_resume,quotite_pct,assureur_porteur,created_at")
+        .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,type_cotisation,cotisation_min,cotisation_max,montant_total_saisi,source,garanties_resume,quotite_pct,assureur_porteur,created_at")
         .eq("dossier_id", dossierId)
         .order("created_at", { ascending: true }),
       supabase.from("compagnies").select("id,nom").order("nom"),
@@ -160,6 +179,12 @@ export function DossierDevisPanel({
       | null;
     const recueil = (dossier?.recueil_besoins ?? {}) as Record<string, unknown>;
     const brancheDossier = dossier?.type_assurance ?? "";
+    const nb = (v: unknown) => {
+      const n = Number(v);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    };
+    setMoisRestants(nb(recueil["mois_restants"]) ?? nb(recueil["duree_mois"]));
+    setCrdRecueil(nb(recueil["capital_restant_du"]) ?? nb(recueil["capital"]));
     setNbAssuresApi(
       brancheTarifableNeoliane(brancheDossier) ? nbAssuresNeoliane(brancheDossier, recueil) : 0,
     );
@@ -291,12 +316,21 @@ export function DossierDevisPanel({
       return;
     }
     setSaving(true);
+    const mensuel = form.cotisation_mensuelle
+      ? Number(form.cotisation_mensuelle)
+      : mensuelMoyenDerive != null
+        ? Math.round(mensuelMoyenDerive * 100) / 100
+        : null;
     const { error } = await supabase.from("dossier_devis").insert({
       dossier_id: dossierId,
       compagnie_id: form.compagnie_id,
       produit_id: form.produit_id,
       formule_id: form.formule_id || null,
-      cotisation_mensuelle: form.cotisation_mensuelle ? Number(form.cotisation_mensuelle) : null,
+      montant_total_saisi: form.montant_total_saisi ? Number(form.montant_total_saisi) : null,
+      type_cotisation: form.type_cotisation || null,
+      cotisation_mensuelle: mensuel,
+      cotisation_min: form.type_cotisation === "CRD" && form.cotisation_min ? Number(form.cotisation_min) : null,
+      cotisation_max: form.type_cotisation === "CRD" && form.cotisation_max ? Number(form.cotisation_max) : null,
       quotite_pct: form.quotite_pct ? Number(form.quotite_pct) : null,
       garanties_resume: form.garanties_resume.trim() || null,
       source: "manuel",
@@ -308,7 +342,11 @@ export function DossierDevisPanel({
       compagnie_id: "",
       produit_id: "",
       formule_id: "",
+      montant_total_saisi: "",
+      type_cotisation: "",
       cotisation_mensuelle: "",
+      cotisation_min: "",
+      cotisation_max: "",
       quotite_pct: "",
       garanties_resume: "",
     });
@@ -529,10 +567,32 @@ export function DossierDevisPanel({
                   {formule && <FormuleNom formuleId={formule} />}
                 </p>
                 <div className="flex items-center gap-3">
-                  <span className="text-ink-soft">
-                    {d.cotisation_mensuelle != null
-                      ? `${Number(d.cotisation_mensuelle).toLocaleString("fr-FR")} € / mois`
-                      : "Cotisation non renseignée"}
+                  <span className="text-right text-ink-soft">
+                    {d.montant_total_saisi != null && (
+                      <span className="block">
+                        {Number(d.montant_total_saisi).toLocaleString("fr-FR")} € au total sur la durée du prêt
+                      </span>
+                    )}
+                    <span className="block">
+                      {d.cotisation_mensuelle != null
+                        ? `${Number(d.cotisation_mensuelle).toLocaleString("fr-FR")} € / mois${
+                            d.type_cotisation === "CRD" ? " en moyenne" : ""
+                          }`
+                        : "Cotisation mensuelle non renseignée"}
+                    </span>
+                    {d.type_cotisation && (
+                      <span className="block text-xs text-ink-muted">
+                        {d.type_cotisation === "CI"
+                          ? "CI — cotisation constante sur le capital initial"
+                          : `CRD — cotisation dégressive${
+                              d.cotisation_min != null && d.cotisation_max != null
+                                ? ` (de ${Number(d.cotisation_min).toLocaleString("fr-FR")} € à ${Number(
+                                    d.cotisation_max,
+                                  ).toLocaleString("fr-FR")} €)`
+                                : ""
+                            }`}
+                      </span>
+                    )}
                   </span>
                   <button onClick={() => supprimer(d)} className="text-xs text-red-700 underline underline-offset-4">
                     Supprimer
@@ -861,16 +921,93 @@ export function DossierDevisPanel({
             </select>
           </label>
         )}
+        <label className="block sm:col-span-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+            Montant total de l'assurance sur la durée du prêt (€)
+          </span>
+          <input
+            type="number"
+            step="0.01"
+            value={form.montant_total_saisi}
+            onChange={(e) => setForm({ ...form, montant_total_saisi: e.target.value })}
+            className={inp}
+          />
+          <span className="mt-1 block text-xs text-ink-muted">
+            Donnée d'entrée principale : c'est le montant figurant sur le devis de l'assureur pour la durée totale du
+            prêt.
+            {moisRestants
+              ? ` Recueil des besoins : ${moisRestants} mois restants${
+                  crdRecueil ? ` · capital restant dû ${crdRecueil.toLocaleString("fr-FR")} €` : ""
+                }.`
+              : " Renseignez « mois restants » dans le recueil des besoins pour dériver automatiquement le mensuel moyen."}
+            {mensuelMoyenDerive != null &&
+              ` Mensuel moyen calculé : ${mensuelMoyenDerive.toLocaleString("fr-FR", {
+                maximumFractionDigits: 2,
+              })} € / mois.`}
+          </span>
+        </label>
         <label className="block">
-          <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Cotisation (€ / mois)</span>
+          <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Mode de calcul (CI / CRD)</span>
+          <select
+            value={form.type_cotisation}
+            onChange={(e) =>
+              setForm({ ...form, type_cotisation: e.target.value as "" | "CI" | "CRD" })
+            }
+            className={inp}
+          >
+            <option value="">— À préciser —</option>
+            <option value="CI">CI — capital initial (cotisation constante)</option>
+            <option value="CRD">CRD — capital restant dû (cotisation dégressive)</option>
+          </select>
+        </label>
+        <label className="block">
+          <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+            Cotisation mensuelle {form.type_cotisation === "CRD" ? "moyenne " : ""}(€ / mois) — complémentaire
+          </span>
           <input
             type="number"
             step="0.01"
             value={form.cotisation_mensuelle}
             onChange={(e) => setForm({ ...form, cotisation_mensuelle: e.target.value })}
+            placeholder={
+              mensuelMoyenDerive != null
+                ? mensuelMoyenDerive.toLocaleString("fr-FR", { maximumFractionDigits: 2 })
+                : undefined
+            }
             className={inp}
           />
+          <span className="mt-1 block text-xs text-ink-muted">
+            Laissez vide pour reprendre automatiquement le mensuel moyen dérivé du montant total.
+          </span>
         </label>
+        {form.type_cotisation === "CRD" && (
+          <>
+            <label className="block">
+              <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+                Mensualité la plus basse (€)
+              </span>
+              <input
+                type="number"
+                step="0.01"
+                value={form.cotisation_min}
+                onChange={(e) => setForm({ ...form, cotisation_min: e.target.value })}
+                className={inp}
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+                Mensualité la plus haute (€)
+              </span>
+              <input
+                type="number"
+                step="0.01"
+                value={form.cotisation_max}
+                onChange={(e) => setForm({ ...form, cotisation_max: e.target.value })}
+                className={inp}
+              />
+            </label>
+          </>
+        )}
         {branche === "emprunteur" && (
           <label className="block">
             <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Quotité assurée (%)</span>

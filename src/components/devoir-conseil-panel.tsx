@@ -30,6 +30,10 @@ type DevisLigne = {
   produit: string;
   formule: string;
   cotisation_mensuelle: number | null;
+  type_cotisation: "CI" | "CRD" | null;
+  cotisation_min: number | null;
+  cotisation_max: number | null;
+  montant_total_saisi: number | null;
   garanties_resume: string | null;
 };
 
@@ -110,6 +114,10 @@ export function DevoirConseilPanel({
     garanties: "",
     exigences_client: "",
     cotisation_mensuelle: "",
+    type_cotisation: "" as "" | "CI" | "CRD",
+    cotisation_min: "",
+    cotisation_max: "",
+    montant_total: "",
     frais_dossier: "",
     frais_souscription: "",
     frais_courtage: "",
@@ -223,17 +231,21 @@ export function DevoirConseilPanel({
       const { data } = await supabase
         .from("dossier_devis")
         .select(
-          "id, cotisation_mensuelle, garanties_resume, compagnies:compagnie_id(nom), produits:produit_id(nom), produit_formules:formule_id(nom)",
+          "id, cotisation_mensuelle, type_cotisation, cotisation_min, cotisation_max, montant_total_saisi, garanties_resume, compagnies:compagnie_id(nom), produits:produit_id(nom), produit_formules:formule_id(nom)",
         )
         .eq("dossier_id", dossierId)
         .order("created_at", { ascending: true });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const list = ((data as any[]) ?? []).map((d) => ({
+      const list: DevisLigne[] = ((data as any[]) ?? []).map((d) => ({
         id: d.id as string,
         compagnie: d.compagnies?.nom ?? "",
         produit: d.produits?.nom ?? "",
         formule: d.produit_formules?.nom ?? "",
         cotisation_mensuelle: d.cotisation_mensuelle as number | null,
+        type_cotisation: (d.type_cotisation as "CI" | "CRD" | null) ?? null,
+        cotisation_min: (d.cotisation_min as number | null) ?? null,
+        cotisation_max: (d.cotisation_max as number | null) ?? null,
+        montant_total_saisi: (d.montant_total_saisi as number | null) ?? null,
         garanties_resume: (d.garanties_resume as string | null) ?? null,
       }));
       setDevisDossier(list);
@@ -248,11 +260,26 @@ export function DevoirConseilPanel({
         produit: d.produit,
         formule: d.formule,
         cotisation_mensuelle: d.cotisation_mensuelle != null ? String(d.cotisation_mensuelle) : "",
-        cout_total: "",
+        cout_total: d.montant_total_saisi != null ? String(d.montant_total_saisi) : "",
         statut: (i === 0 ? "retenue" : "equivalente") as StatutOffre,
         commentaire: d.garanties_resume ?? "",
       })),
     );
+    // Devis retenu (le premier) : reprend le mode de calcul CI/CRD et les montants.
+    const retenu = devisDossier[0];
+    if (retenu) {
+      setForm((f) => ({
+        ...f,
+        compagnie: f.compagnie || retenu.compagnie,
+        produit: f.produit || retenu.produit,
+        type_cotisation: retenu.type_cotisation ?? f.type_cotisation,
+        montant_total: retenu.montant_total_saisi != null ? String(retenu.montant_total_saisi) : f.montant_total,
+        cotisation_mensuelle:
+          retenu.cotisation_mensuelle != null ? String(retenu.cotisation_mensuelle) : f.cotisation_mensuelle,
+        cotisation_min: retenu.cotisation_min != null ? String(retenu.cotisation_min) : f.cotisation_min,
+        cotisation_max: retenu.cotisation_max != null ? String(retenu.cotisation_max) : f.cotisation_max,
+      }));
+    }
   };
 
   const offresRemplies = offres.filter((o) => o.compagnie.trim() && o.produit.trim());
@@ -325,6 +352,12 @@ export function DevoirConseilPanel({
           garanties: form.garanties.trim() || undefined,
           exigences_client: form.exigences_client.trim() || undefined,
           cotisation_mensuelle: form.cotisation_mensuelle ? Number(form.cotisation_mensuelle) : null,
+          type_cotisation: form.type_cotisation || null,
+          montant_total: form.montant_total ? Number(form.montant_total) : null,
+          cotisation_min:
+            form.type_cotisation === "CRD" && form.cotisation_min ? Number(form.cotisation_min) : null,
+          cotisation_max:
+            form.type_cotisation === "CRD" && form.cotisation_max ? Number(form.cotisation_max) : null,
           frais_dossier: form.frais_dossier ? Number(form.frais_dossier) : null,
           frais_souscription: form.frais_souscription ? Number(form.frais_souscription) : null,
           frais_courtage: form.frais_courtage ? Number(form.frais_courtage) : null,
@@ -728,14 +761,69 @@ export function DevoirConseilPanel({
                 className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
               />
             </Field>
-            <Field label="Cotisation mensuelle (€)">
+            {emprunteur && (
+              <>
+                <Field label="Coût total de l'assurance sur la durée du prêt (€)">
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={form.montant_total}
+                    onChange={(e) => setForm({ ...form, montant_total: e.target.value })}
+                    className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+                  />
+                </Field>
+                <Field label="Mode de calcul de la cotisation">
+                  <select
+                    value={form.type_cotisation}
+                    onChange={(e) =>
+                      setForm({ ...form, type_cotisation: e.target.value as "" | "CI" | "CRD" })
+                    }
+                    className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">— À préciser —</option>
+                    <option value="CI">CI — capital initial (cotisation constante)</option>
+                    <option value="CRD">CRD — capital restant dû (cotisation dégressive)</option>
+                  </select>
+                </Field>
+              </>
+            )}
+            <Field
+              label={
+                form.type_cotisation === "CRD"
+                  ? "Cotisation mensuelle moyenne (€)"
+                  : "Cotisation mensuelle (€)"
+              }
+            >
               <input
                 type="number"
+                step="0.01"
                 value={form.cotisation_mensuelle}
                 onChange={(e) => setForm({ ...form, cotisation_mensuelle: e.target.value })}
                 className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
               />
             </Field>
+            {emprunteur && form.type_cotisation === "CRD" && (
+              <>
+                <Field label="Mensualité la plus basse (€)">
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={form.cotisation_min}
+                    onChange={(e) => setForm({ ...form, cotisation_min: e.target.value })}
+                    className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+                  />
+                </Field>
+                <Field label="Mensualité la plus haute (€)">
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={form.cotisation_max}
+                    onChange={(e) => setForm({ ...form, cotisation_max: e.target.value })}
+                    className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+                  />
+                </Field>
+              </>
+            )}
             <Field label="Frais de dossier (€)">
               <input
                 type="number"

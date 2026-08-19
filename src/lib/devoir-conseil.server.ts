@@ -13,6 +13,11 @@ export type DevoirConseilSaisie = {
   compagnie?: string;
   produit?: string;
   cotisation_mensuelle?: number | null;
+  /** Emprunteur : CI (cotisation constante sur capital initial) ou CRD (dégressive). */
+  type_cotisation?: "CI" | "CRD" | null;
+  cotisation_min?: number | null;
+  cotisation_max?: number | null;
+  montant_total?: number | null;
   frais_dossier?: number | null;
   frais_souscription?: number | null;
   frais_courtage?: number | null;
