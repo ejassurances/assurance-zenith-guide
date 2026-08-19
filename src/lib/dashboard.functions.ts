@@ -1,9 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
-  repartirTresorerie,
+  syntheseAnnee,
   previsionsSynthetiques,
   COLONNES_PREVISION,
+  type SyntheseAnnee,
   type CommissionPrevision,
   type ContratPourPrevision,
   type CommissionEncaissee,
@@ -68,17 +69,16 @@ export const getCaRealEtN1 = createServerFn({ method: "GET" })
   });
 
 /**
- * Retourne les commissions prévisionnelles de l'année civile en cours,
- * prorata temporis à partir de la table commission_previsions.
+ * Synthèse comptable de l'année civile en cours : commissions réellement
+ * encaissées, prévisionnel restant à encaisser, et total attendu. Source
+ * unique utilisée par le tableau de bord, la page Commissions et l'agent
+ * comptabilité, afin que tous les écrans affichent les mêmes montants.
  */
-export const getCommissionsEstimeesAnneeEnCours = createServerFn({ method: "GET" })
+export const getSyntheseAnneeCommissions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<number> => {
+  .handler(async ({ context }): Promise<SyntheseAnnee> => {
     const [{ data }, { data: contrats }, { data: commissions }] = await Promise.all([
-      context.supabase
-        .from("commission_previsions")
-        .select(COLONNES_PREVISION),
-
+      context.supabase.from("commission_previsions").select(COLONNES_PREVISION),
       context.supabase
         .from("contrats")
         .select("id,dossier_id,compagnie_id,is_emprunteur,statut,date_effet,duree_mois,prime_annuelle"),
@@ -86,16 +86,14 @@ export const getCommissionsEstimeesAnneeEnCours = createServerFn({ method: "GET"
     ]);
 
     const previsions = (data as unknown as CommissionPrevision[]) ?? [];
+    const encaissees = (commissions as unknown as CommissionEncaissee[]) ?? [];
     const toutes = [
       ...previsions,
       ...previsionsSynthetiques(
         (contrats as unknown as ContratPourPrevision[]) ?? [],
-        (commissions as unknown as CommissionEncaissee[]) ?? [],
+        encaissees,
         previsions,
       ),
     ];
-    const anneeEnCours = new Date().getFullYear();
-    const ligneAnnee = repartirTresorerie(toutes).find((l) => l.annee === anneeEnCours);
-    return Math.round((ligneAnnee?.montant ?? 0) * 100) / 100;
+    return syntheseAnnee(toutes, encaissees);
   });
-

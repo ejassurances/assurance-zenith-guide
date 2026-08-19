@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CommissionBaremeConfig } from "@/components/commission-bareme-config";
 import { BulletinCommissionsPanel } from "@/components/bulletin-commissions-panel";
+import { getSyntheseAnneeCommissions } from "@/lib/dashboard.functions";
+import type { SyntheseAnnee } from "@/lib/commission-previsions";
 
 export const Route = createFileRoute("/_authenticated/espace/commissions")({
   component: CommissionsPage,
@@ -35,6 +38,8 @@ function CommissionsPage() {
   const [comptes, setComptes] = useState<Compte[]>([]);
   const [exercices, setExercices] = useState<Exercice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [synthese, setSynthese] = useState<SyntheseAnnee | null>(null);
+  const fetchSynthese = useServerFn(getSyntheseAnneeCommissions);
 
   const load = async () => {
     setLoading(true);
@@ -58,7 +63,8 @@ function CommissionsPage() {
       setComptes((c.data as Compte[]) ?? []);
       setExercices((e.data as Exercice[]) ?? []);
     })();
-  }, []);
+    fetchSynthese().then(setSynthese).catch(() => setSynthese(null));
+  }, [fetchSynthese]);
 
   const total = rows.reduce((s, r) => s + Number(r.montant), 0);
   const verse = rows.filter((r) => r.statut === "versee").reduce((s, r) => s + Number(r.montant), 0);
@@ -120,10 +126,19 @@ function CommissionsPage() {
     <div>
       <h1 className="font-serif text-3xl font-medium text-ink">Commissions</h1>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <Card label="Total" value={total} />
+      {synthese && (
+        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+          <Card label={`Encaissé ${synthese.annee}`} value={synthese.encaisse} />
+          <Card label={`Reste à encaisser ${synthese.annee}`} value={synthese.previsionnelRestant} />
+          <Card label={`Total attendu ${synthese.annee}`} value={synthese.totalAttendu} />
+        </div>
+      )}
+
+      <p className="mt-6 crm-eyebrow">Toutes périodes confondues</p>
+      <div className="mt-2 grid gap-4 sm:grid-cols-3">
+        <Card label="Total enregistré" value={total} />
         <Card label="Versées" value={verse} />
-        <Card label="À venir" value={attente} />
+        <Card label="À venir (bordereaux)" value={attente} />
       </div>
 
       {role === "admin" && aComptabiliser > 0 && (
