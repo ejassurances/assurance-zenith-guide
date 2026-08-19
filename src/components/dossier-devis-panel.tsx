@@ -567,10 +567,32 @@ export function DossierDevisPanel({
                   {formule && <FormuleNom formuleId={formule} />}
                 </p>
                 <div className="flex items-center gap-3">
-                  <span className="text-ink-soft">
-                    {d.cotisation_mensuelle != null
-                      ? `${Number(d.cotisation_mensuelle).toLocaleString("fr-FR")} € / mois`
-                      : "Cotisation non renseignée"}
+                  <span className="text-right text-ink-soft">
+                    {d.montant_total_saisi != null && (
+                      <span className="block">
+                        {Number(d.montant_total_saisi).toLocaleString("fr-FR")} € au total sur la durée du prêt
+                      </span>
+                    )}
+                    <span className="block">
+                      {d.cotisation_mensuelle != null
+                        ? `${Number(d.cotisation_mensuelle).toLocaleString("fr-FR")} € / mois${
+                            d.type_cotisation === "CRD" ? " en moyenne" : ""
+                          }`
+                        : "Cotisation mensuelle non renseignée"}
+                    </span>
+                    {d.type_cotisation && (
+                      <span className="block text-xs text-ink-muted">
+                        {d.type_cotisation === "CI"
+                          ? "CI — cotisation constante sur le capital initial"
+                          : `CRD — cotisation dégressive${
+                              d.cotisation_min != null && d.cotisation_max != null
+                                ? ` (de ${Number(d.cotisation_min).toLocaleString("fr-FR")} € à ${Number(
+                                    d.cotisation_max,
+                                  ).toLocaleString("fr-FR")} €)`
+                                : ""
+                            }`}
+                      </span>
+                    )}
                   </span>
                   <button onClick={() => supprimer(d)} className="text-xs text-red-700 underline underline-offset-4">
                     Supprimer
