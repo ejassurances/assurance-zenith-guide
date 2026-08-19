@@ -181,7 +181,43 @@ export async function traiterEmailFinance(
   if (classification.categorie === "autre") return { categorie: "autre", action: "ignore" };
 
   const piece = choisirPiece(email, classification.piece);
-  if (!piece || !piece.attachment_id) return { categorie: "autre", action: "ignore" };
+  if (!piece || !piece.attachment_id) {
+    // Facture fournisseur / bordereau identifié mais document non exploitable
+    // (montant dans le corps du mail, lien de téléchargement, PDF absent).
+    // Le mail RESTE finance : il ne doit surtout pas retomber dans le tri
+    // prospect, qui créerait une fiche client à tort.
+    const { poserLabelCabinet: poser } = await import("@/lib/gmail.server");
+    const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
+    const libelle =
+      classification.categorie === "facture_fournisseur" ? "achat_a_traiter" : "commission_a_traiter";
+    await poser(params.gmail_message_id, libelle);
+    await creerTacheAdmin(admin, {
+      titre:
+        (classification.categorie === "facture_fournisseur"
+          ? "Facture fournisseur à saisir manuellement — "
+          : "Bordereau de commissions à saisir manuellement — ") +
+        (email.sujet ?? "(sans objet)"),
+      description: [
+        `Objet de la demande : ${email.sujet ?? "(sans objet)"}`,
+        `Nature : ${classification.categorie === "facture_fournisseur" ? "facture fournisseur" : "bordereau de commissions"}`,
+        `Émetteur : ${email.expediteur_nom ?? ""} <${email.expediteur_email ?? "inconnu"}>`,
+        `Analyse de l'agent finance : ${classification.resume || "non fournie"}`,
+        `Ce qui bloque : aucun document exploitable en pièce jointe (montant dans le corps du mail, lien externe, ou pièce non lisible).`,
+        `Conseil : ouvrir le mail, récupérer le document, puis créer la ${
+          classification.categorie === "facture_fournisseur" ? "facture d'achat" : "ligne de bordereau"
+        } depuis le module Comptabilité.`,
+        `Email : https://mail.google.com/mail/u/0/#all/${params.gmail_message_id}`,
+      ].join("\n"),
+      priorite: "normale",
+      created_by: params.userId,
+    });
+    return {
+      categorie: classification.categorie,
+      action: "tache_anomalie",
+      message: "Document non exploitable — saisie manuelle requise",
+    };
+  }
+
 
   const { poserLabelCabinet, telechargerPieceJointe } = await import("@/lib/gmail.server");
 
