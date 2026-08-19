@@ -138,13 +138,18 @@ export async function executerAgents(
     let corbeille = 0;
     let rattrapagesTraites = 0;
     let partenairesRoutes = 0;
+    let offresPartenaires = 0;
+    let compagniesCreees = 0;
+    let produitsCrees = 0;
 
     // Annuaire des domaines de compagnies / partenaires : sert de garde-fou en
     // amont de toute classification IA prospect ou relation client.
     const { chargerAnnuairePartenaires, compagnieDeExpediteur, routerEmailPartenaire } = await import(
       "@/lib/partenaires-emails.server"
     );
+    const { traiterEmailPartenaireOffre } = await import("@/lib/partenaires-offres.server");
     const annuairePartenaires = await chargerAnnuairePartenaires(admin);
+
 
 
 
