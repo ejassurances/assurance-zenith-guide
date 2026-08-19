@@ -30,6 +30,10 @@ type DevisLigne = {
   produit: string;
   formule: string;
   cotisation_mensuelle: number | null;
+  type_cotisation: "CI" | "CRD" | null;
+  cotisation_min: number | null;
+  cotisation_max: number | null;
+  montant_total_saisi: number | null;
   garanties_resume: string | null;
 };
 
