@@ -185,11 +185,9 @@ export async function analyserOffrePartenaire(email: EmailOffre): Promise<Analys
   if (!brut) return null;
 
   const cat = String(brut["categorie"] ?? "aucune").toLowerCase();
-  const categorie: CategorieOffre = (
-    ["codes_courtier", "offre_partenariat", "mise_a_jour_produit", "evenement"] as const
-  ).includes(cat as CategorieOffre & string)
-    ? (cat as CategorieOffre)
-    : "aucune";
+  const connues: readonly string[] = ["codes_courtier", "offre_partenariat", "mise_a_jour_produit", "evenement"];
+  const categorie: CategorieOffre = connues.includes(cat) ? (cat as CategorieOffre) : "aucune";
+
 
   const produitsBrut = Array.isArray(brut["produits"]) ? (brut["produits"] as Record<string, unknown>[]) : [];
   const produits: ProduitDetecte[] = produitsBrut
