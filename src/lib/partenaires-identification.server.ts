@@ -140,8 +140,9 @@ export async function trouverClientConcerne(
     }
     for (const d of dossiers ?? []) {
       const ref = chiffres(d.reference ?? "");
-      if (ref.length >= 5 && references.includes(ref)) {
+      if (ref.length >= 5 && references.includes(ref) && d.client_id) {
         return { client_id: d.client_id, dossier_id: d.id, contrat_id: null, motif: `dossier ${d.reference}` };
+
       }
     }
   }
