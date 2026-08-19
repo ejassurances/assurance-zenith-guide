@@ -761,14 +761,69 @@ export function DevoirConseilPanel({
                 className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
               />
             </Field>
-            <Field label="Cotisation mensuelle (€)">
+            {emprunteur && (
+              <>
+                <Field label="Coût total de l'assurance sur la durée du prêt (€)">
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={form.montant_total}
+                    onChange={(e) => setForm({ ...form, montant_total: e.target.value })}
+                    className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+                  />
+                </Field>
+                <Field label="Mode de calcul de la cotisation">
+                  <select
+                    value={form.type_cotisation}
+                    onChange={(e) =>
+                      setForm({ ...form, type_cotisation: e.target.value as "" | "CI" | "CRD" })
+                    }
+                    className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">— À préciser —</option>
+                    <option value="CI">CI — capital initial (cotisation constante)</option>
+                    <option value="CRD">CRD — capital restant dû (cotisation dégressive)</option>
+                  </select>
+                </Field>
+              </>
+            )}
+            <Field
+              label={
+                form.type_cotisation === "CRD"
+                  ? "Cotisation mensuelle moyenne (€)"
+                  : "Cotisation mensuelle (€)"
+              }
+            >
               <input
                 type="number"
+                step="0.01"
                 value={form.cotisation_mensuelle}
                 onChange={(e) => setForm({ ...form, cotisation_mensuelle: e.target.value })}
                 className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
               />
             </Field>
+            {emprunteur && form.type_cotisation === "CRD" && (
+              <>
+                <Field label="Mensualité la plus basse (€)">
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={form.cotisation_min}
+                    onChange={(e) => setForm({ ...form, cotisation_min: e.target.value })}
+                    className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+                  />
+                </Field>
+                <Field label="Mensualité la plus haute (€)">
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={form.cotisation_max}
+                    onChange={(e) => setForm({ ...form, cotisation_max: e.target.value })}
+                    className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+                  />
+                </Field>
+              </>
+            )}
             <Field label="Frais de dossier (€)">
               <input
                 type="number"
