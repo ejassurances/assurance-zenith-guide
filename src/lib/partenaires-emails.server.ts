@@ -124,9 +124,35 @@ export async function routerEmailPartenaire(
     { onConflict: "gmail_message_id" },
   );
 
+  // Identification du client concerné (analyse IA légère sur sujet + corps) :
+  // un mail partenaire parle presque toujours d'un dossier précis. Aucun
+  // rattachement approximatif — sans correspondance fiable, on ne lie rien.
+  try {
+    const { identifierClientEmailPartenaire } = await import("@/lib/partenaires-identification.server");
+    const res = await identifierClientEmailPartenaire(admin, {
+      gmail_message_id: params.gmail_message_id,
+      sujet: params.sujet ?? null,
+      texte: params.texte ?? null,
+      compagnie: compagnie.nom,
+      userId: params.userId,
+      client_id_existant: existant?.client_id ?? null,
+      contrat_id_existant: existant?.contrat_id ?? null,
+    });
+    if (res.client_id) {
+      console.info(
+        `[partenaires] client identifié sur ${params.gmail_message_id} (${res.motif}) — note ${
+          res.note_creee ? "créée" : "déjà présente"
+        }`,
+      );
+    }
+  } catch (e) {
+    console.error("[partenaires] identification du client impossible", params.gmail_message_id, e);
+  }
+
   // Étiquetage : « Service Partenaire/A_Traiter » puis « Archive ».
   await poserLabelCabinet(params.gmail_message_id, "sp_a_traiter");
   await poserLabelCabinet(params.gmail_message_id, "sp_archive", { retirer: ["sp_a_traiter"] });
+
 
   // Nettoyage EN DERNIER et sur la base des étiquettes réellement posées :
   // toute étiquette « Gestion Commerciale » ou « Service Client » (y compris
