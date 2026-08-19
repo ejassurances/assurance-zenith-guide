@@ -27,6 +27,12 @@ export interface ResultatAgents {
   mis_corbeille: number;
   /** Mails routés vers Service Partenaire d'après le domaine expéditeur. */
   partenaires_routes: number;
+  /** Emails partenaires porteurs d'une information exploitable (codes, offre, MAJ produit, challenge). */
+  offres_partenaires: number;
+  /** Fiches compagnie créées automatiquement (statut inactif). */
+  compagnies_creees: number;
+  /** Produits créés automatiquement (statut en test). */
+  produits_crees: number;
 
 
 
@@ -639,6 +645,9 @@ export async function executerAgents(
     rattrapages_traites: rattrapagesTraites,
     mis_corbeille: corbeille,
     partenaires_routes: partenairesRoutes,
+    offres_partenaires: offresPartenaires,
+    compagnies_creees: compagniesCreees,
+    produits_crees: produitsCrees,
 
 
 
