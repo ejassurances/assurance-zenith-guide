@@ -19,7 +19,6 @@ import {
   supprimerMessageCrm,
   etiqueterMessageCrm,
   scannerBoiteCrm,
-  viderBoiteGeneraleCrm,
 
 } from "@/lib/emails.functions";
 import { importerFactureDepuisEmail } from "@/lib/factures-achat.functions";
