@@ -441,8 +441,57 @@ function SuiviContratsEmail(props: { prenom?: string; listeContrats?: string }) 
   );
 }
 
+/**
+ * Texte validé par le cabinet — à ne pas modifier.
+ * Mise en place de l'espace client pour les dossiers reconstitués a posteriori.
+ */
+function EspaceClientMiseEnPlaceEmail(props: { prenom?: string }) {
+  const style = { fontFamily: "Arial, sans-serif", color: "#1a1a1a", fontSize: "15px", lineHeight: "1.6" };
+  const p = { margin: "0 0 16px" };
+  return React.createElement(
+    "div",
+    { style: style },
+    React.createElement("p", { key: "1", style: p }, "Bonjour " + (props.prenom || "") + ","),
+    React.createElement(
+      "p",
+      { key: "2", style: p },
+      "Nous mettons en place un espace client en ligne, qui vous donnera accès à tout moment aux documents de votre contrat d'assurance chez nous : votre document d'entrée en relation, votre lettre de mission, et le détail de vos garanties.",
+    ),
+    React.createElement(
+      "p",
+      { key: "3", style: p },
+      "Cet espace est ouvert progressivement aux assurés ayant un contrat actif chez nous — c'est votre cas, ce qui explique ce message.",
+    ),
+    React.createElement(
+      "p",
+      { key: "4", style: p },
+      "Dans le cadre de cette mise en place, nous actualisons également votre dossier afin qu'il soit parfaitement en règle avec les obligations réglementaires qui encadrent notre activité de courtier (document d'entrée en relation et lettre de mission). Vous allez recevoir, séparément, un email contenant ces deux documents : nous vous remercions de bien vouloir les consulter et les signer électroniquement, cela ne prendra que quelques minutes.",
+    ),
+    React.createElement(
+      "p",
+      { key: "5", style: p },
+      "Si vous avez la moindre question, vous pouvez nous répondre directement à cet email.",
+    ),
+    React.createElement(
+      "p",
+      { key: "6", style: p },
+      "Cordialement,",
+      React.createElement("br", { key: "b1" }),
+      "Erwan Jaffrelot",
+      React.createElement("br", { key: "b2" }),
+      "EJ Partners Assurances",
+    ),
+  );
+}
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
+  "espace-client-mise-en-place": {
+    component: EspaceClientMiseEnPlaceEmail,
+    subject: "Votre espace client EJ Partners Assurances — mise à jour de votre dossier",
+    displayName: "Espace client - Mise en place (dossier reconstitué)",
+    previewData: { prenom: "Jean" },
+  },
+
   "suivi-contrats": {
     component: SuiviContratsEmail,
     subject: "Point sur votre/vos contrat(s) d'assurance — EJ Partners Assurances",

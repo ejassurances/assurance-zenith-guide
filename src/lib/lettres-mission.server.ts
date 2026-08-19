@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { sendTemplateEmail } from "@/lib/email-templates/send-email";
 import { SITE } from "@/lib/site";
 import { appUrl } from "@/lib/app-url";
+import { envoyerIntroEspaceClientSiReconstitue } from "@/lib/espace-client-intro.server";
 
 /**
  * Création + envoi de la lettre de mission — logique partagée entre l'envoi
@@ -98,6 +99,10 @@ export async function envoyerLettreMission(
     if (insErr || !inserted) throw new Error(insErr?.message ?? "Erreur création lettre");
     lettreId = inserted.id;
   }
+
+  // Dossiers reconstitués a posteriori : e-mail d'introduction « mise en place
+  // de l'espace client » juste avant l'envoi de la lettre de mission.
+  await envoyerIntroEspaceClientSiReconstitue(supabase, d);
 
   const result = await sendTemplateEmail("lettre-mission-envoi", d.client_email, {
     templateData: {
