@@ -89,6 +89,17 @@ export function RisqueLcbftCard({ clientId }: { clientId: string }) {
 
       {risque && (
         <>
+          {(risque.facteurs ?? []).some((f) => f.code === "kyc_identite") && (
+            <div className="mt-4 rounded-xl border-2 border-red-500 bg-red-100 p-4 text-sm text-red-900">
+              <p className="font-semibold">⛔ Identité non vérifiée — évaluation non concluante</p>
+              <p className="mt-1 text-xs">
+                Aucune pièce d'identité valide au dossier : le score affiché ne vaut pas évaluation de vigilance. Le
+                client est placé en vigilance renforcée et l'évaluation reste « à réviser » jusqu'à la collecte des
+                pièces. Aucune souscription ne doit être engagée en l'état.
+              </p>
+            </div>
+          )}
+
           {risque.ppe_detecte && (
             <div className="mt-4 rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-900">
               <p className="font-semibold">Personne politiquement exposée — vigilance renforcée de plein droit</p>
