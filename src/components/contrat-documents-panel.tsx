@@ -63,7 +63,9 @@ export function ContratDocumentsPanel({
     if (!file) return;
     setUploading(true);
     setError(null);
-    const path = `contrats/${contratId}/${Date.now()}-${file.name}`;
+    // Le 1er segment doit être l'identifiant du client : les règles d'accès du
+    // stockage s'appuient sur lui (et le client retrouve la pièce dans son espace).
+    const path = `${clientId}/contrats/${contratId}/${Date.now()}-${file.name}`;
     const { error: upErr } = await supabase.storage.from("dossier-documents").upload(path, file);
     if (upErr) {
       setError(upErr.message);
