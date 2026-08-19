@@ -28,10 +28,13 @@ function libelleType(code: string | null): string {
  */
 export function ContratDocumentsPanel({
   contratId,
+  clientId,
   userId,
   canEdit = true,
 }: {
   contratId: string;
+  /** Client titulaire : le fichier est rangé dans son dossier pour l'espace client. */
+  clientId: string;
   userId: string;
   canEdit?: boolean;
 }) {
