@@ -563,7 +563,14 @@ function ContratDetail() {
         </div>
       )}
 
-      {user && <ContratDocumentsPanel contratId={c.id} userId={user.id} canEdit={canEdit} />}
+      {user && (
+        <ContratDocumentsPanel
+          contratId={c.id}
+          clientId={c.client_id}
+          userId={user.id}
+          canEdit={canEdit}
+        />
+      )}
 
       {/* Tableau des échéances */}
       <section className="space-y-3 rounded-lg border border-line bg-surface p-5">
