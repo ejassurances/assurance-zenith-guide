@@ -39,7 +39,43 @@ export async function evaluerRisqueLcbft(admin: Admin, clientId: string): Promis
   const ligne = (Array.isArray(data) ? data[0] : data) as RisqueLcbft | null;
   if (!ligne) return null;
 
-  if (ligne.niveau_vigilance === "renforcee" && !ligne.decide_le) {
+  const identite = (ligne.facteurs ?? []).find((f) => f.code === "kyc_identite");
+
+  // Identité non vérifiée : alerte de conformité dédiée, indépendante de la
+  // validation hiérarchique (aucun score ne peut être considéré comme fiable).
+  if (identite) {
+    const { data: dejaAlerte } = await admin
+      .from("taches")
+      .select("id")
+      .eq("client_id", clientId)
+      .in("statut", ["a_faire", "en_cours"])
+      .ilike("titre", "Pièces KYC manquantes%")
+      .limit(1)
+      .maybeSingle();
+    if (!dejaAlerte) {
+      const { data: client } = await admin
+        .from("clients")
+        .select("nom, prenom")
+        .eq("id", clientId)
+        .maybeSingle();
+      const c = client as { nom: string; prenom: string | null } | null;
+      const nom = [c?.prenom, c?.nom].filter(Boolean).join(" ") || "Client";
+      await creerTacheAdmin(admin, {
+        titre: `Pièces KYC manquantes — ${nom}`,
+        description: [
+          identite.libelle,
+          "",
+          "L'évaluation du risque LCB-FT ne peut pas être considérée comme concluante : le client est placé en vigilance renforcée et son évaluation est marquée « à réviser ».",
+          "Collectez la pièce d'identité en cours de validité (et les justificatifs manquants) avant toute souscription.",
+          `Fiche client : /espace/clients/${clientId}`,
+        ].join("\n"),
+        client_id: clientId,
+        priorite: "urgente",
+      });
+    }
+  }
+
+  if (ligne.niveau_vigilance === "renforcee" && !ligne.decide_le && !identite) {
     const { data: client } = await admin
       .from("clients")
       .select("nom, prenom")
