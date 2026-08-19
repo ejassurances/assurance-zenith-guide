@@ -553,3 +553,81 @@ export async function traiterEmailPartenaireOffre(
 
   return resultat;
 }
+
+/**
+ * Rattrapage : réanalyse des mails classés « A_Ignorer » (publicité présumée).
+ * Ceux qui portent en réalité une information exploitable (codes courtier,
+ * offre, mise à jour produit, challenge) sont référencés puis remis en
+ * « Service Partenaire/A_Traiter ».
+ */
+export async function reprendreMailsIgnores(
+  admin: Admin,
+  userId: string,
+  maxMessages = 150,
+): Promise<{
+  examines: number;
+  recuperes: number;
+  compagnies_creees: number;
+  produits_crees: number;
+  erreurs: number;
+  details: { id: string; categorie: CategorieOffre; compagnie: string | null; sujet: string | null }[];
+}> {
+  const { listerParLabel, lireMessage, poserLabelCabinet } = await import("@/lib/gmail.server");
+  const { LABELS_CABINET } = await import("@/lib/gmail-labels");
+
+  const messages = await listerParLabel(LABELS_CABINET.a_ignorer, maxMessages).catch((e) => {
+    console.error("[partenaires-offres] lecture du label A_Ignorer impossible", e);
+    return [];
+  });
+
+  const { chargerAnnuairePartenaires, compagnieDeExpediteur } = await import("@/lib/partenaires-emails.server");
+  const annuaire = await chargerAnnuairePartenaires(admin);
+
+  let recuperes = 0;
+  let compagnies = 0;
+  let produits = 0;
+  let erreurs = 0;
+  const details: { id: string; categorie: CategorieOffre; compagnie: string | null; sujet: string | null }[] = [];
+
+  for (const m of messages) {
+    try {
+      const detail = await lireMessage(m.id);
+      const resultat = await traiterEmailPartenaireOffre(admin, {
+        email: {
+          sujet: detail.sujet ?? m.sujet ?? null,
+          expediteur_nom: detail.expediteur_nom ?? null,
+          expediteur_email: detail.expediteur_email ?? m.expediteur_email ?? null,
+          texte: detail.texte ?? detail.snippet ?? null,
+          pieces_jointes: detail.pieces_jointes.map((p) => ({ nom: p.nom, mime: p.mime })),
+        },
+        gmail_message_id: m.id,
+        recu_le: m.date ?? detail.date ?? null,
+        userId,
+        compagnie_connue: compagnieDeExpediteur(annuaire, detail.expediteur_email ?? m.expediteur_email),
+      });
+      if (resultat.action === "ignore") continue;
+      await poserLabelCabinet(m.id, "sp_a_traiter", { retirer: ["a_ignorer"] });
+      recuperes++;
+      if (resultat.compagnie_creee) compagnies++;
+      produits += resultat.produits_crees.length;
+      details.push({
+        id: m.id,
+        categorie: resultat.categorie,
+        compagnie: resultat.compagnie_nom,
+        sujet: detail.sujet ?? m.sujet ?? null,
+      });
+    } catch (e) {
+      erreurs++;
+      console.error("[partenaires-offres] rattrapage impossible", m.id, e);
+    }
+  }
+
+  return {
+    examines: messages.length,
+    recuperes,
+    compagnies_creees: compagnies,
+    produits_crees: produits,
+    erreurs,
+    details,
+  };
+}
