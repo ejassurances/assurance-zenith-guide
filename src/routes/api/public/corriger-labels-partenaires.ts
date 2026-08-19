@@ -29,7 +29,16 @@ export const Route = createFileRoute("/api/public/corriger-labels-partenaires")(
         const userId = (admins ?? [])[0]?.user_id;
         if (!userId) return Response.json({ error: "Aucun administrateur configuré." }, { status: 500 });
 
+        const mode = new URL(request.url).searchParams.get("mode");
+
         try {
+          if (mode === "identifier") {
+            // Rattrapage : identification du client concerné + note de suivi
+            // sur les emails partenaires déjà routés.
+            const { identifierClientsPartenairesRetroactif } = await import("@/lib/partenaires-emails.server");
+            const resultat = await identifierClientsPartenairesRetroactif(supabaseAdmin, userId);
+            return Response.json({ ok: true, mode: "identifier", ...resultat });
+          }
           const { corrigerLabelsPartenaires } = await import("@/lib/partenaires-emails.server");
           const resultat = await corrigerLabelsPartenaires(supabaseAdmin, userId);
           return Response.json({ ok: true, ...resultat });
@@ -38,6 +47,7 @@ export const Route = createFileRoute("/api/public/corriger-labels-partenaires")(
           console.error("[corriger-labels-partenaires]", e);
           return Response.json({ error: message }, { status: 500 });
         }
+
       },
     },
   },

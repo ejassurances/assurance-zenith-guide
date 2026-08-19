@@ -76,6 +76,9 @@ export async function routerEmailPartenaire(
     gmail_thread_id?: string | null;
     recu_le?: string | null;
     sujet?: string | null;
+    /** Corps du mail si déjà lu (évite un second appel Gmail). */
+    texte?: string | null;
+
     expediteur_email?: string | null;
     compagnie: { id: string | null; nom: string };
     userId: string;
@@ -124,9 +127,35 @@ export async function routerEmailPartenaire(
     { onConflict: "gmail_message_id" },
   );
 
+  // Identification du client concerné (analyse IA légère sur sujet + corps) :
+  // un mail partenaire parle presque toujours d'un dossier précis. Aucun
+  // rattachement approximatif — sans correspondance fiable, on ne lie rien.
+  try {
+    const { identifierClientEmailPartenaire } = await import("@/lib/partenaires-identification.server");
+    const res = await identifierClientEmailPartenaire(admin, {
+      gmail_message_id: params.gmail_message_id,
+      sujet: params.sujet ?? null,
+      texte: params.texte ?? null,
+      compagnie: compagnie.nom,
+      userId: params.userId,
+      client_id_existant: existant?.client_id ?? null,
+      contrat_id_existant: existant?.contrat_id ?? null,
+    });
+    if (res.client_id) {
+      console.info(
+        `[partenaires] client identifié sur ${params.gmail_message_id} (${res.motif}) — note ${
+          res.note_creee ? "créée" : "déjà présente"
+        }`,
+      );
+    }
+  } catch (e) {
+    console.error("[partenaires] identification du client impossible", params.gmail_message_id, e);
+  }
+
   // Étiquetage : « Service Partenaire/A_Traiter » puis « Archive ».
   await poserLabelCabinet(params.gmail_message_id, "sp_a_traiter");
   await poserLabelCabinet(params.gmail_message_id, "sp_archive", { retirer: ["sp_a_traiter"] });
+
 
   // Nettoyage EN DERNIER et sur la base des étiquettes réellement posées :
   // toute étiquette « Gestion Commerciale » ou « Service Client » (y compris
@@ -259,4 +288,73 @@ export async function corrigerLabelsPartenaires(
     details,
   };
 }
+
+/**
+ * Rattrapage rétroactif : sur tous les emails déjà routés « partenaire », on
+ * relance l'identification du client concerné et on crée la note de suivi sur
+ * sa fiche quand une correspondance fiable existe.
+ */
+export async function identifierClientsPartenairesRetroactif(
+  admin: Admin,
+  userId: string,
+): Promise<{
+  examines: number;
+  clients_identifies: number;
+  notes_creees: number;
+  erreurs: number;
+  details: { id: string; compagnie: string; client: string | null; motif: string | null }[];
+}> {
+  const { identifierClientEmailPartenaire } = await import("@/lib/partenaires-identification.server");
+
+  const { data: lignes } = await admin
+    .from("crm_emails")
+    .select("gmail_message_id, triage_ia, client_id, contrat_id")
+    .not("triage_ia", "is", null)
+    .limit(1000);
+
+  let identifies = 0;
+  let notes = 0;
+  let erreurs = 0;
+  let examines = 0;
+  const details: { id: string; compagnie: string; client: string | null; motif: string | null }[] = [];
+
+  for (const ligne of lignes ?? []) {
+    const triage = ligne.triage_ia as { agent?: string; compagnie?: string; sujet?: string | null } | null;
+    if (triage?.agent !== "partenaire") continue;
+    examines++;
+    try {
+      const res = await identifierClientEmailPartenaire(admin, {
+        gmail_message_id: ligne.gmail_message_id,
+        sujet: triage.sujet ?? null,
+        compagnie: triage.compagnie ?? "partenaire",
+        userId,
+        client_id_existant: ligne.client_id ?? null,
+        contrat_id_existant: ligne.contrat_id ?? null,
+      });
+      if (res.client_id) identifies++;
+      if (res.note_creee) notes++;
+      let nomClient: string | null = null;
+      if (res.client_id) {
+        const { data: c } = await admin
+          .from("clients")
+          .select("nom, prenom")
+          .eq("id", res.client_id)
+          .maybeSingle();
+        nomClient = c ? `${c.prenom ?? ""} ${c.nom}`.trim() : null;
+      }
+      details.push({
+        id: ligne.gmail_message_id,
+        compagnie: triage.compagnie ?? "partenaire",
+        client: nomClient,
+        motif: res.motif,
+      });
+    } catch (e) {
+      erreurs++;
+      console.error("[partenaires] identification rétroactive impossible", ligne.gmail_message_id, e);
+    }
+  }
+
+  return { examines, clients_identifies: identifies, notes_creees: notes, erreurs, details };
+}
+
 
