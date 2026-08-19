@@ -310,12 +310,21 @@ export function DossierDevisPanel({
       return;
     }
     setSaving(true);
+    const mensuel = form.cotisation_mensuelle
+      ? Number(form.cotisation_mensuelle)
+      : mensuelMoyenDerive != null
+        ? Math.round(mensuelMoyenDerive * 100) / 100
+        : null;
     const { error } = await supabase.from("dossier_devis").insert({
       dossier_id: dossierId,
       compagnie_id: form.compagnie_id,
       produit_id: form.produit_id,
       formule_id: form.formule_id || null,
-      cotisation_mensuelle: form.cotisation_mensuelle ? Number(form.cotisation_mensuelle) : null,
+      montant_total_saisi: form.montant_total_saisi ? Number(form.montant_total_saisi) : null,
+      type_cotisation: form.type_cotisation || null,
+      cotisation_mensuelle: mensuel,
+      cotisation_min: form.type_cotisation === "CRD" && form.cotisation_min ? Number(form.cotisation_min) : null,
+      cotisation_max: form.type_cotisation === "CRD" && form.cotisation_max ? Number(form.cotisation_max) : null,
       quotite_pct: form.quotite_pct ? Number(form.quotite_pct) : null,
       garanties_resume: form.garanties_resume.trim() || null,
       source: "manuel",
@@ -327,7 +336,11 @@ export function DossierDevisPanel({
       compagnie_id: "",
       produit_id: "",
       formule_id: "",
+      montant_total_saisi: "",
+      type_cotisation: "",
       cotisation_mensuelle: "",
+      cotisation_min: "",
+      cotisation_max: "",
       quotite_pct: "",
       garanties_resume: "",
     });
