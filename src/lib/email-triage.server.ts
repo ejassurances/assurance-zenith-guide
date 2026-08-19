@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { estEmailInterne } from "@/lib/domaines-internes";
+
 
 /**
  * Agent commercial — analyse IA d'un email entrant non rattaché à un client
