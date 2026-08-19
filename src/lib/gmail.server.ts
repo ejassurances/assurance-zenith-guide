@@ -374,37 +374,38 @@ export async function resoudreLabel(nom: string): Promise<string> {
  * étiquettes devenues obsolètes). Aucune erreur n'est avalée : un échec
  * d'étiquetage fait échouer l'étape appelante, qui le journalise et le remonte.
  *
- * Règle cabinet : dès qu'un agent prend un message en charge, celui-ci quitte la
- * boîte de réception générale (retrait de INBOX). Chaque agent travaille
- * exclusivement dans SES étiquettes ; plus personne ne traite depuis la boîte
- * générale. Passer `garderInbox: true` pour déroger ponctuellement.
+ * Règle cabinet : la boîte de réception générale reste gérée manuellement par le
+ * dirigeant — l'étiquetage NE retire donc PAS INBOX. Chaque agent travaille dans
+ * son étiquette « A_Traiter ». Passer `sortirDeLInbox: true` pour un cas
+ * particulier (ex. mise à la corbeille / archivage explicite).
  */
 export async function poserLabelCabinet(
   id: string,
   cle: LabelCabinet,
-  options?: { retirer?: LabelCabinet[]; garderInbox?: boolean },
+  options?: { retirer?: LabelCabinet[]; sortirDeLInbox?: boolean },
 ): Promise<void> {
   const ajouter = await resoudreLabel(LABELS_CABINET[cle]);
   const retirer = await Promise.all((options?.retirer ?? []).map((c) => resoudreLabel(LABELS_CABINET[c])));
-  if (!options?.garderInbox) retirer.push("INBOX");
+  if (options?.sortirDeLInbox) retirer.push("INBOX");
   await modifierLabels(id, { ajouter: [ajouter], retirer });
 }
 
 /**
- * Applique une étiquette Gmail existante, désignée par son nom exact, et sort le
- * message de la boîte générale (sauf `garderInbox`).
+ * Applique une étiquette Gmail existante, désignée par son nom exact. Le message
+ * reste dans la boîte générale (gérée manuellement) sauf `sortirDeLInbox`.
  */
 export async function etiqueterMessage(
   id: string,
   nom: string,
-  options?: { garderInbox?: boolean },
+  options?: { sortirDeLInbox?: boolean },
 ): Promise<void> {
   const labelId = await resoudreLabel(nom);
   await modifierLabels(id, {
     ajouter: [labelId],
-    retirer: options?.garderInbox ? [] : ["INBOX"],
+    retirer: options?.sortirDeLInbox ? ["INBOX"] : [],
   });
 }
+
 
 /**
  * Rattrapage : sort de la boîte générale tous les messages déjà pris en charge
