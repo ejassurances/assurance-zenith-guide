@@ -26,6 +26,12 @@ export type DossierDevis = {
   produit_id: string | null;
   formule_id: string | null;
   cotisation_mensuelle: number | null;
+  /** Mode de calcul de la cotisation : CI (capital initial, constante) ou CRD (capital restant dû, dégressive). */
+  type_cotisation: "CI" | "CRD" | null;
+  cotisation_min: number | null;
+  cotisation_max: number | null;
+  /** Montant total de l'assurance sur la durée du prêt (point d'entrée de la saisie manuelle). */
+  montant_total_saisi: number | null;
   source: "manuel" | "api" | "pdf";
   garanties_resume: string | null;
   quotite_pct: number | null;
