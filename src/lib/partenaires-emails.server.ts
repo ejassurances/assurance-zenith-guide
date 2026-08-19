@@ -289,3 +289,72 @@ export async function corrigerLabelsPartenaires(
   };
 }
 
+/**
+ * Rattrapage rétroactif : sur tous les emails déjà routés « partenaire », on
+ * relance l'identification du client concerné et on crée la note de suivi sur
+ * sa fiche quand une correspondance fiable existe.
+ */
+export async function identifierClientsPartenairesRetroactif(
+  admin: Admin,
+  userId: string,
+): Promise<{
+  examines: number;
+  clients_identifies: number;
+  notes_creees: number;
+  erreurs: number;
+  details: { id: string; compagnie: string; client: string | null; motif: string | null }[];
+}> {
+  const { identifierClientEmailPartenaire } = await import("@/lib/partenaires-identification.server");
+
+  const { data: lignes } = await admin
+    .from("crm_emails")
+    .select("gmail_message_id, triage_ia, client_id, contrat_id")
+    .not("triage_ia", "is", null)
+    .limit(1000);
+
+  let identifies = 0;
+  let notes = 0;
+  let erreurs = 0;
+  let examines = 0;
+  const details: { id: string; compagnie: string; client: string | null; motif: string | null }[] = [];
+
+  for (const ligne of lignes ?? []) {
+    const triage = ligne.triage_ia as { agent?: string; compagnie?: string; sujet?: string | null } | null;
+    if (triage?.agent !== "partenaire") continue;
+    examines++;
+    try {
+      const res = await identifierClientEmailPartenaire(admin, {
+        gmail_message_id: ligne.gmail_message_id,
+        sujet: triage.sujet ?? null,
+        compagnie: triage.compagnie ?? "partenaire",
+        userId,
+        client_id_existant: ligne.client_id ?? null,
+        contrat_id_existant: ligne.contrat_id ?? null,
+      });
+      if (res.client_id) identifies++;
+      if (res.note_creee) notes++;
+      let nomClient: string | null = null;
+      if (res.client_id) {
+        const { data: c } = await admin
+          .from("clients")
+          .select("nom, prenom")
+          .eq("id", res.client_id)
+          .maybeSingle();
+        nomClient = c ? `${c.prenom ?? ""} ${c.nom}`.trim() : null;
+      }
+      details.push({
+        id: ligne.gmail_message_id,
+        compagnie: triage.compagnie ?? "partenaire",
+        client: nomClient,
+        motif: res.motif,
+      });
+    } catch (e) {
+      erreurs++;
+      console.error("[partenaires] identification rétroactive impossible", ligne.gmail_message_id, e);
+    }
+  }
+
+  return { examines, clients_identifies: identifies, notes_creees: notes, erreurs, details };
+}
+
+
