@@ -354,6 +354,34 @@ export async function executerAgents(
 
           }
 
+          // Agent Service Partenaire — expéditeur INCONNU de l'annuaire : le
+          // mail peut malgré tout apporter une information exploitable (codes
+          // courtier, offre de partenariat, mise à jour produit, challenge).
+          // Dans ce cas la compagnie et ses produits sont référencés (inactif /
+          // en test), une tâche décrit l'ajout, et le mail n'est JAMAIS ignoré.
+          const offreInconnue = await traiterEmailPartenaireOffre(admin, {
+            email: entree,
+            gmail_message_id: m.id,
+            recu_le: m.date ?? detail.date ?? null,
+            userId,
+          }).catch((e: unknown) => {
+            console.error("[partenaires-offres] traitement impossible", m.id, e);
+            return null;
+          });
+          if (offreInconnue && offreInconnue.action !== "ignore") {
+            offresPartenaires++;
+            if (offreInconnue.compagnie_creee) compagniesCreees++;
+            produitsCrees += offreInconnue.produits_crees.length;
+            await poserLabelCabinet(m.id, "sp_a_traiter");
+            if (rattrapage.has(m.id)) {
+              await retirerLabelRattrapage(m.id);
+              rattrapagesTraites++;
+            }
+            continue;
+          }
+
+
+
           // Garde-fou INTERNE : un mail envoyé depuis une adresse du cabinet
           // (transfert, note interne) n'est jamais un prospect. Aucune fiche
           // client, aucun dossier : on dépose une tâche d'arbitrage humain.
