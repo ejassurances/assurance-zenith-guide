@@ -126,15 +126,28 @@ export function DossierDevisPanel({
   /** Comparatif : par défaut une seule offre par assureur porteur (doublons de canaux masqués). */
   const [afficherDoublons, setAfficherDoublons] = useState(false);
 
+  /** Base de comparaison issue du recueil des besoins emprunteur (pas de ressaisie). */
+  const [moisRestants, setMoisRestants] = useState<number | null>(null);
+  const [crdRecueil, setCrdRecueil] = useState<number | null>(null);
 
   const [form, setForm] = useState({
     compagnie_id: "",
     produit_id: "",
     formule_id: "",
+    montant_total_saisi: "",
+    type_cotisation: "" as "" | "CI" | "CRD",
     cotisation_mensuelle: "",
+    cotisation_min: "",
+    cotisation_max: "",
     quotite_pct: "",
     garanties_resume: "",
   });
+
+  /** Mensuel moyen dérivé : montant total sur la durée ÷ mois restants du recueil. */
+  const mensuelMoyenDerive =
+    form.montant_total_saisi && moisRestants && moisRestants > 0
+      ? Number(form.montant_total_saisi) / moisRestants
+      : null;
 
   const load = useCallback(async () => {
     const [d, c, p, cl, dos] = await Promise.all([
