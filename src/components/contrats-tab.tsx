@@ -10,6 +10,7 @@ type Row = {
   assureur: string;
   produit: string;
   date_effet: string | null;
+  date_echeance: string | null;
   duree_mois: number | null;
   prime_annuelle: number | null;
   is_emprunteur: boolean;
@@ -20,6 +21,7 @@ type Row = {
   compagnie_id: string | null;
   dossier_id: string | null;
 };
+
 
 export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: boolean }) {
   const [rows, setRows] = useState<Row[]>([]);
@@ -34,8 +36,9 @@ export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: 
     const { data } = await supabase
       .from("contrats")
       .select(
-        "id,numero,assureur,produit,date_effet,duree_mois,prime_annuelle,is_emprunteur,capital_initial,taux_assurance_annuel,statut,economie_realisee,compagnie_id,dossier_id",
+        "id,numero,assureur,produit,date_effet,date_echeance,duree_mois,prime_annuelle,is_emprunteur,capital_initial,taux_assurance_annuel,statut,economie_realisee,compagnie_id,dossier_id",
       )
+
       .eq("client_id", clientId)
       .order("created_at", { ascending: false });
     const list = (data as Row[]) ?? [];
@@ -153,8 +156,10 @@ export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: 
                 <th className="px-3 py-2 text-left">Produit</th>
                 <th className="px-3 py-2 text-left">Assureur</th>
                 <th className="px-3 py-2 text-left">N° / Effet</th>
+                <th className="px-3 py-2 text-left">Fin de contrat</th>
                 <th className="px-3 py-2 text-right">Prime annuelle</th>
                 <th className="px-3 py-2 text-right">Économie réalisée</th>
+
                 <th className="px-3 py-2 text-left">Statut</th>
                 <th className="px-3 py-2" />
               </tr>
@@ -180,7 +185,11 @@ export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: 
                     <br />
                     {r.date_effet ? new Date(r.date_effet).toLocaleDateString("fr-FR") : "—"}
                   </td>
+                  <td className="px-3 py-2 text-xs text-ink-muted">
+                    {r.date_echeance ? new Date(r.date_echeance).toLocaleDateString("fr-FR") : "—"}
+                  </td>
                   <td className="px-3 py-2 text-right">{formatEuro(r.prime_annuelle)}</td>
+
                   <td className="px-3 py-2 text-right">
                     {r.is_emprunteur && r.economie_realisee !== null ? (
                       <span className="font-medium text-[color:var(--crm-gold)]">{formatEuro(r.economie_realisee)}</span>

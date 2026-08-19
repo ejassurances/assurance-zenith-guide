@@ -69,5 +69,12 @@ export const enregistrerRetourCompagnie = createServerFn({ method: "POST" })
       par: userId,
     });
 
-    return { ok: true };
+    // Le contrat est confirmé : entrée immédiate au portefeuille.
+    const { creerContratDepuisDossier } = await import("./contrat-depuis-dossier.server");
+    const contrat = await creerContratDepuisDossier(supabase, data.dossier_id, userId, {
+      numero: data.numero_contrat ?? null,
+    });
+
+    return { ok: true, contrat_id: contrat.contrat_id, dda_a_regulariser: contrat.dda_a_regulariser };
   });
+

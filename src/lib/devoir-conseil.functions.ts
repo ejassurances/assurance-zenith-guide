@@ -275,5 +275,15 @@ export const changerEtapeDossier = createServerFn({ method: "POST" })
       par: userId,
     });
 
+    // Contrat confirmé par la compagnie : il entre au portefeuille (client
+    // actif, chiffre d'affaires, date de fin), même si les documents DDA
+    // restent à faire signer — une tâche de régularisation est alors créée.
+    if (data.etape === "contrat_valide" || data.etape === "contrat_actif") {
+      const { creerContratDepuisDossier } = await import("./contrat-depuis-dossier.server");
+      const contrat = await creerContratDepuisDossier(supabase, data.dossier_id, userId);
+      return { ok: true, contrat_id: contrat.contrat_id, dda_a_regulariser: contrat.dda_a_regulariser };
+    }
+
     return { ok: true };
   });
+
