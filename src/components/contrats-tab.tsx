@@ -10,6 +10,7 @@ type Row = {
   assureur: string;
   produit: string;
   date_effet: string | null;
+  date_echeance: string | null;
   duree_mois: number | null;
   prime_annuelle: number | null;
   is_emprunteur: boolean;
@@ -20,6 +21,7 @@ type Row = {
   compagnie_id: string | null;
   dossier_id: string | null;
 };
+
 
 export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: boolean }) {
   const [rows, setRows] = useState<Row[]>([]);
