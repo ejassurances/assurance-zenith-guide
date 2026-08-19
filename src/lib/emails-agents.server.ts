@@ -235,6 +235,8 @@ export async function executerAgents(
               gmail_thread_id: detail.thread_id ?? m.thread_id ?? null,
               recu_le: m.date ?? detail.date ?? null,
               sujet: entree.sujet,
+              texte: entree.texte,
+
               expediteur_email: entree.expediteur_email,
               compagnie: compagnieExp,
               userId,
