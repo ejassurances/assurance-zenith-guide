@@ -245,12 +245,34 @@ export async function executerAgents(
               nettoyer: true,
             });
             partenairesRoutes++;
+
+            // Le mail partenaire contient-il une information exploitable
+            // (codes courtier, offre, mise à jour produit, challenge) ? Dans ce
+            // cas il repasse en « Service Partenaire/A_Traiter ».
+            const offre = await traiterEmailPartenaireOffre(admin, {
+              email: entree,
+              gmail_message_id: m.id,
+              recu_le: m.date ?? detail.date ?? null,
+              userId,
+              compagnie_connue: compagnieExp,
+            }).catch((e) => {
+              console.error("[partenaires-offres] traitement impossible", m.id, e);
+              return null;
+            });
+            if (offre && offre.action !== "ignore") {
+              offresPartenaires++;
+              if (offre.compagnie_creee) compagniesCreees++;
+              produitsCrees += offre.produits_crees.length;
+              await poserLabelCabinet(m.id, "sp_a_traiter");
+            }
+
             if (rattrapage.has(m.id)) {
               await retirerLabelRattrapage(m.id);
               rattrapagesTraites++;
             }
             continue;
           }
+
 
 
 
