@@ -4,7 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CommissionMoisCard } from "@/components/commission-mois-card";
-import { getCaRealEtN1, getCommissionsEstimeesAnneeEnCours, type CaRealSummary } from "@/lib/dashboard.functions";
+import { getCaRealEtN1, getSyntheseAnneeCommissions, type CaRealSummary } from "@/lib/dashboard.functions";
+import type { SyntheseAnnee } from "@/lib/commission-previsions";
 import { ScoreRings } from "@/components/score-rings";
 import { useScoresValeur } from "@/hooks/use-scores-valeur";
 import type { NiveauConformite } from "@/lib/conformite-score";
@@ -78,12 +79,13 @@ function Dashboard() {
   useEffect(() => {
     if (role === "client") navigate({ to: "/espace/mon-espace", replace: true });
   }, [role, navigate]);
-  const [stats, setStats] = useState({ clients: 0, prospects: 0, dossiers: 0, enCours: 0, signes: 0, commissions: 0 });
+  const [stats, setStats] = useState({ clients: 0, prospects: 0, dossiers: 0, enCours: 0, signes: 0 });
+  const [synthese, setSynthese] = useState<SyntheseAnnee | null>(null);
   const [taches, setTaches] = useState<Tache[]>([]);
   const [caReal, setCaReal] = useState<CaRealSummary | null>(null);
   const scoresValeur = useScoresValeur();
   const fetchCaReal = useServerFn(getCaRealEtN1);
-  const fetchCommissionsEstimees = useServerFn(getCommissionsEstimeesAnneeEnCours);
+  const fetchSynthese = useServerFn(getSyntheseAnneeCommissions);
 
   useEffect(() => {
     (async () => {
@@ -93,7 +95,7 @@ function Dashboard() {
         supabase.from("dossiers").select("*", { count: "exact", head: true }),
         supabase.from("dossiers").select("*", { count: "exact", head: true }).eq("statut", "en_cours"),
         supabase.from("dossiers").select("*", { count: "exact", head: true }).eq("statut", "signe"),
-        fetchCommissionsEstimees(),
+        fetchSynthese(),
         supabase
           .from("taches")
           .select("id,titre,echeance,priorite,client_id,clients(prenom,nom,conformite_score,conformite_niveau)")
@@ -108,12 +110,12 @@ function Dashboard() {
         dossiers: tot.count ?? 0,
         enCours: ec.count ?? 0,
         signes: si.count ?? 0,
-        commissions: com,
       });
+      setSynthese(com);
       setTaches((tch.data ?? []) as unknown as Tache[]);
       setCaReal(ca);
     })();
-  }, [fetchCaReal, fetchCommissionsEstimees]);
+  }, [fetchCaReal, fetchSynthese]);
 
   return (
     <div>
@@ -136,8 +138,13 @@ function Dashboard() {
         )}
         <Card label="Devis en cours" value={stats.enCours} sub={`${stats.dossiers} dossiers ouverts`} />
         <Card label="Affaires conclues" value={stats.signes} />
-        {role !== "client" && (
-          <Card label="Commissions estimées" value={`${stats.commissions.toLocaleString("fr-FR")} €`} accent />
+        {role !== "client" && synthese && (
+          <Card
+            label={`Reste à encaisser ${synthese.annee}`}
+            value={`${synthese.previsionnelRestant.toLocaleString("fr-FR")} €`}
+            sub={`Total attendu ${synthese.annee} : ${synthese.totalAttendu.toLocaleString("fr-FR")} €`}
+            accent
+          />
         )}
         {role !== "client" && caReal && <CaRealCard data={caReal} />}
       </div>
