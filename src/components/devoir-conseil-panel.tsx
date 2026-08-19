@@ -689,7 +689,7 @@ export function DevoirConseilPanel({
             onClick={prefillDepuisDevis}
             className="rounded-full border border-line px-4 py-2 text-sm hover:bg-surface"
           >
-            Reprendre les {devisDossier.length} devis du dossier
+            Réactualiser depuis les {devisDossier.length} devis du dossier
           </button>
         )}
       </div>
