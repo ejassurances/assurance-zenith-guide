@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import type { EmailResume } from "@/lib/gmail.server";
+import { estEmailInterne } from "@/lib/domaines-internes";
+
 
 /**
  * Exécution des agents IA (veille, finance, commercial, relation client) sur un
