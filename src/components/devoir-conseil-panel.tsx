@@ -227,17 +227,21 @@ export function DevoirConseilPanel({
       const { data } = await supabase
         .from("dossier_devis")
         .select(
-          "id, cotisation_mensuelle, garanties_resume, compagnies:compagnie_id(nom), produits:produit_id(nom), produit_formules:formule_id(nom)",
+          "id, cotisation_mensuelle, type_cotisation, cotisation_min, cotisation_max, montant_total_saisi, garanties_resume, compagnies:compagnie_id(nom), produits:produit_id(nom), produit_formules:formule_id(nom)",
         )
         .eq("dossier_id", dossierId)
         .order("created_at", { ascending: true });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const list = ((data as any[]) ?? []).map((d) => ({
+      const list: DevisLigne[] = ((data as any[]) ?? []).map((d) => ({
         id: d.id as string,
         compagnie: d.compagnies?.nom ?? "",
         produit: d.produits?.nom ?? "",
         formule: d.produit_formules?.nom ?? "",
         cotisation_mensuelle: d.cotisation_mensuelle as number | null,
+        type_cotisation: (d.type_cotisation as "CI" | "CRD" | null) ?? null,
+        cotisation_min: (d.cotisation_min as number | null) ?? null,
+        cotisation_max: (d.cotisation_max as number | null) ?? null,
+        montant_total_saisi: (d.montant_total_saisi as number | null) ?? null,
         garanties_resume: (d.garanties_resume as string | null) ?? null,
       }));
       setDevisDossier(list);
