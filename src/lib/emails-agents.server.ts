@@ -260,7 +260,7 @@ export async function executerAgents(
               recu_le: m.date ?? detail.date ?? null,
               userId,
               compagnie_connue: compagnieExp,
-            }).catch((e) => {
+            }).catch((e: unknown) => {
               console.error("[partenaires-offres] traitement impossible", m.id, e);
               return null;
             });
