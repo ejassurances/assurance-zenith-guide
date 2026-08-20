@@ -1444,6 +1444,39 @@ export type Database = {
           },
         ]
       }
+      config_labels_gmail: {
+        Row: {
+          actif: boolean
+          adresse: string | null
+          id: string
+          libelle: string
+          prefixe: string
+          service_cle: string
+          theme: string
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          adresse?: string | null
+          id?: string
+          libelle: string
+          prefixe: string
+          service_cle: string
+          theme?: string
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          adresse?: string | null
+          id?: string
+          libelle?: string
+          prefixe?: string
+          service_cle?: string
+          theme?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       conformite_documents: {
         Row: {
           created_at: string

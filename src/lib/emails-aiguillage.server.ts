@@ -3,8 +3,8 @@ import type { Database } from "@/integrations/supabase/types";
 import type { EmailResume } from "@/lib/gmail.server";
 import { estEmailInterne } from "@/lib/domaines-internes";
 import {
-  ADRESSES_SERVICES,
-  SERVICES,
+  adressesServices,
+  chargerServices,
   serviceDeEtiquettes,
   serviceParCle,
   type DefinitionService,
@@ -64,6 +64,7 @@ function extraireJson(texte: string): Record<string, unknown> {
 }
 
 function consigne(params: {
+  services: DefinitionService[];
   arrivee: DefinitionService;
   sujet: string | null;
   expediteur: string | null;
@@ -76,7 +77,7 @@ function consigne(params: {
     "appartient réellement, afin de corriger une éventuelle erreur de rangement.",
     "",
     "Services possibles :",
-    ...SERVICES.map((s) => `- ${s.cle} : ${s.theme}`),
+    ...params.services.map((s) => `- ${s.cle} : ${s.theme}`),
     "",
     `Service dans lequel le mail a été rangé : ${params.arrivee.cle}`,
     "",
@@ -94,13 +95,14 @@ function consigne(params: {
     (params.texte ?? "").slice(0, 6000),
     "",
     'Réponds STRICTEMENT en JSON : {"service":"' +
-      SERVICES.map((s) => s.cle).join("|") +
+      params.services.map((s) => s.cle).join("|") +
       '|null","confiance":0.0,',
     '"resume":"une phrase décrivant la demande, à la troisième personne, sans conseil ni prise de position"}',
   ].join("\n");
 }
 
 async function analyser(params: {
+  services: DefinitionService[];
   arrivee: DefinitionService;
   sujet: string | null;
   expediteur: string | null;
@@ -121,7 +123,7 @@ async function analyser(params: {
       const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
       const brut = extraireJson(json.choices?.[0]?.message?.content ?? "");
       const valeur = String(brut["service"] ?? "").trim().toLowerCase();
-      const service = SERVICES.find((s) => s.cle === valeur)?.cle ?? null;
+      const service = params.services.find((s) => s.cle === valeur)?.cle ?? null;
       const resume = typeof brut["resume"] === "string" ? brut["resume"].trim().slice(0, 400) : "";
       return {
         service,
@@ -193,6 +195,11 @@ export async function aiguillerLot(
 
   const { lireMessage, envoyerMessage, poserLabelCabinet } = await import("@/lib/gmail.server");
 
+  // Table de correspondance des libellés (cache court côté module).
+  const services = await chargerServices(admin);
+  if (!services.length) return out;
+  const adresses = adressesServices(services);
+
   const ids = params.messages.map((m) => m.id);
   const { data: dejaVus } = await admin
     .from("crm_emails")
@@ -214,15 +221,16 @@ export async function aiguillerLot(
     const expediteur = (m.expediteur_email ?? "").toLowerCase().trim();
     if (!expediteur) continue;
     // Anti-boucle : jamais de renvoi d'un mail interne ou d'une adresse de service.
-    if (estEmailInterne(expediteur) || ADRESSES_SERVICES.includes(expediteur)) continue;
+    if (estEmailInterne(expediteur) || adresses.includes(expediteur)) continue;
 
-    const arrivee = serviceDeEtiquettes(m.etiquettes);
+    const arrivee = serviceDeEtiquettes(services, m.etiquettes);
     if (!arrivee) continue;
 
     try {
       const detail = await lireMessage(m.id);
       const pieces = detail.pieces_jointes.map((p) => p.nom);
       const analyse = await analyser({
+        services,
         arrivee,
         sujet: detail.sujet ?? m.sujet ?? null,
         expediteur: `${detail.expediteur_nom ?? ""} <${expediteur}>`,
@@ -234,16 +242,17 @@ export async function aiguillerLot(
       if (!analyse.service || analyse.service === arrivee.cle) continue;
       if (analyse.confiance < SEUIL_CONFIANCE) continue;
 
-      const cible = serviceParCle(analyse.service);
-      // Service sans adresse dédiée, ou même boîte que le service d'arrivée :
-      // le mail reste sur place, aucun renvoi.
-      if (!cible.adresse || cible.adresse === arrivee.adresse) continue;
+      const cible = serviceParCle(services, analyse.service);
+      // Service inactif / absent de la table, sans adresse dédiée, ou même
+      // boîte que le service d'arrivée : le mail reste sur place.
+      const adresseCible = cible?.adresse ?? null;
+      if (!cible || !adresseCible || adresseCible === arrivee.adresse) continue;
 
       const nomClient = detail.expediteur_nom?.trim() || expediteur;
       const resume = analyse.resume || "une demande dont l'objet est précisé dans le message d'origine";
 
       await envoyerMessage({
-        to: cible.adresse,
+        to: adresseCible,
         cc: expediteur,
         sujet: `${PREFIXE_SUJET} ${detail.sujet ?? m.sujet ?? "(sans objet)"}`.slice(0, 200),
         html: corpsHtml({
