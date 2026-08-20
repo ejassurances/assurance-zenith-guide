@@ -48,7 +48,40 @@ type Prevision = {
   contrats: { numero: string | null; assureur: string | null; client_id: string | null; clients: Personne } | null;
 };
 
+type CommissionBord = {
+  id: string;
+  contrat_id: string | null;
+  dossier_id: string | null;
+  bordereau_id: string | null;
+  montant: number;
+  statut: string;
+  notes: string | null;
+  contrats: { numero: string | null; assureur: string | null; client_id: string | null; clients: Personne } | null;
+  dossiers: { reference: string | null; client_id: string | null; client_nom: string | null } | null;
+};
+
 const nomComplet = (p: Personne) => (p ? `${p.prenom ?? ""} ${p.nom ?? ""}`.trim() : "");
+
+/** Commission rattachée à un bordereau présentée comme une ligne de bordereau. */
+function commissionEnLigne(c: CommissionBord): Ligne {
+  const adhesion = /adhésion\s+([\w-]+)/i.exec(c.notes ?? "")?.[1] ?? null;
+  return {
+    id: c.id,
+    bordereau_id: c.bordereau_id as string,
+    client_nom_detecte: c.dossiers?.client_nom ?? null,
+    numero_contrat_detecte: c.contrats?.numero ?? adhesion,
+    produit_detecte: null,
+    periode_detectee: /période\s+([\d/]+)/i.exec(c.notes ?? "")?.[1] ?? null,
+    montant: Number(c.montant),
+    statut: c.statut === "versee" ? "rapprochee" : "a_rapprocher",
+    client_id: c.contrats?.client_id ?? c.dossiers?.client_id ?? null,
+    contrat_id: c.contrat_id,
+    clients: c.contrats?.clients ?? null,
+    contrats: c.contrats
+      ? { numero: c.contrats.numero, assureur: c.contrats.assureur, client_id: c.contrats.client_id }
+      : null,
+  };
+}
 
 function LienClient({ id, label }: { id: string | null; label: string }) {
   if (!id) return <span>{label || "Client non rapproché"}</span>;
