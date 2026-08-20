@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as DevenirPrescripteurRouteImport } from './routes/devenir-prescripteur'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
@@ -68,6 +69,11 @@ import { Route as AuthenticatedEspaceClientsIdRouteImport } from './routes/_auth
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevenirPrescripteurRoute = DevenirPrescripteurRouteImport.update({
+  id: '/devenir-prescripteur',
+  path: '/devenir-prescripteur',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -382,6 +388,7 @@ const AuthenticatedEspaceClientsIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/devenir-prescripteur': typeof DevenirPrescripteurRoute
   '/reset-password': typeof ResetPasswordRoute
   '/espace': typeof AuthenticatedEspaceRouteWithChildren
   '/espace/cgu': typeof EspaceCguRoute
@@ -438,6 +445,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/devenir-prescripteur': typeof DevenirPrescripteurRoute
   '/reset-password': typeof ResetPasswordRoute
   '/espace/cgu': typeof EspaceCguRoute
   '/espace/confidentialite': typeof EspaceConfidentialiteRoute
@@ -495,6 +503,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/devenir-prescripteur': typeof DevenirPrescripteurRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/espace': typeof AuthenticatedEspaceRouteWithChildren
   '/espace/cgu': typeof EspaceCguRoute
@@ -553,6 +562,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/devenir-prescripteur'
     | '/reset-password'
     | '/espace'
     | '/espace/cgu'
@@ -609,6 +619,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/devenir-prescripteur'
     | '/reset-password'
     | '/espace/cgu'
     | '/espace/confidentialite'
@@ -665,6 +676,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/devenir-prescripteur'
     | '/reset-password'
     | '/_authenticated/espace'
     | '/espace/cgu'
@@ -723,6 +735,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  DevenirPrescripteurRoute: typeof DevenirPrescripteurRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   EspaceCguRoute: typeof EspaceCguRoute
   EspaceConfidentialiteRoute: typeof EspaceConfidentialiteRoute
@@ -758,6 +771,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/devenir-prescripteur': {
+      id: '/devenir-prescripteur'
+      path: '/devenir-prescripteur'
+      fullPath: '/devenir-prescripteur'
+      preLoaderRoute: typeof DevenirPrescripteurRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -1232,6 +1252,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  DevenirPrescripteurRoute: DevenirPrescripteurRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   EspaceCguRoute: EspaceCguRoute,
   EspaceConfidentialiteRoute: EspaceConfidentialiteRoute,
