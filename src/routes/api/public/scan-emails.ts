@@ -1,13 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 /**
- * Tri automatique de la boîte Gmail du cabinet : rattachement des messages
- * (client / compagnie) puis exécution des agents IA (veille, finance,
- * commercial, relation client) avec étiquetage dans l'arborescence Gmail
- * existante du cabinet.
+ * Traitement des files de travail des agents IA. La boîte de réception générale
+ * n'est JAMAIS lue : le staff pose manuellement le premier libellé de service
+ * (Service Client, Service Partenaire, Service Achat, Service Commission,
+ * Service Conformite, Service Reclamation, Gestion Commerciale). Les agents
+ * lisent uniquement les sous-étiquettes « A_Traiter » de ces services, puis
+ * font passer chaque mail en « En_Attente_De_Validation » ou « Archive ».
  *
- * Planifié toutes les 20 minutes en heures ouvrées ; le bouton « Scanner la
- * boîte » de l'onglet Emails reste disponible en complément.
+ * Planifié toutes les 20 minutes en heures ouvrées.
  *
  * En-tête attendu : `x-relance-token: <RELANCE_PIECES_TOKEN>` ou
  * `apikey: <clé publiable>`.
@@ -41,22 +42,12 @@ export const Route = createFileRoute("/api/public/scan-emails")({
         const maxResults = Math.max(5, Math.min(Number(corps?.maxResults) || 25, 100));
 
         try {
-          const { listerBoitePrincipale, listerRattrapage } = await import("@/lib/gmail.server");
+          const { listerFilesATraiter } = await import("@/lib/gmail.server");
           const { rattacherLot, executerAgents } = await import("@/lib/emails-agents.server");
 
-          const { messages: boite } = await listerBoitePrincipale({ maxResults });
-          // Filet de rattrapage manuel : messages marqués par le staff du seul
-          // label parent « Direction Commerciale » (sans sous-étiquette).
-          const rattrapage = await listerRattrapage({ maxResults: 15 }).catch((e) => {
-            console.error("[scan-emails] lecture des mails en rattrapage impossible", e);
-            return [];
-          });
-          if (rattrapage.length)
-            console.info(`[rattrapage] ${rattrapage.length} mail(s) marqué(s) « Direction Commerciale » à réanalyser`);
-
-          const parId = new Map(boite.map((m) => [m.id, m] as const));
-          for (const m of rattrapage) parId.set(m.id, m);
-          const messages = [...parId.values()];
+          // Source UNIQUE : les sous-étiquettes « A_Traiter » des services,
+          // posées manuellement par le staff. Jamais l'inbox.
+          const messages = await listerFilesATraiter({ maxParFile: maxResults });
           const ids = messages.map((m) => m.id);
 
           const suivi = await rattacherLot(supabaseAdmin, { messages, userId });
@@ -64,7 +55,6 @@ export const Route = createFileRoute("/api/public/scan-emails")({
             messages,
             ids,
             userId,
-            rattrapage: rattrapage.map((m) => m.id),
             limite,
           });
 
