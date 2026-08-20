@@ -104,6 +104,7 @@ function LienContrat({ id, label }: { id: string | null; label: string }) {
 export function BordereauxPanel() {
   const [bordereaux, setBordereaux] = useState<Bordereau[]>([]);
   const [lignes, setLignes] = useState<Ligne[]>([]);
+  const [commissions, setCommissions] = useState<CommissionBord[]>([]);
   const [previsions, setPrevisions] = useState<Prevision[]>([]);
   const [recuParContrat, setRecuParContrat] = useState<Record<string, number>>({});
   const [ouverts, setOuverts] = useState<Record<string, boolean>>({});
