@@ -3,7 +3,12 @@ import { createHash } from "node:crypto";
 import { sendTemplateEmail } from "@/lib/email-templates/send-email";
 import { SITE } from "@/lib/site";
 import { appUrl } from "@/lib/app-url";
-import { exigencesDepuisRecueil, modeleDevoirConseil, prefillDevoirConseil } from "@/lib/devoir-conseil-modeles";
+import {
+  MENTION_OFFRE_UNIQUE,
+  exigencesDepuisRecueil,
+  modeleDevoirConseil,
+  prefillDevoirConseil,
+} from "@/lib/devoir-conseil-modeles";
 import { grillePourFamille, synthetiserGaranties, type ValeursGrille } from "@/lib/garanties-grille";
 
 export type DevoirConseilSaisie = {
@@ -142,6 +147,17 @@ export async function envoyerDevoirConseil(
   const modele = modeleDevoirConseil(d.type_assurance);
   const garanties = await garantiesValideesProduit(supabase, d.produit_id ?? null);
 
+  // Catalogue à un seul produit actif pour cette branche : la mention de
+  // comparaison multi-offres est remplacée par la mention « offre unique ».
+  const { catalogueOffreUnique } = await import("./catalogue-branche.server");
+  const offreUniqueCatalogue = await catalogueOffreUnique(supabase, d.type_assurance ?? null);
+  const mentionsLegales = offreUniqueCatalogue
+    ? [
+        ...modele.mentionsLegales.filter((t) => !t.startsWith("Trois offres au moins ont été comparées")),
+        MENTION_OFFRE_UNIQUE,
+      ]
+    : modele.mentionsLegales;
+
   const contenu = {
     cabinet: {
       nom: SITE.name,
@@ -176,7 +192,8 @@ export async function envoyerDevoirConseil(
 
     modele: modele.branche,
     modele_libelle: modele.libelle,
-    mentions_legales: modele.mentionsLegales,
+    mentions_legales: mentionsLegales,
+    offre_unique_catalogue: offreUniqueCatalogue,
     genere_le: new Date().toISOString(),
   };
 
