@@ -14,7 +14,12 @@ import {
   envoyerMonMessage,
   demanderNouvelleEtude,
   monDerUrl,
+  mesDocumentsDda,
+  maLettreMissionUrl,
+  monDevoirConseilUrl,
 } from "@/lib/espace-client.functions";
+import { ouvrirPdf } from "@/lib/ouvrir-pdf";
+
 
 export const Route = createFileRoute("/_authenticated/espace/mon-espace")({
   component: MonEspace,
@@ -108,7 +113,12 @@ function MonEspace() {
   const envoyerMessage = useServerFn(envoyerMonMessage);
   const demanderEtude = useServerFn(demanderNouvelleEtude);
   const derUrl = useServerFn(monDerUrl);
+  const chargerDda = useServerFn(mesDocumentsDda);
+  const lettreUrl = useServerFn(maLettreMissionUrl);
+  const devoirUrl = useServerFn(monDevoirConseilUrl);
+  const [dda, setDda] = useState<Awaited<ReturnType<typeof mesDocumentsDda>> | null>(null);
   const [comp, setComp] = useState<Complement | null>(null);
+
   const [message, setMessage] = useState("");
   const [envoiMsg, setEnvoiMsg] = useState(false);
   const [etudeBranche, setEtudeBranche] = useState("");
@@ -211,6 +221,13 @@ function MonEspace() {
       setComp(null);
     }
 
+    try {
+      setDda(await chargerDda({ data: undefined }));
+    } catch {
+      setDda(null);
+    }
+
+
     setLoading(false);
   };
 
@@ -250,8 +267,7 @@ function MonEspace() {
 
   const telecharger = async (id: string) => {
     try {
-      const res = await fichierUrl({ data: { source: "kyc", id } });
-      window.open(res.url, "_blank");
+      await ouvrirPdf(async () => (await fichierUrl({ data: { source: "kyc", id } })).url);
     } catch (e) {
       setSaveErr(e instanceof Error ? e.message : "Téléchargement impossible");
     }
@@ -259,8 +275,7 @@ function MonEspace() {
 
   const telechargerDocument = async (id: string) => {
     try {
-      const res = await fichierUrl({ data: { source: "document", id } });
-      window.open(res.url, "_blank");
+      await ouvrirPdf(async () => (await fichierUrl({ data: { source: "document", id } })).url);
     } catch (e) {
       setSaveErr(e instanceof Error ? e.message : "Téléchargement impossible");
     }
@@ -268,12 +283,28 @@ function MonEspace() {
 
   const telechargerDer = async (envoiId: string) => {
     try {
-      const res = await derUrl({ data: { envoi_id: envoiId } });
-      window.open(res.url, "_blank");
+      await ouvrirPdf(async () => (await derUrl({ data: { envoi_id: envoiId } })).url);
     } catch (e) {
       setSaveErr(e instanceof Error ? e.message : "Téléchargement impossible");
     }
   };
+
+  const ouvrirLettreMission = async (id: string) => {
+    try {
+      await ouvrirPdf(async () => (await lettreUrl({ data: { lettre_id: id } })).url);
+    } catch (e) {
+      setSaveErr(e instanceof Error ? e.message : "Document indisponible");
+    }
+  };
+
+  const ouvrirDevoirConseil = async (id: string) => {
+    try {
+      await ouvrirPdf(async () => (await devoirUrl({ data: { devoir_id: id } })).url);
+    } catch (e) {
+      setSaveErr(e instanceof Error ? e.message : "Document indisponible");
+    }
+  };
+
 
   const envoyer = async () => {
     if (message.trim().length < 2) return;
@@ -558,6 +589,57 @@ function MonEspace() {
               </ul>
             )}
           </div>
+
+          <div className="rounded-lg border border-line bg-surface p-5">
+            <h2 className="font-serif text-lg">Ma lettre de mission et mon devoir de conseil</h2>
+            <p className="mt-1 text-xs text-ink-muted">
+              Ouvrez le PDF puis utilisez la fonction « Imprimer » de votre navigateur (ou « Partager » sur mobile).
+            </p>
+            {(dda?.lettres ?? []).length === 0 && (dda?.devoirs ?? []).length === 0 ? (
+              <p className="mt-2 text-sm text-ink-muted">Aucun document de conseil disponible pour le moment.</p>
+            ) : (
+              <ul className="mt-3 space-y-2 text-sm">
+                {(dda?.lettres ?? []).map((l) => (
+                  <li key={l.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-2">
+                    <span>
+                      <strong>Lettre de mission</strong>
+                      <span className="ml-2 text-xs text-ink-muted">
+                        {labelForBranche(l.type_assurance)}
+                        {l.reference ? ` · dossier ${l.reference}` : ""} ·{" "}
+                        {l.signed_at ? `signée le ${jour(l.signed_at)}` : "signature en attente"}
+                      </span>
+                    </span>
+                    <button
+                      onClick={() => ouvrirLettreMission(l.id)}
+                      className="rounded-full border border-line px-3 py-1 text-xs hover:bg-background"
+                    >
+                      Ouvrir / imprimer le PDF
+                    </button>
+                  </li>
+                ))}
+                {(dda?.devoirs ?? []).map((d) => (
+                  <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-2">
+                    <span>
+                      <strong>Devoir de conseil</strong>
+                      <span className="ml-2 text-xs text-ink-muted">
+                        {labelForBranche(d.type_assurance)}
+                        {d.reference ? ` · dossier ${d.reference}` : ""} ·{" "}
+                        {d.signed_at ? `validé le ${jour(d.signed_at)}` : d.statut}
+                      </span>
+                    </span>
+                    <button
+                      onClick={() => ouvrirDevoirConseil(d.id)}
+                      className="rounded-full border border-line px-3 py-1 text-xs hover:bg-background"
+                    >
+                      Ouvrir / imprimer le PDF
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+
 
           <div className="rounded-lg border border-line bg-surface p-5">
             <h2 className="font-serif text-lg">Mes documents d'information réglementaires</h2>

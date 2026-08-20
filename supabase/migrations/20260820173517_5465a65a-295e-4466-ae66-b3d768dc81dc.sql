@@ -1,0 +1,1 @@
+UPDATE public.clients SET user_id = 'f6d18a82-4f54-46b0-8785-6db7d8c90313' WHERE id = '98e64c5f-8c96-4508-ae8d-1c457eaff80e';

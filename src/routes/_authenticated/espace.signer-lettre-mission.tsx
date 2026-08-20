@@ -4,8 +4,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { SignaturePad } from "@/components/signature-pad";
 import { signerLettreMission } from "@/lib/lettres-mission.functions";
+import { maLettreMissionUrl } from "@/lib/espace-client.functions";
+import { ouvrirPdf } from "@/lib/ouvrir-pdf";
 import { labelForBranche, getBranche } from "@/lib/recueil-besoins-schemas";
 import { SITE } from "@/lib/site";
+
 
 export const Route = createFileRoute("/_authenticated/espace/signer-lettre-mission")({
   component: SignerLettreMission,
@@ -23,6 +26,8 @@ type Lettre = {
 function SignerLettreMission() {
   const navigate = useNavigate();
   const sign = useServerFn(signerLettreMission);
+  const getPdf = useServerFn(maLettreMissionUrl);
+
   const [lettre, setLettre] = useState<Lettre | null>(null);
   const [loading, setLoading] = useState(true);
   const [accepte, setAccepte] = useState(false);
@@ -81,7 +86,21 @@ function SignerLettreMission() {
         <p className="mt-1 text-sm text-ink-muted">
           {labelForBranche(lettre.type_assurance)} · Dossier {c?.dossier?.reference ?? ""} · {SITE.shortName}
         </p>
+        <button
+          onClick={async () => {
+            setError(null);
+            try {
+              await ouvrirPdf(async () => (await getPdf({ data: { lettre_id: lettre.id } })).url);
+            } catch (e) {
+              setError(e instanceof Error ? e.message : "PDF indisponible");
+            }
+          }}
+          className="mt-3 rounded-full border border-line px-4 py-1.5 text-xs hover:bg-surface"
+        >
+          Ouvrir / imprimer le PDF
+        </button>
       </div>
+
 
       <div className="rounded-2xl border border-line bg-surface-elevated p-6 space-y-4 text-sm leading-relaxed">
         <p>

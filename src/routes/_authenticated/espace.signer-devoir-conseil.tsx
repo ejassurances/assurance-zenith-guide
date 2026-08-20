@@ -7,6 +7,8 @@ import { signerDevoirConseil, refuserDevoirConseil, pdfDevoirConseil } from "@/l
 import { labelForBranche } from "@/lib/recueil-besoins-schemas";
 import { STATUT_OFFRE_LABEL, type StatutOffre } from "@/lib/devoir-conseil-modeles";
 import { COUVERTURE_LABEL, type Couverture } from "@/lib/garanties-grille";
+import { ouvrirPdf } from "@/lib/ouvrir-pdf";
+
 
 import { SITE } from "@/lib/site";
 
@@ -107,16 +109,16 @@ function SignerDevoirConseil() {
           onClick={async () => {
             setError(null);
             try {
-              const res = await getPdf({ data: { devoir_id: devoir.id } });
-              window.open(res.url, "_blank");
+              await ouvrirPdf(async () => (await getPdf({ data: { devoir_id: devoir.id } })).url);
             } catch (e) {
               setError(e instanceof Error ? e.message : "PDF indisponible");
             }
           }}
           className="mt-3 rounded-full border border-line px-4 py-1.5 text-xs hover:bg-surface"
         >
-          Télécharger le document (PDF)
+          Ouvrir / imprimer le PDF
         </button>
+
       </div>
 
       <div className="space-y-4 rounded-2xl border border-line bg-surface-elevated p-5 text-sm">
