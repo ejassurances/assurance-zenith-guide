@@ -64,6 +64,7 @@ function extraireJson(texte: string): Record<string, unknown> {
 }
 
 function consigne(params: {
+  services: DefinitionService[];
   arrivee: DefinitionService;
   sujet: string | null;
   expediteur: string | null;
@@ -76,7 +77,7 @@ function consigne(params: {
     "appartient réellement, afin de corriger une éventuelle erreur de rangement.",
     "",
     "Services possibles :",
-    ...SERVICES.map((s) => `- ${s.cle} : ${s.theme}`),
+    ...params.services.map((s) => `- ${s.cle} : ${s.theme}`),
     "",
     `Service dans lequel le mail a été rangé : ${params.arrivee.cle}`,
     "",
@@ -94,7 +95,7 @@ function consigne(params: {
     (params.texte ?? "").slice(0, 6000),
     "",
     'Réponds STRICTEMENT en JSON : {"service":"' +
-      SERVICES.map((s) => s.cle).join("|") +
+      params.services.map((s) => s.cle).join("|") +
       '|null","confiance":0.0,',
     '"resume":"une phrase décrivant la demande, à la troisième personne, sans conseil ni prise de position"}',
   ].join("\n");
