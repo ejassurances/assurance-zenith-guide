@@ -408,35 +408,40 @@ export async function etiqueterMessage(
 
 
 /**
- * Rattrapage : sort de la boîte générale tous les messages déjà pris en charge
- * par un agent (porteurs d'une étiquette métier « Direction … » ou « A_Ignorer …»).
+ * Files de travail des agents : sous-étiquettes « A_Traiter » de chaque service.
+ * Le PREMIER libellé de service est posé MANUELLEMENT par le staff depuis la
+ * boîte principale ; les agents ne lisent QUE ces files, jamais l'inbox.
  */
-export async function viderBoiteGenerale(maxResults = 200): Promise<{ sortis: number; restants: number }> {
-  const search = new URLSearchParams({ q: "in:inbox", maxResults: String(Math.min(maxResults, 500)) });
-  const list = await gmailFetch<{ messages?: { id: string }[] }>(`/users/me/messages?${search.toString()}`);
-  const ids = (list.messages ?? []).map((m) => m.id);
-  if (!ids.length) return { sortis: 0, restants: 0 };
+export const FILES_A_TRAITER: readonly LabelCabinet[] = [
+  "gc_a_traiter",
+  "sc_a_traiter",
+  "sp_a_traiter",
+  "achat_a_traiter",
+  "commission_a_traiter",
+  "rec_a_traiter",
+  "veille_a_traiter",
+];
 
-  const labels = await listerLabels();
-  const parId = new Map(labels.map((l) => [l.id, l.name] as const));
-  const prefixes = ["direction ", "a_ignorer"];
-  const metier = (nom: string) => prefixes.some((p) => nom.toLowerCase().startsWith(p)) && nom.includes("/");
-
-  let sortis = 0;
-  let restants = 0;
-  for (const id of ids) {
-    const msg = await gmailFetch<GmailMessage>(`/users/me/messages/${id}?format=minimal`).catch(() => null);
-    if (!msg) continue;
-    const noms = (msg.labelIds ?? []).map((lid) => parId.get(lid)).filter((n): n is string => !!n);
-    if (noms.some(metier)) {
-      await modifierLabels(id, { retirer: ["INBOX"] });
-      sortis++;
-    } else {
-      restants++;
-    }
+/**
+ * Messages en attente de traitement : union des sous-étiquettes « A_Traiter »
+ * des services. Aucune lecture de la boîte de réception générale.
+ */
+export async function listerFilesATraiter(params?: {
+  maxParFile?: number;
+}): Promise<EmailResume[]> {
+  const maxParFile = Math.max(1, Math.min(params?.maxParFile ?? 25, 100));
+  const parId = new Map<string, EmailResume>();
+  for (const cle of FILES_A_TRAITER) {
+    const nom = LABELS_CABINET[cle];
+    const messages = await listerParLabel(nom, maxParFile).catch((e) => {
+      console.error(`[files-a-traiter] lecture de « ${nom} » impossible`, e);
+      return [] as EmailResume[];
+    });
+    for (const m of messages) if (!parId.has(m.id)) parId.set(m.id, m);
   }
-  return { sortis, restants };
+  return [...parId.values()];
 }
+
 
 
 /**
