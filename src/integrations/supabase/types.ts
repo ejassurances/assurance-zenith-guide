@@ -1015,6 +1015,7 @@ export type Database = {
           montant_fixe: number | null
           niveau: string
           notes: string | null
+          periodicite: string
           taux_pourcentage: number | null
           type: string
           updated_at: string
@@ -1028,6 +1029,7 @@ export type Database = {
           montant_fixe?: number | null
           niveau: string
           notes?: string | null
+          periodicite?: string
           taux_pourcentage?: number | null
           type: string
           updated_at?: string
@@ -1041,6 +1043,7 @@ export type Database = {
           montant_fixe?: number | null
           niveau?: string
           notes?: string | null
+          periodicite?: string
           taux_pourcentage?: number | null
           type?: string
           updated_at?: string
@@ -1071,6 +1074,7 @@ export type Database = {
           montant_mensuel_estime: number | null
           montant_mensuel_reel: number | null
           montant_previsionnel_total: number | null
+          periodicite: string
           reduction_courtage_pct: number | null
           statut: string
           updated_at: string
@@ -1090,6 +1094,7 @@ export type Database = {
           montant_mensuel_estime?: number | null
           montant_mensuel_reel?: number | null
           montant_previsionnel_total?: number | null
+          periodicite?: string
           reduction_courtage_pct?: number | null
           statut?: string
           updated_at?: string
@@ -1109,6 +1114,7 @@ export type Database = {
           montant_mensuel_estime?: number | null
           montant_mensuel_reel?: number | null
           montant_previsionnel_total?: number | null
+          periodicite?: string
           reduction_courtage_pct?: number | null
           statut?: string
           updated_at?: string
@@ -1148,6 +1154,7 @@ export type Database = {
           famille_id: string | null
           id: string
           notes: string | null
+          periodicite: string
           portee: string
           produit_id: string | null
           taux: number
@@ -1163,6 +1170,7 @@ export type Database = {
           famille_id?: string | null
           id?: string
           notes?: string | null
+          periodicite?: string
           portee: string
           produit_id?: string | null
           taux: number
@@ -1178,6 +1186,7 @@ export type Database = {
           famille_id?: string | null
           id?: string
           notes?: string | null
+          periodicite?: string
           portee?: string
           produit_id?: string | null
           taux?: number
@@ -3855,6 +3864,7 @@ export type Database = {
           image_url: string | null
           mode_tarification: string
           nom: string
+          periodicite_cotisation: string
           points_forts: string | null
           points_vigilance: string | null
           produit_requis_id: string | null
@@ -3879,6 +3889,7 @@ export type Database = {
           image_url?: string | null
           mode_tarification?: string
           nom: string
+          periodicite_cotisation?: string
           points_forts?: string | null
           points_vigilance?: string | null
           produit_requis_id?: string | null
@@ -3903,6 +3914,7 @@ export type Database = {
           image_url?: string | null
           mode_tarification?: string
           nom?: string
+          periodicite_cotisation?: string
           points_forts?: string | null
           points_vigilance?: string | null
           produit_requis_id?: string | null
