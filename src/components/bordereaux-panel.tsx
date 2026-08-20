@@ -161,8 +161,9 @@ export function BordereauxPanel() {
       arr.push(l);
       map.set(l.bordereau_id, arr);
     }
+    const avecDetail = new Set(lignes.map((l) => l.bordereau_id));
     for (const com of commissions) {
-      if (!com.bordereau_id || map.has(com.bordereau_id)) continue;
+      if (!com.bordereau_id || avecDetail.has(com.bordereau_id)) continue;
       const arr = map.get(com.bordereau_id) ?? [];
       arr.push(commissionEnLigne(com));
       map.set(com.bordereau_id, arr);
