@@ -423,3 +423,95 @@ export const monDerUrl = createServerFn({ method: "POST" })
     if (!signed?.signedUrl) throw new Error("Document indisponible");
     return { url: signed.signedUrl };
   });
+
+/**
+ * Documents DDA du client (lettre de mission et devoir de conseil), qu'ils
+ * soient signés ou en attente, avec leur disponibilité en PDF imprimable.
+ */
+export const mesDocumentsDda = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin, client } = await maFicheClient(context.userId);
+    if (!client) return { lettres: [], devoirs: [] };
+
+    const [{ data: lettres }, { data: devoirs }] = await Promise.all([
+      supabaseAdmin
+        .from("lettres_mission")
+        .select("id, type_assurance, signed_at, created_at, contenu, dossier_id")
+        .eq("client_id", client.id)
+        .order("created_at", { ascending: false }),
+      supabaseAdmin
+        .from("devoirs_conseil")
+        .select("id, type_assurance, statut, signed_at, created_at, contenu, dossier_id")
+        .eq("client_id", client.id)
+        .order("created_at", { ascending: false }),
+    ]);
+
+    const ref = (row: Record<string, unknown>) => {
+      const c = row["contenu"] as { dossier?: { reference?: string } } | null;
+      return c?.dossier?.reference ?? null;
+    };
+
+    return {
+      lettres: ((lettres ?? []) as Record<string, unknown>[]).map((l) => ({
+        id: String(l["id"]),
+        type_assurance: String(l["type_assurance"] ?? ""),
+        signed_at: (l["signed_at"] as string | null) ?? null,
+        created_at: String(l["created_at"]),
+        reference: ref(l),
+      })),
+      devoirs: ((devoirs ?? []) as Record<string, unknown>[]).map((d) => ({
+        id: String(d["id"]),
+        type_assurance: String(d["type_assurance"] ?? ""),
+        statut: String(d["statut"] ?? ""),
+        signed_at: (d["signed_at"] as string | null) ?? null,
+        created_at: String(d["created_at"]),
+        reference: ref(d),
+      })),
+    };
+  });
+
+/** URL signée du PDF de la lettre de mission du client (généré si absent). */
+export const maLettreMissionUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ lettre_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin, client } = await maFicheClient(context.userId);
+    if (!client) throw new Error("Aucune fiche client rattachée à votre compte.");
+
+    const { data: lettre } = await supabaseAdmin
+      .from("lettres_mission")
+      .select("id, client_id")
+      .eq("id", data.lettre_id)
+      .maybeSingle();
+    const l = lettre as { client_id: string | null } | null;
+    if (!l || l.client_id !== client.id) throw new Error("Accès refusé");
+
+    const { urlPdfLettreMission } = await import("@/lib/espace-client-pdf.server");
+    const res = await urlPdfLettreMission(supabaseAdmin, data.lettre_id);
+    if (!res) throw new Error("Document indisponible");
+    return res;
+  });
+
+/** URL signée du PDF du devoir de conseil du client (généré si absent). */
+export const monDevoirConseilUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ devoir_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin, client } = await maFicheClient(context.userId);
+    if (!client) throw new Error("Aucune fiche client rattachée à votre compte.");
+
+    const { data: devoir } = await supabaseAdmin
+      .from("devoirs_conseil")
+      .select("id, client_id")
+      .eq("id", data.devoir_id)
+      .maybeSingle();
+    const d = devoir as { client_id: string | null } | null;
+    if (!d || d.client_id !== client.id) throw new Error("Accès refusé");
+
+    const { urlPdfDevoirConseil } = await import("@/lib/devoir-conseil-archive.server");
+    const url = await urlPdfDevoirConseil(supabaseAdmin, data.devoir_id, context.userId);
+    if (!url) throw new Error("Document indisponible");
+    return { url };
+  });
+
