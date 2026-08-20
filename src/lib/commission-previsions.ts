@@ -6,6 +6,19 @@
  */
 import { calculerCommission, type RegleCommission } from "@/lib/commissions-bareme";
 
+/** Cycle de cotisation / de commissionnement. */
+export type Periodicite = "mensuelle" | "annuelle";
+
+/** Normalise une valeur de fractionnement contrat ou de règle en périodicité. */
+export function periodiciteDe(valeur: string | null | undefined): Periodicite {
+  return String(valeur ?? "").toLowerCase().startsWith("annuel") ? "annuelle" : "mensuelle";
+}
+
+/** Nombre de mois entre deux versements de commission. */
+export function pasEnMois(p: Periodicite | null | undefined): number {
+  return p === "annuelle" ? 12 : 1;
+}
+
 export interface CommissionPrevision {
   id: string;
   dossier_id: string;
@@ -19,6 +32,12 @@ export interface CommissionPrevision {
   mois_restants_actuels: number | null;
   montant_previsionnel_total: number | null;
   statut: string;
+  /**
+   * Cycle du versement : « mensuelle » (montant_mensuel_* versé chaque mois) ou
+   * « annuelle » (montant_mensuel_* = montant versé à chaque échéance annuelle,
+   * sans dégressivité — ex. assurance trottinette, 5 % chaque année).
+   */
+  periodicite?: Periodicite | null;
   /** Réduction commerciale des frais de courtage accordée au client (0 à 15 %). */
   reduction_courtage_pct?: number | null;
   /**
@@ -31,7 +50,7 @@ export interface CommissionPrevision {
 
 /** Colonnes à lire pour tout calcul de prévisionnel. */
 export const COLONNES_PREVISION =
-  "id,dossier_id,contrat_id,branche,compagnie_id,montant_mensuel_estime,mois_restants_initial,date_estimation,montant_mensuel_reel,mois_restants_actuels,montant_previsionnel_total,statut,reduction_courtage_pct";
+  "id,dossier_id,contrat_id,branche,compagnie_id,montant_mensuel_estime,mois_restants_initial,date_estimation,montant_mensuel_reel,mois_restants_actuels,montant_previsionnel_total,statut,reduction_courtage_pct,periodicite";
 
 /** Réduction de courtage bornée à l'intervalle autorisé (0-15 %). */
 export function reductionValide(pct: number | null | undefined): number {
@@ -40,7 +59,11 @@ export function reductionValide(pct: number | null | undefined): number {
   return Math.min(15, n);
 }
 
-/** Montant mensuel effectif d'une prévision : réel si connu, sinon estimé, réduction appliquée. */
+/**
+ * Montant effectif d'une échéance de commission : réel si connu, sinon estimé,
+ * réduction appliquée. L'unité est le mois pour une prévision mensuelle, l'année
+ * pour une prévision annuelle.
+ */
 export function mensuelEffectif(p: CommissionPrevision): number | null {
   const brut = p.montant_mensuel_reel ?? p.montant_mensuel_estime;
   if (brut == null) return null;
@@ -49,24 +72,37 @@ export function mensuelEffectif(p: CommissionPrevision): number | null {
 }
 
 
-/** Montant mensuel estimé : règle du barème appliquée à la cotisation mensuelle. */
+/**
+ * Montant d'une échéance de commission : règle du barème appliquée à la
+ * cotisation d'une échéance. Pour une périodicité annuelle, on passe la
+ * cotisation ANNUELLE : le taux s'y applique tel quel (pas de division ni de
+ * multiplication par 12), chaque année, sans dégressivité.
+ */
 export function montantMensuelEstime(
   regle: RegleCommission,
-  cotisationMensuelle: number | null,
+  cotisationEcheance: number | null,
 ): number | null {
   if (regle.type === "fixe") return Number(regle.montant_fixe ?? 0);
-  if (cotisationMensuelle == null) return null;
-  // Assiette = prime d'assurance pure mensuelle, hors frais et taxes.
+  if (cotisationEcheance == null) return null;
+  // Assiette = prime d'assurance pure de l'échéance, hors frais et taxes.
   return calculerCommission(
     { ...regle, base_calcul: "prime" },
-    { prime: cotisationMensuelle, primeMensuelle: cotisationMensuelle },
+    { prime: cotisationEcheance, primeMensuelle: cotisationEcheance },
   );
 }
 
-/** Total prévisionnel : mensuel × mois restants (null si les mois sont inconnus). */
-export function totalPrevisionnel(mensuel: number | null, moisRestants: number | null): number | null {
-  if (mensuel == null || moisRestants == null) return null;
-  return Math.round(mensuel * moisRestants * 100) / 100;
+/**
+ * Total prévisionnel : montant d'échéance × nombre d'échéances restantes.
+ * En annuel, le nombre d'échéances est le nombre d'années entamées restantes.
+ */
+export function totalPrevisionnel(
+  montantEcheance: number | null,
+  moisRestants: number | null,
+  periodicite: Periodicite = "mensuelle",
+): number | null {
+  if (montantEcheance == null || moisRestants == null) return null;
+  const echeances = periodicite === "annuelle" ? Math.ceil(moisRestants / 12) : moisRestants;
+  return Math.round(montantEcheance * echeances * 100) / 100;
 }
 
 /** Mois restants saisis dans le recueil des besoins (branche emprunteur). */
@@ -92,6 +128,8 @@ export interface ContratPourPrevision {
   date_effet: string | null;
   duree_mois: number | null;
   prime_annuelle: number | null;
+  /** « mensuelle » / « annuelle » : cycle de paiement de la cotisation. */
+  fractionnement?: string | null;
 }
 
 /** Commission déjà encaissée, utilisée pour déduire le rythme mensuel réel. */
@@ -149,11 +187,21 @@ export function previsionsSynthetiques(
     if (!STATUTS_CONTRAT_ACTIF.has(ct.statut ?? "")) continue;
 
     const hist = parContrat.get(ct.id);
+    const periodicite = periodiciteDe(ct.fractionnement);
+    // Cotisation d'une échéance : annuelle si le contrat est réglé une fois l'an.
+    const cotisationEcheance =
+      ct.prime_annuelle != null
+        ? periodicite === "annuelle"
+          ? Number(ct.prime_annuelle)
+          : Number(ct.prime_annuelle) / 12
+        : null;
     const mensuel =
       hist && hist.mois.size > 0
-        ? hist.total / hist.mois.size
-        : ct.prime_annuelle != null
-          ? (Number(ct.prime_annuelle) / 12) * 0.05
+        ? periodicite === "annuelle"
+          ? hist.total / Math.max(1, new Set([...hist.mois].map((m) => m.slice(0, 4))).size)
+          : hist.total / hist.mois.size
+        : cotisationEcheance != null
+          ? cotisationEcheance * 0.05
           : null;
     if (mensuel == null || mensuel <= 0) continue;
 
@@ -190,7 +238,8 @@ export function previsionsSynthetiques(
       date_estimation: null,
       montant_mensuel_reel: null,
       mois_restants_actuels: restants,
-      montant_previsionnel_total: totalPrevisionnel(mensuel, restants),
+      montant_previsionnel_total: totalPrevisionnel(mensuel, restants, periodicite),
+      periodicite,
       statut: "estimee",
     });
   }
@@ -216,7 +265,9 @@ export function repartirTresorerie(
     const mois = p.mois_restants_actuels ?? p.mois_restants_initial;
     if (mensuel == null || mois == null || mois <= 0) continue;
     const offset = Math.max(0, Number(p.mois_debut_offset ?? 0));
-    for (let i = offset; i < offset + mois; i++) {
+    // Une commission annuelle n'est versée qu'une fois tous les 12 mois.
+    const pas = pasEnMois(periodiciteDe(p.periodicite));
+    for (let i = offset; i < offset + mois; i += pas) {
       const annee = anneeDebut + Math.floor((moisDebut + i) / 12);
       parAnnee.set(annee, (parAnnee.get(annee) ?? 0) + Number(mensuel));
     }
