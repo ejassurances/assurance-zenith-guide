@@ -322,7 +322,7 @@ export const envoyerMonMessage = createServerFn({ method: "POST" })
       titre: "Message reçu depuis l'espace client",
       contenu: data.contenu,
       created_by: context.userId,
-    });
+    } as never);
 
     const { data: admins } = await supabaseAdmin.from("user_roles").select("user_id").eq("role", "admin").limit(1);
     await supabaseAdmin.from("taches").insert({
@@ -385,7 +385,7 @@ export const demanderNouvelleEtude = createServerFn({ method: "POST" })
       fumeur: null,
       economie_estimee: null,
       admin_id: adminId,
-      origin: null,
+      origin: "espace-client",
     });
 
     await supabaseAdmin.from("taches").insert({
