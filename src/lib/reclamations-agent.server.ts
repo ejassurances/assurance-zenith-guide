@@ -121,11 +121,7 @@ export async function ouvrirReclamationDepuisEmail(
   }
   const reclamationId = (insere as { id: string }).id;
 
-  // Étiquetage Gmail : Service Réclamation → À traiter dès l'ouverture.
-  if (params.gmail_message_id) {
-    const { poserLabelCabinet } = await import("@/lib/gmail.server");
-    await poserLabelCabinet(params.gmail_message_id, "rec_a_traiter");
-  }
+  // Aucun libellé de service posé ici : le staff l'a déjà fait manuellement.
 
   let concerne: ConcerneReclamation = "incertain";
   let solution: string | null = null;
