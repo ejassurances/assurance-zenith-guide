@@ -241,6 +241,8 @@ function CommissionsPage() {
         )}
       </div>
 
+      {role !== "client" && <BordereauxPanel />}
+
       {role === "admin" && <BulletinCommissionsPanel onCommissionsCreees={load} />}
       {role === "admin" && <AddCommissionForm onCreated={load} />}
       {role === "admin" && <CommissionBaremeConfig />}
