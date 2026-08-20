@@ -252,7 +252,7 @@ export async function aiguillerLot(
       const resume = analyse.resume || "une demande dont l'objet est précisé dans le message d'origine";
 
       await envoyerMessage({
-        to: cible.adresse,
+        to: adresseCible,
         cc: expediteur,
         sujet: `${PREFIXE_SUJET} ${detail.sujet ?? m.sujet ?? "(sans objet)"}`.slice(0, 200),
         html: corpsHtml({
