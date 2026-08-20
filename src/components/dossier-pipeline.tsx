@@ -109,11 +109,12 @@ export function DossierPipeline({
                   title={e.description}
                   className={
                     "relative z-10 flex h-7 w-7 items-center justify-center rounded-full border text-[11px] font-medium " +
-                    (selected
-                      ? "border-ink bg-ink text-primary-foreground ring-4 ring-ink/15"
+                    (current
+                      ? "border-ink bg-ink text-primary-foreground"
                       : passee
                         ? "border-ink bg-ink text-primary-foreground"
-                        : "border-line bg-background text-ink-muted")
+                        : "border-line bg-background text-ink-muted") +
+                    (selected ? " ring-4 ring-ink/15" : "")
                   }
                 >
                   {passee ? "✓" : i + 1}
@@ -121,7 +122,7 @@ export function DossierPipeline({
                 <p
                   className={
                     "mt-2 px-1 text-[11px] leading-tight " +
-                    (selected ? "font-medium text-ink" : passee ? "text-ink-soft" : "text-ink-muted")
+                    (selected || current ? "font-medium text-ink" : passee ? "text-ink-soft" : "text-ink-muted")
                   }
                 >
                   {e.label}

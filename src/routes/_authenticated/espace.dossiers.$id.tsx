@@ -141,6 +141,10 @@ function DossierDetail() {
 
   const displayedStep = selectedStep ?? dossier.statut;
   const userId = user?.id;
+  const handlePipelineChanged = () => {
+    setSelectedStep(null);
+    load();
+  };
 
   return (
     <div className="space-y-8">
@@ -165,7 +169,7 @@ function DossierDetail() {
         statut={dossier.statut}
         selectedStep={displayedStep}
         canEdit={canEdit}
-        onChanged={load}
+        onChanged={handlePipelineChanged}
         onStepClick={setSelectedStep}
       />
 
