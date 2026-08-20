@@ -30,7 +30,20 @@ export type DevoirConseilContexte = {
   exigences?: string | null;
   cotisation_mensuelle?: number | null;
   economie_estimee?: number | null;
+  /**
+   * Vrai lorsque le catalogue actif du cabinet ne contient qu'UN SEUL produit
+   * pour cette branche : aucune comparaison multi-assureurs n'a été réalisée.
+   */
+  offreUnique?: boolean;
 };
+
+/** Mention légale substituée quand le catalogue n'a qu'un partenaire pour la branche. */
+export const MENTION_OFFRE_UNIQUE =
+  "À la date de la présente étude, le cabinet ne dispose au sein de son catalogue que d'un seul partenaire assureur référencé pour ce type de garantie. Aucune comparaison entre plusieurs offres d'assureurs n'a donc pu être réalisée et aucune n'est présentée comme telle. Le conseil délivré porte exclusivement sur l'adéquation de cette offre unique aux exigences et besoins que vous avez exprimés. Le cabinet ne délivre pas de conseil fondé sur une analyse impartiale et personnalisée d'un nombre suffisant de contrats disponibles sur le marché pour cette branche, au sens de l'article L. 521-4 II du Code des assurances. Vous demeurez libre de solliciter d'autres intermédiaires ou assureurs afin d'obtenir des offres concurrentes avant toute souscription.";
+
+/** Mise en garde complémentaire en cas d'offre unique au catalogue. */
+export const MISE_EN_GARDE_OFFRE_UNIQUE =
+  "L'absence de comparaison multi-assureurs ne permet pas d'affirmer que cette offre est la plus avantageuse du marché, ni en garanties ni en tarif.";
 
 
 /** Statut qualitatif d'une offre comparée (aucun score chiffré : appréciation motivée). */
