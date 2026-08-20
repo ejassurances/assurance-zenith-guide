@@ -134,7 +134,7 @@ export async function analyserTableauGarantiesFormules(
 
   const { data: produit, error: pErr } = await supabase
     .from("produits")
-    .select("id, nom, famille_id, produit_familles(code, nom)")
+    .select("id, nom, famille_id, produit_familles!produits_famille_id_fkey(code, nom)")
     .eq("id", d.produit_id)
     .maybeSingle();
   if (pErr || !produit) throw new Error("Produit introuvable ou accès refusé");
