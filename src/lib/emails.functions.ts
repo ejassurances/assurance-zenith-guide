@@ -562,14 +562,9 @@ export const scannerBoiteCrm = createServerFn({ method: "POST" })
     let rattachesClient = 0;
     let rattachesCompagnie = 0;
     let deja = 0;
-    let pageToken: string | null = null;
 
-    for (let p = 0; p < maxPages; p++) {
-      const { messages, nextPageToken } = await listerBoitePrincipale({
-        pageToken,
-        maxResults: 50,
-      });
-      if (!messages.length) break;
+    {
+      const messages = await listerFilesATraiter({ maxParFile });
       analyses += messages.length;
 
       const ids = messages.map((m) => m.id);
@@ -632,9 +627,6 @@ export const scannerBoiteCrm = createServerFn({ method: "POST" })
           rattachesCompagnie++;
         }
       }
-
-      pageToken = nextPageToken;
-      if (!pageToken) break;
     }
 
     return { analyses, rattachesClient, rattachesCompagnie, deja };
