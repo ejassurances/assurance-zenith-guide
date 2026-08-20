@@ -287,3 +287,16 @@ export const changerEtapeDossier = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+
+/**
+ * Le catalogue actif du cabinet ne contient-il qu'un seul produit pour la
+ * branche du dossier ? Si oui, la règle « 3 devis minimum » ne s'applique pas
+ * et le devoir de conseil bascule sur la mention « offre unique au catalogue ».
+ */
+export const catalogueOffreUniqueFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ branche: z.string().min(1).max(60) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { catalogueOffreUnique } = await import("./catalogue-branche.server");
+    return { offre_unique: await catalogueOffreUnique(context.supabase, data.branche) };
+  });
