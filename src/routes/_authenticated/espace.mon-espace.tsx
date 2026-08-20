@@ -6,8 +6,15 @@ import { useAuth } from "@/lib/auth-context";
 import { DossierPiecesPanel } from "@/components/dossier-pieces-panel";
 import { DossierPipelineClient } from "@/components/dossier-pipeline-client";
 import { SinistresPanel } from "@/components/sinistres-panel";
-import { labelForBranche } from "@/lib/recueil-besoins-schemas";
-import { majMesCoordonnees, monFichierUrl } from "@/lib/espace-client.functions";
+import { labelForBranche, BRANCHES_CREATION } from "@/lib/recueil-besoins-schemas";
+import {
+  majMesCoordonnees,
+  monFichierUrl,
+  monEspaceComplement,
+  envoyerMonMessage,
+  demanderNouvelleEtude,
+  monDerUrl,
+} from "@/lib/espace-client.functions";
 
 export const Route = createFileRoute("/_authenticated/espace/mon-espace")({
   component: MonEspace,
@@ -74,15 +81,41 @@ const KYC_LABEL: Record<string, string> = {
 
 const TABS = [
   { key: "projet", label: "Mon projet" },
-  { key: "conformite", label: "Mes pièces" },
+  { key: "contrats", label: "Mes contrats" },
+  { key: "conformite", label: "Mes documents" },
   { key: "sinistres", label: "Mes sinistres" },
+  { key: "messages", label: "Mon conseiller" },
   { key: "compte", label: "Mon compte" },
 ] as const;
+
+type Complement = Awaited<ReturnType<typeof monEspaceComplement>>;
+
+const STATUT_CONTRAT: Record<string, string> = {
+  actif: "En cours",
+  en_cours: "En cours",
+  resilie: "Résilié",
+  suspendu: "Suspendu",
+};
+
+const euros = (v: number | null) => (v == null ? "—" : `${v.toLocaleString("fr-FR")} €`);
+const jour = (v: string | null) => (v ? new Date(v).toLocaleDateString("fr-FR") : "—");
 
 function MonEspace() {
   const { user } = useAuth();
   const majCoordonnees = useServerFn(majMesCoordonnees);
   const fichierUrl = useServerFn(monFichierUrl);
+  const chargerComplement = useServerFn(monEspaceComplement);
+  const envoyerMessage = useServerFn(envoyerMonMessage);
+  const demanderEtude = useServerFn(demanderNouvelleEtude);
+  const derUrl = useServerFn(monDerUrl);
+  const [comp, setComp] = useState<Complement | null>(null);
+  const [message, setMessage] = useState("");
+  const [envoiMsg, setEnvoiMsg] = useState(false);
+  const [etudeBranche, setEtudeBranche] = useState("");
+  const [etudeMessage, setEtudeMessage] = useState("");
+  const [etudeOuverte, setEtudeOuverte] = useState(false);
+  const [etudeEnvoi, setEtudeEnvoi] = useState(false);
+  const [etudeOk, setEtudeOk] = useState<string | null>(null);
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("projet");
   const [client, setClient] = useState<ClientRow | null>(null);
   const [dossiers, setDossiers] = useState<DossierRow[]>([]);
@@ -172,6 +205,12 @@ function MonEspace() {
       setEstPro(Boolean(ent && (ent.siret || ent.raison_sociale)));
     }
 
+    try {
+      setComp(await chargerComplement({ data: undefined }));
+    } catch {
+      setComp(null);
+    }
+
     setLoading(false);
   };
 
@@ -218,20 +257,120 @@ function MonEspace() {
     }
   };
 
+  const telechargerDocument = async (id: string) => {
+    try {
+      const res = await fichierUrl({ data: { source: "document", id } });
+      window.open(res.url, "_blank");
+    } catch (e) {
+      setSaveErr(e instanceof Error ? e.message : "Téléchargement impossible");
+    }
+  };
+
+  const telechargerDer = async (envoiId: string) => {
+    try {
+      const res = await derUrl({ data: { envoi_id: envoiId } });
+      window.open(res.url, "_blank");
+    } catch (e) {
+      setSaveErr(e instanceof Error ? e.message : "Téléchargement impossible");
+    }
+  };
+
+  const envoyer = async () => {
+    if (message.trim().length < 2) return;
+    setEnvoiMsg(true);
+    setSaveErr(null);
+    try {
+      await envoyerMessage({ data: { contenu: message.trim() } });
+      setMessage("");
+      await load();
+    } catch (e) {
+      setSaveErr(e instanceof Error ? e.message : "Envoi impossible");
+    }
+    setEnvoiMsg(false);
+  };
+
+  const soumettreEtude = async () => {
+    if (!etudeBranche) return;
+    setEtudeEnvoi(true);
+    setSaveErr(null);
+    try {
+      const res = await demanderEtude({
+        data: { type_assurance: etudeBranche, message: etudeMessage.trim() || null },
+      });
+      setEtudeOk(`Demande enregistrée — dossier ${res.reference}. Votre conseiller vous contacte sous 48 h.`);
+      setEtudeOuverte(false);
+      setEtudeBranche("");
+      setEtudeMessage("");
+      await load();
+    } catch (e) {
+      setSaveErr(e instanceof Error ? e.message : "Demande impossible");
+    }
+    setEtudeEnvoi(false);
+  };
+
   if (loading) return <p className="text-sm text-ink-muted">Chargement…</p>;
 
   const kycVisible = kyc.filter((k) => estPro || k.type !== "kbis");
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-serif text-3xl">
-          Bonjour {client ? `${client.prenom ?? ""} ${client.nom}`.trim() : (user?.email ?? "")}
-        </h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          Votre espace personnel : suivi de projet, pièces justificatives et compte.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-serif text-3xl">
+            Bonjour {client ? `${client.prenom ?? ""} ${client.nom}`.trim() : (user?.email ?? "")}
+          </h1>
+          <p className="mt-1 text-sm text-ink-muted">
+            Votre espace personnel : contrats, projets, documents et contact conseiller.
+          </p>
+        </div>
+        {client && (
+          <button
+            onClick={() => setEtudeOuverte((v) => !v)}
+            className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground"
+          >
+            Demander une nouvelle étude
+          </button>
+        )}
       </div>
+
+      {etudeOk && <p className="rounded-lg border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-800">{etudeOk}</p>}
+
+      {etudeOuverte && (
+        <div className="space-y-3 rounded-lg border border-line bg-surface p-5">
+          <h2 className="font-serif text-lg">Nouvelle demande d'étude</h2>
+          <label className="block">
+            <span className="mb-1 block text-xs uppercase tracking-wide text-ink-muted">Type d'assurance</span>
+            <select
+              value={etudeBranche}
+              onChange={(e) => setEtudeBranche(e.target.value)}
+              className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm sm:max-w-sm"
+            >
+              <option value="">Choisir…</option>
+              {BRANCHES_CREATION.map((b) => (
+                <option key={b.value} value={b.value}>
+                  {b.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs uppercase tracking-wide text-ink-muted">Précisions (facultatif)</span>
+            <textarea
+              value={etudeMessage}
+              onChange={(e) => setEtudeMessage(e.target.value)}
+              rows={3}
+              className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+            />
+          </label>
+          <button
+            onClick={soumettreEtude}
+            disabled={etudeEnvoi || !etudeBranche}
+            className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+          >
+            {etudeEnvoi ? "Envoi…" : "Envoyer ma demande"}
+          </button>
+        </div>
+      )}
 
       {(derAFaire || lettreAFaire || devoirAFaire) && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
