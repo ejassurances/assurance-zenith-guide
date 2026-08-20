@@ -339,12 +339,21 @@ export function misesEnGardeGrille(detail?: LigneGarantie[] | null): string {
 export function prefillDevoirConseil(c: DevoirConseilContexte) {
   const m = modeleDevoirConseil(c.branche);
   const chiffrees = misesEnGardeGrille(c.garanties_detail);
+  const baseGarde = chiffrees ? `${chiffrees}\n\n${m.misesEnGarde(c)}` : m.misesEnGarde(c);
+
+  // Catalogue à un seul produit actif pour la branche : aucune comparaison
+  // multi-assureurs n'a eu lieu. La mention de comparaison est retirée et
+  // remplacée par la mention d'offre unique ; le motif porte sur l'adéquation.
+  const mentions = c.offreUnique
+    ? [...m.mentionsLegales.filter((t) => !t.startsWith("Trois offres au moins ont été comparées")), MENTION_OFFRE_UNIQUE]
+    : m.mentionsLegales;
+
   return {
     modele: m.branche,
-    mentions_legales: m.mentionsLegales,
+    mentions_legales: mentions,
     recommandation: m.recommandation(c),
-    motifs: m.motifs(c),
-    mises_en_garde: chiffrees ? `${chiffrees}\n\n${m.misesEnGarde(c)}` : m.misesEnGarde(c),
+    motifs: c.offreUnique ? motifOffreUnique(c) : m.motifs(c),
+    mises_en_garde: c.offreUnique ? `${baseGarde}\n\n${MISE_EN_GARDE_OFFRE_UNIQUE}` : baseGarde,
     exigences_client: c.exigences?.trim() || m.exigences(c),
   };
 }
