@@ -91,6 +91,7 @@ function EspaceLayout() {
     {
       titre: "Administration",
       items: [
+        { to: "/espace/prescripteurs", label: "Prescripteurs", hide: role !== "admin" && role !== "mandataire" },
         { to: "/espace/utilisateurs", label: "Utilisateurs", hide: role !== "admin" },
         { to: "/espace/parametres", label: "Paramètres", hide: false },
       ],
