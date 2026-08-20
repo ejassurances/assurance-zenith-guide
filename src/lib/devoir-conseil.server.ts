@@ -322,6 +322,10 @@ export async function genererDevoirConseilAuto(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recueil = (d.recueil_besoins ?? {}) as Record<string, any>;
+  // Catalogue à un seul produit actif pour cette branche : mention « offre unique ».
+  const { catalogueOffreUnique } = await import("./catalogue-branche.server");
+  const offreUnique = await catalogueOffreUnique(supabase, d.type_assurance ?? null);
+
   const pre = prefillDevoirConseil({
     branche: d.type_assurance,
     clientNom: d.client_nom,
@@ -332,6 +336,7 @@ export async function genererDevoirConseilAuto(
 
     exigences: exigencesDepuisRecueil(d.type_assurance, recueil) ?? undefined,
     economie_estimee: typeof d.economie_estimee === "number" ? d.economie_estimee : null,
+    offreUnique,
   });
 
   const emprunteur = d.type_assurance === "emprunteur";
