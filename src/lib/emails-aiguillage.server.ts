@@ -195,6 +195,11 @@ export async function aiguillerLot(
 
   const { lireMessage, envoyerMessage, poserLabelCabinet } = await import("@/lib/gmail.server");
 
+  // Table de correspondance des libellés (cache court côté module).
+  const services = await chargerServices(admin);
+  if (!services.length) return out;
+  const adresses = adressesServices(services);
+
   const ids = params.messages.map((m) => m.id);
   const { data: dejaVus } = await admin
     .from("crm_emails")
@@ -216,15 +221,16 @@ export async function aiguillerLot(
     const expediteur = (m.expediteur_email ?? "").toLowerCase().trim();
     if (!expediteur) continue;
     // Anti-boucle : jamais de renvoi d'un mail interne ou d'une adresse de service.
-    if (estEmailInterne(expediteur) || ADRESSES_SERVICES.includes(expediteur)) continue;
+    if (estEmailInterne(expediteur) || adresses.includes(expediteur)) continue;
 
-    const arrivee = serviceDeEtiquettes(m.etiquettes);
+    const arrivee = serviceDeEtiquettes(services, m.etiquettes);
     if (!arrivee) continue;
 
     try {
       const detail = await lireMessage(m.id);
       const pieces = detail.pieces_jointes.map((p) => p.nom);
       const analyse = await analyser({
+        services,
         arrivee,
         sujet: detail.sujet ?? m.sujet ?? null,
         expediteur: `${detail.expediteur_nom ?? ""} <${expediteur}>`,
@@ -236,10 +242,11 @@ export async function aiguillerLot(
       if (!analyse.service || analyse.service === arrivee.cle) continue;
       if (analyse.confiance < SEUIL_CONFIANCE) continue;
 
-      const cible = serviceParCle(analyse.service);
-      // Service sans adresse dédiée, ou même boîte que le service d'arrivée :
-      // le mail reste sur place, aucun renvoi.
-      if (!cible.adresse || cible.adresse === arrivee.adresse) continue;
+      const cible = serviceParCle(services, analyse.service);
+      // Service inactif / absent de la table, sans adresse dédiée, ou même
+      // boîte que le service d'arrivée : le mail reste sur place.
+      const adresseCible = cible?.adresse ?? null;
+      if (!cible || !adresseCible || adresseCible === arrivee.adresse) continue;
 
       const nomClient = detail.expediteur_nom?.trim() || expediteur;
       const resume = analyse.resume || "une demande dont l'objet est précisé dans le message d'origine";
