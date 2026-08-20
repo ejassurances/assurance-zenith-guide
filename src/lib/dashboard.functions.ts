@@ -81,7 +81,7 @@ export const getSyntheseAnneeCommissions = createServerFn({ method: "GET" })
       context.supabase.from("commission_previsions").select(COLONNES_PREVISION),
       context.supabase
         .from("contrats")
-        .select("id,dossier_id,compagnie_id,is_emprunteur,statut,date_effet,duree_mois,prime_annuelle"),
+        .select("id,dossier_id,compagnie_id,is_emprunteur,statut,date_effet,duree_mois,prime_annuelle,fractionnement"),
       context.supabase.from("commissions").select("contrat_id,montant,date_versement,statut"),
     ]);
 
