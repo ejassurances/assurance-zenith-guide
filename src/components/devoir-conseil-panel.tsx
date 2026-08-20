@@ -6,7 +6,12 @@ import { prefillDevoirConseil, STATUT_OFFRE_LABEL, type StatutOffre } from "@/li
 import { useAuth } from "@/lib/auth-context";
 import { useCommissionBareme } from "@/hooks/use-commission-bareme";
 import { resoudreRegle, decrireRegle, fmtEuros } from "@/lib/commissions-bareme";
-import { montantMensuelEstime, moisRestantsRecueil, totalPrevisionnel } from "@/lib/commission-previsions";
+import {
+  montantMensuelEstime,
+  moisRestantsRecueil,
+  totalPrevisionnel,
+  type Periodicite,
+} from "@/lib/commission-previsions";
 import { etatDelaiEnvoi } from "@/lib/devoir-conseil-delai";
 
 
@@ -100,7 +105,11 @@ export function DevoirConseilPanel({
     null,
   );
   const [prevOpen, setPrevOpen] = useState(false);
-  const [prevForm, setPrevForm] = useState({ mensuel: "", mois: "" });
+  const [prevForm, setPrevForm] = useState<{ mensuel: string; mois: string; periodicite: Periodicite }>({
+    mensuel: "",
+    mois: "",
+    periodicite: "mensuelle",
+  });
   const [prevIgnoree, setPrevIgnoree] = useState(false);
 
   const emprunteur = branche === "emprunteur";
@@ -376,14 +385,21 @@ export function DevoirConseilPanel({
       return;
     }
     if (staff && !prevision && !prevIgnoree && regleApplicable) {
+      const periodicite: Periodicite = regleApplicable.regle.periodicite === "annuelle" ? "annuelle" : "mensuelle";
+      // En annuel, l'assiette est la cotisation de l'année (12 × la mensuelle saisie).
+      const cotisation = form.cotisation_mensuelle ? Number(form.cotisation_mensuelle) : null;
       const mensuel = montantMensuelEstime(
         regleApplicable.regle,
-        form.cotisation_mensuelle ? Number(form.cotisation_mensuelle) : null,
+        cotisation != null ? (periodicite === "annuelle" ? cotisation * 12 : cotisation) : null,
       );
       const mois =
         moisRestantsRecueil(branche || dossier?.type_assurance || null, dossier?.recueil_besoins) ??
         (form.duree_mois ? Number(form.duree_mois) : null);
-      setPrevForm({ mensuel: mensuel != null ? String(mensuel) : "", mois: mois != null ? String(mois) : "" });
+      setPrevForm({
+        mensuel: mensuel != null ? String(mensuel) : "",
+        mois: mois != null ? String(mois) : "",
+        periodicite,
+      });
       setPrevOpen(true);
       return;
     }
@@ -402,7 +418,8 @@ export function DevoirConseilPanel({
         montant_mensuel_estime: mensuel,
         mois_restants_initial: mois,
         date_estimation: new Date().toISOString().slice(0, 10),
-        montant_previsionnel_total: totalPrevisionnel(mensuel, mois),
+        periodicite: prevForm.periodicite,
+        montant_previsionnel_total: totalPrevisionnel(mensuel, mois, prevForm.periodicite),
         statut: "estime",
         confirme_par: user?.id ?? null,
         confirme_le: new Date().toISOString(),
@@ -600,7 +617,20 @@ export function DevoirConseilPanel({
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-xs text-ink-muted">
-              Commission mensuelle (€)
+              Cycle de la commission
+              <select
+                value={prevForm.periodicite}
+                onChange={(e) =>
+                  setPrevForm({ ...prevForm, periodicite: e.target.value as Periodicite })
+                }
+                className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+              >
+                <option value="mensuelle">Mensuelle</option>
+                <option value="annuelle">Annuelle (une fois par an)</option>
+              </select>
+            </label>
+            <label className="text-xs text-ink-muted">
+              {prevForm.periodicite === "annuelle" ? "Commission annuelle (€)" : "Commission mensuelle (€)"}
               <input
                 type="number"
                 step="0.01"
@@ -620,10 +650,16 @@ export function DevoirConseilPanel({
             </label>
           </div>
           <p className="text-sm text-ink">
-            {prevForm.mensuel ? fmtEuros(Number(prevForm.mensuel)) : "—"} × {prevForm.mois || "?"} mois ={" "}
+            {prevForm.mensuel ? fmtEuros(Number(prevForm.mensuel)) : "—"} ×{" "}
+            {prevForm.periodicite === "annuelle"
+              ? `${prevForm.mois ? Math.ceil(Number(prevForm.mois) / 12) : "?"} année(s)`
+              : `${prevForm.mois || "?"} mois`}{" "}
+            ={" "}
             <strong>
               {prevForm.mensuel && prevForm.mois
-                ? fmtEuros(Number(prevForm.mensuel) * Number(prevForm.mois))
+                ? fmtEuros(
+                    totalPrevisionnel(Number(prevForm.mensuel), Number(prevForm.mois), prevForm.periodicite) ?? 0,
+                  )
                 : "total indisponible"}
             </strong>
           </p>

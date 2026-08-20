@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { periodiciteDe, totalPrevisionnel } from "@/lib/commission-previsions";
 
 /**
  * Lecture d'un bordereau de commissions : compagnie, période, lignes qui le
@@ -43,6 +44,7 @@ type Prevision = {
   montant_mensuel_reel: number | null;
   montant_mensuel_estime: number | null;
   mois_restants_actuels: number | null;
+  periodicite?: string | null;
   montant_previsionnel_total: number | null;
   statut: string;
   contrats: { numero: string | null; assureur: string | null; client_id: string | null; clients: Personne } | null;
@@ -125,7 +127,7 @@ export function BordereauxPanel() {
         supabase
           .from("commission_previsions")
           .select(
-            "id,contrat_id,montant_mensuel_reel,montant_mensuel_estime,mois_restants_actuels,montant_previsionnel_total,statut,contrats(numero,assureur,client_id,clients(nom,prenom))",
+            "id,contrat_id,montant_mensuel_reel,montant_mensuel_estime,mois_restants_actuels,montant_previsionnel_total,statut,periodicite,contrats(numero,assureur,client_id,clients(nom,prenom))",
           ),
         supabase
           .from("commissions")
@@ -178,7 +180,11 @@ export function BordereauxPanel() {
     return previsions
       .map((p) => {
         const mensuel = Number(p.montant_mensuel_reel ?? p.montant_mensuel_estime ?? 0);
-        const attendu = Number(p.montant_previsionnel_total ?? mensuel * Number(p.mois_restants_actuels ?? 0));
+        const attendu = Number(
+          p.montant_previsionnel_total ??
+            totalPrevisionnel(mensuel, Number(p.mois_restants_actuels ?? 0), periodiciteDe(p.periodicite)) ??
+            0,
+        );
         const recu = p.contrat_id ? (recuParContrat[p.contrat_id] ?? 0) : 0;
         return {
           id: p.id,

@@ -24,7 +24,7 @@ export function CommissionBaremeConfig() {
     const [r, c] = await Promise.all([
       supabase
         .from("commission_bareme")
-        .select("id,niveau,branche,compagnie_id,type,montant_fixe,taux_pourcentage,base_calcul,notes"),
+        .select("id,niveau,branche,compagnie_id,type,montant_fixe,taux_pourcentage,base_calcul,notes,periodicite"),
       supabase.from("compagnies").select("id,nom").order("nom"),
     ]);
     setRegles((r.data ?? []) as unknown as RegleCommission[]);
@@ -50,6 +50,7 @@ export function CommissionBaremeConfig() {
       montant_fixe: r.type === "fixe" ? Number(r.montant_fixe ?? 0) : null,
       taux_pourcentage: r.type === "pourcentage" ? Number(r.taux_pourcentage ?? 0) : null,
       base_calcul: (r.base_calcul ?? "prime") as BaseCalcul,
+      periodicite: r.periodicite === "annuelle" ? "annuelle" : "mensuelle",
       notes: r.notes?.trim() ? r.notes.trim() : null,
     };
     const q = r.id
@@ -227,6 +228,18 @@ function FormulaireRegle({
           </select>
         </label>
       )}
+
+      <label className="text-xs text-ink-muted">
+        Cycle de cotisation
+        <select
+          value={f.periodicite ?? "mensuelle"}
+          onChange={(e) => setF({ ...f, periodicite: e.target.value as "mensuelle" | "annuelle" })}
+          className={inp}
+        >
+          <option value="mensuelle">Mensuelle</option>
+          <option value="annuelle">Annuelle (commission une fois par an)</option>
+        </select>
+      </label>
 
       <label className="text-xs text-ink-muted">
         Type

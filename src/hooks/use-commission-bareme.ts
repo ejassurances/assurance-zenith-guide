@@ -27,7 +27,7 @@ export function useCommissionBareme() {
     setLoading(true);
     const { data } = await supabase
       .from("commission_bareme")
-      .select("id,niveau,branche,compagnie_id,type,montant_fixe,taux_pourcentage,base_calcul,notes");
+      .select("id,niveau,branche,compagnie_id,type,montant_fixe,taux_pourcentage,base_calcul,notes,periodicite");
     setRegles(((data ?? []) as unknown as RegleCommission[]).map((r) => ({ ...r })));
     setLoading(false);
   }, [staff]);

@@ -22,6 +22,12 @@ export interface RegleCommission {
   base_calcul: BaseCalcul;
   notes: string | null;
   /**
+   * Cycle de commissionnement : « mensuelle » (défaut) ou « annuelle » pour les
+   * produits à cotisation annuelle (ex. trottinette : 5 % chaque année, sans
+   * dégressivité).
+   */
+  periodicite?: "mensuelle" | "annuelle" | null;
+  /**
    * Assiette exprimée en prime MENSUELLE pure (cotisation_mensuelle du devoir de
    * conseil / du contrat, hors frais de dossier, d'adhésion, de souscription et
    * hors taxes). Utilisé par la règle par défaut « un mois de cotisation ».
@@ -106,10 +112,12 @@ export function calculerCommission(
 }
 
 export function decrireRegle(regle: RegleCommission): string {
-  if (regle.type === "fixe") return `${Number(regle.montant_fixe ?? 0).toLocaleString("fr-FR")} € fixes`;
+  const cycle = regle.periodicite === "annuelle" ? " · chaque année" : "";
+  if (regle.type === "fixe")
+    return `${Number(regle.montant_fixe ?? 0).toLocaleString("fr-FR")} € fixes${cycle}`;
   if (regle.assiette_mensuelle && regle.base_calcul === "prime" && Number(regle.taux_pourcentage) === 100)
     return "Un mois de cotisation (prime mensuelle pure)";
-  return `${Number(regle.taux_pourcentage ?? 0).toLocaleString("fr-FR")} % · ${LIBELLE_BASE[regle.base_calcul]}`;
+  return `${Number(regle.taux_pourcentage ?? 0).toLocaleString("fr-FR")} % · ${LIBELLE_BASE[regle.base_calcul]}${cycle}`;
 }
 
 export const LIBELLE_SOURCE: Record<SourceRegle, string> = {

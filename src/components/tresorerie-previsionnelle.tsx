@@ -22,7 +22,7 @@ export function TresoreriePrevisionnelle() {
 
         supabase
           .from("contrats")
-          .select("id,dossier_id,compagnie_id,is_emprunteur,statut,date_effet,duree_mois,prime_annuelle"),
+          .select("id,dossier_id,compagnie_id,is_emprunteur,statut,date_effet,duree_mois,prime_annuelle,fractionnement"),
         supabase.from("commissions").select("contrat_id,montant,date_versement,statut"),
       ]);
       const base = (data as unknown as CommissionPrevision[]) ?? [];
