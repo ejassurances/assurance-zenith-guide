@@ -117,6 +117,17 @@ const fmtEuro = (v?: number | null) =>
 const offre = (c: DevoirConseilContexte) =>
   [c.compagnie, c.produit].filter(Boolean).join(" — ") || "l'offre retenue à l'issue de l'étude comparative";
 
+/** Motif de recommandation lorsqu'un seul partenaire est référencé au catalogue. */
+export function motifOffreUnique(c: DevoirConseilContexte): string {
+  const cotisation = fmtEuro(c.cotisation_mensuelle);
+  return (
+    "Cette offre est la seule référencée au catalogue du cabinet pour ce type de garantie à la date de l'étude. " +
+    "Notre recommandation ne résulte pas d'une mise en concurrence : elle repose sur la vérification que les garanties, plafonds, franchises et exclusions du contrat proposé couvrent les besoins que vous avez exprimés, " +
+    (cotisation ? `pour une cotisation de ${cotisation} par mois compatible avec le budget indiqué. ` : "pour une cotisation compatible avec le budget indiqué. ") +
+    "Si ces garanties ne correspondaient pas à vos attentes, nous vous invitions à ne pas souscrire et à consulter d'autres intermédiaires."
+  );
+}
+
 const MODELES: ModeleDevoirConseil[] = [
   {
     branche: "emprunteur",
