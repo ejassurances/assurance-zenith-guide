@@ -1,7 +1,15 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import { LABELS_CABINET, type LabelCabinet } from "@/lib/gmail-labels";
 
 /**
- * Services du cabinet et adresses réelles de renvoi. Module client-safe.
+ * Services du cabinet et adresses réelles de renvoi.
+ *
+ * La correspondance libellé Gmail / adresse / thème est stockée en base dans la
+ * table `config_labels_gmail` : les noms de libellés changent régulièrement et
+ * doivent pouvoir être corrigés en SQL, sans modification de code. Ce module
+ * lit cette table avec un cache court (5 minutes) pour éviter une requête par
+ * mail traité.
  *
  * Certains services n'ont PAS d'adresse dédiée (Gestion Commerciale, Service
  * Conformite) : un mail mal aiguillé vers eux reste sur place, aucun renvoi
@@ -23,93 +31,86 @@ export interface DefinitionService {
   prefixe: string;
   /** Adresse réelle de renvoi, ou null si le service n'en a pas. */
   adresse: string | null;
-  /** Étiquettes du service (sous-états). */
+  /** Étiquettes du service (sous-états), clés de LABELS_CABINET. */
   a_traiter: LabelCabinet;
   archive: LabelCabinet;
   /** Thèmes traités, utilisés pour la classification IA. */
   theme: string;
 }
 
-export const SERVICES: readonly DefinitionService[] = [
-  {
-    cle: "gestion_commerciale",
-    libelle: "Gestion Commerciale",
-    prefixe: "Direction Commerciale/Gestion Commerciale/",
-    adresse: null,
-    a_traiter: "gc_a_traiter",
-    archive: "gc_archive",
-    theme:
-      "prospection entrante, demande de devis ou d'étude, nouveau prospect, souscription en cours de vente",
-  },
-  {
-    cle: "service_client",
-    libelle: "Service Client",
-    prefixe: "Direction Commerciale/Service Client/",
-    adresse: "service.client@ej-assurances.fr",
-    a_traiter: "sc_a_traiter",
-    archive: "sc_archive",
-    theme:
-      "demande d'un client existant : gestion de contrat, avenant, résiliation, remboursement, sinistre, envoi de justificatif, question sur ses garanties",
-  },
-  {
-    cle: "service_partenaire",
-    libelle: "Service Partenaire",
-    prefixe: "Direction Commerciale/Service Partenaire/",
-    adresse: "partenaires@ej-assurances.fr",
-    a_traiter: "sp_a_traiter",
-    archive: "sp_archive",
-    theme:
-      "échanges avec une compagnie, un assureur, un grossiste ou une plateforme : codes courtier, conventions, actualités produits, invitations, challenges",
-  },
-  {
-    cle: "service_achat",
-    libelle: "Service Achat",
-    prefixe: "Direction Financiere/Service Achat/",
-    adresse: "comptabilite@ej-assurances.fr",
-    a_traiter: "achat_a_traiter",
-    archive: "achat_archive",
-    theme: "factures fournisseurs, abonnements, achats et dépenses du cabinet",
-  },
-  {
-    cle: "service_commission",
-    libelle: "Service Commission",
-    prefixe: "Direction Financiere/Service Commission/",
-    adresse: "comptabilite@ej-assurances.fr",
-    a_traiter: "commission_a_traiter",
-    archive: "commission_archive",
-    theme: "bordereaux de commissions, relevés de rémunération, règlements des compagnies",
-  },
-  {
-    cle: "service_reclamation",
-    libelle: "Service Reclamation",
-    prefixe: "Direction Juridique et Conformite/Service Reclamation/",
-    adresse: "reclamation@ej-assurances.fr",
-    a_traiter: "rec_a_traiter",
-    archive: "rec_archive",
-    theme:
-      "réclamation formelle : mécontentement, contestation, mise en cause du cabinet ou de la compagnie, saisine du médiateur",
-  },
-  {
-    cle: "service_conformite",
-    libelle: "Service Conformite",
-    prefixe: "Direction Juridique et Conformite/Service Conformite/",
-    adresse: null,
-    a_traiter: "veille_a_traiter",
-    archive: "veille_archive",
-    theme: "veille réglementaire, ACPR, ORIAS, DDA, RGPD, obligations de conformité",
-  },
-];
+/**
+ * Sous-états de chaque service : dépendants du code (clés de LABELS_CABINET),
+ * ils ne font pas partie de la configuration modifiable en base.
+ */
+const SOUS_ETATS: Record<ServiceCabinet, { a_traiter: LabelCabinet; archive: LabelCabinet }> = {
+  gestion_commerciale: { a_traiter: "gc_a_traiter", archive: "gc_archive" },
+  service_client: { a_traiter: "sc_a_traiter", archive: "sc_archive" },
+  service_partenaire: { a_traiter: "sp_a_traiter", archive: "sp_archive" },
+  service_achat: { a_traiter: "achat_a_traiter", archive: "achat_archive" },
+  service_commission: { a_traiter: "commission_a_traiter", archive: "commission_archive" },
+  service_reclamation: { a_traiter: "rec_a_traiter", archive: "rec_archive" },
+  service_conformite: { a_traiter: "veille_a_traiter", archive: "veille_archive" },
+};
 
-export function serviceParCle(cle: ServiceCabinet): DefinitionService {
-  const s = SERVICES.find((x) => x.cle === cle);
-  if (!s) throw new Error(`Service inconnu : ${cle}`);
-  return s;
+export const SERVICES_CLES = Object.keys(SOUS_ETATS) as ServiceCabinet[];
+
+const DUREE_CACHE_MS = 5 * 60 * 1000;
+let cache: { services: DefinitionService[]; expire: number } | null = null;
+
+/**
+ * Charge la table de correspondance des libellés (services actifs uniquement).
+ * Cache mémoire de 5 minutes ; `forcer: true` le contourne.
+ */
+export async function chargerServices(
+  db: SupabaseClient<Database>,
+  options?: { forcer?: boolean },
+): Promise<DefinitionService[]> {
+  if (!options?.forcer && cache && cache.expire > Date.now()) return cache.services;
+
+  const { data, error } = await db
+    .from("config_labels_gmail")
+    .select("service_cle, libelle, prefixe, adresse, theme, actif")
+    .eq("actif", true);
+  if (error) throw new Error(`Configuration des libellés Gmail illisible : ${error.message}`);
+
+  const services: DefinitionService[] = [];
+  for (const ligne of data ?? []) {
+    const cle = ligne.service_cle as ServiceCabinet;
+    const sous = SOUS_ETATS[cle];
+    if (!sous) {
+      console.error(`[config-labels] service inconnu du code, ignoré : ${ligne.service_cle}`);
+      continue;
+    }
+    services.push({
+      cle,
+      libelle: ligne.libelle,
+      prefixe: ligne.prefixe,
+      adresse: ligne.adresse?.trim() || null,
+      theme: ligne.theme ?? "",
+      ...sous,
+    });
+  }
+
+  cache = { services, expire: Date.now() + DUREE_CACHE_MS };
+  return services;
+}
+
+/** Vide le cache (après modification de la table). */
+export function viderCacheServices(): void {
+  cache = null;
+}
+
+export function serviceParCle(services: DefinitionService[], cle: ServiceCabinet): DefinitionService | null {
+  return services.find((s) => s.cle === cle) ?? null;
 }
 
 /** Service d'arrivée d'un message d'après les étiquettes réellement posées. */
-export function serviceDeEtiquettes(etiquettes: string[]): DefinitionService | null {
+export function serviceDeEtiquettes(
+  services: DefinitionService[],
+  etiquettes: string[],
+): DefinitionService | null {
   const bas = etiquettes.map((e) => e.toLowerCase());
-  for (const s of SERVICES) {
+  for (const s of services) {
     const p = s.prefixe.toLowerCase();
     if (bas.some((e) => e.startsWith(p))) return s;
   }
@@ -117,8 +118,8 @@ export function serviceDeEtiquettes(etiquettes: string[]): DefinitionService | n
 }
 
 /** Adresses de service : jamais considérées comme un client à mettre en copie. */
-export const ADRESSES_SERVICES: readonly string[] = SERVICES.map((s) => s.adresse).filter(
-  (a): a is string => !!a,
-);
+export function adressesServices(services: DefinitionService[]): string[] {
+  return services.map((s) => s.adresse?.toLowerCase()).filter((a): a is string => !!a);
+}
 
 export { LABELS_CABINET };
