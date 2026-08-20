@@ -93,14 +93,20 @@ export function BordereauxPanel() {
           .select(
             "id,contrat_id,montant_mensuel_reel,montant_mensuel_estime,mois_restants_actuels,montant_previsionnel_total,statut,contrats(numero,assureur,client_id,clients(nom,prenom))",
           ),
-        supabase.from("commissions").select("contrat_id,montant,statut").eq("statut", "versee"),
+        supabase
+          .from("commissions")
+          .select(
+            "id,contrat_id,dossier_id,bordereau_id,montant,statut,notes,contrats(numero,assureur,client_id,clients(nom,prenom)),dossiers(reference,client_id,client_nom)",
+          ),
       ]);
       setBordereaux((b.data as unknown as Bordereau[]) ?? []);
       setLignes((l.data as unknown as Ligne[]) ?? []);
       setPrevisions((p.data as unknown as Prevision[]) ?? []);
+      const coms = (c.data as unknown as CommissionBord[]) ?? [];
+      setCommissions(coms);
       const recu: Record<string, number> = {};
-      for (const x of ((c.data as { contrat_id: string | null; montant: number }[]) ?? [])) {
-        if (x.contrat_id) recu[x.contrat_id] = (recu[x.contrat_id] ?? 0) + Number(x.montant);
+      for (const x of coms) {
+        if (x.statut === "versee" && x.contrat_id) recu[x.contrat_id] = (recu[x.contrat_id] ?? 0) + Number(x.montant);
       }
       setRecuParContrat(recu);
       // Premier bordereau déplié par défaut.
@@ -110,6 +116,10 @@ export function BordereauxPanel() {
     })();
   }, []);
 
+  /**
+   * Lignes affichées : détail importé du bordereau quand il existe, sinon
+   * reconstitution depuis les commissions rattachées à ce bordereau.
+   */
   const lignesParBordereau = useMemo(() => {
     const map = new Map<string, Ligne[]>();
     for (const l of lignes) {
@@ -117,11 +127,17 @@ export function BordereauxPanel() {
       arr.push(l);
       map.set(l.bordereau_id, arr);
     }
+    for (const com of commissions) {
+      if (!com.bordereau_id || map.has(com.bordereau_id)) continue;
+      const arr = map.get(com.bordereau_id) ?? [];
+      arr.push(commissionEnLigne(com));
+      map.set(com.bordereau_id, arr);
+    }
     for (const arr of map.values()) {
       arr.sort((a, b) => (nomComplet(a.clients) || a.client_nom_detecte || "").localeCompare(nomComplet(b.clients) || b.client_nom_detecte || ""));
     }
     return map;
-  }, [lignes]);
+  }, [lignes, commissions]);
 
   const suivi = useMemo(() => {
     return previsions
