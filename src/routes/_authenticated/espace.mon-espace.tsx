@@ -447,6 +447,38 @@ function MonEspace() {
         </div>
       )}
 
+      {tab === "contrats" && (
+        <div className="space-y-4">
+          {(comp?.contrats ?? []).length === 0 ? (
+            <p className="rounded-lg border border-line bg-surface p-5 text-sm text-ink-muted">
+              Aucun contrat enregistré à votre nom pour le moment.
+            </p>
+          ) : (
+            (comp?.contrats ?? []).map((c) => (
+              <div key={c.id} className="rounded-lg border border-line bg-surface p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="font-medium text-ink">
+                      {c.compagnie ?? "Assureur"} {c.produit ? `· ${c.produit}` : ""}
+                    </p>
+                    <p className="text-xs text-ink-muted">
+                      {c.numero ? `Contrat n° ${c.numero} · ` : ""}
+                      {STATUT_CONTRAT[c.statut ?? ""] ?? c.statut ?? "—"}
+                    </p>
+                  </div>
+                  <span className="text-sm text-ink-soft">{euros(c.prime_annuelle)} / an</span>
+                </div>
+                <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
+                  <Info label="Date d'effet">{jour(c.date_effet)}</Info>
+                  <Info label="Échéance">{jour(c.date_echeance)}</Info>
+                  <Info label="Fractionnement">{c.fractionnement ?? "—"}</Info>
+                </dl>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
       {tab === "conformite" && (
         <div className="space-y-8">
           <div className="rounded-lg border border-line bg-surface p-5">
@@ -494,11 +526,165 @@ function MonEspace() {
               <DossierPiecesPanel dossierId={d.id} clientId={client?.id ?? null} />
             </div>
           ))}
+
+          <div className="rounded-lg border border-line bg-surface p-5">
+            <h2 className="font-serif text-lg">Documents de mes dossiers et contrats</h2>
+            {(comp?.documents ?? []).length === 0 ? (
+              <p className="mt-2 text-sm text-ink-muted">Aucun document partagé pour le moment.</p>
+            ) : (
+              <ul className="mt-3 space-y-2 text-sm">
+                {(comp?.documents ?? []).map((doc) => (
+                  <li
+                    key={doc.id}
+                    className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-2"
+                  >
+                    <span>
+                      <strong>{doc.file_name}</strong>
+                      <span className="ml-2 text-xs text-ink-muted">
+                        {[doc.categorie, doc.dossier_reference ? `dossier ${doc.dossier_reference}` : null]
+                          .filter(Boolean)
+                          .join(" · ")}{" "}
+                        · {jour(doc.created_at)}
+                      </span>
+                    </span>
+                    <button
+                      onClick={() => telechargerDocument(doc.id)}
+                      className="rounded-full border border-line px-3 py-1 text-xs hover:bg-background"
+                    >
+                      Télécharger
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="rounded-lg border border-line bg-surface p-5">
+            <h2 className="font-serif text-lg">Mes documents d'information réglementaires</h2>
+            <ul className="mt-3 space-y-2 text-sm">
+              {(comp?.der ?? []).map((d) => (
+                <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-2">
+                  <span>
+                    <strong>Document d'entrée en relation (DER)</strong>
+                    {d.version ? <span className="ml-1 text-xs text-ink-muted">version {d.version}</span> : null}
+                    <span className="ml-2 text-xs text-ink-muted">
+                      remis le {jour(d.envoye_le)} ·{" "}
+                      {d.signed_at ? `signé le ${jour(d.signed_at)}` : "signature en attente"}
+                    </span>
+                  </span>
+                  {d.telechargeable ? (
+                    <button
+                      onClick={() => telechargerDer(d.id)}
+                      className="rounded-full border border-line px-3 py-1 text-xs hover:bg-background"
+                    >
+                      Télécharger
+                    </button>
+                  ) : (
+                    <Link to="/espace/signer-der" className="rounded-full border border-line px-3 py-1 text-xs">
+                      Consulter
+                    </Link>
+                  )}
+                </li>
+              ))}
+              <li className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-2">
+                <span>
+                  <strong>Conditions générales d'utilisation</strong>
+                  <span className="ml-2 text-xs text-ink-muted">
+                    {(() => {
+                      const c = (comp?.consentements ?? []).find((x) => x.type === "cgu");
+                      return c ? `acceptées le ${jour(c.accepte_le)}` : "non encore acceptées";
+                    })()}
+                  </span>
+                </span>
+                <Link to="/espace/cgu" className="rounded-full border border-line px-3 py-1 text-xs hover:bg-background">
+                  Consulter
+                </Link>
+              </li>
+              <li className="flex flex-wrap items-center justify-between gap-3">
+                <span>
+                  <strong>Politique de confidentialité (RGPD)</strong>
+                  <span className="ml-2 text-xs text-ink-muted">
+                    {(() => {
+                      const c = (comp?.consentements ?? []).find((x) => x.type === "rgpd");
+                      return c ? `acceptée le ${jour(c.accepte_le)}` : "non encore acceptée";
+                    })()}
+                  </span>
+                </span>
+                <Link
+                  to="/espace/confidentialite"
+                  className="rounded-full border border-line px-3 py-1 text-xs hover:bg-background"
+                >
+                  Consulter
+                </Link>
+              </li>
+            </ul>
+          </div>
         </div>
       )}
 
       {tab === "sinistres" && client && (
         <SinistresPanel clientId={client.id} mode="client" canEdit />
+      )}
+
+      {tab === "messages" && (
+        <div className="space-y-6">
+          <div className="rounded-lg border border-line bg-surface p-5">
+            <h2 className="font-serif text-lg">Mon conseiller</h2>
+            <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
+              <Info label="Conseiller référent">{comp?.conseiller?.nom ?? "EJ Partners Assurances"}</Info>
+              <Info label="E-mail">
+                <a className="underline" href={`mailto:${comp?.conseiller?.email ?? "service.client@ej-assurances.fr"}`}>
+                  {comp?.conseiller?.email ?? "service.client@ej-assurances.fr"}
+                </a>
+              </Info>
+              <Info label="Téléphone">
+                <a className="underline" href="tel:+33189314029">
+                  {comp?.conseiller?.telephone ?? "01.89.31.40.29"}
+                </a>
+              </Info>
+            </dl>
+          </div>
+
+          <div className="space-y-4 rounded-lg border border-line bg-surface p-5">
+            <h2 className="font-serif text-lg">Messagerie</h2>
+            {(comp?.messages ?? []).length === 0 ? (
+              <p className="text-sm text-ink-muted">
+                Aucun message pour l'instant. Écrivez-nous, votre conseiller vous répond sous 48 h ouvrées.
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {(comp?.messages ?? []).map((m) => (
+                  <li
+                    key={m.id}
+                    className={
+                      "rounded-lg border p-3 text-sm " +
+                      (m.de_moi ? "border-line bg-background" : "border-emerald-200 bg-emerald-50")
+                    }
+                  >
+                    <p className="text-xs text-ink-muted">
+                      {m.de_moi ? "Vous" : "Votre conseiller"} · {new Date(m.created_at).toLocaleString("fr-FR")}
+                    </p>
+                    <p className="mt-1 whitespace-pre-line">{m.contenu}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={4}
+              placeholder="Votre message…"
+              className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+            />
+            <button
+              onClick={envoyer}
+              disabled={envoiMsg || message.trim().length < 2}
+              className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            >
+              {envoiMsg ? "Envoi…" : "Envoyer mon message"}
+            </button>
+          </div>
+        </div>
       )}
 
       {tab === "compte" && (
