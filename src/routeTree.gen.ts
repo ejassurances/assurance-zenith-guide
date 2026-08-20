@@ -47,6 +47,7 @@ import { Route as AuthenticatedEspacePrescripteursRouteImport } from './routes/_
 import { Route as AuthenticatedEspaceParametresRouteImport } from './routes/_authenticated/espace.parametres'
 import { Route as AuthenticatedEspaceNeolianeRouteImport } from './routes/_authenticated/espace.neoliane'
 import { Route as AuthenticatedEspaceMonEspaceRouteImport } from './routes/_authenticated/espace.mon-espace'
+import { Route as AuthenticatedEspaceMesRecommandationsRouteImport } from './routes/_authenticated/espace.mes-recommandations'
 import { Route as AuthenticatedEspaceEmailsRouteImport } from './routes/_authenticated/espace.emails'
 import { Route as AuthenticatedEspaceDerModeleRouteImport } from './routes/_authenticated/espace.der-modele'
 import { Route as AuthenticatedEspaceConformiteRouteImport } from './routes/_authenticated/espace.conformite'
@@ -280,6 +281,12 @@ const AuthenticatedEspaceMonEspaceRoute =
     path: '/mon-espace',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const AuthenticatedEspaceMesRecommandationsRoute =
+  AuthenticatedEspaceMesRecommandationsRouteImport.update({
+    id: '/mes-recommandations',
+    path: '/mes-recommandations',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
 const AuthenticatedEspaceEmailsRoute =
   AuthenticatedEspaceEmailsRouteImport.update({
     id: '/emails',
@@ -406,6 +413,7 @@ export interface FileRoutesByFullPath {
   '/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
   '/espace/emails': typeof AuthenticatedEspaceEmailsRoute
+  '/espace/mes-recommandations': typeof AuthenticatedEspaceMesRecommandationsRoute
   '/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
   '/espace/neoliane': typeof AuthenticatedEspaceNeolianeRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
@@ -463,6 +471,7 @@ export interface FileRoutesByTo {
   '/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
   '/espace/emails': typeof AuthenticatedEspaceEmailsRoute
+  '/espace/mes-recommandations': typeof AuthenticatedEspaceMesRecommandationsRoute
   '/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
   '/espace/neoliane': typeof AuthenticatedEspaceNeolianeRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
@@ -523,6 +532,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/_authenticated/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
   '/_authenticated/espace/emails': typeof AuthenticatedEspaceEmailsRoute
+  '/_authenticated/espace/mes-recommandations': typeof AuthenticatedEspaceMesRecommandationsRoute
   '/_authenticated/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
   '/_authenticated/espace/neoliane': typeof AuthenticatedEspaceNeolianeRoute
   '/_authenticated/espace/parametres': typeof AuthenticatedEspaceParametresRoute
@@ -583,6 +593,7 @@ export interface FileRouteTypes {
     | '/espace/conformite'
     | '/espace/der-modele'
     | '/espace/emails'
+    | '/espace/mes-recommandations'
     | '/espace/mon-espace'
     | '/espace/neoliane'
     | '/espace/parametres'
@@ -640,6 +651,7 @@ export interface FileRouteTypes {
     | '/espace/conformite'
     | '/espace/der-modele'
     | '/espace/emails'
+    | '/espace/mes-recommandations'
     | '/espace/mon-espace'
     | '/espace/neoliane'
     | '/espace/parametres'
@@ -699,6 +711,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/conformite'
     | '/_authenticated/espace/der-modele'
     | '/_authenticated/espace/emails'
+    | '/_authenticated/espace/mes-recommandations'
     | '/_authenticated/espace/mon-espace'
     | '/_authenticated/espace/neoliane'
     | '/_authenticated/espace/parametres'
@@ -1045,6 +1058,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceMonEspaceRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/mes-recommandations': {
+      id: '/_authenticated/espace/mes-recommandations'
+      path: '/mes-recommandations'
+      fullPath: '/espace/mes-recommandations'
+      preLoaderRoute: typeof AuthenticatedEspaceMesRecommandationsRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
     '/_authenticated/espace/emails': {
       id: '/_authenticated/espace/emails'
       path: '/emails'
@@ -1202,6 +1222,7 @@ interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceConformiteRoute: typeof AuthenticatedEspaceConformiteRoute
   AuthenticatedEspaceDerModeleRoute: typeof AuthenticatedEspaceDerModeleRoute
   AuthenticatedEspaceEmailsRoute: typeof AuthenticatedEspaceEmailsRoute
+  AuthenticatedEspaceMesRecommandationsRoute: typeof AuthenticatedEspaceMesRecommandationsRoute
   AuthenticatedEspaceMonEspaceRoute: typeof AuthenticatedEspaceMonEspaceRoute
   AuthenticatedEspaceNeolianeRoute: typeof AuthenticatedEspaceNeolianeRoute
   AuthenticatedEspaceParametresRoute: typeof AuthenticatedEspaceParametresRoute
@@ -1230,6 +1251,8 @@ const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
   AuthenticatedEspaceConformiteRoute: AuthenticatedEspaceConformiteRoute,
   AuthenticatedEspaceDerModeleRoute: AuthenticatedEspaceDerModeleRoute,
   AuthenticatedEspaceEmailsRoute: AuthenticatedEspaceEmailsRoute,
+  AuthenticatedEspaceMesRecommandationsRoute:
+    AuthenticatedEspaceMesRecommandationsRoute,
   AuthenticatedEspaceMonEspaceRoute: AuthenticatedEspaceMonEspaceRoute,
   AuthenticatedEspaceNeolianeRoute: AuthenticatedEspaceNeolianeRoute,
   AuthenticatedEspaceParametresRoute: AuthenticatedEspaceParametresRoute,

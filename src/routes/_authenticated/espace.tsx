@@ -49,8 +49,9 @@ function EspaceLayout() {
   }
 
   const solo = [
-    { to: "/espace", label: "Tableau de bord", exact: true, hide: role === "client" },
+    { to: "/espace", label: "Tableau de bord", exact: true, hide: role === "client" || role === "prescripteur" },
     { to: "/espace/mon-espace", label: "Mon espace", hide: role !== "client" },
+    { to: "/espace/mes-recommandations", label: "Mes recommandations", hide: role !== "prescripteur" },
   ].filter((n) => !n.hide);
 
   const groupes = [
