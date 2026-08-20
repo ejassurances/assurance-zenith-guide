@@ -15,12 +15,14 @@ type HistoRow = {
 export function DossierPipeline({
   dossierId,
   statut,
+  selectedStep,
   canEdit,
   onChanged,
   onStepClick,
 }: {
   dossierId: string;
   statut: string;
+  selectedStep?: string;
   canEdit: boolean;
   onChanged: () => void;
   onStepClick?: (key: EtapeKey) => void;
@@ -76,7 +78,8 @@ export function DossierPipeline({
         <ol className="flex min-w-max items-start gap-0 px-1">
           {ETAPES.map((e, i) => {
             const passee = courant >= 0 && i < courant;
-            const active = e.key === statut;
+            const current = e.key === statut;
+            const selected = e.key === (selectedStep ?? statut);
             const cliquable = onStepClick != null && i <= courant;
             return (
               <li
@@ -91,7 +94,7 @@ export function DossierPipeline({
                   <span
                     className={
                       "absolute left-0 top-[13px] h-[2px] w-1/2 -translate-x-1/2 " +
-                      (passee || active ? "bg-ink" : "bg-line")
+                      (passee || current ? "bg-ink" : "bg-line")
                     }
                   />
                 )}
@@ -106,8 +109,8 @@ export function DossierPipeline({
                   title={e.description}
                   className={
                     "relative z-10 flex h-7 w-7 items-center justify-center rounded-full border text-[11px] font-medium " +
-                    (active
-                      ? "border-ink bg-ink text-primary-foreground ring-4 ring-ink/10"
+                    (selected
+                      ? "border-ink bg-ink text-primary-foreground ring-4 ring-ink/15"
                       : passee
                         ? "border-ink bg-ink text-primary-foreground"
                         : "border-line bg-background text-ink-muted")
@@ -118,7 +121,7 @@ export function DossierPipeline({
                 <p
                   className={
                     "mt-2 px-1 text-[11px] leading-tight " +
-                    (active ? "font-medium text-ink" : passee ? "text-ink-soft" : "text-ink-muted")
+                    (selected ? "font-medium text-ink" : passee ? "text-ink-soft" : "text-ink-muted")
                   }
                 >
                   {e.label}
