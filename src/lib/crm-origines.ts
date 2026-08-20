@@ -2,6 +2,7 @@
 
 export const ORIGINES = [
   { key: "internet", label: "Internet" },
+  { key: "reseaux_sociaux", label: "Réseaux sociaux" },
   { key: "assurlead", label: "Assurlead" },
   { key: "telephone", label: "Téléphone" },
   { key: "apporteur", label: "Apporteur" },

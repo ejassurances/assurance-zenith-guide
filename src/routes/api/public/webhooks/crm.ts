@@ -15,7 +15,7 @@ const schema = z.object({
   code_postal: z.string().optional(),
   marque: z.enum(["ej_assurances", "ej_coparentalite"]).optional(),
   besoins: z.array(z.string()).optional(),
-  origine: z.enum(["internet", "assurlead", "telephone", "apporteur", "reseau", "autre"]).optional(),
+  origine: z.enum(["internet", "reseaux_sociaux", "assurlead", "telephone", "apporteur", "reseau", "autre"]).optional(),
   remarque: z.string().optional(),
 });
 
@@ -68,12 +68,15 @@ export const Route = createFileRoute("/api/public/webhooks/crm")({
 
         let clientId = existingId;
         if (existingId) {
-          const { error } = await supabaseAdmin.from("clients").update(values).eq("id", existingId);
+          const { error } = await supabaseAdmin
+            .from("clients")
+            .update({ ...values, origine: values.origine as never })
+            .eq("id", existingId);
           if (error) return new Response(error.message, { status: 500 });
         } else {
           const { data, error } = await supabaseAdmin
             .from("clients")
-            .insert({ ...values, statut: "prospect" })
+            .insert({ ...values, statut: "prospect", origine: values.origine as never })
             .select("id")
             .single();
           if (error) return new Response(error.message, { status: 500 });

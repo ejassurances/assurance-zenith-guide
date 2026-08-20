@@ -34,7 +34,7 @@ export const creerClientManuel = createServerFn({ method: "POST" })
         email: data.email || null,
         mobile: data.mobile || null,
         ville: data.ville || null,
-        origine: data.origine,
+        origine: data.origine as never,
         client_origine_id:
           data.origine === "parrainage" || data.origine === "recommandation"
             ? (data.client_origine_id ?? null)
