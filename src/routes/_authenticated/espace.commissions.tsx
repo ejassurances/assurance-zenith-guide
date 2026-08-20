@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CommissionBaremeConfig } from "@/components/commission-bareme-config";
 import { BulletinCommissionsPanel } from "@/components/bulletin-commissions-panel";
+import { BordereauxPanel } from "@/components/bordereaux-panel";
 import { getSyntheseAnneeCommissions } from "@/lib/dashboard.functions";
 import type { SyntheseAnnee } from "@/lib/commission-previsions";
 
