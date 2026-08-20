@@ -516,9 +516,11 @@ export const etiqueterMessageCrm = createServerFn({ method: "POST" })
   });
 
 /**
- * Scan complet de la boîte principale (messages LUS inclus) pour mettre à jour le CRM :
- * rattache automatiquement chaque message à un client (expéditeur ou destinataire connu)
- * ou à une compagnie (email de contact / domaine du site).
+ * Scan des files de travail des agents (sous-étiquettes « A_Traiter » des
+ * services, posées manuellement par le staff) pour mettre à jour le CRM :
+ * rattache chaque message à un client (expéditeur ou destinataire connu) ou à
+ * une compagnie (email de contact / domaine du site). La boîte de réception
+ * générale n'est JAMAIS scannée : son tri reste entièrement manuel.
  */
 export const scannerBoiteCrm = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -527,10 +529,10 @@ export const scannerBoiteCrm = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await exigerStaff(context.supabase, context.userId);
-    const { listerBoitePrincipale } = await import("@/lib/gmail.server");
+    const { listerFilesATraiter } = await import("@/lib/gmail.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const maxPages = data.pages ?? 8;
+    const maxParFile = Math.min(25 * (data.pages ?? 4), 100);
 
     const [{ data: clients }, { data: compagnies }] = await Promise.all([
       supabaseAdmin.from("clients").select("id, email, email2, nom, prenom"),
