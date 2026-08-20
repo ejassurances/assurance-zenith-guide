@@ -102,6 +102,7 @@ function consigne(params: {
 }
 
 async function analyser(params: {
+  services: DefinitionService[];
   arrivee: DefinitionService;
   sujet: string | null;
   expediteur: string | null;
@@ -122,7 +123,7 @@ async function analyser(params: {
       const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
       const brut = extraireJson(json.choices?.[0]?.message?.content ?? "");
       const valeur = String(brut["service"] ?? "").trim().toLowerCase();
-      const service = SERVICES.find((s) => s.cle === valeur)?.cle ?? null;
+      const service = params.services.find((s) => s.cle === valeur)?.cle ?? null;
       const resume = typeof brut["resume"] === "string" ? brut["resume"].trim().slice(0, 400) : "";
       return {
         service,
