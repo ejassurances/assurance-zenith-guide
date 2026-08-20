@@ -181,37 +181,9 @@ export async function executerAgents(
         (!triageFaits.has(m.id) || rattrapage.has(m.id)),
     );
 
-    // Reprise du retard : tout mail enregistré sans client rattaché et sans
-    // analyse d'agent (commercial / veille / finance) est repris même s'il ne
-    // fait plus partie du lot Gmail courant.
-    const { data: enAttenteBase } = await admin
-      .from("crm_emails")
-      .select("gmail_message_id, gmail_thread_id, recu_le, triage_ia")
-      .is("client_id", null)
-      .order("recu_le", { ascending: true, nullsFirst: false })
-      .limit(200);
-    const dejaCandidat = new Set(candidats.map((m) => m.id));
-    const backlog: EmailResume[] = (enAttenteBase ?? [])
-      .filter((l) => {
-        const agent = (l.triage_ia as { agent?: string } | null)?.agent;
-        return !agent && !dejaCandidat.has(l.gmail_message_id);
-      })
-      .map((l) => ({
-        id: l.gmail_message_id,
-        thread_id: l.gmail_thread_id ?? null,
-        date: l.recu_le ?? null,
-        sujet: null,
-        expediteur_nom: null,
-        expediteur_email: null,
-        snippet: null,
-        etiquettes: [],
-      }) as unknown as EmailResume);
-
-    const aTrier = [...candidats, ...backlog]
-      .sort((a, b) => Number(rattrapage.has(b.id)) - Number(rattrapage.has(a.id)))
-      .slice(0, limite * 10);
-
-
+    // Aucune reprise depuis la base : la seule source de mails à traiter est la
+    // file « A_Traiter » du service, posée manuellement par le staff.
+    const aTrier = candidats.slice(0, limite * 10);
 
     if (aTrier.length) {
       const { lireMessage } = await import("@/lib/gmail.server");
@@ -392,7 +364,6 @@ export async function executerAgents(
           // (transfert, note interne) n'est jamais un prospect. Aucune fiche
           // client, aucun dossier : on dépose une tâche d'arbitrage humain.
           if (estEmailInterne(entree.expediteur_email)) {
-            await poserLabelCabinet(m.id, "gc_a_traiter");
             await creerTacheAdmin(admin, {
               titre: `Mail interne à qualifier — ${entree.sujet ?? "(sans objet)"}`.slice(0, 200),
               description: [
@@ -430,8 +401,8 @@ export async function executerAgents(
 
           const triage = await analyserEmailProspect(entree);
 
-          // Catégorisation faite : prospect entrant spontané.
-          await poserLabelCabinet(m.id, "gc_a_traiter");
+          // Le libellé de service a déjà été posé manuellement par le staff :
+          // l'agent ne fait que faire évoluer le sous-état du mail.
 
           if (estPublicite(triage)) {
             // Publicité / newsletter / spam : ni fiche client, ni tâche.

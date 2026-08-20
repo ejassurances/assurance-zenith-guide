@@ -231,7 +231,6 @@ export async function traiterEmailFinance(
   // dans le service concerné (Achat pour les factures, Commission pour les bordereaux).
   const aTraiter = classification.categorie === "facture_fournisseur" ? "achat_a_traiter" : "commission_a_traiter";
   const archive = classification.categorie === "facture_fournisseur" ? "achat_archive" : "commission_archive";
-  await poserLabelCabinet(params.gmail_message_id, aTraiter);
   await poserLabelCabinet(params.gmail_message_id, archive, { retirer: [aTraiter] });
 
   return resultat;

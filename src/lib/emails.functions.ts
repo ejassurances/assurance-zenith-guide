@@ -486,21 +486,7 @@ export const archiverMessageCrm = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/**
- * Vide la boîte générale : sort de la boîte de réception tous les messages déjà
- * pris en charge par un agent (étiquette métier posée). Chaque agent travaille
- * ensuite exclusivement dans ses propres étiquettes.
- */
-export const viderBoiteGeneraleCrm = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
-    z.object({ max: z.number().int().min(1).max(500).optional() }).parse(input ?? {}),
-  )
-  .handler(async ({ data, context }) => {
-    await exigerStaff(context.supabase, context.userId);
-    const { viderBoiteGenerale } = await import("@/lib/gmail.server");
-    return await viderBoiteGenerale(data.max ?? 200);
-  });
+
 
 
 /** Met un message à la corbeille Gmail et supprime son rattachement CRM. */
@@ -530,9 +516,11 @@ export const etiqueterMessageCrm = createServerFn({ method: "POST" })
   });
 
 /**
- * Scan complet de la boîte principale (messages LUS inclus) pour mettre à jour le CRM :
- * rattache automatiquement chaque message à un client (expéditeur ou destinataire connu)
- * ou à une compagnie (email de contact / domaine du site).
+ * Scan des files de travail des agents (sous-étiquettes « A_Traiter » des
+ * services, posées manuellement par le staff) pour mettre à jour le CRM :
+ * rattache chaque message à un client (expéditeur ou destinataire connu) ou à
+ * une compagnie (email de contact / domaine du site). La boîte de réception
+ * générale n'est JAMAIS scannée : son tri reste entièrement manuel.
  */
 export const scannerBoiteCrm = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -541,10 +529,10 @@ export const scannerBoiteCrm = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await exigerStaff(context.supabase, context.userId);
-    const { listerBoitePrincipale } = await import("@/lib/gmail.server");
+    const { listerFilesATraiter } = await import("@/lib/gmail.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const maxPages = data.pages ?? 8;
+    const maxParFile = Math.min(25 * (data.pages ?? 4), 100);
 
     const [{ data: clients }, { data: compagnies }] = await Promise.all([
       supabaseAdmin.from("clients").select("id, email, email2, nom, prenom"),
@@ -574,14 +562,9 @@ export const scannerBoiteCrm = createServerFn({ method: "POST" })
     let rattachesClient = 0;
     let rattachesCompagnie = 0;
     let deja = 0;
-    let pageToken: string | null = null;
 
-    for (let p = 0; p < maxPages; p++) {
-      const { messages, nextPageToken } = await listerBoitePrincipale({
-        pageToken,
-        maxResults: 50,
-      });
-      if (!messages.length) break;
+    {
+      const messages = await listerFilesATraiter({ maxParFile });
       analyses += messages.length;
 
       const ids = messages.map((m) => m.id);
@@ -644,9 +627,6 @@ export const scannerBoiteCrm = createServerFn({ method: "POST" })
           rattachesCompagnie++;
         }
       }
-
-      pageToken = nextPageToken;
-      if (!pageToken) break;
     }
 
     return { analyses, rattachesClient, rattachesCompagnie, deja };

@@ -211,7 +211,6 @@ export async function ouvrirSinistreDepuisEmail(
   // statut lu / non lu du message n'entre jamais en compte.
   if (params.gmail_message_id) {
     const { poserLabelCabinet } = await import("@/lib/gmail.server");
-    await poserLabelCabinet(params.gmail_message_id, "sc_a_traiter");
     await poserLabelCabinet(params.gmail_message_id, "sc_attente_validation", {
       retirer: ["sc_a_traiter"],
     });

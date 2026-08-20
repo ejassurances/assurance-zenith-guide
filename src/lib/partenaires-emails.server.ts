@@ -153,7 +153,6 @@ export async function routerEmailPartenaire(
   }
 
   // Étiquetage : « Service Partenaire/A_Traiter » puis « Archive ».
-  await poserLabelCabinet(params.gmail_message_id, "sp_a_traiter");
   await poserLabelCabinet(params.gmail_message_id, "sp_archive", { retirer: ["sp_a_traiter"] });
 
 

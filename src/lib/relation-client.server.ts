@@ -537,7 +537,8 @@ export async function traiterEmailClient(
   // (Direction Juridique et Conformité / Service Réclamation) est posé par le
   // module réclamations.
   if (resultat.sous_type !== "reclamation") {
-    await poserLabelCabinet(params.gmail_message_id, "sc_a_traiter");
+    // Le libellé de service est posé manuellement par le staff : l'agent ne
+    // fait évoluer que le sous-état.
     if (resultat.niveau !== "niveau_0") {
       await poserLabelCabinet(
         params.gmail_message_id,
