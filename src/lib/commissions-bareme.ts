@@ -112,10 +112,12 @@ export function calculerCommission(
 }
 
 export function decrireRegle(regle: RegleCommission): string {
-  if (regle.type === "fixe") return `${Number(regle.montant_fixe ?? 0).toLocaleString("fr-FR")} € fixes`;
+  const cycle = regle.periodicite === "annuelle" ? " · chaque année" : "";
+  if (regle.type === "fixe")
+    return `${Number(regle.montant_fixe ?? 0).toLocaleString("fr-FR")} € fixes${cycle}`;
   if (regle.assiette_mensuelle && regle.base_calcul === "prime" && Number(regle.taux_pourcentage) === 100)
     return "Un mois de cotisation (prime mensuelle pure)";
-  return `${Number(regle.taux_pourcentage ?? 0).toLocaleString("fr-FR")} % · ${LIBELLE_BASE[regle.base_calcul]}`;
+  return `${Number(regle.taux_pourcentage ?? 0).toLocaleString("fr-FR")} % · ${LIBELLE_BASE[regle.base_calcul]}${cycle}`;
 }
 
 export const LIBELLE_SOURCE: Record<SourceRegle, string> = {
