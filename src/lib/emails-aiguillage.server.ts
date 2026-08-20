@@ -3,8 +3,8 @@ import type { Database } from "@/integrations/supabase/types";
 import type { EmailResume } from "@/lib/gmail.server";
 import { estEmailInterne } from "@/lib/domaines-internes";
 import {
-  ADRESSES_SERVICES,
-  SERVICES,
+  adressesServices,
+  chargerServices,
   serviceDeEtiquettes,
   serviceParCle,
   type DefinitionService,
