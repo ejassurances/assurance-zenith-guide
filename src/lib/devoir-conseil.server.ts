@@ -66,7 +66,7 @@ export async function garantiesValideesProduit(
   }
   const { data: produit } = await supabase
     .from("produits")
-    .select("nom, produit_familles(code, nom)")
+    .select("nom, produit_familles!produits_famille_id_fkey(code, nom)")
     .eq("id", produitId)
     .maybeSingle();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

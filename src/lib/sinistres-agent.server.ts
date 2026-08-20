@@ -39,7 +39,7 @@ async function grilleValidee(
   if (!produitId) return null;
   const { data: produit } = await admin
     .from("produits")
-    .select("nom, produit_familles(code)")
+    .select("nom, produit_familles!produits_famille_id_fkey(code)")
     .eq("id", produitId)
     .maybeSingle();
   const grille = grillePourFamille((produit as any)?.produit_familles?.code ?? null);
