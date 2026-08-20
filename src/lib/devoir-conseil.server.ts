@@ -356,7 +356,16 @@ export async function genererDevoirConseilAuto(
       exigences_client: pre.exigences_client,
       compagnie,
       produit,
-      offres: [{ compagnie, produit, statut: "retenue", commentaire: "Meilleur rapport garanties / coût" }],
+      offres: [
+        {
+          compagnie,
+          produit,
+          statut: "retenue" as const,
+          commentaire: offreUnique
+            ? "Seul partenaire référencé au catalogue du cabinet pour cette garantie à la date de l'étude — garanties conformes aux besoins exprimés"
+            : "Meilleur rapport garanties / coût",
+        },
+      ],
       ...(emprunteur
         ? {
             assiette: "capital_restant_du" as const,
