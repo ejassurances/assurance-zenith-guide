@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
 const leadSchema = z.object({
-  source: z.enum(["contact", "simulateur"]),
+  source: z.enum(["contact", "simulateur", "facebook"]),
   prenom: z.string().trim().min(1).max(80).optional().default(""),
   nom: z.string().trim().min(1).max(120),
   email: z.string().trim().email().max(255).optional().nullable(),
@@ -67,6 +67,11 @@ export const Route = createFileRoute("/api/public/leads")({
           return Response.json({ error: "Consentements requis" }, { status: 400, headers: corsHeaders() });
         }
 
+        // Capture du paramètre UTM source=facebook dans l'URL du point d'entrée
+        // (ex. ej-assurances.fr/etude-emprunteur?source=facebook).
+        const sourceFromQuery = new URL(request.url).searchParams.get("source");
+        const isFacebook = d.source === "facebook" || sourceFromQuery === "facebook";
+
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
         // Reuse an existing client for the same email (avoids duplicate cards
@@ -90,9 +95,9 @@ export const Route = createFileRoute("/api/public/leads")({
               email: d.email || null,
               mobile: d.telephone || null,
               statut: "prospect",
-              origine: "internet",
+              origine: isFacebook ? ("reseaux_sociaux" as never) : "internet",
               fumeur: d.simulation?.fumeur ?? null,
-              etiquettes: [d.source === "simulateur" ? "simulateur" : "contact-web"],
+              etiquettes: [isFacebook ? "facebook" : d.source === "simulateur" ? "simulateur" : "contact-web"],
             })
             .select("id")
             .single();
@@ -111,8 +116,11 @@ export const Route = createFileRoute("/api/public/leads")({
 
 
         // Journalise la demande dans l'historique du client.
-        const titre =
-          d.source === "simulateur" ? "Demande d'étude — simulateur emprunteur" : `Contact web${d.sujet ? ` — ${d.sujet}` : ""}`;
+        const titre = isFacebook
+          ? "Demande d'étude — simulateur emprunteur (Facebook)"
+          : d.source === "simulateur"
+            ? "Demande d'étude — simulateur emprunteur"
+            : `Contact web${d.sujet ? ` — ${d.sujet}` : ""}`;
         const parts: string[] = [];
         if (d.simulation) {
           parts.push(
@@ -245,7 +253,9 @@ export const Route = createFileRoute("/api/public/leads")({
         if (espace.created) suivi.push("Espace client créé (mot de passe provisoire envoyé par e-mail).");
         await supabaseAdmin.from("taches").insert({
           client_id: clientId,
-          titre: `Rappeler ${d.prenom || ""} ${d.nom}`.trim() + (d.source === "simulateur" ? " (simulateur)" : " (contact)"),
+          titre:
+            `Rappeler ${d.prenom || ""} ${d.nom}`.trim() +
+            (isFacebook ? " (Facebook)" : d.source === "simulateur" ? " (simulateur)" : " (contact)"),
           description: suivi.join("\n"),
           echeance: echeance.toISOString().slice(0, 10),
           priorite: lcb && lcb.statut === "a_verifier" ? "urgente" : "haute",
@@ -257,14 +267,14 @@ export const Route = createFileRoute("/api/public/leads")({
         const { postLeadToWebhook, resolveLeadSource } = await import("@/lib/lead-webhook.server");
         const webhook = await postLeadToWebhook({
           source: resolveLeadSource(d.sujet),
-          formulaire: d.source,
+          formulaire: isFacebook ? "simulateur" : d.source,
           envoye_le: new Date().toISOString(),
           client_id: clientId,
           nom: d.nom,
           prenom: d.prenom || "",
           email: d.email || null,
           telephone: d.telephone || null,
-          type_besoin: d.sujet || (d.source === "simulateur" ? "emprunteur" : null),
+          type_besoin: d.sujet || (d.source === "simulateur" || isFacebook ? "emprunteur" : null),
           message: d.message || null,
           simulation: d.simulation ?? null,
           pieces_jointes: (d.pieces_jointes ?? []).map((p) => ({
@@ -273,7 +283,8 @@ export const Route = createFileRoute("/api/public/leads")({
             taille: p.taille ?? null,
             contenu_base64: p.contenu_base64 ?? null,
           })),
-        });
+          source_reseau: isFacebook ? "facebook" : null,
+        } as any);
 
         return Response.json(
           { ok: true, client_id: clientId, invite_sent: espace.email_sent, dossier_ref: dossierRef, webhook_ok: webhook.ok },

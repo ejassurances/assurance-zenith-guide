@@ -1,0 +1,1 @@
+ALTER TYPE public.client_origine ADD VALUE IF NOT EXISTS 'reseaux_sociaux';

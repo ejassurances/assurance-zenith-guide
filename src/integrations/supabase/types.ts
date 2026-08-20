@@ -4865,6 +4865,7 @@ export type Database = {
         | "parrainage"
         | "recommandation"
         | "contact_perso"
+        | "reseaux_sociaux"
       client_statut: "prospect" | "actif" | "inactif" | "perdu" | "ancien"
       commission_statut: "prevue" | "versee" | "annulee"
       compagnie_doc_type:
@@ -5049,6 +5050,7 @@ export const Constants = {
         "parrainage",
         "recommandation",
         "contact_perso",
+        "reseaux_sociaux",
       ],
       client_statut: ["prospect", "actif", "inactif", "perdu", "ancien"],
       commission_statut: ["prevue", "versee", "annulee"],

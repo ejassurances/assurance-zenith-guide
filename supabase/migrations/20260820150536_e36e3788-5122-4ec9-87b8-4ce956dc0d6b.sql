@@ -1,0 +1,1 @@
+DELETE FROM clients WHERE email = 'test.facebook@example.com';
