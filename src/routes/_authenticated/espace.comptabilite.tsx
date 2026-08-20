@@ -16,6 +16,8 @@ import {
   NotesDeFraisTab,
 } from "@/components/comptabilite-ecritures";
 import { FacturesAchatTab } from "@/components/factures-achat-tab";
+import { LivreRecettesTab } from "@/components/livre-recettes-tab";
+import { LivreAchatsTab } from "@/components/livre-achats-tab";
 import { CommissionMoisCard } from "@/components/commission-mois-card";
 import { TresoreriePrevisionnelle } from "@/components/tresorerie-previsionnelle";
 
@@ -111,6 +113,8 @@ function AdminView() {
         <TabsTrigger value="prescripteurs">Prescripteurs</TabsTrigger>
         <TabsTrigger value="regles">Règles</TabsTrigger>
         <TabsTrigger value="factures">Factures d'achat</TabsTrigger>
+        <TabsTrigger value="livre-recettes">Livre des recettes</TabsTrigger>
+        <TabsTrigger value="livre-achats">Livre des achats</TabsTrigger>
         <TabsTrigger value="ecritures">Écritures</TabsTrigger>
         <TabsTrigger value="grand-livre">Grand livre</TabsTrigger>
         <TabsTrigger value="balance">Balance</TabsTrigger>
@@ -130,6 +134,8 @@ function AdminView() {
       <TabsContent value="prescripteurs" className="mt-6"><Retrocessions portee="prescripteur" /></TabsContent>
       <TabsContent value="regles" className="mt-6"><ReglesCommission /></TabsContent>
       <TabsContent value="factures" className="mt-6"><FacturesAchatTab /></TabsContent>
+      <TabsContent value="livre-recettes" className="mt-6"><LivreRecettesTab /></TabsContent>
+      <TabsContent value="livre-achats" className="mt-6"><LivreAchatsTab /></TabsContent>
       <TabsContent value="ecritures" className="mt-6"><EcrituresTab /></TabsContent>
       <TabsContent value="grand-livre" className="mt-6"><GrandLivreTab /></TabsContent>
       <TabsContent value="balance" className="mt-6"><BalanceTab /></TabsContent>
