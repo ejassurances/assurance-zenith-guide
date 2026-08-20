@@ -111,6 +111,8 @@ function AdminView() {
         <TabsTrigger value="prescripteurs">Prescripteurs</TabsTrigger>
         <TabsTrigger value="regles">Règles</TabsTrigger>
         <TabsTrigger value="factures">Factures d'achat</TabsTrigger>
+        <TabsTrigger value="livre-recettes">Livre des recettes</TabsTrigger>
+        <TabsTrigger value="livre-achats">Livre des achats</TabsTrigger>
         <TabsTrigger value="ecritures">Écritures</TabsTrigger>
         <TabsTrigger value="grand-livre">Grand livre</TabsTrigger>
         <TabsTrigger value="balance">Balance</TabsTrigger>
