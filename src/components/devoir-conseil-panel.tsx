@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { envoyerDevoirConseilFn, pdfDevoirConseil } from "@/lib/devoir-conseil.functions";
+import { catalogueOffreUniqueFn, envoyerDevoirConseilFn, pdfDevoirConseil } from "@/lib/devoir-conseil.functions";
 import { prefillDevoirConseil, STATUT_OFFRE_LABEL, type StatutOffre } from "@/lib/devoir-conseil-modeles";
 import { useAuth } from "@/lib/auth-context";
 import { useCommissionBareme } from "@/hooks/use-commission-bareme";
@@ -86,6 +86,7 @@ export function DevoirConseilPanel({
 }) {
   const envoyer = useServerFn(envoyerDevoirConseilFn);
   const getPdf = useServerFn(pdfDevoirConseil);
+  const verifierCatalogue = useServerFn(catalogueOffreUniqueFn);
   const [devoir, setDevoir] = useState<Devoir | null>(null);
   const [devisDossier, setDevisDossier] = useState<DevisLigne[]>([]);
   const [open, setOpen] = useState(false);
@@ -529,7 +530,7 @@ export function DevoirConseilPanel({
     }
   };
 
-  const troisOffres = !emprunteur || offresRemplies.length >= 3;
+  const troisOffres = !emprunteur || offreUnique || offresRemplies.length >= 3;
   const valide = form.recommandation.trim().length >= 10 && form.motifs.trim().length >= 10 && troisOffres;
 
   const appliquerModele = () => {
@@ -541,6 +542,7 @@ export function DevoirConseilPanel({
       exigences: form.exigences_client || undefined,
       cotisation_mensuelle: form.cotisation_mensuelle ? Number(form.cotisation_mensuelle) : null,
       economie_estimee: form.economie_estimee ? Number(form.economie_estimee) : null,
+      offreUnique,
     });
     setForm((f) => ({
       ...f,
@@ -1078,7 +1080,7 @@ export function DevoirConseilPanel({
           {!valide && (
             <p className="text-xs text-ink-muted">
               Recommandation et motifs doivent contenir au moins 10 caractères (exigence DDA)
-              {emprunteur && ", et 3 offres comparées doivent être renseignées"}.
+              {emprunteur && !offreUnique && ", et 3 offres comparées doivent être renseignées"}.
             </p>
           )}
         </div>
