@@ -30,7 +30,20 @@ export type DevoirConseilContexte = {
   exigences?: string | null;
   cotisation_mensuelle?: number | null;
   economie_estimee?: number | null;
+  /**
+   * Vrai lorsque le catalogue actif du cabinet ne contient qu'UN SEUL produit
+   * pour cette branche : aucune comparaison multi-assureurs n'a été réalisée.
+   */
+  offreUnique?: boolean;
 };
+
+/** Mention légale substituée quand le catalogue n'a qu'un partenaire pour la branche. */
+export const MENTION_OFFRE_UNIQUE =
+  "À la date de la présente étude, le cabinet ne dispose au sein de son catalogue que d'un seul partenaire assureur référencé pour ce type de garantie. Aucune comparaison entre plusieurs offres d'assureurs n'a donc pu être réalisée et aucune n'est présentée comme telle. Le conseil délivré porte exclusivement sur l'adéquation de cette offre unique aux exigences et besoins que vous avez exprimés. Le cabinet ne délivre pas de conseil fondé sur une analyse impartiale et personnalisée d'un nombre suffisant de contrats disponibles sur le marché pour cette branche, au sens de l'article L. 521-4 II du Code des assurances. Vous demeurez libre de solliciter d'autres intermédiaires ou assureurs afin d'obtenir des offres concurrentes avant toute souscription.";
+
+/** Mise en garde complémentaire en cas d'offre unique au catalogue. */
+export const MISE_EN_GARDE_OFFRE_UNIQUE =
+  "L'absence de comparaison multi-assureurs ne permet pas d'affirmer que cette offre est la plus avantageuse du marché, ni en garanties ni en tarif.";
 
 
 /** Statut qualitatif d'une offre comparée (aucun score chiffré : appréciation motivée). */
@@ -103,6 +116,17 @@ const fmtEuro = (v?: number | null) =>
 
 const offre = (c: DevoirConseilContexte) =>
   [c.compagnie, c.produit].filter(Boolean).join(" — ") || "l'offre retenue à l'issue de l'étude comparative";
+
+/** Motif de recommandation lorsqu'un seul partenaire est référencé au catalogue. */
+export function motifOffreUnique(c: DevoirConseilContexte): string {
+  const cotisation = fmtEuro(c.cotisation_mensuelle);
+  return (
+    "Cette offre est la seule référencée au catalogue du cabinet pour ce type de garantie à la date de l'étude. " +
+    "Notre recommandation ne résulte pas d'une mise en concurrence : elle repose sur la vérification que les garanties, plafonds, franchises et exclusions du contrat proposé couvrent les besoins que vous avez exprimés, " +
+    (cotisation ? `pour une cotisation de ${cotisation} par mois compatible avec le budget indiqué. ` : "pour une cotisation compatible avec le budget indiqué. ") +
+    "Si ces garanties ne correspondaient pas à vos attentes, nous vous invitions à ne pas souscrire et à consulter d'autres intermédiaires."
+  );
+}
 
 const MODELES: ModeleDevoirConseil[] = [
   {
@@ -315,12 +339,21 @@ export function misesEnGardeGrille(detail?: LigneGarantie[] | null): string {
 export function prefillDevoirConseil(c: DevoirConseilContexte) {
   const m = modeleDevoirConseil(c.branche);
   const chiffrees = misesEnGardeGrille(c.garanties_detail);
+  const baseGarde = chiffrees ? `${chiffrees}\n\n${m.misesEnGarde(c)}` : m.misesEnGarde(c);
+
+  // Catalogue à un seul produit actif pour la branche : aucune comparaison
+  // multi-assureurs n'a eu lieu. La mention de comparaison est retirée et
+  // remplacée par la mention d'offre unique ; le motif porte sur l'adéquation.
+  const mentions = c.offreUnique
+    ? [...m.mentionsLegales.filter((t) => !t.startsWith("Trois offres au moins ont été comparées")), MENTION_OFFRE_UNIQUE]
+    : m.mentionsLegales;
+
   return {
     modele: m.branche,
-    mentions_legales: m.mentionsLegales,
+    mentions_legales: mentions,
     recommandation: m.recommandation(c),
-    motifs: m.motifs(c),
-    mises_en_garde: chiffrees ? `${chiffrees}\n\n${m.misesEnGarde(c)}` : m.misesEnGarde(c),
+    motifs: c.offreUnique ? motifOffreUnique(c) : m.motifs(c),
+    mises_en_garde: c.offreUnique ? `${baseGarde}\n\n${MISE_EN_GARDE_OFFRE_UNIQUE}` : baseGarde,
     exigences_client: c.exigences?.trim() || m.exigences(c),
   };
 }

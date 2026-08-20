@@ -104,8 +104,15 @@ export async function classerDevisDossier(
   if (devErr) throw new Error(devErr.message);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const devis = (devisRows ?? []) as any[];
-  // Le classement doit toujours produire un TOP 3 : 3 devis minimum.
-  if (devis.length < 3) throw new Error("Saisissez au moins 3 devis pour lancer le classement IA (TOP 3 exigé).");
+  // Le classement doit produire un TOP 3 : 3 devis minimum, SAUF si le catalogue
+  // actif du cabinet ne contient qu'un seul produit pour cette branche (niche à
+  // un seul partenaire). Dans ce cas, le classement se fait avec l'unique devis.
+  const { catalogueOffreUnique } = await import("./catalogue-branche.server");
+  const offreUnique = await catalogueOffreUnique(supabase, dos.type_assurance ?? null);
+  if (devis.length < 3 && !offreUnique) {
+    throw new Error("Saisissez au moins 3 devis pour lancer le classement IA (TOP 3 exigé).");
+  }
+  if (devis.length === 0) throw new Error("Aucun devis saisi sur ce dossier.");
 
   const payload = devis.map((d) => ({
     id: d.id as string,

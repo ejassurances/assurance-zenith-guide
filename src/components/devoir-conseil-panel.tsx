@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { envoyerDevoirConseilFn, pdfDevoirConseil } from "@/lib/devoir-conseil.functions";
+import { catalogueOffreUniqueFn, envoyerDevoirConseilFn, pdfDevoirConseil } from "@/lib/devoir-conseil.functions";
 import { prefillDevoirConseil, STATUT_OFFRE_LABEL, type StatutOffre } from "@/lib/devoir-conseil-modeles";
 import { useAuth } from "@/lib/auth-context";
 import { useCommissionBareme } from "@/hooks/use-commission-bareme";
@@ -86,6 +86,7 @@ export function DevoirConseilPanel({
 }) {
   const envoyer = useServerFn(envoyerDevoirConseilFn);
   const getPdf = useServerFn(pdfDevoirConseil);
+  const verifierCatalogue = useServerFn(catalogueOffreUniqueFn);
   const [devoir, setDevoir] = useState<Devoir | null>(null);
   const [devisDossier, setDevisDossier] = useState<DevisLigne[]>([]);
   const [open, setOpen] = useState(false);
@@ -195,6 +196,23 @@ export function DevoirConseilPanel({
     if (staff) loadPrevision();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dossierId, staff]);
+
+  // Catalogue à un seul produit actif pour cette branche : la règle des 3 devis
+  // ne s'applique pas et le modèle bascule sur la mention « offre unique ».
+  const [offreUnique, setOffreUnique] = useState(false);
+  useEffect(() => {
+    const b = branche || dossier?.type_assurance || "";
+    if (!b) return;
+    (async () => {
+      try {
+        const res = await verifierCatalogue({ data: { branche: b } });
+        setOffreUnique(Boolean(res.offre_unique));
+      } catch {
+        setOffreUnique(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [branche, dossier?.type_assurance]);
 
   // Délai de réflexion : 16 h après signature de la lettre de mission,
   // et envoi possible uniquement pendant les horaires d'ouverture.
@@ -512,7 +530,7 @@ export function DevoirConseilPanel({
     }
   };
 
-  const troisOffres = !emprunteur || offresRemplies.length >= 3;
+  const troisOffres = !emprunteur || offreUnique || offresRemplies.length >= 3;
   const valide = form.recommandation.trim().length >= 10 && form.motifs.trim().length >= 10 && troisOffres;
 
   const appliquerModele = () => {
@@ -524,6 +542,7 @@ export function DevoirConseilPanel({
       exigences: form.exigences_client || undefined,
       cotisation_mensuelle: form.cotisation_mensuelle ? Number(form.cotisation_mensuelle) : null,
       economie_estimee: form.economie_estimee ? Number(form.economie_estimee) : null,
+      offreUnique,
     });
     setForm((f) => ({
       ...f,
@@ -1061,7 +1080,7 @@ export function DevoirConseilPanel({
           {!valide && (
             <p className="text-xs text-ink-muted">
               Recommandation et motifs doivent contenir au moins 10 caractères (exigence DDA)
-              {emprunteur && ", et 3 offres comparées doivent être renseignées"}.
+              {emprunteur && !offreUnique && ", et 3 offres comparées doivent être renseignées"}.
             </p>
           )}
         </div>
