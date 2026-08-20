@@ -44,10 +44,22 @@ export const Route = createFileRoute("/api/public/scan-emails")({
         try {
           const { listerFilesATraiter } = await import("@/lib/gmail.server");
           const { rattacherLot, executerAgents } = await import("@/lib/emails-agents.server");
+          const { aiguillerLot } = await import("@/lib/emails-aiguillage.server");
 
           // Source UNIQUE : les sous-étiquettes « A_Traiter » des services,
           // posées manuellement par le staff. Jamais l'inbox.
-          const messages = await listerFilesATraiter({ maxParFile: maxResults });
+          const tous = await listerFilesATraiter({ maxParFile: maxResults });
+
+          // Correction d'aiguillage AVANT tout traitement métier : un mail rangé
+          // dans le mauvais service est renvoyé (reformulé) à l'adresse réelle
+          // du bon service, client en copie, puis retiré du lot de ce passage.
+          const aiguillage = await aiguillerLot(supabaseAdmin, {
+            messages: tous,
+            userId,
+            limite: limite * 2,
+          });
+          const renvoyes = new Set(aiguillage.ids);
+          const messages = tous.filter((m) => !renvoyes.has(m.id));
           const ids = messages.map((m) => m.id);
 
           const suivi = await rattacherLot(supabaseAdmin, { messages, userId });
@@ -59,7 +71,14 @@ export const Route = createFileRoute("/api/public/scan-emails")({
           });
 
 
-          return Response.json({ ok: true, messages: messages.length, ...suivi, ...agents });
+          return Response.json({
+            ok: true,
+            messages: tous.length,
+            mal_aiguilles_renvoyes: aiguillage.renvoyes,
+            aiguillage_erreurs: aiguillage.erreurs,
+            ...suivi,
+            ...agents,
+          });
 
         } catch (e) {
           const message = e instanceof Error ? e.message : "erreur inconnue";
