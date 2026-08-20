@@ -30,6 +30,7 @@ import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
 import { Route as ApiPublicFormationsRappelsRouteImport } from './routes/api/public/formations-rappels'
 import { Route as ApiPublicEnvoisPlanifiesRouteImport } from './routes/api/public/envois-planifies'
 import { Route as ApiPublicDevoirsConseilEnvoisRouteImport } from './routes/api/public/devoirs-conseil-envois'
+import { Route as ApiPublicDdaGuilloufBridouxRouteImport } from './routes/api/public/dda-guillouf-bridoux'
 import { Route as ApiPublicCorrigerLabelsPartenairesRouteImport } from './routes/api/public/corriger-labels-partenaires'
 import { Route as ApiPublicControleInterneRappelRouteImport } from './routes/api/public/controle-interne-rappel'
 import { Route as ApiPublicCartographieRisquesRevisionRouteImport } from './routes/api/public/cartographie-risques-revision'
@@ -176,6 +177,12 @@ const ApiPublicDevoirsConseilEnvoisRoute =
   ApiPublicDevoirsConseilEnvoisRouteImport.update({
     id: '/api/public/devoirs-conseil-envois',
     path: '/api/public/devoirs-conseil-envois',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicDdaGuilloufBridouxRoute =
+  ApiPublicDdaGuilloufBridouxRouteImport.update({
+    id: '/api/public/dda-guillouf-bridoux',
+    path: '/api/public/dda-guillouf-bridoux',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicCorrigerLabelsPartenairesRoute =
@@ -407,6 +414,7 @@ export interface FileRoutesByFullPath {
   '/api/public/cartographie-risques-revision': typeof ApiPublicCartographieRisquesRevisionRoute
   '/api/public/controle-interne-rappel': typeof ApiPublicControleInterneRappelRoute
   '/api/public/corriger-labels-partenaires': typeof ApiPublicCorrigerLabelsPartenairesRoute
+  '/api/public/dda-guillouf-bridoux': typeof ApiPublicDdaGuilloufBridouxRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
@@ -462,6 +470,7 @@ export interface FileRoutesByTo {
   '/api/public/cartographie-risques-revision': typeof ApiPublicCartographieRisquesRevisionRoute
   '/api/public/controle-interne-rappel': typeof ApiPublicControleInterneRappelRoute
   '/api/public/corriger-labels-partenaires': typeof ApiPublicCorrigerLabelsPartenairesRoute
+  '/api/public/dda-guillouf-bridoux': typeof ApiPublicDdaGuilloufBridouxRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
@@ -520,6 +529,7 @@ export interface FileRoutesById {
   '/api/public/cartographie-risques-revision': typeof ApiPublicCartographieRisquesRevisionRoute
   '/api/public/controle-interne-rappel': typeof ApiPublicControleInterneRappelRoute
   '/api/public/corriger-labels-partenaires': typeof ApiPublicCorrigerLabelsPartenairesRoute
+  '/api/public/dda-guillouf-bridoux': typeof ApiPublicDdaGuilloufBridouxRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
@@ -578,6 +588,7 @@ export interface FileRouteTypes {
     | '/api/public/cartographie-risques-revision'
     | '/api/public/controle-interne-rappel'
     | '/api/public/corriger-labels-partenaires'
+    | '/api/public/dda-guillouf-bridoux'
     | '/api/public/devoirs-conseil-envois'
     | '/api/public/envois-planifies'
     | '/api/public/formations-rappels'
@@ -633,6 +644,7 @@ export interface FileRouteTypes {
     | '/api/public/cartographie-risques-revision'
     | '/api/public/controle-interne-rappel'
     | '/api/public/corriger-labels-partenaires'
+    | '/api/public/dda-guillouf-bridoux'
     | '/api/public/devoirs-conseil-envois'
     | '/api/public/envois-planifies'
     | '/api/public/formations-rappels'
@@ -690,6 +702,7 @@ export interface FileRouteTypes {
     | '/api/public/cartographie-risques-revision'
     | '/api/public/controle-interne-rappel'
     | '/api/public/corriger-labels-partenaires'
+    | '/api/public/dda-guillouf-bridoux'
     | '/api/public/devoirs-conseil-envois'
     | '/api/public/envois-planifies'
     | '/api/public/formations-rappels'
@@ -731,6 +744,7 @@ export interface RootRouteChildren {
   ApiPublicCartographieRisquesRevisionRoute: typeof ApiPublicCartographieRisquesRevisionRoute
   ApiPublicControleInterneRappelRoute: typeof ApiPublicControleInterneRappelRoute
   ApiPublicCorrigerLabelsPartenairesRoute: typeof ApiPublicCorrigerLabelsPartenairesRoute
+  ApiPublicDdaGuilloufBridouxRoute: typeof ApiPublicDdaGuilloufBridouxRoute
   ApiPublicDevoirsConseilEnvoisRoute: typeof ApiPublicDevoirsConseilEnvoisRoute
   ApiPublicEnvoisPlanifiesRoute: typeof ApiPublicEnvoisPlanifiesRoute
   ApiPublicFormationsRappelsRoute: typeof ApiPublicFormationsRappelsRoute
@@ -898,6 +912,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/devoirs-conseil-envois'
       fullPath: '/api/public/devoirs-conseil-envois'
       preLoaderRoute: typeof ApiPublicDevoirsConseilEnvoisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/dda-guillouf-bridoux': {
+      id: '/api/public/dda-guillouf-bridoux'
+      path: '/api/public/dda-guillouf-bridoux'
+      fullPath: '/api/public/dda-guillouf-bridoux'
+      preLoaderRoute: typeof ApiPublicDdaGuilloufBridouxRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/corriger-labels-partenaires': {
@@ -1242,6 +1263,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicControleInterneRappelRoute: ApiPublicControleInterneRappelRoute,
   ApiPublicCorrigerLabelsPartenairesRoute:
     ApiPublicCorrigerLabelsPartenairesRoute,
+  ApiPublicDdaGuilloufBridouxRoute: ApiPublicDdaGuilloufBridouxRoute,
   ApiPublicDevoirsConseilEnvoisRoute: ApiPublicDevoirsConseilEnvoisRoute,
   ApiPublicEnvoisPlanifiesRoute: ApiPublicEnvoisPlanifiesRoute,
   ApiPublicFormationsRappelsRoute: ApiPublicFormationsRappelsRoute,
