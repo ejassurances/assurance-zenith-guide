@@ -16,6 +16,8 @@ import {
   NotesDeFraisTab,
 } from "@/components/comptabilite-ecritures";
 import { FacturesAchatTab } from "@/components/factures-achat-tab";
+import { LivreRecettesTab } from "@/components/livre-recettes-tab";
+import { LivreAchatsTab } from "@/components/livre-achats-tab";
 import { CommissionMoisCard } from "@/components/commission-mois-card";
 import { TresoreriePrevisionnelle } from "@/components/tresorerie-previsionnelle";
 
