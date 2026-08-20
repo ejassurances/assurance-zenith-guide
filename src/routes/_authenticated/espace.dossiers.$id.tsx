@@ -27,7 +27,7 @@ import { SouscriptionPanel } from "@/components/souscription-panel";
 import { CopilotePanel } from "@/components/copilote-panel";
 import { DossierDevisPanel } from "@/components/dossier-devis-panel";
 import { SimulassurConsole } from "@/components/simulassur-console";
-import { etapeLabel } from "@/lib/pipeline-dossier";
+import { etapeLabel, type EtapeKey } from "@/lib/pipeline-dossier";
 
 
 export const Route = createFileRoute("/_authenticated/espace/dossiers/$id")({
@@ -113,6 +113,7 @@ function DossierDetail() {
   const [dossier, setDossier] = useState<Dossier | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedStep, setSelectedStep] = useState<EtapeKey | null>(null);
   const [contreProposition, setContreProposition] = useState<{
     suggestion: string;
     motif: string;
@@ -128,6 +129,7 @@ function DossierDetail() {
   };
 
   useEffect(() => {
+    setSelectedStep(null);
     load();
   }, [id]);
 
@@ -137,28 +139,11 @@ function DossierDetail() {
 
   const canEdit = role === "admin" || role === "mandataire" || role === "prescripteur";
 
-  const scrollToStep = (key: string) => {
-    const mapping: Record<string, string[]> = {
-      nouveau: ["section-recueil"],
-      en_cours: ["section-recueil"],
-      lettre_mission_envoyee: ["section-lettre-mission"],
-      dda_validee: ["section-lettre-mission"],
-      devis_en_cours: ["section-devis", "section-compagnie-produit"],
-      devoir_conseil_envoye: ["section-devoir-conseil"],
-      devoir_conseil_signe: ["section-devoir-conseil"],
-      souscription_envoyee: ["section-souscription", "section-pieces"],
-      contrat_valide: ["section-souscription", "section-pieces"],
-      contrat_actif: ["section-souscription", "section-pieces"],
-    };
-    const ids = mapping[key] ?? [];
-    for (const sectionId of ids) {
-      const el = document.getElementById(sectionId);
-      if (!el) continue;
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-      el.classList.add("ring-2", "ring-[#D4AF37]", "ring-offset-2");
-      window.setTimeout(() => el.classList.remove("ring-2", "ring-[#D4AF37]", "ring-offset-2"), 1500);
-      break;
-    }
+  const displayedStep = selectedStep ?? dossier.statut;
+  const userId = user?.id;
+  const handlePipelineChanged = () => {
+    setSelectedStep(null);
+    load();
   };
 
   return (
@@ -182,104 +167,195 @@ function DossierDetail() {
       <DossierPipeline
         dossierId={id}
         statut={dossier.statut}
+        selectedStep={displayedStep}
         canEdit={canEdit}
-        onChanged={load}
-        onStepClick={(key) => scrollToStep(key)}
+        onChanged={handlePipelineChanged}
+        onStepClick={setSelectedStep}
       />
 
-      {canEdit && <CopilotePanel dossierId={id} />}
-
-      <CompagnieProduitSection dossier={dossier} canEdit={canEdit} onSaved={load} />
-
-      <RecueilPanel dossier={dossier} />
-      {canEdit && (
-        <div id="section-lettre-mission">
-          <LettreMissionPanel dossierId={id} clientEmail={dossier.client_email} />
-        </div>
-      )}
-      {canEdit && (
-        <div id="section-devis">
-          <DossierDevisPanel
-            dossierId={id}
-            branche={labelForBranche(dossier.type_assurance)}
-            userId={user!.id}
-            onChanged={load}
-          />
-        </div>
-      )}
-      {canEdit && dossier.type_assurance === "emprunteur" && (
-        <SimulassurConsole dossierId={id} clientEmail={dossier.client_email} />
-      )}
-      {canEdit && (
-        <DevoirConseilRefusAnalysePanel
-          dossierId={id}
-          userId={user!.id}
+      {userId && (
+        <StageContent
+          step={displayedStep}
+          dossier={dossier}
+          userId={userId}
+          canEdit={canEdit}
+          contreProposition={contreProposition}
+          onChanged={load}
           onContreProposition={(suggestion, motif) => {
             setContreProposition({ suggestion, motif, key: Date.now() });
-            document.getElementById("section-devoir-conseil")?.scrollIntoView({ behavior: "smooth", block: "start" });
           }}
-          onChanged={load}
         />
       )}
-      {canEdit && (
-        <div id="section-devoir-conseil">
-          <DevoirConseilPanel
-            dossierId={id}
-            clientEmail={dossier.client_email}
-            branche={dossier.type_assurance}
-            onChanged={load}
-            contreProposition={contreProposition}
-          />
-        </div>
-      )}
-
-      {canEdit && (
-        <div id="section-souscription">
-          <SouscriptionPanel
-            dossierId={id}
-            statut={dossier.statut}
-            emailCompagnie={dossier.souscription_email_compagnie}
-            envoyeeLe={dossier.souscription_envoyee_le}
-            relances={dossier.souscription_relances_nb}
-            retourLe={dossier.souscription_retour_le}
-            onChanged={load}
-          />
-        </div>
-      )}
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <Section title="Informations client">
-          <Row label="Email">{dossier.client_email ?? "—"}</Row>
-          <Row label="Téléphone">{dossier.client_phone ?? "—"}</Row>
-          <Row label="Âge">{dossier.age ?? "—"}</Row>
-          <Row label="Fumeur">{dossier.fumeur ? "Oui" : "Non"}</Row>
-        </Section>
-        <Section title="Prêt">
-          <Row label="Capital">
-            {dossier.capital ? `${Number(dossier.capital).toLocaleString("fr-FR")} €` : "—"}
-          </Row>
-          <Row label="Durée">{dossier.duree_mois ? `${dossier.duree_mois} mois` : "—"}</Row>
-          <Row label="Économie estimée">
-            {dossier.economie_estimee ? `${Number(dossier.economie_estimee).toLocaleString("fr-FR")} €` : "—"}
-          </Row>
-          <Row label="Étape">{etapeLabel(dossier.statut)}</Row>
-
-        </Section>
-      </div>
-
-      {dossier.notes && (
-        <Section title="Notes">
-          <p className="whitespace-pre-wrap text-sm text-ink-soft">{dossier.notes}</p>
-        </Section>
-      )}
-
-      <div id="section-pieces">
-        <PiecesSection dossierId={id} clientEmail={dossier.client_email} canValidate={canEdit} />
-      </div>
-
-      <MessagesPanel dossierId={id} userId={user!.id} />
-      <DocumentsPanel dossierId={id} userId={user!.id} />
     </div>
+  );
+}
+
+function StageContent({
+  step,
+  dossier,
+  userId,
+  canEdit,
+  contreProposition,
+  onChanged,
+  onContreProposition,
+}: {
+  step: string;
+  dossier: Dossier;
+  userId: string;
+  canEdit: boolean;
+  contreProposition: { suggestion: string; motif: string; key: number } | null;
+  onChanged: () => void;
+  onContreProposition: (suggestion: string, motif: string) => void;
+}) {
+  const dossierId = dossier.id;
+  const documents = <DocumentsPanel dossierId={dossierId} userId={userId} />;
+  const messages = <MessagesPanel dossierId={dossierId} userId={userId} />;
+  const pieces = (
+    <div id="section-pieces">
+      <PiecesSection dossierId={dossierId} clientEmail={dossier.client_email} canValidate={canEdit} />
+    </div>
+  );
+  const souscription = canEdit ? (
+    <div id="section-souscription">
+      <SouscriptionPanel
+        dossierId={dossierId}
+        statut={dossier.statut}
+        emailCompagnie={dossier.souscription_email_compagnie}
+        envoyeeLe={dossier.souscription_envoyee_le}
+        relances={dossier.souscription_relances_nb}
+        retourLe={dossier.souscription_retour_le}
+        onChanged={onChanged}
+      />
+    </div>
+  ) : null;
+
+  let content: React.ReactNode;
+  switch (step) {
+    case "nouveau":
+    case "en_cours":
+      content = (
+        <>
+          <RecueilPanel dossier={dossier} />
+          <div className="grid gap-6 md:grid-cols-2">
+            <Section title="Informations client">
+              <Row label="Email">{dossier.client_email ?? "—"}</Row>
+              <Row label="Téléphone">{dossier.client_phone ?? "—"}</Row>
+              <Row label="Âge">{dossier.age ?? "—"}</Row>
+              <Row label="Fumeur">{dossier.fumeur ? "Oui" : "Non"}</Row>
+            </Section>
+            <Section title="Projet">
+              <Row label="Capital">
+                {dossier.capital ? `${Number(dossier.capital).toLocaleString("fr-FR")} €` : "—"}
+              </Row>
+              <Row label="Durée">{dossier.duree_mois ? `${dossier.duree_mois} mois` : "—"}</Row>
+              <Row label="Économie estimée">
+                {dossier.economie_estimee ? `${Number(dossier.economie_estimee).toLocaleString("fr-FR")} €` : "—"}
+              </Row>
+              <Row label="Étape">{etapeLabel(dossier.statut)}</Row>
+            </Section>
+          </div>
+          {dossier.notes && (
+            <Section title="Notes">
+              <p className="whitespace-pre-wrap text-sm text-ink-soft">{dossier.notes}</p>
+            </Section>
+          )}
+          {documents}
+          {messages}
+        </>
+      );
+      break;
+    case "lettre_mission_envoyee":
+      content = (
+        <>
+          {canEdit && <LettreMissionPanel dossierId={dossierId} clientEmail={dossier.client_email} />}
+          {documents}
+        </>
+      );
+      break;
+    case "dda_validee":
+      content = (
+        <>
+          {canEdit && <LettreMissionPanel dossierId={dossierId} clientEmail={dossier.client_email} />}
+          <CompagnieProduitSection dossier={dossier} canEdit={canEdit} onSaved={onChanged} />
+          {documents}
+        </>
+      );
+      break;
+    case "devis_en_cours":
+      content = (
+        <>
+          <CompagnieProduitSection dossier={dossier} canEdit={canEdit} onSaved={onChanged} />
+          {canEdit && (
+            <DossierDevisPanel
+              dossierId={dossierId}
+              branche={labelForBranche(dossier.type_assurance)}
+              userId={userId}
+              onChanged={onChanged}
+            />
+          )}
+          {canEdit && dossier.type_assurance === "emprunteur" && (
+            <SimulassurConsole dossierId={dossierId} clientEmail={dossier.client_email} />
+          )}
+          {documents}
+        </>
+      );
+      break;
+    case "devoir_conseil_envoye":
+    case "devoir_conseil_signe":
+    case "devoir_conseil_refuse":
+      content = (
+        <>
+          {canEdit && (
+            <DevoirConseilRefusAnalysePanel
+              dossierId={dossierId}
+              userId={userId}
+              onContreProposition={onContreProposition}
+              onChanged={onChanged}
+            />
+          )}
+          {canEdit && (
+            <DevoirConseilPanel
+              dossierId={dossierId}
+              clientEmail={dossier.client_email}
+              branche={dossier.type_assurance}
+              onChanged={onChanged}
+              contreProposition={contreProposition}
+            />
+          )}
+          {documents}
+        </>
+      );
+      break;
+    case "souscription_envoyee":
+    case "contrat_valide":
+    case "contrat_actif":
+      content = (
+        <>
+          {souscription}
+          {pieces}
+          {documents}
+          {messages}
+        </>
+      );
+      break;
+    default:
+      content = (
+        <>
+          {documents}
+          {messages}
+        </>
+      );
+  }
+
+  return (
+    <section className="space-y-6" aria-label={`Contenu de l'étape ${etapeLabel(step)}`}>
+      <div className="flex items-center justify-between border-b border-line pb-3">
+        <h2 className="font-serif text-xl font-medium text-ink">{etapeLabel(step)}</h2>
+        {step !== dossier.statut && <span className="text-xs text-ink-muted">Étape précédente</span>}
+      </div>
+      {canEdit && <CopilotePanel dossierId={dossierId} />}
+      {content}
+    </section>
   );
 }
 
