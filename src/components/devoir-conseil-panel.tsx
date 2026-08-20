@@ -196,6 +196,23 @@ export function DevoirConseilPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dossierId, staff]);
 
+  // Catalogue à un seul produit actif pour cette branche : la règle des 3 devis
+  // ne s'applique pas et le modèle bascule sur la mention « offre unique ».
+  const [offreUnique, setOffreUnique] = useState(false);
+  useEffect(() => {
+    const b = branche || dossier?.type_assurance || "";
+    if (!b) return;
+    (async () => {
+      try {
+        const res = await verifierCatalogue({ data: { branche: b } });
+        setOffreUnique(Boolean(res.offre_unique));
+      } catch {
+        setOffreUnique(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [branche, dossier?.type_assurance]);
+
   // Délai de réflexion : 16 h après signature de la lettre de mission,
   // et envoi possible uniquement pendant les horaires d'ouverture.
   const [lettreSigneeLe, setLettreSigneeLe] = useState<string | null>(null);
