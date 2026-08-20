@@ -3558,6 +3558,48 @@ export type Database = {
           },
         ]
       }
+      prescripteurs: {
+        Row: {
+          convention_acceptee_le: string | null
+          created_at: string
+          email: string
+          id: string
+          nom: string
+          prenom: string | null
+          statut: string
+          telephone: string | null
+          type: string
+          user_id: string | null
+          zone_activite: string | null
+        }
+        Insert: {
+          convention_acceptee_le?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          nom: string
+          prenom?: string | null
+          statut?: string
+          telephone?: string | null
+          type?: string
+          user_id?: string | null
+          zone_activite?: string | null
+        }
+        Update: {
+          convention_acceptee_le?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          nom?: string
+          prenom?: string | null
+          statut?: string
+          telephone?: string | null
+          type?: string
+          user_id?: string | null
+          zone_activite?: string | null
+        }
+        Relationships: []
+      }
       produit_documents: {
         Row: {
           created_at: string
@@ -4137,6 +4179,60 @@ export type Database = {
             columns: ["contrat_id"]
             isOneToOne: false
             referencedRelation: "contrats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recommandations_prescripteur: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          montant_du: number
+          nom_contact: string
+          prescripteur_id: string
+          statut: string
+          verse: boolean
+          verse_le: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          montant_du?: number
+          nom_contact: string
+          prescripteur_id: string
+          statut?: string
+          verse?: boolean
+          verse_le?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          montant_du?: number
+          nom_contact?: string
+          prescripteur_id?: string
+          statut?: string
+          verse?: boolean
+          verse_le?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recommandations_prescripteur_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recommandations_prescripteur_prescripteur_id_fkey"
+            columns: ["prescripteur_id"]
+            isOneToOne: false
+            referencedRelation: "prescripteurs"
             referencedColumns: ["id"]
           },
         ]

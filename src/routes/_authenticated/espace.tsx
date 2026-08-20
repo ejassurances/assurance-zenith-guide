@@ -49,19 +49,20 @@ function EspaceLayout() {
   }
 
   const solo = [
-    { to: "/espace", label: "Tableau de bord", exact: true, hide: role === "client" },
+    { to: "/espace", label: "Tableau de bord", exact: true, hide: role === "client" || role === "prescripteur" },
     { to: "/espace/mon-espace", label: "Mon espace", hide: role !== "client" },
+    { to: "/espace/mes-recommandations", label: "Mes recommandations", hide: role !== "prescripteur" },
   ].filter((n) => !n.hide);
 
   const groupes = [
     {
       titre: "Relation client",
       items: [
-        { to: "/espace/clients", label: "Clients", hide: role === "client" },
-        { to: "/espace/dossiers", label: "Dossiers", hide: role === "client" },
+        { to: "/espace/clients", label: "Clients", hide: role === "client" || role === "prescripteur" },
+        { to: "/espace/dossiers", label: "Dossiers", hide: role === "client" || role === "prescripteur" },
         { to: "/espace/emails", label: "Emails", hide: role !== "admin" && role !== "mandataire" },
         { to: "/espace/sinistres", label: "Sinistres", hide: role !== "admin" && role !== "mandataire" },
-        { to: "/espace/taches", label: "Tâches", hide: role === "client" },
+        { to: "/espace/taches", label: "Tâches", hide: role === "client" || role === "prescripteur" },
 
       ],
     },
@@ -75,21 +76,22 @@ function EspaceLayout() {
     {
       titre: "Finance",
       items: [
-        { to: "/espace/commissions", label: "Commissions", hide: role === "client" },
-        { to: "/espace/comptabilite", label: "Comptabilité", hide: role === "client" },
+        { to: "/espace/commissions", label: "Commissions", hide: role === "client" || role === "prescripteur" },
+        { to: "/espace/comptabilite", label: "Comptabilité", hide: role === "client" || role === "prescripteur" },
       ],
     },
     {
       titre: "Conformité",
       items: [
         { to: "/espace/conformite", label: "Conformité", hide: role === "client" || role === "prescripteur" },
-        { to: "/espace/der-modele", label: "DER (modèle)", hide: role === "client" },
+        { to: "/espace/der-modele", label: "DER (modèle)", hide: role === "client" || role === "prescripteur" },
         { to: "/espace/audit-logs", label: "Audit", hide: role !== "admin" },
       ],
     },
     {
       titre: "Administration",
       items: [
+        { to: "/espace/prescripteurs", label: "Prescripteurs", hide: role !== "admin" && role !== "mandataire" },
         { to: "/espace/utilisateurs", label: "Utilisateurs", hide: role !== "admin" },
         { to: "/espace/parametres", label: "Paramètres", hide: false },
       ],

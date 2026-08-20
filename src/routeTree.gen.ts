@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as DevenirPrescripteurRouteImport } from './routes/devenir-prescripteur'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
@@ -42,9 +43,11 @@ import { Route as AuthenticatedEspaceSignerSouscriptionRouteImport } from './rou
 import { Route as AuthenticatedEspaceSignerLettreMissionRouteImport } from './routes/_authenticated/espace.signer-lettre-mission'
 import { Route as AuthenticatedEspaceSignerDevoirConseilRouteImport } from './routes/_authenticated/espace.signer-devoir-conseil'
 import { Route as AuthenticatedEspaceSignerDerRouteImport } from './routes/_authenticated/espace.signer-der'
+import { Route as AuthenticatedEspacePrescripteursRouteImport } from './routes/_authenticated/espace.prescripteurs'
 import { Route as AuthenticatedEspaceParametresRouteImport } from './routes/_authenticated/espace.parametres'
 import { Route as AuthenticatedEspaceNeolianeRouteImport } from './routes/_authenticated/espace.neoliane'
 import { Route as AuthenticatedEspaceMonEspaceRouteImport } from './routes/_authenticated/espace.mon-espace'
+import { Route as AuthenticatedEspaceMesRecommandationsRouteImport } from './routes/_authenticated/espace.mes-recommandations'
 import { Route as AuthenticatedEspaceEmailsRouteImport } from './routes/_authenticated/espace.emails'
 import { Route as AuthenticatedEspaceDerModeleRouteImport } from './routes/_authenticated/espace.der-modele'
 import { Route as AuthenticatedEspaceConformiteRouteImport } from './routes/_authenticated/espace.conformite'
@@ -68,6 +71,11 @@ import { Route as AuthenticatedEspaceClientsIdRouteImport } from './routes/_auth
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevenirPrescripteurRoute = DevenirPrescripteurRouteImport.update({
+  id: '/devenir-prescripteur',
+  path: '/devenir-prescripteur',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -249,6 +257,12 @@ const AuthenticatedEspaceSignerDerRoute =
     path: '/signer-der',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const AuthenticatedEspacePrescripteursRoute =
+  AuthenticatedEspacePrescripteursRouteImport.update({
+    id: '/prescripteurs',
+    path: '/prescripteurs',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
 const AuthenticatedEspaceParametresRoute =
   AuthenticatedEspaceParametresRouteImport.update({
     id: '/parametres',
@@ -265,6 +279,12 @@ const AuthenticatedEspaceMonEspaceRoute =
   AuthenticatedEspaceMonEspaceRouteImport.update({
     id: '/mon-espace',
     path: '/mon-espace',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
+const AuthenticatedEspaceMesRecommandationsRoute =
+  AuthenticatedEspaceMesRecommandationsRouteImport.update({
+    id: '/mes-recommandations',
+    path: '/mes-recommandations',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
 const AuthenticatedEspaceEmailsRoute =
@@ -382,6 +402,7 @@ const AuthenticatedEspaceClientsIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/devenir-prescripteur': typeof DevenirPrescripteurRoute
   '/reset-password': typeof ResetPasswordRoute
   '/espace': typeof AuthenticatedEspaceRouteWithChildren
   '/espace/cgu': typeof EspaceCguRoute
@@ -392,9 +413,11 @@ export interface FileRoutesByFullPath {
   '/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
   '/espace/emails': typeof AuthenticatedEspaceEmailsRoute
+  '/espace/mes-recommandations': typeof AuthenticatedEspaceMesRecommandationsRoute
   '/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
   '/espace/neoliane': typeof AuthenticatedEspaceNeolianeRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
+  '/espace/prescripteurs': typeof AuthenticatedEspacePrescripteursRoute
   '/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
   '/espace/signer-devoir-conseil': typeof AuthenticatedEspaceSignerDevoirConseilRoute
   '/espace/signer-lettre-mission': typeof AuthenticatedEspaceSignerLettreMissionRoute
@@ -438,6 +461,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/devenir-prescripteur': typeof DevenirPrescripteurRoute
   '/reset-password': typeof ResetPasswordRoute
   '/espace/cgu': typeof EspaceCguRoute
   '/espace/confidentialite': typeof EspaceConfidentialiteRoute
@@ -447,9 +471,11 @@ export interface FileRoutesByTo {
   '/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
   '/espace/emails': typeof AuthenticatedEspaceEmailsRoute
+  '/espace/mes-recommandations': typeof AuthenticatedEspaceMesRecommandationsRoute
   '/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
   '/espace/neoliane': typeof AuthenticatedEspaceNeolianeRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
+  '/espace/prescripteurs': typeof AuthenticatedEspacePrescripteursRoute
   '/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
   '/espace/signer-devoir-conseil': typeof AuthenticatedEspaceSignerDevoirConseilRoute
   '/espace/signer-lettre-mission': typeof AuthenticatedEspaceSignerLettreMissionRoute
@@ -495,6 +521,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/devenir-prescripteur': typeof DevenirPrescripteurRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/espace': typeof AuthenticatedEspaceRouteWithChildren
   '/espace/cgu': typeof EspaceCguRoute
@@ -505,9 +532,11 @@ export interface FileRoutesById {
   '/_authenticated/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/_authenticated/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
   '/_authenticated/espace/emails': typeof AuthenticatedEspaceEmailsRoute
+  '/_authenticated/espace/mes-recommandations': typeof AuthenticatedEspaceMesRecommandationsRoute
   '/_authenticated/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
   '/_authenticated/espace/neoliane': typeof AuthenticatedEspaceNeolianeRoute
   '/_authenticated/espace/parametres': typeof AuthenticatedEspaceParametresRoute
+  '/_authenticated/espace/prescripteurs': typeof AuthenticatedEspacePrescripteursRoute
   '/_authenticated/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
   '/_authenticated/espace/signer-devoir-conseil': typeof AuthenticatedEspaceSignerDevoirConseilRoute
   '/_authenticated/espace/signer-lettre-mission': typeof AuthenticatedEspaceSignerLettreMissionRoute
@@ -553,6 +582,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/devenir-prescripteur'
     | '/reset-password'
     | '/espace'
     | '/espace/cgu'
@@ -563,9 +593,11 @@ export interface FileRouteTypes {
     | '/espace/conformite'
     | '/espace/der-modele'
     | '/espace/emails'
+    | '/espace/mes-recommandations'
     | '/espace/mon-espace'
     | '/espace/neoliane'
     | '/espace/parametres'
+    | '/espace/prescripteurs'
     | '/espace/signer-der'
     | '/espace/signer-devoir-conseil'
     | '/espace/signer-lettre-mission'
@@ -609,6 +641,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/devenir-prescripteur'
     | '/reset-password'
     | '/espace/cgu'
     | '/espace/confidentialite'
@@ -618,9 +651,11 @@ export interface FileRouteTypes {
     | '/espace/conformite'
     | '/espace/der-modele'
     | '/espace/emails'
+    | '/espace/mes-recommandations'
     | '/espace/mon-espace'
     | '/espace/neoliane'
     | '/espace/parametres'
+    | '/espace/prescripteurs'
     | '/espace/signer-der'
     | '/espace/signer-devoir-conseil'
     | '/espace/signer-lettre-mission'
@@ -665,6 +700,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/devenir-prescripteur'
     | '/reset-password'
     | '/_authenticated/espace'
     | '/espace/cgu'
@@ -675,9 +711,11 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/conformite'
     | '/_authenticated/espace/der-modele'
     | '/_authenticated/espace/emails'
+    | '/_authenticated/espace/mes-recommandations'
     | '/_authenticated/espace/mon-espace'
     | '/_authenticated/espace/neoliane'
     | '/_authenticated/espace/parametres'
+    | '/_authenticated/espace/prescripteurs'
     | '/_authenticated/espace/signer-der'
     | '/_authenticated/espace/signer-devoir-conseil'
     | '/_authenticated/espace/signer-lettre-mission'
@@ -723,6 +761,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  DevenirPrescripteurRoute: typeof DevenirPrescripteurRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   EspaceCguRoute: typeof EspaceCguRoute
   EspaceConfidentialiteRoute: typeof EspaceConfidentialiteRoute
@@ -758,6 +797,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/devenir-prescripteur': {
+      id: '/devenir-prescripteur'
+      path: '/devenir-prescripteur'
+      fullPath: '/devenir-prescripteur'
+      preLoaderRoute: typeof DevenirPrescripteurRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -984,6 +1030,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceSignerDerRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/prescripteurs': {
+      id: '/_authenticated/espace/prescripteurs'
+      path: '/prescripteurs'
+      fullPath: '/espace/prescripteurs'
+      preLoaderRoute: typeof AuthenticatedEspacePrescripteursRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
     '/_authenticated/espace/parametres': {
       id: '/_authenticated/espace/parametres'
       path: '/parametres'
@@ -1003,6 +1056,13 @@ declare module '@tanstack/react-router' {
       path: '/mon-espace'
       fullPath: '/espace/mon-espace'
       preLoaderRoute: typeof AuthenticatedEspaceMonEspaceRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
+    '/_authenticated/espace/mes-recommandations': {
+      id: '/_authenticated/espace/mes-recommandations'
+      path: '/mes-recommandations'
+      fullPath: '/espace/mes-recommandations'
+      preLoaderRoute: typeof AuthenticatedEspaceMesRecommandationsRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
     '/_authenticated/espace/emails': {
@@ -1162,9 +1222,11 @@ interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceConformiteRoute: typeof AuthenticatedEspaceConformiteRoute
   AuthenticatedEspaceDerModeleRoute: typeof AuthenticatedEspaceDerModeleRoute
   AuthenticatedEspaceEmailsRoute: typeof AuthenticatedEspaceEmailsRoute
+  AuthenticatedEspaceMesRecommandationsRoute: typeof AuthenticatedEspaceMesRecommandationsRoute
   AuthenticatedEspaceMonEspaceRoute: typeof AuthenticatedEspaceMonEspaceRoute
   AuthenticatedEspaceNeolianeRoute: typeof AuthenticatedEspaceNeolianeRoute
   AuthenticatedEspaceParametresRoute: typeof AuthenticatedEspaceParametresRoute
+  AuthenticatedEspacePrescripteursRoute: typeof AuthenticatedEspacePrescripteursRoute
   AuthenticatedEspaceSignerDerRoute: typeof AuthenticatedEspaceSignerDerRoute
   AuthenticatedEspaceSignerDevoirConseilRoute: typeof AuthenticatedEspaceSignerDevoirConseilRoute
   AuthenticatedEspaceSignerLettreMissionRoute: typeof AuthenticatedEspaceSignerLettreMissionRoute
@@ -1189,9 +1251,12 @@ const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
   AuthenticatedEspaceConformiteRoute: AuthenticatedEspaceConformiteRoute,
   AuthenticatedEspaceDerModeleRoute: AuthenticatedEspaceDerModeleRoute,
   AuthenticatedEspaceEmailsRoute: AuthenticatedEspaceEmailsRoute,
+  AuthenticatedEspaceMesRecommandationsRoute:
+    AuthenticatedEspaceMesRecommandationsRoute,
   AuthenticatedEspaceMonEspaceRoute: AuthenticatedEspaceMonEspaceRoute,
   AuthenticatedEspaceNeolianeRoute: AuthenticatedEspaceNeolianeRoute,
   AuthenticatedEspaceParametresRoute: AuthenticatedEspaceParametresRoute,
+  AuthenticatedEspacePrescripteursRoute: AuthenticatedEspacePrescripteursRoute,
   AuthenticatedEspaceSignerDerRoute: AuthenticatedEspaceSignerDerRoute,
   AuthenticatedEspaceSignerDevoirConseilRoute:
     AuthenticatedEspaceSignerDevoirConseilRoute,
@@ -1232,6 +1297,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  DevenirPrescripteurRoute: DevenirPrescripteurRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   EspaceCguRoute: EspaceCguRoute,
   EspaceConfidentialiteRoute: EspaceConfidentialiteRoute,
