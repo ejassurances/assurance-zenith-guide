@@ -15,7 +15,7 @@ export const Route = createFileRoute("/api/public/tmp-pj")({
         if (idx < 0) {
           return Response.json({
             sujet: msg.sujet,
-            de: msg.de,
+            de: msg.expediteur_email,
             date: msg.date,
             texte: msg.texte?.slice(0, 6000) ?? null,
             pieces: pj.map((p, i) => ({ i, nom: p.nom, mime: p.mime, taille: p.taille })),
