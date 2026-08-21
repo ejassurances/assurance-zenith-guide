@@ -65,6 +65,29 @@ export const signerDer = createServerFn({ method: "POST" })
       .eq("id", data.envoi_id);
     if (updErr) throw new Error(updErr.message);
 
+    // Classement du DER signé sur Google Drive (dossier client + registre DDA/ACPR).
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: mod } = envoi.der_modele_id
+        ? await supabaseAdmin.from("der_modele").select("storage_path").eq("id", envoi.der_modele_id).maybeSingle()
+        : { data: null };
+      if (mod?.storage_path) {
+        const { data: fichier } = await supabaseAdmin.storage.from("conformite-documents").download(mod.storage_path);
+        if (fichier) {
+          const { archiverPdfSurDrive } = await import("@/lib/drive-arborescence.server");
+          await archiverPdfSurDrive(supabaseAdmin as never, {
+            client_id: envoi.client_id,
+            sous_dossier: "02_Recueil_et_Conformite",
+            nom_fichier: `der-signe-${envoi.client_id.slice(0, 8)}-${new Date().toISOString().slice(0, 10)}.pdf`,
+            pdf: new Uint8Array(await fichier.arrayBuffer()),
+            copie_registre_dda: true,
+          });
+        }
+      }
+    } catch (e) {
+      console.error("[drive] DER signé non archivé", envoi.client_id, e);
+    }
+
     return { ok: true };
   });
 
