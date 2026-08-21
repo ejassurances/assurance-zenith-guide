@@ -77,6 +77,7 @@ function EspaceLayout() {
       items: [
         { to: "/espace/commissions", label: "Commissions", hide: role === "client" || role === "prescripteur" },
         { to: "/espace/comptabilite", label: "Comptabilité", hide: role === "client" || role === "prescripteur" },
+        { to: "/espace/fournisseurs", label: "Fournisseurs", hide: role !== "admin" && role !== "mandataire" },
       ],
     },
     {

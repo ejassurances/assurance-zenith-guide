@@ -51,6 +51,7 @@ import { Route as AuthenticatedEspaceNeolianeRouteImport } from './routes/_authe
 import { Route as AuthenticatedEspaceMonEspaceRouteImport } from './routes/_authenticated/espace.mon-espace'
 import { Route as AuthenticatedEspaceMesRecommandationsRouteImport } from './routes/_authenticated/espace.mes-recommandations'
 import { Route as AuthenticatedEspaceGrillesGarantiesRouteImport } from './routes/_authenticated/espace.grilles-garanties'
+import { Route as AuthenticatedEspaceFournisseursRouteImport } from './routes/_authenticated/espace.fournisseurs'
 import { Route as AuthenticatedEspaceDerModeleRouteImport } from './routes/_authenticated/espace.der-modele'
 import { Route as AuthenticatedEspaceConformiteRouteImport } from './routes/_authenticated/espace.conformite'
 import { Route as AuthenticatedEspaceComptabiliteRouteImport } from './routes/_authenticated/espace.comptabilite'
@@ -306,6 +307,12 @@ const AuthenticatedEspaceGrillesGarantiesRoute =
     path: '/grilles-garanties',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const AuthenticatedEspaceFournisseursRoute =
+  AuthenticatedEspaceFournisseursRouteImport.update({
+    id: '/fournisseurs',
+    path: '/fournisseurs',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
 const AuthenticatedEspaceDerModeleRoute =
   AuthenticatedEspaceDerModeleRouteImport.update({
     id: '/der-modele',
@@ -432,6 +439,7 @@ export interface FileRoutesByFullPath {
   '/espace/comptabilite': typeof AuthenticatedEspaceComptabiliteRoute
   '/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
+  '/espace/fournisseurs': typeof AuthenticatedEspaceFournisseursRoute
   '/espace/grilles-garanties': typeof AuthenticatedEspaceGrillesGarantiesRoute
   '/espace/mes-recommandations': typeof AuthenticatedEspaceMesRecommandationsRoute
   '/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
@@ -493,6 +501,7 @@ export interface FileRoutesByTo {
   '/espace/comptabilite': typeof AuthenticatedEspaceComptabiliteRoute
   '/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
+  '/espace/fournisseurs': typeof AuthenticatedEspaceFournisseursRoute
   '/espace/grilles-garanties': typeof AuthenticatedEspaceGrillesGarantiesRoute
   '/espace/mes-recommandations': typeof AuthenticatedEspaceMesRecommandationsRoute
   '/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
@@ -557,6 +566,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/comptabilite': typeof AuthenticatedEspaceComptabiliteRoute
   '/_authenticated/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/_authenticated/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
+  '/_authenticated/espace/fournisseurs': typeof AuthenticatedEspaceFournisseursRoute
   '/_authenticated/espace/grilles-garanties': typeof AuthenticatedEspaceGrillesGarantiesRoute
   '/_authenticated/espace/mes-recommandations': typeof AuthenticatedEspaceMesRecommandationsRoute
   '/_authenticated/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
@@ -621,6 +631,7 @@ export interface FileRouteTypes {
     | '/espace/comptabilite'
     | '/espace/conformite'
     | '/espace/der-modele'
+    | '/espace/fournisseurs'
     | '/espace/grilles-garanties'
     | '/espace/mes-recommandations'
     | '/espace/mon-espace'
@@ -682,6 +693,7 @@ export interface FileRouteTypes {
     | '/espace/comptabilite'
     | '/espace/conformite'
     | '/espace/der-modele'
+    | '/espace/fournisseurs'
     | '/espace/grilles-garanties'
     | '/espace/mes-recommandations'
     | '/espace/mon-espace'
@@ -745,6 +757,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/comptabilite'
     | '/_authenticated/espace/conformite'
     | '/_authenticated/espace/der-modele'
+    | '/_authenticated/espace/fournisseurs'
     | '/_authenticated/espace/grilles-garanties'
     | '/_authenticated/espace/mes-recommandations'
     | '/_authenticated/espace/mon-espace'
@@ -1125,6 +1138,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceGrillesGarantiesRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/fournisseurs': {
+      id: '/_authenticated/espace/fournisseurs'
+      path: '/fournisseurs'
+      fullPath: '/espace/fournisseurs'
+      preLoaderRoute: typeof AuthenticatedEspaceFournisseursRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
     '/_authenticated/espace/der-modele': {
       id: '/_authenticated/espace/der-modele'
       path: '/der-modele'
@@ -1282,6 +1302,7 @@ interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceComptabiliteRoute: typeof AuthenticatedEspaceComptabiliteRoute
   AuthenticatedEspaceConformiteRoute: typeof AuthenticatedEspaceConformiteRoute
   AuthenticatedEspaceDerModeleRoute: typeof AuthenticatedEspaceDerModeleRoute
+  AuthenticatedEspaceFournisseursRoute: typeof AuthenticatedEspaceFournisseursRoute
   AuthenticatedEspaceGrillesGarantiesRoute: typeof AuthenticatedEspaceGrillesGarantiesRoute
   AuthenticatedEspaceMesRecommandationsRoute: typeof AuthenticatedEspaceMesRecommandationsRoute
   AuthenticatedEspaceMonEspaceRoute: typeof AuthenticatedEspaceMonEspaceRoute
@@ -1313,6 +1334,7 @@ const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
   AuthenticatedEspaceComptabiliteRoute: AuthenticatedEspaceComptabiliteRoute,
   AuthenticatedEspaceConformiteRoute: AuthenticatedEspaceConformiteRoute,
   AuthenticatedEspaceDerModeleRoute: AuthenticatedEspaceDerModeleRoute,
+  AuthenticatedEspaceFournisseursRoute: AuthenticatedEspaceFournisseursRoute,
   AuthenticatedEspaceGrillesGarantiesRoute:
     AuthenticatedEspaceGrillesGarantiesRoute,
   AuthenticatedEspaceMesRecommandationsRoute:

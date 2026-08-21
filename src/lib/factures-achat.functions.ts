@@ -73,7 +73,14 @@ export const importerFactureDepuisEmail = createServerFn({ method: "POST" })
       .upload(chemin, octets, { contentType: mime, upsert: false });
     if (upErr) throw new Error(`Archivage du justificatif impossible : ${upErr.message}`);
 
+    const { rapprocherFournisseur } = await import("@/lib/fournisseurs.server");
+    const fiche = await rapprocherFournisseur({
+      nom: lue?.fournisseur ?? data.expediteur_nom ?? null,
+      email: data.expediteur_email ?? null,
+    });
+
     const fournisseur =
+      fiche?.nom ||
       lue?.fournisseur ||
       data.expediteur_nom ||
       (data.expediteur_email ? data.expediteur_email.split("@")[1] || data.expediteur_email : null) ||
@@ -99,12 +106,14 @@ export const importerFactureDepuisEmail = createServerFn({ method: "POST" })
       .from("factures_achat")
       .insert({
         fournisseur: fournisseur.slice(0, 160),
+        fournisseur_id: fiche?.id ?? null,
         numero_facture: lue?.numero_facture ?? null,
         date_facture: lue?.date_facture ?? (data.recu_le ? data.recu_le.slice(0, 10) : new Date().toISOString().slice(0, 10)),
         date_echeance: lue?.date_echeance ?? null,
         montant_ht: ht,
         montant_tva: tva,
         montant_ttc: ttc,
+        compte_charge: fiche?.compte_charge_defaut ?? undefined,
         statut: "a_payer",
         notes,
         fichier_path: chemin,
@@ -187,8 +196,12 @@ export const importerFactureFichier = createServerFn({ method: "POST" })
       .filter(Boolean)
       .join("\n");
 
+    const { rapprocherFournisseur } = await import("@/lib/fournisseurs.server");
+    const fiche = await rapprocherFournisseur({ nom: lue?.fournisseur ?? null });
+
     const insertion: Record<string, unknown> = {
-      fournisseur: (lue?.fournisseur ?? "Fournisseur à préciser").slice(0, 160),
+      fournisseur: (fiche?.nom ?? lue?.fournisseur ?? "Fournisseur à préciser").slice(0, 160),
+      fournisseur_id: fiche?.id ?? null,
       numero_facture: lue?.numero_facture ?? null,
       date_facture: lue?.date_facture ?? new Date().toISOString().slice(0, 10),
       date_echeance: lue?.date_echeance ?? null,
@@ -201,7 +214,8 @@ export const importerFactureFichier = createServerFn({ method: "POST" })
       fichier_nom: data.nom_fichier.slice(0, 300),
       created_by: context.userId,
     };
-    if (lue?.compte_charge) insertion["compte_charge"] = lue.compte_charge;
+    const compte = lue?.compte_charge ?? fiche?.compte_charge_defaut;
+    if (compte) insertion["compte_charge"] = compte;
 
     const { data: creee, error } = await supabaseAdmin
       .from("factures_achat")
