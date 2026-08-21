@@ -432,6 +432,51 @@ export async function retenirDevisDossier(
   return { dossier_id: c.dossier_id as string, devoir_id: res.id, envoye: false };
 }
 
+/**
+ * Devis saisi manuellement retenu DIRECTEMENT, sans comparatif IA : cas d'un
+ * contrat déjà validé par la compagnie (import rétroactif) ou d'une compagnie
+ * sans API de tarification dont l'offre a déjà été acceptée par le client.
+ * Une trace de classement est créée (rang 1 + motif) pour la preuve ACPR, puis
+ * le devoir de conseil est généré en brouillon.
+ */
+export async function retenirDevisManuel(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any, any, any>,
+  devisId: string,
+  userId: string,
+  motif: string,
+) {
+  const { data: devis, error: dErr } = await supabase
+    .from("dossier_devis")
+    .select("id, dossier_id")
+    .eq("id", devisId)
+    .maybeSingle();
+  if (dErr || !devis) throw new Error("Devis introuvable ou accès refusé");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const d = devis as any;
+
+  const classement: LigneClassement[] = [
+    { dossier_devis_id: devisId, rang: 1, justification: `Offre retenue sans comparatif IA — ${motif}` },
+  ];
+
+  const { data: inserted, error: iErr } = await supabase
+    .from("dossier_devis_classements")
+    .insert({
+      dossier_id: d.dossier_id,
+      modele_ia: null,
+      classement,
+      statut: "propose",
+      created_by: userId,
+    })
+    .select("id")
+    .single();
+  if (iErr || !inserted) throw new Error(iErr?.message ?? "Trace de sélection impossible");
+
+  return retenirDevisDossier(supabase, (inserted as { id: string }).id, devisId, userId);
+}
+
+
+
 
 /**
  * Produit à tarification FIXE : le devis est construit depuis la formule et les
