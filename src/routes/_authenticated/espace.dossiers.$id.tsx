@@ -123,6 +123,8 @@ function DossierDetail() {
   const [error, setError] = useState<string | null>(null);
   const [selectedStep, setSelectedStep] = useState<EtapeKey | null>(null);
   const completude = useCompletudeDossier(id, dossier?.client_id ?? null);
+  /** Score de conformité KYC du client (0-100) : sous 50 %, le dossier est gelé. */
+  const [scoreKyc, setScoreKyc] = useState<number | null>(null);
   const [contreProposition, setContreProposition] = useState<{
     suggestion: string;
     motif: string;
@@ -142,12 +144,27 @@ function DossierDetail() {
     load();
   }, [id]);
 
+  useEffect(() => {
+    const clientId = dossier?.client_id;
+    if (!clientId) return setScoreKyc(null);
+    let annule = false;
+    (async () => {
+      const { data } = await supabase.rpc("calculer_score_conformite_client", { _client_id: clientId });
+      if (!annule) setScoreKyc(typeof data === "number" ? data : null);
+    })();
+    return () => {
+      annule = true;
+    };
+  }, [dossier?.client_id]);
+
   if (loading) return <p className="text-sm text-ink-muted">Chargement…</p>;
   if (error) return <p className="text-sm text-destructive">{error}</p>;
   if (!dossier)
     return <p className="text-sm text-ink-muted">Dossier introuvable ou accès refusé.</p>;
 
-  const canEdit = role === "admin" || role === "mandataire" || role === "prescripteur";
+  const kycBloquant = scoreKyc != null && scoreKyc < 50;
+  const canEdit =
+    (role === "admin" || role === "mandataire" || role === "prescripteur") && !kycBloquant;
 
   const displayedStep = selectedStep ?? dossier.statut;
   const userId = user?.id;
@@ -173,6 +190,28 @@ function DossierDetail() {
           Référence {dossier.reference} · {labelForBranche(dossier.type_assurance)}
         </p>
       </div>
+
+      {kycBloquant && (
+        <div className="rounded-2xl border-2 border-destructive/60 bg-destructive/10 p-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-destructive">
+            Dossier gelé — conformité KYC insuffisante
+          </p>
+          <p className="mt-2 text-sm text-ink">
+            Le score de conformité du client est de <strong>{scoreKyc} %</strong> (seuil réglementaire : 50 %).
+            L'édition du projet, la saisie de devis et la génération des documents DDA sont bloquées jusqu'à la
+            régularisation des pièces KYC.
+          </p>
+          {dossier.client_id && (
+            <Link
+              to="/espace/clients/$id"
+              params={{ id: dossier.client_id }}
+              className="mt-3 inline-block rounded-full bg-ink px-4 py-2 text-sm text-primary-foreground"
+            >
+              Compléter le KYC du client
+            </Link>
+          )}
+        </div>
+      )}
 
       {isBrancheLegacy(dossier.type_assurance) && (
         <BrancheLegacyBanner dossierId={id} canEdit={canEdit} onReclassified={load} />
