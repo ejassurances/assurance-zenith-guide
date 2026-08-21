@@ -1,0 +1,6 @@
+UPDATE public.dossier_devis SET montant_total_saisi = 8394.32, type_cotisation = 'CRD', quotite_pct = 75, cotisation_mensuelle = 50.27, garanties_resume = 'CARDIF LIBERTES EMPRUNTEUR cotisations variables n° 2828/737 — Décès, PTIA, ITT, IPT, IPP à 75 %, franchise 90 jours, dos et psy sans condition d''hospitalisation. Cotisations assises sur le capital restant dû (moyenne 50,27 €/mois). Coût total restant sur 167 mois : 8 394,32 €. Frais assureur 110 € (35 € dossier + 75 € constitution) et honoraires de courtage 82,52 € après remise de 220 € (302,52 € contractuels).', updated_at = now() WHERE id = '7190de46-ae85-42d1-adc1-051b119cae52';
+
+UPDATE public.dossier_devis SET montant_total_saisi = 6534.16, garanties_resume = 'CARDIF LIBERTES EMPRUNTEUR cotisations variables n° 2828/737 — Décès, PTIA, ITT, IPT, IPP à 75 %, franchise 90 jours, dos et psy sans condition d''hospitalisation. Cotisations assises sur le capital restant dû (1,16 € à 70,10 €/mois). Coût total restant sur 167 mois : 6 534,16 €.', updated_at = now() WHERE id = 'f56e0346-4de3-4ea6-94a1-2abba4a34339';
+
+UPDATE public.dossiers SET economie_estimee = 3943.42 WHERE id = '81cfe711-1ad0-4d5d-972f-7a536e0762b5';
+UPDATE public.dossiers SET economie_estimee = 2107.07 WHERE id = '3992eafd-eff8-480e-84da-e495259a078b';
