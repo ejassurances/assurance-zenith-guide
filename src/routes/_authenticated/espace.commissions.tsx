@@ -67,7 +67,7 @@ function CommissionsPage() {
     const { data } = await supabase
       .from("commissions")
       .select(
-        "id,montant,statut,date_versement,notes,dossier_id,contrat_id,beneficiaire_id,ecriture_id,compte_produit,dossiers(reference,client_nom)",
+        "id,montant,statut,date_versement,notes,dossier_id,contrat_id,beneficiaire_id,ecriture_id,compte_produit,precomptee,provision_reprise,etat_encaissement,dossiers(reference,client_nom)",
       )
       .order("created_at", { ascending: false });
     setRows((data as unknown as Row[]) ?? []);
@@ -91,10 +91,23 @@ function CommissionsPage() {
   const verse = rows.filter((r) => r.statut === "versee").reduce((s, r) => s + Number(r.montant), 0);
   const attente = rows.filter((r) => r.statut === "prevue").reduce((s, r) => s + Number(r.montant), 0);
   const aComptabiliser = rows.filter((r) => r.statut === "versee" && !r.ecriture_id).length;
+  const provisions = rows
+    .filter((r) => r.statut !== "annulee")
+    .reduce((s, r) => s + Number(r.provision_reprise ?? 0), 0);
+  const caNet = verse - provisions;
 
   const majCompte = async (r: Row, compte: string) => {
     await supabase.from("commissions").update({ compte_produit: compte }).eq("id", r.id);
     setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, compte_produit: compte } : x)));
+  };
+
+  const majLigne = async (r: Row, champs: Partial<Row>) => {
+    setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, ...champs } : x)));
+    const { error } = await supabase.from("commissions").update(champs as never).eq("id", r.id);
+    if (error) {
+      toast.error(error.message);
+      load();
+    }
   };
 
   /* Comptabilisation d'une commission encaissée : journal Ventes, banque au débit. */
