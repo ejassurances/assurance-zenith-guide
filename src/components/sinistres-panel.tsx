@@ -275,13 +275,13 @@ function FormulaireSinistre({
     }
     setBusy(true);
     try {
-      const reference = `SIN-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+      // La référence officielle EJ-AAAA-SIN-XXXX est générée par la base.
       const { data, error } = await supabase
         .from("sinistres")
         .insert({
           client_id: clientId,
           contrat_id: form.contrat_id,
-          reference,
+
           branche: form.branche,
           type: form.type.trim(),
           date_survenance: form.date_survenance,
