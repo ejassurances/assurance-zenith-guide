@@ -7,6 +7,7 @@ import { IconFileAlert } from "@tabler/icons-react";
 import { detailSinistre, preparerBrouillonSinistre, cloturerSinistre } from "@/lib/sinistres.functions";
 import { ACTION_LABEL, STATUT_LABEL } from "./espace.sinistres";
 import { PageHeader } from "@/components/page-header";
+import { BoutonEnvoiEmail } from "@/components/envoi-rapide-email";
 
 export const Route = createFileRoute("/_authenticated/espace/sinistres/$id")({
   head: () => ({
@@ -122,7 +123,13 @@ function FicheSinistre() {
           (s.clos_le ? ` · clos le ${new Date(s.clos_le).toLocaleDateString("fr-FR")}` : "")
         }
         icon={IconFileAlert}
-      />
+      >
+        <BoutonEnvoiEmail
+          type="sinistre"
+          id={s.id}
+          className="inline-flex items-center gap-2 rounded-full border border-white/30 px-3 py-1.5 text-xs text-white hover:bg-white/10"
+        />
+      </PageHeader>
 
       <section className="crm-card space-y-3 p-5">
         <h2 className="font-serif text-lg">Résumé</h2>
