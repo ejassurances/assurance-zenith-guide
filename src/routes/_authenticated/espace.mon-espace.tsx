@@ -556,6 +556,11 @@ function MonEspace() {
                   <Info label="Échéance">{jour(c.date_echeance)}</Info>
                   <Info label="Fractionnement">{c.fractionnement ?? "—"}</Info>
                 </dl>
+                <EspaceClientContratDocuments
+                  contratId={c.id}
+                  documents={(comp?.documents ?? []).filter((d) => d.contrat_id === c.id)}
+                  onTelecharger={telechargerDocument}
+                />
               </div>
             ))
           )}
