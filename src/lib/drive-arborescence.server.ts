@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { assurerChemin, assurerDossier, deposerFichier, urlDossierDrive } from "@/lib/google-drive.server";
+import { assurerChemin, assurerDossier, deposerFichier, nomDrive, renommerDrive, urlDossierDrive } from "@/lib/google-drive.server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Client = SupabaseClient<any, any, any>;
