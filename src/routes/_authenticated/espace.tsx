@@ -59,6 +59,12 @@ function EspaceLayout() {
       titre: "Relation client",
       items: [
         { to: "/espace/clients", label: "Clients", hide: role === "client" || role === "prescripteur" },
+        {
+          to: "/espace/relation-client",
+          label: "Relation client",
+          hide: role !== "admin" && role !== "mandataire",
+        },
+
         { to: "/espace/dossiers", label: "Dossiers", hide: role === "client" || role === "prescripteur" },
         { to: "/espace/sinistres", label: "Sinistres", hide: role !== "admin" && role !== "mandataire" },
         { to: "/espace/taches", label: "Tâches", hide: role === "client" || role === "prescripteur" },
