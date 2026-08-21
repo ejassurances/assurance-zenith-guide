@@ -218,7 +218,7 @@ export function NewDossierForm({
       // Préremplissage du statut fumeur sur l'assuré principal de la liste.
       setRecueil((r) => {
         const list = assuresEmprunteur(r["assures"]);
-        const rows = list.length > 0 ? list : [{ lien: "principal", date_naissance: "", quotite_pct: null, csp: "", fumeur: false, sports_risque: "", antecedents_sante: "" }];
+        const rows = list.length > 0 ? list : [{ lien: "principal", date_naissance: "", quotite_pct: null, csp: "", fumeur: false }];
         return { ...r, assures: rows.map((p, i) => (i === 0 ? { ...p, fumeur: !!c.fumeur } : p)) };
       });
     }

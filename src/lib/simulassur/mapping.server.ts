@@ -65,7 +65,8 @@ function blocAssure(
   personne: PersonneEmprunteur,
 ): Record<string, unknown> {
   const profession = professionSimulassur(personne.csp || client.profession);
-  const sportsRisque = (personne.sports_risque ?? "").trim().length > 0;
+  // Aucun questionnaire médical ni sport à risque collecté (loi Lemoine).
+  const sportsRisque = false;
   return {
     partnerCustomerRef: refClient(client.id),
     civility: civiliteSimulassur(client.civilite),
