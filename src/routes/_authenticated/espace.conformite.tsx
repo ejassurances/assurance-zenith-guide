@@ -159,6 +159,8 @@ function ConformitePage() {
 
           {section === "registre-rgpd" && <RegistreRgpdPanel isAdmin={role === "admin"} />}
 
+          {section === "registre-dora" && <DoraRegistrePanel isAdmin={role === "admin"} />}
+
           {section === "formations" && <FormationsPersonnelPanel isAdmin={role === "admin"} />}
         </div>
 
