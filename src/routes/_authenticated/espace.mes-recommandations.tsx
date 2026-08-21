@@ -4,6 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { creerRecommandation } from "@/lib/prescripteurs.functions";
+import { PageHeader } from "@/components/page-header";
+import { StatCard } from "@/components/stat-card";
+import { IconCoin } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/_authenticated/espace/mes-recommandations")({
   component: MesRecommandationsPage,
@@ -87,32 +90,27 @@ function MesRecommandationsPage() {
 
   return (
     <div>
-      <header>
-        <p className="crm-eyebrow">Espace prescripteur</p>
-        <h1 className="font-serif text-2xl font-medium text-ink">Mes recommandations</h1>
-        {presc && (
-          <p className="mt-1 text-xs text-ink-muted">
-            {`${presc.prenom ?? ""} ${presc.nom}`.trim()} — compte{" "}
-            {presc.statut === "actif" ? "actif" : presc.statut === "inactif" ? "inactif" : "en attente de validation"}
-          </p>
-        )}
-      </header>
+      <PageHeader
+        eyebrow="Espace prescripteur"
+        title="Mes recommandations"
+        description={
+          presc
+            ? `${`${presc.prenom ?? ""} ${presc.nom}`.trim()} — compte ${
+                presc.statut === "actif" ? "actif" : presc.statut === "inactif" ? "inactif" : "en attente de validation"
+              }`
+            : undefined
+        }
+        icon={IconCoin}
+      />
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-3">
-        {[
-          { l: "Recommandations", v: String(items.length) },
-          { l: "Dû non versé", v: `${totalDu.toFixed(0)} €` },
-          { l: "Déjà versé", v: `${totalVerse.toFixed(0)} €` },
-        ].map((k) => (
-          <div key={k.l} className="rounded-sm border border-line bg-surface-elevated p-4">
-            <p className="text-[10px] uppercase tracking-wider text-ink-muted">{k.l}</p>
-            <p className="mt-1 text-xl font-medium text-ink">{k.v}</p>
-          </div>
-        ))}
+      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+        <StatCard label="Recommandations" value={items.length} icon={IconCoin} />
+        <StatCard label="Dû non versé" value={`${totalDu.toFixed(0)} €`} icon={IconCoin} accent />
+        <StatCard label="Déjà versé" value={`${totalVerse.toFixed(0)} €`} icon={IconCoin} />
       </div>
 
-      <section className="mt-6 rounded-sm border border-line bg-surface p-5">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-ink">Nouvelle recommandation</h2>
+      <section className="crm-card mt-6 p-5">
+        <h2 className="crm-eyebrow">Nouvelle recommandation</h2>
         <p className="mt-2 text-xs leading-relaxed text-ink-muted">
           Rappel : votre rôle se limite à la mise en relation. Aucun conseil, aucune présentation de produit, aucune
           négociation. 200 € vous sont dus par dossier validé par le cabinet.
@@ -138,7 +136,7 @@ function MesRecommandationsPage() {
           <button
             type="submit"
             disabled={busy}
-            className="rounded-full border border-line bg-surface-elevated px-5 py-2 text-xs font-medium text-ink hover:bg-surface disabled:opacity-50"
+            className="rounded-full bg-[#0A192F] px-5 py-2 text-xs font-medium text-white hover:bg-[#0A192F]/90 disabled:opacity-50"
           >
             {busy ? "Envoi…" : "Transmettre au cabinet"}
           </button>

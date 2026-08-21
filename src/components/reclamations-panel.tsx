@@ -124,7 +124,7 @@ export function ReclamationsPanel({ canManage }: { canManage: boolean }) {
 
       <div className="space-y-3">
         {rows.map((r) => (
-          <div key={r.id} className="rounded-2xl border border-line bg-surface-elevated p-5">
+          <div key={r.id} className="crm-card p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-wide text-ink-muted">

@@ -2,9 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { IconFileAlert } from "@tabler/icons-react";
 
 import { detailSinistre, preparerBrouillonSinistre, cloturerSinistre } from "@/lib/sinistres.functions";
 import { ACTION_LABEL, STATUT_LABEL } from "./espace.sinistres";
+import { PageHeader } from "@/components/page-header";
 
 export const Route = createFileRoute("/_authenticated/espace/sinistres/$id")({
   head: () => ({
@@ -108,18 +110,21 @@ function FicheSinistre() {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-1">
-        <Link to="/espace/sinistres" className="text-xs text-ink-muted underline">
-          ← Tous les sinistres
-        </Link>
-        <h1 className="font-serif text-2xl">Sinistre — {nom}</h1>
-        <p className="text-sm text-ink-muted">
-          {STATUT_LABEL[s.statut] ?? s.statut} · ouvert le {new Date(s.date_ouverture).toLocaleDateString("fr-FR")}
-          {s.clos_le ? ` · clos le ${new Date(s.clos_le).toLocaleDateString("fr-FR")}` : ""}
-        </p>
-      </header>
+      <Link to="/espace/sinistres" className="text-xs text-ink-muted underline">
+        ← Tous les sinistres
+      </Link>
 
-      <section className="space-y-3 rounded-lg border border-line bg-surface p-5">
+      <PageHeader
+        eyebrow="Dossier sinistre"
+        title={`Sinistre — ${nom}`}
+        description={
+          `${STATUT_LABEL[s.statut] ?? s.statut} · ouvert le ${new Date(s.date_ouverture).toLocaleDateString("fr-FR")}` +
+          (s.clos_le ? ` · clos le ${new Date(s.clos_le).toLocaleDateString("fr-FR")}` : "")
+        }
+        icon={IconFileAlert}
+      />
+
+      <section className="crm-card space-y-3 p-5">
         <h2 className="font-serif text-lg">Résumé</h2>
         <p className="text-sm text-ink">{s.resume ?? s.description ?? "—"}</p>
         <div className="text-xs text-ink-muted">
@@ -150,7 +155,7 @@ function FicheSinistre() {
         </div>
       </section>
 
-      <section className="space-y-2 rounded-lg border border-line bg-surface p-5">
+      <section className="crm-card space-y-2 p-5">
         <h2 className="font-serif text-lg">Analyse de couverture</h2>
         <p className="whitespace-pre-line text-sm text-ink">{s.analyse_couverture ?? "Analyse non disponible."}</p>
         <p className="text-xs text-ink-muted">
@@ -160,7 +165,7 @@ function FicheSinistre() {
         </p>
       </section>
 
-      <section className="space-y-3 rounded-lg border border-line bg-surface p-5">
+      <section className="crm-card space-y-3 p-5">
         <h2 className="font-serif text-lg">Actions du cabinet</h2>
         <div className="flex flex-wrap gap-2">
           <button
@@ -180,7 +185,7 @@ function FicheSinistre() {
           <button
             onClick={fermer}
             disabled={busy || s.statut === "clos"}
-            className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            className="rounded-full bg-[#0A192F] px-4 py-2 text-sm font-medium text-white hover:bg-[#0A192F]/90 disabled:opacity-50"
           >
             Clôturer le dossier
           </button>
@@ -194,7 +199,7 @@ function FicheSinistre() {
         />
       </section>
 
-      <section className="space-y-3 rounded-lg border border-line bg-surface p-5">
+      <section className="crm-card space-y-3 p-5">
         <h2 className="font-serif text-lg">Brouillons liés au client</h2>
         {brouillons.length === 0 ? (
           <p className="text-sm text-ink-muted">Aucun brouillon en attente.</p>

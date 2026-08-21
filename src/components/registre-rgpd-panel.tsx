@@ -104,7 +104,7 @@ export function RegistreRgpdPanel({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-line bg-surface-elevated p-6">
+      <div className="crm-card p-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h3 className="font-serif text-lg font-medium">Registre des traitements (RGPD, art. 30)</h3>
@@ -138,7 +138,7 @@ export function RegistreRgpdPanel({ isAdmin }: { isAdmin: boolean }) {
         <p className="text-sm text-ink-muted">Aucun traitement enregistré.</p>
       ) : (
         lignes.map((l) => (
-          <div key={l.id} className="rounded-2xl border border-line bg-surface-elevated p-5">
+          <div key={l.id} className="crm-card p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <h4 className="font-serif text-base font-medium">{l.nom_traitement}</h4>
               <div className="flex items-center gap-2 text-xs">

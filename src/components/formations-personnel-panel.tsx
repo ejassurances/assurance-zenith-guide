@@ -88,7 +88,7 @@ export function FormationsPersonnelPanel({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-line bg-surface-elevated p-6">
+      <div className="crm-card p-6">
         <h3 className="font-serif text-lg font-medium">Formation du personnel</h3>
         <p className="mt-1 max-w-2xl text-sm text-ink-muted">
           Suivi des formations obligatoires (LCB-FT initiale et continue, RGPD, DDA) et de leurs
@@ -104,7 +104,7 @@ export function FormationsPersonnelPanel({ isAdmin }: { isAdmin: boolean }) {
         <p className="text-sm text-ink-muted">Aucune formation enregistrée.</p>
       ) : (
         parCollaborateur.map(([id, items]) => (
-          <div key={id} className="rounded-2xl border border-line bg-surface-elevated p-5">
+          <div key={id} className="crm-card p-5">
             <h4 className="font-serif text-base font-medium">{nomDe(id)}</h4>
             <Table className="mt-3">
               <TableHeader>
@@ -224,7 +224,7 @@ function AjoutFormation({
   };
 
   return (
-    <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+    <div className="crm-card p-5">
       <h4 className="font-serif text-base font-medium">Ajouter une formation</h4>
       <div className="mt-3 grid gap-3 sm:grid-cols-3">
         <div>

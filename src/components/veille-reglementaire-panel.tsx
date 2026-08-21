@@ -82,7 +82,7 @@ export function VeilleReglementairePanel({ canManage }: { canManage: boolean }) 
 
       <div className="space-y-3">
         {liste.map((e) => (
-          <div key={e.id} className="rounded-2xl border border-line bg-surface-elevated p-5">
+          <div key={e.id} className="crm-card p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-wide text-ink-muted">
