@@ -243,7 +243,8 @@ export async function classerDevisDossier(
   let auto: { devis_id: string; devoir_id: string | null } | null = null;
   const top3 = classement.slice(0, 3);
   const parId = new Map(devis.map((d) => [d.id as string, d]));
-  const branche = String(dos.type_assurance ?? "");
+
+
 
   let choisi: string | null = top3[0]?.dossier_devis_id ?? null;
   let blocage: string | null = null;
