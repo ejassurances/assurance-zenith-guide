@@ -314,6 +314,59 @@ function ContratDetail() {
 
       {err && <p className="rounded-md bg-red-50 p-3 text-sm text-red-800">{err}</p>}
 
+      {verrouille && (
+        <section className="crm-card space-y-3 p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="font-serif text-lg">Contrat validé par la compagnie</h3>
+              <p className="text-xs text-ink-muted">
+                Les données contractuelles sont verrouillées. Toute correction passe par une action explicite et
+                tracée (motif obligatoire, avant/après journalisé), réservée à un administrateur.
+              </p>
+            </div>
+            {role === "admin" && !enCorrection && (
+              <button
+                onClick={() => setCorrectionMotif("")}
+                className="rounded-full border border-line px-4 py-2 text-xs font-medium hover:bg-surface"
+              >
+                Corriger ce contrat (tracé)
+              </button>
+            )}
+          </div>
+          {enCorrection && (
+            <div className="space-y-2 rounded-lg border border-dashed border-line p-3">
+              <label className="block text-xs font-medium text-ink-muted">
+                Motif de la correction (obligatoire, 5 caractères minimum)
+              </label>
+              <input
+                value={correctionMotif ?? ""}
+                onChange={(e) => setCorrectionMotif(e.target.value)}
+                placeholder="Ex. : numéro de contrat erroné communiqué par la compagnie"
+                className={inp}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => save()}
+                  disabled={saving || (correctionMotif ?? "").trim().length < 5}
+                  className="rounded-full bg-[#0A192F] px-4 py-2 text-xs font-medium text-white disabled:opacity-60"
+                >
+                  {saving ? "Enregistrement…" : "Valider la correction tracée"}
+                </button>
+                <button
+                  onClick={() => {
+                    setCorrectionMotif(null);
+                    void load();
+                  }}
+                  className="rounded-full border border-line px-4 py-2 text-xs hover:bg-surface"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
       <CommissionContratCard
         dossierId={(c as unknown as { dossier_id: string | null }).dossier_id ?? null}
         isEmprunteur={c.is_emprunteur}
@@ -321,6 +374,19 @@ function ContratDetail() {
         primeAnnuelle={c.prime_annuelle}
         economieRealisee={c.economie_realisee}
       />
+
+      {user && (
+        <ContratDocumentsPanel
+          contratId={c.id}
+          clientId={c.client_id}
+          userId={user.id}
+          canEdit={canEdit}
+          produitId={c.produit_id}
+          compagnieId={c.compagnie_id}
+        />
+      )}
+
+
 
       {/* Bloc identité contrat */}
       <section className="crm-card grid gap-4 p-5 md:grid-cols-3">
