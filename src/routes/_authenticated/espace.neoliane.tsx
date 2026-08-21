@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { NeolianeParcoursConsole } from "@/components/neoliane-parcours-console";
+import { PageHeader } from "@/components/page-header";
+import { IconApi } from "@tabler/icons-react";
 
 import {
   neolianeSigner,
@@ -59,9 +61,9 @@ const EXEMPLE_SOUSCRIPTION = `{
 
 function Card({ title, children, aside }: { title: string; children: React.ReactNode; aside?: React.ReactNode }) {
   return (
-    <section className="rounded-xl border border-line bg-surface-elevated p-5">
+    <section className="crm-card p-5">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-muted">{title}</h2>
+        <h2 className="crm-eyebrow">{title}</h2>
         {aside}
       </div>
       {children}
@@ -139,12 +141,12 @@ function NeolianePage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-bold tracking-tight text-ink">Néoliane — API partenaire</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          Tous les appels partent du serveur : les identifiants ne transitent jamais par le navigateur.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Intégration partenaire"
+        title="Néoliane — API partenaire"
+        description="Tous les appels partent du serveur : les identifiants ne transitent jamais par le navigateur."
+        icon={IconApi}
+      />
 
       <Card title="Configuration des identifiants">
         {statut ? (
@@ -297,7 +299,7 @@ function NeolianePage() {
             onClick={() =>
               appel("souscrire", runSouscrire as never, souscriptionPath, souscriptionPayload, setSouscriptionRes)
             }
-            className="rounded-full bg-ink px-5 py-2 text-sm text-primary-foreground disabled:opacity-50"
+            className="rounded-full bg-[#0A192F] px-5 py-2 text-sm text-white hover:bg-[#0A192F]/90 disabled:opacity-50"
           >
             {busy === "souscrire" ? "Appel…" : "Lancer la souscription"}
           </button>

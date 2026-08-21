@@ -814,7 +814,7 @@ function ProduitEditor({
           <button
             onClick={save}
             disabled={saving}
-            className="rounded-md bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+            className="rounded-md bg-[#0A192F] px-5 py-2 text-sm font-medium text-white disabled:opacity-60"
           >
             {saving ? "Enregistrement…" : "Enregistrer le produit"}
           </button>
@@ -916,7 +916,7 @@ function ChampInput({
                 onClick={() => onChange(on ? arr.filter((x) => x !== o) : [...arr, o])}
                 className={
                   "rounded-full border px-3 py-1 text-xs " +
-                  (on ? "border-ink bg-ink text-primary-foreground" : "border-line bg-background text-ink-soft")
+                  (on ? "border-transparent bg-[#0A192F] text-white" : "border-line bg-background text-ink-soft")
                 }
               >
                 {o}
@@ -1074,7 +1074,7 @@ function DocumentsBlock({
           <button
             type="submit"
             disabled={uploading || !file}
-            className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+            className="rounded-md bg-[#0A192F] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
           >
             {uploading ? "Upload…" : "Ajouter"}
           </button>
@@ -1201,14 +1201,14 @@ function ApiTab({
   if (loading) return <p className="text-sm text-ink-muted">Chargement…</p>;
   if (notAllowed || !isAdmin) {
     return (
-      <div className="rounded-lg border border-line bg-surface p-6 text-sm text-ink-muted">
+      <div className="crm-card p-6 text-sm text-ink-muted">
         La configuration API est réservée aux administrateurs.
       </div>
     );
   }
 
   return (
-    <form onSubmit={submit} className="space-y-5 rounded-lg border border-line bg-surface p-6">
+    <form onSubmit={submit} className="crm-card space-y-5 p-6">
       <div className="rounded-md bg-amber-50 p-3 text-xs text-amber-900">
         Les identifiants API (clé, mot de passe, secret OAuth) ne sont jamais stockés en clair dans cette fiche. Créez-les
         dans les secrets du backend, puis renseignez ci-dessous le <strong>nom du secret</strong> (par exemple
@@ -1276,7 +1276,7 @@ function ApiTab({
         <button
           type="submit"
           disabled={saving}
-          className="rounded-md bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+          className="rounded-md bg-[#0A192F] px-5 py-2 text-sm font-medium text-white disabled:opacity-60"
         >
           {saving ? "Enregistrement…" : "Enregistrer l'API"}
         </button>

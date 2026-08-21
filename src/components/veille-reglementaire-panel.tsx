@@ -85,7 +85,7 @@ export function VeilleReglementairePanel({ canManage }: { canManage: boolean }) 
           <div key={e.id} className="crm-card p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-wide text-ink-muted">
+                <p className="crm-eyebrow">
                   {new Date(e.date_reception).toLocaleDateString("fr-FR")} · {e.source}
                 </p>
                 <h3 className="mt-1 font-serif text-lg font-medium text-ink">{e.sujet}</h3>
