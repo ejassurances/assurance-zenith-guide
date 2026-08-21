@@ -27,7 +27,10 @@ export interface AnalyseRecueil {
 }
 
 function extraireJson(texte: string): Record<string, unknown> {
-  const nettoye = texte.replace(/```json/gi, "").replace(/```/g, "").trim();
+  const nettoye = texte
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
   try {
     return JSON.parse(nettoye) as Record<string, unknown>;
   } catch {
@@ -48,7 +51,9 @@ function listeTexte(valeur: unknown, max = 8): string[] {
 }
 
 /** Repli sur la passerelle IA du projet (mêmes modèles Gemini). */
-async function appelPasserelle(consigne: string): Promise<{ json: Record<string, unknown>; modele: string }> {
+async function appelPasserelle(
+  consigne: string,
+): Promise<{ json: Record<string, unknown>; modele: string }> {
   const cle = process.env["LOVABLE_API_KEY"];
   if (!cle) throw new Error("Aucune clé IA disponible pour l'analyse.");
   let derniere = "";
@@ -56,7 +61,10 @@ async function appelPasserelle(consigne: string): Promise<{ json: Record<string,
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${cle}` },
-      body: JSON.stringify({ model: `google/${modele}`, messages: [{ role: "user", content: consigne }] }),
+      body: JSON.stringify({
+        model: `google/${modele}`,
+        messages: [{ role: "user", content: consigne }],
+      }),
     });
     if (res.ok) {
       const json = (await res.json()) as any;
@@ -76,7 +84,9 @@ async function appelPasserelle(consigne: string): Promise<{ json: Record<string,
  * indisponible), repli automatique sur la passerelle IA du projet afin que
  * l'analyse du recueil ne soit jamais bloquée.
  */
-async function appelGemini(consigne: string): Promise<{ json: Record<string, unknown>; modele: string }> {
+async function appelGemini(
+  consigne: string,
+): Promise<{ json: Record<string, unknown>; modele: string }> {
   const cle = process.env["GEMINI_API_KEY"];
   if (!cle) return appelPasserelle(consigne);
   let derniere = "";
@@ -91,17 +101,19 @@ async function appelGemini(consigne: string): Promise<{ json: Record<string, unk
     });
     if (res.ok) {
       const json = (await res.json()) as any;
-      const contenu: string = json?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text ?? "").join("") ?? "";
+      const contenu: string =
+        json?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text ?? "").join("") ?? "";
       if (!contenu) throw new Error("Réponse Gemini vide");
       return { json: extraireJson(contenu), modele };
     }
     derniere = `${res.status} ${(await res.text()).slice(0, 300)}`;
     if (res.status !== 400 && res.status !== 404 && res.status !== 403 && res.status !== 429) break;
   }
-  console.warn(`[analyse-recueil] API Gemini indisponible (${derniere}) — repli sur la passerelle IA.`);
+  console.warn(
+    `[analyse-recueil] API Gemini indisponible (${derniere}) — repli sur la passerelle IA.`,
+  );
   return appelPasserelle(consigne);
 }
-
 
 /**
  * Analyse le dossier `dossierId` et met à jour le CRM.
@@ -163,11 +175,15 @@ export async function analyserRecueilDossier(
   const { json, modele } = await appelGemini(consigne);
 
   const analyse: AnalyseRecueil = {
-    synthese: String(json["synthese"] ?? "").trim().slice(0, 3000),
+    synthese: String(json["synthese"] ?? "")
+      .trim()
+      .slice(0, 3000),
     besoins_prioritaires: listeTexte(json["besoins_prioritaires"]),
     points_de_vigilance: listeTexte(json["points_de_vigilance"]),
     garanties_recommandees: listeTexte(json["garanties_recommandees"]),
-    prochaine_action: String(json["prochaine_action"] ?? "").trim().slice(0, 600),
+    prochaine_action: String(json["prochaine_action"] ?? "")
+      .trim()
+      .slice(0, 600),
     recueil_complet: json["recueil_complet"] === true,
     informations_manquantes: listeTexte(json["informations_manquantes"]),
   };

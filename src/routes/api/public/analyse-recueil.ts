@@ -14,7 +14,9 @@ export const Route = createFileRoute("/api/public/analyse-recueil")({
       POST: async ({ request }) => {
         const token = process.env["RELANCE_PIECES_TOKEN"];
         const anon =
-          process.env["SUPABASE_PUBLISHABLE_KEY"] || process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] || null;
+          process.env["SUPABASE_PUBLISHABLE_KEY"] ||
+          process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
+          null;
         const parToken = !!token && request.headers.get("x-relance-token") === token;
         const parApiKey = !!anon && request.headers.get("apikey") === anon;
         if (!parToken && !parApiKey) return new Response("Unauthorized", { status: 401 });
@@ -40,7 +42,6 @@ export const Route = createFileRoute("/api/public/analyse-recueil")({
               .not("recueil_besoins", "is", null)
               .limit(25);
         if (error) return Response.json({ error: error.message }, { status: 500 });
-
 
         const details: { dossier: string; ok: boolean; statut?: string; erreur?: string }[] = [];
         for (const d of dossiers ?? []) {

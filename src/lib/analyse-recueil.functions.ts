@@ -27,6 +27,9 @@ export const analyserRecueilAuto = createServerFn({ method: "POST" })
       const res = await analyserRecueilDossier(context.supabase, data.dossier_id);
       return { ok: true as const, statut: res.statut };
     } catch (e) {
-      return { ok: false as const, raison: e instanceof Error ? e.message : "Analyse indisponible" };
+      return {
+        ok: false as const,
+        raison: e instanceof Error ? e.message : "Analyse indisponible",
+      };
     }
   });
