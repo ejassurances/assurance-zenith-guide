@@ -25,21 +25,25 @@ function safe(text: string) {
     .replace(/[^\x20-\x7E\u00A1-\u00FF]/g, "");
 }
 
-export async function genererPdfDer(contenu: DerContenu): Promise<Uint8Array> {
+export async function genererPdfDer(
+  contenu: DerContenu,
+  options: { reference_dossier?: string | null } = {},
+): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
   let page = doc.addPage(A4);
-  let y = A4[1] - MARGIN;
+  let y = dessinerEntete(page, { font, bold, margin: MARGIN });
 
   const newPage = () => {
     page = doc.addPage(A4);
-    y = A4[1] - MARGIN;
+    y = dessinerEntete(page, { font, bold, margin: MARGIN });
   };
   const ensure = (needed: number) => {
-    if (y - needed < MARGIN) newPage();
+    if (y - needed < PDF_FOOTER_HEIGHT + 8) newPage();
   };
+
 
   const write = (
     text: string,
