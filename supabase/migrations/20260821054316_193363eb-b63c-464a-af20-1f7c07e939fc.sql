@@ -1,0 +1,1 @@
+UPDATE public.produits SET nom = regexp_replace(nom, '\s+', ' ', 'g') WHERE nom LIKE '%  %';
