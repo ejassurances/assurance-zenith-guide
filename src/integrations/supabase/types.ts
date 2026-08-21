@@ -936,7 +936,7 @@ export type Database = {
           ppe_pays?: string | null
           preference_contact?: string | null
           prenom?: string | null
-          reference: string
+          reference?: string
           remarque?: string | null
           revenus_annuels?: number | null
           situation_familiale?: string | null
@@ -2666,7 +2666,7 @@ export type Database = {
           notes?: string | null
           produit_id?: string | null
           recueil_besoins?: Json | null
-          reference: string
+          reference?: string
           relance_pieces_envoyee_le?: string | null
           souscription_email_compagnie?: string | null
           souscription_envoyee_le?: string | null
