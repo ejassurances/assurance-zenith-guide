@@ -395,7 +395,7 @@ function ContratDetail() {
             <input
               type="checkbox"
               checked={c.is_emprunteur}
-              disabled={!canEdit}
+              disabled={!editable}
               onChange={(e) => setC({ ...c, is_emprunteur: e.target.checked })}
             />
             Assurance emprunteur
@@ -407,7 +407,7 @@ function ContratDetail() {
             branche={c.is_emprunteur ? "emprunteur" : null}
             compagnieId={c.compagnie_id}
             produitId={c.produit_id}
-            disabled={!canEdit}
+            disabled={!editable}
             onChange={(sel) =>
               setC({
                 ...c,
@@ -435,22 +435,22 @@ function ContratDetail() {
         )}
 
         <F label="Numéro contrat">
-          <input value={c.numero ?? ""} onChange={(e) => setC({ ...c, numero: e.target.value })} readOnly={!canEdit} className={inp} />
+          <input value={c.numero ?? ""} onChange={(e) => setC({ ...c, numero: e.target.value })} readOnly={!editable} className={inp} />
         </F>
         <F label="Date d'effet">
-          <input type="date" value={c.date_effet ?? ""} onChange={(e) => setC({ ...c, date_effet: e.target.value || null })} readOnly={!canEdit} className={inp} />
+          <input type="date" value={c.date_effet ?? ""} onChange={(e) => setC({ ...c, date_effet: e.target.value || null })} readOnly={!editable} className={inp} />
         </F>
         <F label="Durée (mois)">
           <input
             type="number"
             value={c.duree_mois ?? ""}
             onChange={(e) => setC({ ...c, duree_mois: e.target.value ? Number(e.target.value) : null })}
-            readOnly={!canEdit}
+            readOnly={!editable}
             className={inp}
           />
         </F>
         <F label="Statut">
-          <select value={c.statut} onChange={(e) => setC({ ...c, statut: e.target.value })} disabled={!canEdit} className={inp}>
+          <select value={c.statut} onChange={(e) => setC({ ...c, statut: e.target.value })} disabled={!editable} className={inp}>
             <option value="en_cours">En cours</option>
             <option value="propose">Proposé</option>
             <option value="signe">Signé</option>
@@ -480,7 +480,7 @@ function ContratDetail() {
               type="checkbox"
               checked={Boolean(c.recommandation_personnalisee)}
               onChange={(e) => setC({ ...c, recommandation_personnalisee: e.target.checked })}
-              disabled={!canEdit}
+              disabled={!editable}
             />
             <span className="text-ink-muted">Ramène le suivi épargne/retraite à 2 ans</span>
           </label>
@@ -501,7 +501,7 @@ function ContratDetail() {
               type="number"
               value={c.capital_initial ?? ""}
               onChange={(e) => setC({ ...c, capital_initial: e.target.value ? Number(e.target.value) : null })}
-              readOnly={!canEdit}
+              readOnly={!editable}
               className={inp}
             />
           </F>
@@ -511,7 +511,7 @@ function ContratDetail() {
               step="0.0001"
               value={c.taux_pret ?? ""}
               onChange={(e) => setC({ ...c, taux_pret: e.target.value ? Number(e.target.value) : null })}
-              readOnly={!canEdit}
+              readOnly={!editable}
               className={inp}
             />
           </F>
@@ -521,7 +521,7 @@ function ContratDetail() {
               step="0.0001"
               value={c.taux_assurance_annuel ?? ""}
               onChange={(e) => setC({ ...c, taux_assurance_annuel: e.target.value ? Number(e.target.value) : null })}
-              readOnly={!canEdit}
+              readOnly={!editable}
               className={inp}
             />
           </F>
@@ -531,7 +531,7 @@ function ContratDetail() {
               step="1"
               value={c.quotite ?? 100}
               onChange={(e) => setC({ ...c, quotite: e.target.value ? Number(e.target.value) : null })}
-              readOnly={!canEdit}
+              readOnly={!editable}
               className={inp}
             />
           </F>
@@ -539,7 +539,7 @@ function ContratDetail() {
             <select
               value={c.assiette}
               onChange={(e) => setC({ ...c, assiette: e.target.value as Contrat["assiette"] })}
-              disabled={!canEdit}
+              disabled={!editable}
               className={inp}
             >
               <option value="capital_initial">Capital initial (bancaire)</option>
@@ -556,7 +556,7 @@ function ContratDetail() {
                   délégation).
                 </p>
               </div>
-              {canEdit && c.statut === "signe" && (
+              {editable && c.statut === "signe" && (
                 <button
                   onClick={() => save(true)}
                   disabled={saving}
@@ -603,7 +603,7 @@ function ContratDetail() {
             step="0.0001"
             value={c.commission_cabinet_taux ?? ""}
             onChange={(e) => setC({ ...c, commission_cabinet_taux: e.target.value ? Number(e.target.value) : null })}
-            readOnly={!canEdit}
+            readOnly={!editable}
             className={inp}
           />
         </F>
@@ -611,7 +611,7 @@ function ContratDetail() {
           <select
             value={c.mode_commissionnement}
             onChange={(e) => setC({ ...c, mode_commissionnement: e.target.value as Contrat["mode_commissionnement"] })}
-            disabled={!canEdit}
+            disabled={!editable}
             className={inp}
           >
             <option value="lineaire">Linéaire (chaque année)</option>
@@ -631,7 +631,7 @@ function ContratDetail() {
             step="0.01"
             value={c.prime_annuelle ?? ""}
             onChange={(e) => setC({ ...c, prime_annuelle: e.target.value ? Number(e.target.value) : null })}
-            readOnly={!canEdit}
+            readOnly={!editable}
             className={inp}
           />
         </F>
@@ -639,7 +639,7 @@ function ContratDetail() {
           <select
             value={c.mandataire_id ?? ""}
             onChange={(e) => setC({ ...c, mandataire_id: e.target.value || null })}
-            disabled={role !== "admin"}
+            disabled={role !== "admin" || !editable}
             className={inp}
           >
             <option value="">— Aucun —</option>
@@ -654,7 +654,7 @@ function ContratDetail() {
           <select
             value={c.prescripteur_id ?? ""}
             onChange={(e) => setC({ ...c, prescripteur_id: e.target.value || null })}
-            disabled={role !== "admin"}
+            disabled={role !== "admin" || !editable}
             className={inp}
           >
             <option value="">— Aucun —</option>
@@ -669,7 +669,7 @@ function ContratDetail() {
           <textarea
             value={c.notes ?? ""}
             onChange={(e) => setC({ ...c, notes: e.target.value })}
-            readOnly={!canEdit}
+            readOnly={!editable}
             rows={2}
             className={inp}
           />
