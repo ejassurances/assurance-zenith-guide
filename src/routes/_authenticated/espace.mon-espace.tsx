@@ -915,13 +915,18 @@ function MonEspace() {
           </p>
           <Link
             to="/espace/parametres"
-            className="inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-primary-foreground"
+            className="inline-block rounded-[var(--radius)] bg-[#0A192F] px-4 py-2 text-sm font-medium text-white"
           >
             Gérer mon mot de passe
           </Link>
         </div>
       )}
+        </div>
+
+        <SectionNav title="Mon espace" items={items} active={tab} onSelect={setTab} />
+      </div>
     </div>
+
   );
 }
 

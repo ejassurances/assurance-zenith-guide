@@ -91,11 +91,11 @@ export function EmailsLiesPanel({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-muted">{titre}</h3>
+        <h3 className="crm-eyebrow">{titre}</h3>
         {canEdit && (
           <button
             onClick={() => setCompose(true)}
-            className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-primary-foreground"
+            className="rounded-full bg-[#0A192F] px-4 py-2 text-sm font-medium text-white hover:bg-[#0A192F]/90"
           >
             Envoyer un email
           </button>
@@ -109,7 +109,7 @@ export function EmailsLiesPanel({
       ) : (
         <ul className="space-y-2">
           {emails.map((m) => (
-            <li key={m.id} className="rounded-xl border border-line bg-surface-elevated p-4">
+            <li key={m.id} className="crm-card p-4">
               <div className="flex flex-wrap items-center gap-2">
                 <span
                   className={

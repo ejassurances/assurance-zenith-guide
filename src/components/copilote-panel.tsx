@@ -87,10 +87,10 @@ export function CopilotePanel({
   };
 
   return (
-    <section className="rounded-xl border border-line bg-surface p-5">
+    <section className="crm-card p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-ink">Copilote IA</h2>
+          <h2 className="crm-eyebrow text-base">Copilote IA</h2>
           <p className="text-sm text-ink-muted">
             Synthèse, prochaine action et brouillons d'emails. Relisez toujours avant envoi.
           </p>
@@ -112,7 +112,7 @@ export function CopilotePanel({
             type="button"
             onClick={() => lancer(b.mode)}
             disabled={busy !== null}
-            className="rounded-lg border border-line px-3 py-2 text-sm font-medium text-ink transition hover:bg-surface-elevated disabled:opacity-50"
+            className="rounded-lg border border-line px-3 py-2 text-sm font-medium text-ink transition hover:bg-[#D4AF37]/15 hover:border-[#D4AF37] disabled:opacity-50"
           >
             {busy === b.mode ? "Analyse…" : b.label}
           </button>
@@ -140,7 +140,7 @@ export function CopilotePanel({
               type="button"
               onClick={planifier}
               disabled={busy !== null}
-              className="rounded-lg bg-ink px-3 py-2 text-sm font-medium text-surface disabled:opacity-50"
+              className="rounded-lg bg-[#0A192F] px-3 py-2 text-sm font-medium text-white hover:bg-[#0A192F]/90 disabled:opacity-50"
             >
               Créer la tâche
             </button>
@@ -166,7 +166,7 @@ export function CopilotePanel({
               <button
                 type="button"
                 onClick={() => onUtiliserEmail(email.objet, email.corps)}
-                className="rounded-lg bg-ink px-3 py-2 text-sm font-medium text-surface"
+                className="rounded-lg bg-[#0A192F] px-3 py-2 text-sm font-medium text-white hover:bg-[#0A192F]/90"
               >
                 Utiliser ce brouillon
               </button>

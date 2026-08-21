@@ -169,14 +169,10 @@ export function RegistreClientsConformite({ isAdmin }: { isAdmin: boolean }) {
   return (
     <div className="space-y-6">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Compteur libelle="Clients au registre" valeur={compteurs.total} />
-        <Compteur libelle="Vigilance renforcée" valeur={compteurs.renforcee} alerte={compteurs.renforcee > 0} />
-        <Compteur libelle="Revues en retard" valeur={compteurs.retard} alerte={compteurs.retard > 0} />
-        <Compteur
-          libelle="Validations hiérarchiques en attente"
-          valeur={compteurs.validations}
-          alerte={compteurs.validations > 0}
-        />
+        <StatCard label="Clients au registre" value={compteurs.total} />
+        <StatCard label="Vigilance renforcée" value={compteurs.renforcee} accent={compteurs.renforcee > 0} />
+        <StatCard label="Revues en retard" value={compteurs.retard} accent={compteurs.retard > 0} />
+        <StatCard label="Validations hiérarchiques en attente" value={compteurs.validations} accent={compteurs.validations > 0} />
       </div>
 
       <div className="crm-card p-6">
