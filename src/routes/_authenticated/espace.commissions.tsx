@@ -17,6 +17,8 @@ export const Route = createFileRoute("/_authenticated/espace/commissions")({
   component: CommissionsPage,
 });
 
+type EtatEncaissement = "en_attente_bordereau" | "valide_bordereau" | "encaisse_banque";
+
 type Row = {
   id: string;
   montant: number;
@@ -28,6 +30,9 @@ type Row = {
   beneficiaire_id: string;
   ecriture_id: string | null;
   compte_produit: string | null;
+  precomptee: boolean;
+  provision_reprise: number;
+  etat_encaissement: EtatEncaissement;
   dossiers: { reference: string; client_nom: string } | null;
 };
 
@@ -35,6 +40,18 @@ type Compte = { numero: string; libelle: string };
 type Exercice = { id: string; date_debut: string; date_fin: string };
 
 const COMPTE_BANQUE = "512000";
+
+const ETATS: { value: EtatEncaissement; label: string }[] = [
+  { value: "en_attente_bordereau", label: "En attente bordereau" },
+  { value: "valide_bordereau", label: "Validé bordereau" },
+  { value: "encaisse_banque", label: "Encaissé banque" },
+];
+
+const ETAT_STYLE: Record<EtatEncaissement, string> = {
+  en_attente_bordereau: "bg-amber-100 text-amber-900",
+  valide_bordereau: "bg-sky-100 text-sky-900",
+  encaisse_banque: "bg-emerald-100 text-emerald-900",
+};
 
 function CommissionsPage() {
   const { role } = useAuth();
