@@ -228,3 +228,17 @@ export const rejeterPropositionFormule = createServerFn({ method: "POST" })
     });
     return { ok: true };
   });
+
+/**
+ * État des grilles de garanties d'une famille de produits : documents
+ * analysables, proposition IA en attente, grille validée.
+ * Lecture seule — sert l'atelier de standardisation par famille.
+ */
+export const listerEtatGrillesFamille = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ famille_code: z.string().max(50) }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertStaff(context.supabase, context.userId);
+    const { etatGrillesFamille } = await import("./produit-garanties-etat.server");
+    return etatGrillesFamille(context.supabase, data.famille_code);
+  });

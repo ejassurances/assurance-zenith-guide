@@ -85,6 +85,11 @@ function EspaceLayout() {
         { to: "/espace/conformite", label: "Conformité", hide: role === "client" || role === "prescripteur" },
         { to: "/espace/der-modele", label: "DER (modèle)", hide: role === "client" || role === "prescripteur" },
         {
+          to: "/espace/grilles-garanties",
+          label: "Grilles de garanties",
+          hide: role === "client" || role === "prescripteur",
+        },
+        {
           to: "/espace/bibliotheque-cg",
           label: "Bibliothèque CG clients",
           hide: role === "client" || role === "prescripteur",
