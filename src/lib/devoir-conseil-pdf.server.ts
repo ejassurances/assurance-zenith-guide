@@ -2,6 +2,12 @@ import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf
 import { labelForBranche } from "@/lib/recueil-besoins-schemas";
 import { OPTIONS_DECISION, STATUT_OFFRE_LABEL, type OffreComparee, type StatutOffre } from "@/lib/devoir-conseil-modeles";
 import { COUVERTURE_LABEL, type LigneGarantie } from "@/lib/garanties-grille";
+import {
+  PDF_FOOTER_HEIGHT,
+  dessinerEntete,
+  dessinerPiedsDePage,
+  referenceDocument,
+} from "@/lib/pdf-entete-pied";
 
 
 /**
@@ -89,10 +95,10 @@ export async function genererPdfDevoirConseil(input: DevoirPdfInput): Promise<Ui
   const newPage = () => {
     page = doc.addPage(A4);
     pages.push(page);
-    y = A4[1] - MARGIN - 8;
+    y = dessinerEntete(page, { font, bold, margin: MARGIN });
   };
   const ensure = (needed: number) => {
-    if (y - needed < MARGIN + 34) newPage();
+    if (y - needed < PDF_FOOTER_HEIGHT + 8) newPage();
   };
 
   const wrap = (text: string, f: PDFFont, size: number, maxWidth: number) => {
@@ -342,40 +348,17 @@ export async function genererPdfDevoirConseil(input: DevoirPdfInput): Promise<Ui
 
 
 
-  /* ---------------------- En-tête ---------------------- */
-  const bandH = 74;
-  page.drawRectangle({ x: 0, y: A4[1] - bandH, width: A4[0], height: bandH, color: INK });
-  page.drawRectangle({ x: 0, y: A4[1] - bandH - 3, width: A4[0], height: 3, color: GOLD });
-  page.drawText(safe(String(cab.nom ?? "EJ Partners Assurances")), {
-    x: MARGIN,
-    y: A4[1] - 34,
-    size: 16,
-    font: bold,
-    color: WHITE,
-  });
-  page.drawText(
-    safe(`Courtier en assurances - SIRET ${cab.siret ?? "-"} - ${cab.orias ?? "-"}`),
-    { x: MARGIN, y: A4[1] - 50, size: 8, font, color: rgb(0.75, 0.79, 0.84) },
-  );
-  page.drawText(safe(`${cab.adresse ?? ""} - ${cab.telephone ?? ""} - ${cab.email ?? ""}`), {
-    x: MARGIN,
-    y: A4[1] - 63,
-    size: 8,
-    font,
-    color: rgb(0.75, 0.79, 0.84),
-  });
-  const titreDoc = "DEVOIR DE CONSEIL";
-  page.drawText(titreDoc, {
-    x: A4[0] - MARGIN - bold.widthOfTextAtSize(titreDoc, 12),
-    y: A4[1] - 34,
-    size: 12,
-    font: bold,
+  /* ---------------------- En-tête commun ---------------------- */
+  y = dessinerEntete(page, { font, bold, margin: MARGIN });
+
+
+  para("DEVOIR DE CONSEIL", { size: 14, bold: true });
+  para(`Reference du document : ${referenceDocument(dos.reference, "DC")}`, {
+    size: 9,
+    bold: true,
     color: GOLD,
   });
-
-  y = A4[1] - bandH - 26;
-
-  para(safe(labelForBranche(input.type_assurance)), { size: 13, bold: true });
+  para(safe(labelForBranche(input.type_assurance)), { size: 12, bold: true });
   para(
     `Document remis en application des articles L. 521-1 et suivants du Code des assurances (DDA) - Dossier ${dos.reference ?? "-"} - Etabli le ${dateFr(c.genere_le)}`,
     { size: 8.5, color: MUTED, gap: 6 },
@@ -733,26 +716,8 @@ export async function genererPdfDevoirConseil(input: DevoirPdfInput): Promise<Ui
     }
   }
 
-  /* ---------------------- Pieds de page ---------------------- */
-  const total = pages.length;
-  pages.forEach((p, i) => {
-    p.drawLine({
-      start: { x: MARGIN, y: MARGIN - 14 },
-      end: { x: A4[0] - MARGIN, y: MARGIN - 14 },
-      thickness: 0.5,
-      color: LINE,
-    });
-    const left = safe(`${cab.nom ?? "EJ Partners Assurances"} - ${cab.orias ?? ""} - Devoir de conseil ${dos.reference ?? ""}`);
-    p.drawText(left, { x: MARGIN, y: MARGIN - 26, size: 7, font, color: MUTED });
-    const right = `Page ${i + 1} / ${total}`;
-    p.drawText(right, {
-      x: A4[0] - MARGIN - font.widthOfTextAtSize(right, 7),
-      y: MARGIN - 26,
-      size: 7,
-      font,
-      color: MUTED,
-    });
-  });
+  /* ---------------------- Pieds de page communs ---------------------- */
+  dessinerPiedsDePage(doc, { font, margin: MARGIN });
 
   return doc.save();
 }
