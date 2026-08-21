@@ -46,6 +46,8 @@ function CompagniesIndex() {
   const [nom, setNom] = useState("");
   const [statut, setStatut] = useState<"actif" | "prospect" | "inactif">("actif");
 
+  const [grilles, setGrilles] = useState<Record<string, { total: number; validees: number }>>({});
+
   async function load() {
     setLoading(true);
     const { data, error } = await supabase
@@ -56,8 +58,29 @@ function CompagniesIndex() {
     setRows((data as Compagnie[]) ?? []);
     setLoading(false);
   }
+
+  /** Couverture des grilles de garanties : indispensable pour que le comparatif IA puisse utiliser un produit. */
+  async function loadGrilles() {
+    const [prod, gar] = await Promise.all([
+      supabase.from("produits").select("id,compagnie_id").neq("statut", "retire"),
+      supabase.from("produit_garanties").select("produit_id").eq("statut", "valide"),
+    ]);
+    const produits = (prod.data as { id: string; compagnie_id: string }[] | null) ?? [];
+    const validees = new Set(
+      ((gar.data as { produit_id: string }[] | null) ?? []).map((g) => g.produit_id),
+    );
+    const map: Record<string, { total: number; validees: number }> = {};
+    for (const p of produits) {
+      const e = (map[p.compagnie_id] ??= { total: 0, validees: 0 });
+      e.total += 1;
+      if (validees.has(p.id)) e.validees += 1;
+    }
+    setGrilles(map);
+  }
+
   useEffect(() => {
     load();
+    loadGrilles();
   }, []);
 
   async function create(e: React.FormEvent) {
@@ -155,6 +178,7 @@ function CompagniesIndex() {
                 <th className="px-4 py-3 text-left">Contact</th>
                 <th className="px-4 py-3 text-left">Statut</th>
                 <th className="px-4 py-3 text-left">Favorite</th>
+                <th className="px-4 py-3 text-left">Grilles garanties</th>
                 <th className="px-4 py-3 text-left">API</th>
                 <th className="px-4 py-3" />
 
@@ -218,6 +242,29 @@ function CompagniesIndex() {
                     ) : (
                       <span className="text-xs text-ink-muted">—</span>
                     )}
+                  </td>
+
+                  <td className="px-4 py-3 text-xs">
+                    {(() => {
+                      const g = grilles[c.id];
+                      if (!g || g.total === 0) return <span className="text-ink-muted">Aucun produit</span>;
+                      const complet = g.validees === g.total;
+                      return (
+                        <span
+                          className={
+                            "rounded-full px-2 py-0.5 font-medium " +
+                            (complet
+                              ? "bg-emerald-50 text-emerald-800"
+                              : g.validees === 0
+                                ? "bg-red-50 text-red-800"
+                                : "bg-amber-50 text-amber-800")
+                          }
+                          title="Produits dont la grille de garanties est validée (utilisable par le comparatif)"
+                        >
+                          {g.validees}/{g.total} validées
+                        </span>
+                      );
+                    })()}
                   </td>
 
                   <td className="px-4 py-3 text-xs">

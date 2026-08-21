@@ -405,6 +405,24 @@ function Field({
 }
 
 // ============ Onglet Produits ============
+type GrilleEtat = "validee" | "proposition" | "brouillon" | "absente";
+
+const GRILLE_BADGE: Record<GrilleEtat, { label: string; className: string }> = {
+  validee: { label: "Grille validée", className: "border-emerald-300 bg-emerald-50 text-emerald-800" },
+  proposition: { label: "Proposition IA à valider", className: "border-amber-300 bg-amber-50 text-amber-800" },
+  brouillon: { label: "Grille en brouillon", className: "border-amber-300 bg-amber-50 text-amber-800" },
+  absente: { label: "Grille manquante", className: "border-red-300 bg-red-50 text-red-800" },
+};
+
+function GrilleBadge({ etat }: { etat: GrilleEtat }) {
+  const b = GRILLE_BADGE[etat];
+  return (
+    <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-medium ${b.className}`}>
+      {b.label}
+    </span>
+  );
+}
+
 function ProduitsTab({
   compagnieId,
   produits,
@@ -425,9 +443,49 @@ function ProduitsTab({
   const [nom, setNom] = useState("");
   const [familleId, setFamilleId] = useState(familles[0]?.id ?? "");
   const [creating, setCreating] = useState(false);
+  const [grilles, setGrilles] = useState<Record<string, GrilleEtat>>({});
   useEffect(() => {
     if (!familleId && familles[0]) setFamilleId(familles[0].id);
   }, [familles, familleId]);
+
+  const produitIds = useMemo(() => produits.map((p) => p.id).sort().join(","), [produits]);
+  useEffect(() => {
+    const ids = produitIds ? produitIds.split(",") : [];
+    if (ids.length === 0) {
+      setGrilles({});
+      return;
+    }
+    let annule = false;
+    (async () => {
+      const [gar, prop] = await Promise.all([
+        supabase.from("produit_garanties").select("produit_id,statut").in("produit_id", ids),
+        supabase
+          .from("produit_garanties_propositions")
+          .select("produit_id")
+          .eq("statut", "proposee")
+          .in("produit_id", ids),
+      ]);
+      if (annule) return;
+      const map: Record<string, GrilleEtat> = {};
+      for (const id of ids) map[id] = "absente";
+      for (const g of (gar.data as { produit_id: string; statut: string }[] | null) ?? []) {
+        if (g.statut === "valide") map[g.produit_id] = "validee";
+        else if (map[g.produit_id] !== "validee") map[g.produit_id] = "brouillon";
+      }
+      for (const p of (prop.data as { produit_id: string }[] | null) ?? []) {
+        if (map[p.produit_id] === "absente") map[p.produit_id] = "proposition";
+      }
+      setGrilles(map);
+    })();
+    return () => {
+      annule = true;
+    };
+  }, [produitIds]);
+
+  const nbValidees = useMemo(
+    () => produits.filter((p) => grilles[p.id] === "validee").length,
+    [produits, grilles],
+  );
 
   const active = useMemo(() => produits.find((p) => p.id === selected), [produits, selected]);
 
@@ -481,11 +539,30 @@ function ProduitsTab({
           </form>
         )}
 
+        {produits.length > 0 && (
+          <div className="rounded-md border border-line bg-surface p-3 text-xs">
+            <p className="font-medium text-ink">
+              Grilles de garanties : {nbValidees}/{produits.length} validées
+            </p>
+            <p className="mt-1 text-ink-muted">
+              Sans grille validée, le produit est exclu du comparatif de garanties (mention « non disponible pour
+              comparaison »).
+            </p>
+            <Link
+              to="/espace/grilles-garanties"
+              className="mt-2 inline-block text-[#0A192F] underline underline-offset-2"
+            >
+              Atelier des grilles de garanties →
+            </Link>
+          </div>
+        )}
+
         <div className="space-y-1">
           {produits.length === 0 && <p className="text-sm text-ink-muted">Aucun produit.</p>}
           {produits.map((p) => {
             const f = familles.find((x) => x.id === p.famille_id);
             const isActive = p.id === selected;
+            const etat = grilles[p.id] ?? "absente";
             return (
               <button
                 key={p.id}
@@ -506,6 +583,9 @@ function ProduitsTab({
                 </div>
                 <div className={"text-xs " + (isActive ? "text-primary-foreground/70" : "text-ink-muted")}>
                   {f?.nom ?? "—"} · {p.statut}
+                </div>
+                <div className="mt-1">
+                  <GrilleBadge etat={etat} />
                 </div>
               </button>
             );
