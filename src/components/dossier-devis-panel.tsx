@@ -48,7 +48,10 @@ type Classement = {
   modele_ia: string | null;
   classement: LigneClassement[];
   statut: string;
+  route: string | null;
+  profils_specifiques: string[] | null;
 };
+
 
 type Ref = { id: string; nom: string };
 type ProduitRef = {
