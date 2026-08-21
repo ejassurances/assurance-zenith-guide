@@ -86,17 +86,17 @@ export async function genererPdfDer(
   };
 
   const cab = contenu.cabinet;
-
-  write(cab.nom, { size: 18, bold: true });
-  write(`SIRET ${cab.siret} - ORIAS ${cab.orias} - ${cab.adresse}`, { size: 9, color: MUTED });
-  write(`${cab.telephone} - ${cab.email}`, { size: 9, color: MUTED, gap: 6 });
-  rule();
+  const refDoc = options.reference_dossier
+    ? referenceDocument(options.reference_dossier, "DER")
+    : `DER-v${contenu.version}`;
 
   write("DOCUMENT D'ENTREE EN RELATION (DER)", { size: 14, bold: true, gap: 2 });
+  write(`Reference du document : ${refDoc}`, { size: 9, bold: true, color: GOLD, gap: 2 });
   write(
     `Version ${contenu.version} - genere le ${new Date(contenu.genere_le).toLocaleDateString("fr-FR")}`,
     { size: 9, color: MUTED, gap: 12 },
   );
+
 
   for (const s of DER_SECTIONS) {
     const texte = contenu.mentions[s.cle];
