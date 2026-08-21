@@ -78,9 +78,30 @@ export async function assurerChemin(segments: string[], parentId?: string | null
   return courant;
 }
 
+/** Nom actuel d'un dossier/fichier Drive (null si introuvable). */
+export async function nomDrive(fileId: string): Promise<string | null> {
+  try {
+    const data = (await driveFetch(
+      `/drive/v3/files/${fileId}?fields=name&supportsAllDrives=true`,
+    )) as { name?: string };
+    return data.name ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Renomme un dossier/fichier Drive. */
+export async function renommerDrive(fileId: string, nom: string): Promise<void> {
+  await driveFetch(`/drive/v3/files/${fileId}?supportsAllDrives=true&fields=id`, {
+    method: "PATCH",
+    json: { name: nom },
+  });
+}
+
 export function urlDossierDrive(folderId: string) {
   return `https://drive.google.com/drive/folders/${folderId}`;
 }
+
 
 function toBase64(bytes: Uint8Array) {
   let binary = "";

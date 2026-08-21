@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { assurerChemin, assurerDossier, deposerFichier, urlDossierDrive } from "@/lib/google-drive.server";
+import { assurerChemin, assurerDossier, deposerFichier, nomDrive, renommerDrive, urlDossierDrive } from "@/lib/google-drive.server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Client = SupabaseClient<any, any, any>;
@@ -29,7 +29,7 @@ function normaliser(valeur: string | null | undefined) {
     .replace(/^_|_$/g, "");
 }
 
-/** CLI-[Année]-[ID]_[NOM]_[Prénom] */
+/** CLI-AAAA-XXXX_[NOM]_[Prénom] (nomenclature officielle du cabinet) */
 export function nomDossierClient(client: {
   id: string;
   reference?: string | null;
@@ -37,13 +37,20 @@ export function nomDossierClient(client: {
   prenom?: string | null;
   created_at?: string | null;
 }) {
-  const annee = new Date(client.created_at ?? Date.now()).getFullYear();
-  const identifiant = normaliser(client.reference) || client.id.slice(0, 8).toUpperCase();
-  const parties = [`CLI-${annee}-${identifiant}`, normaliser(client.nom).toUpperCase()];
+  const reference = (client.reference ?? "").trim().toUpperCase();
+  let identifiant: string;
+  if (/^CLI-\d{4}-\d{4}$/.test(reference)) {
+    identifiant = reference;
+  } else {
+    const annee = new Date(client.created_at ?? Date.now()).getFullYear();
+    identifiant = `CLI-${annee}-${normaliser(reference) || client.id.slice(0, 8).toUpperCase()}`;
+  }
+  const parties = [identifiant, normaliser(client.nom).toUpperCase()];
   const prenom = normaliser(client.prenom);
   if (prenom) parties.push(prenom);
   return parties.filter(Boolean).join("_");
 }
+
 
 /**
  * Crée (ou retrouve) l'arborescence Drive du client et mémorise
@@ -61,10 +68,16 @@ export async function assurerArborescenceClient(
   if (error || !client) throw new Error(error?.message ?? "Client introuvable");
 
   let folderId: string | null = (client as any).drive_folder_id ?? null;
+  const nomAttendu = nomDossierClient(client as any);
   if (!folderId) {
     const racine = await assurerDossier(DRIVE_RACINE_CLIENTS);
-    folderId = await assurerDossier(nomDossierClient(client as any), racine);
+    folderId = await assurerDossier(nomAttendu, racine);
+  } else {
+    // Nomenclature officielle : le dossier suit toujours la référence CLI-AAAA-XXXX.
+    const nomActuel = await nomDrive(folderId);
+    if (nomActuel && nomActuel !== nomAttendu) await renommerDrive(folderId, nomAttendu);
   }
+
 
   for (const sous of DRIVE_SOUS_DOSSIERS) {
     await assurerDossier(sous, folderId);

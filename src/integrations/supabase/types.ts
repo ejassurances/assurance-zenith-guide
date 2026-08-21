@@ -4201,6 +4201,7 @@ export type Database = {
           date_ouverture: string
           gmail_message_id: string | null
           id: string
+          reference: string | null
           resume: string | null
           solution_proposee: string | null
           statut: string
@@ -4217,6 +4218,7 @@ export type Database = {
           date_ouverture?: string
           gmail_message_id?: string | null
           id?: string
+          reference?: string | null
           resume?: string | null
           solution_proposee?: string | null
           statut?: string
@@ -4233,6 +4235,7 @@ export type Database = {
           date_ouverture?: string
           gmail_message_id?: string | null
           id?: string
+          reference?: string | null
           resume?: string | null
           solution_proposee?: string | null
           statut?: string
@@ -4308,6 +4311,21 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      reference_compteurs: {
+        Row: {
+          cle: string
+          dernier: number
+        }
+        Insert: {
+          cle: string
+          dernier?: number
+        }
+        Update: {
+          cle?: string
+          dernier?: number
+        }
+        Relationships: []
       }
       registre_traitements_rgpd: {
         Row: {
@@ -4927,6 +4945,7 @@ export type Database = {
       can_access_client: { Args: { _client_id: string }; Returns: boolean }
       can_access_contrat: { Args: { _contrat_id: string }; Returns: boolean }
       can_access_dossier: { Args: { _dossier_id: string }; Returns: boolean }
+      code_risque: { Args: { _type: string }; Returns: string }
       corriger_contrat_actif: {
         Args: { _champs: Json; _contrat_id: string; _motif: string }
         Returns: undefined
@@ -4943,6 +4962,10 @@ export type Database = {
           nb_contrats: number
           total_economies: number
         }[]
+      }
+      generer_reference: {
+        Args: { _annee: number; _prefixe: string }
+        Returns: string
       }
       has_role: {
         Args: {
