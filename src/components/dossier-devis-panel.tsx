@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   classerDevisDossierFn,
   retenirDevisDossierFn,
+  retenirDevisManuelFn,
   creerDevisTarifFixeFn,
 } from "@/lib/devis-classement.functions";
 import { neolianeTariferDossier } from "@/lib/neoliane.functions";
