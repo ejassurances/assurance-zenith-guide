@@ -1,0 +1,1 @@
+DELETE FROM public.produits WHERE id = 'b9aeda86-8ab0-46c5-b493-dca7b4d54ab5' AND nom = 'Cardif -';
