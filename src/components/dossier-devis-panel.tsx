@@ -1220,14 +1220,30 @@ export function DossierDevisPanel({
             className={inp}
           />
         </label>
-        <div className="sm:col-span-2">
+        <div className="flex flex-wrap gap-2 sm:col-span-2">
           <button
-            onClick={ajouter}
+            onClick={() => void ajouter(false)}
             disabled={saving}
             className="rounded-full bg-ink px-4 py-2 text-sm text-primary-foreground disabled:opacity-60"
           >
             {saving ? "Enregistrement…" : "Ajouter ce devis"}
           </button>
+          {motifSaisie === "retroactif" && (
+            <button
+              onClick={() => {
+                if (
+                  confirm(
+                    "Enregistrer ce devis comme offre retenue du dossier et générer le devoir de conseil en brouillon (sans envoi au client) ?",
+                  )
+                )
+                  void ajouter(true);
+              }}
+              disabled={saving}
+              className="rounded-full border border-[color:var(--crm-gold)] bg-[color:var(--crm-gold)]/10 px-4 py-2 text-sm text-ink disabled:opacity-60"
+            >
+              Ajouter et retenir directement cette offre
+            </button>
+          )}
         </div>
       </div>
       )}
