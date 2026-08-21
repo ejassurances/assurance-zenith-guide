@@ -28,7 +28,7 @@ export const Route = createFileRoute("/api/public/tmp-extract-garanties")({
             const res = await analyserDocumentsProduit(
               supabaseAdmin,
               choisis.map((d) => d.id as string),
-              "00000000-0000-0000-0000-000000000000",
+              "f6d18a82-4f54-46b0-8785-6db7d8c90313",
             );
             out.push({
               produitId,
