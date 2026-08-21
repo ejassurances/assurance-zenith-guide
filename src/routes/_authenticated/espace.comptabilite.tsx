@@ -787,31 +787,58 @@ function PartnerView({ role }: { role: "mandataire" | "prescripteur" }) {
   );
 
   if (role === "mandataire") {
-    return (
-      <Tabs defaultValue="commissions" className="mt-6">
-        <TabsList className="flex flex-wrap gap-1 bg-surface-elevated">
-          <TabsTrigger value="commissions">Mes commissions</TabsTrigger>
-          <TabsTrigger value="ndf">Notes de frais</TabsTrigger>
-          <TabsTrigger value="resultat">Mon résultat</TabsTrigger>
-          <TabsTrigger value="grand-livre">Grand livre</TabsTrigger>
-          <TabsTrigger value="pcg">Plan comptable</TabsTrigger>
-        </TabsList>
-        <TabsContent value="commissions" className="mt-6 space-y-6">
-          {kpis}
-          <PartnerCommissionsTables ech={ech} paiements={paiements} regles={regles} commField={commField} />
-        </TabsContent>
-        <TabsContent value="ndf" className="mt-6"><NotesDeFraisTab /></TabsContent>
-        <TabsContent value="resultat" className="mt-6"><ResultatTab mandataireOnly /></TabsContent>
-        <TabsContent value="grand-livre" className="mt-6"><GrandLivreTab mandataireOnly /></TabsContent>
-        <TabsContent value="pcg" className="mt-6"><PlanComptableTab /></TabsContent>
-      </Tabs>
-    );
+    return <MandataireView kpis={kpis} ech={ech} paiements={paiements} regles={regles} commField={commField} />;
   }
 
   return (
     <div className="mt-6 space-y-6">
       {kpis}
       <PartnerCommissionsTables ech={ech} paiements={paiements} regles={regles} commField={commField} />
+    </div>
+  );
+}
+
+type MandataireSection = "commissions" | "ndf" | "resultat" | "grand-livre" | "pcg";
+const MANDATAIRE_SECTIONS: { key: MandataireSection; label: string }[] = [
+  { key: "commissions", label: "Mes commissions" },
+  { key: "ndf", label: "Notes de frais" },
+  { key: "resultat", label: "Mon résultat" },
+  { key: "grand-livre", label: "Grand livre" },
+  { key: "pcg", label: "Plan comptable" },
+];
+
+function MandataireView({
+  kpis,
+  ech,
+  paiements,
+  regles,
+  commField,
+}: {
+  kpis: React.ReactNode;
+  ech: any[];
+  paiements: Paiement[];
+  regles: Regle[];
+  commField: string;
+}) {
+  const [section, setSection] = useState<MandataireSection>("commissions");
+
+  return (
+    <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_18rem]">
+      <div>
+        {section === "commissions" && (
+          <div className="space-y-6">
+            {kpis}
+            <PartnerCommissionsTables ech={ech} paiements={paiements} regles={regles} commField={commField} />
+          </div>
+        )}
+        {section === "ndf" && <NotesDeFraisTab />}
+        {section === "resultat" && <ResultatTab mandataireOnly />}
+        {section === "grand-livre" && <GrandLivreTab mandataireOnly />}
+        {section === "pcg" && <PlanComptableTab />}
+      </div>
+      <div className="order-first lg:order-last">
+        <SectionNav title="Mon espace" items={MANDATAIRE_SECTIONS} active={section} onSelect={setSection} />
+      </div>
     </div>
   );
 }
