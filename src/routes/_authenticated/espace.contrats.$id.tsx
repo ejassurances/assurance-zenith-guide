@@ -419,9 +419,6 @@ function ContratDetail() {
             }
           />
         </div>
-        <div className="md:col-span-3">
-          <ProduitDocumentsLink produitId={c.produit_id} compagnieId={c.compagnie_id} />
-        </div>
         <F label="Assureur (libellé enregistré)">
           <input value={c.assureur} readOnly className={`${inp} bg-background/60`} />
         </F>
