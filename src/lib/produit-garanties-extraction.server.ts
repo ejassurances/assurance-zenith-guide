@@ -245,12 +245,11 @@ export async function analyserDocumentsProduit(
   const grille = grillePourFamille(p.produit_familles?.code ?? null);
   if (!grille) throw new Error("Aucune grille de garanties n'est définie pour cette famille de produits.");
 
+  const { contenuDocumentProduit } = await import("@/lib/documents-partenaires.server");
   const fichiers: { nom: string; mime: string; base64: string }[] = [];
   let total = 0;
   for (const d of docs) {
-    const { data: blob, error: sErr } = await supabase.storage.from("produits-documents").download(d.storage_path);
-    if (sErr || !blob) throw new Error(`Téléchargement impossible : ${d.nom}`);
-    const buffer = Buffer.from(await blob.arrayBuffer());
+    const buffer = await contenuDocumentProduit(supabase as never, d);
     if (buffer.byteLength === 0) throw new Error(`Document vide : ${d.nom}`);
     if (buffer.byteLength > TAILLE_MAX_PDF) {
       throw new Error(`Document trop volumineux pour l'analyse automatique (12 Mo maximum) : ${d.nom}`);
