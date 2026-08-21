@@ -9,6 +9,7 @@ const PRIORITE = ["conditions_generales", "ipid", "tableau_garanties", "ccsf", "
 export type EtatGrilleProduit = {
   produit_id: string;
   nom: string;
+  compagnie_id: string | null;
   compagnie: string | null;
   statut_produit: string;
   documents: { id: string; nom: string; type: string }[];
@@ -44,7 +45,7 @@ export async function etatGrillesFamille(
 
   const { data: produits, error } = await supabase
     .from("produits")
-    .select("id, nom, statut, compagnies!produits_compagnie_id_fkey(nom)")
+    .select("id, nom, statut, compagnie_id, compagnies!produits_compagnie_id_fkey(nom)")
     .eq("famille_id", familleId)
     .order("nom");
   if (error) throw new Error(error.message);
@@ -87,6 +88,7 @@ export async function etatGrillesFamille(
     return {
       produit_id: p.id,
       nom: p.nom ?? "",
+      compagnie_id: p.compagnie_id ?? null,
       compagnie: p.compagnies?.nom ?? null,
       statut_produit: p.statut ?? "actif",
       documents: mesDocs,

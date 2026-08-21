@@ -213,13 +213,17 @@ function AtelierGrillesPage() {
             {produits.map((p) => (
               <tr key={p.produit_id} className="border-t border-line align-top">
                 <td className="px-4 py-3">
-                  <Link
-                    to="/espace/produits/$id"
-                    params={{ id: p.produit_id }}
-                    className="text-ink underline decoration-line hover:decoration-ink"
-                  >
-                    {p.nom}
-                  </Link>
+                  {p.compagnie_id ? (
+                    <Link
+                      to="/espace/compagnies/$id"
+                      params={{ id: p.compagnie_id }}
+                      className="text-ink underline decoration-line hover:decoration-ink"
+                    >
+                      {p.nom}
+                    </Link>
+                  ) : (
+                    <span className="text-ink">{p.nom}</span>
+                  )}
                   <p className="text-xs text-ink-muted">
                     {p.compagnie ?? "compagnie non renseignée"}
                     {p.statut_produit !== "actif" ? ` · ${p.statut_produit}` : ""}
@@ -285,13 +289,15 @@ function AtelierGrillesPage() {
                         {busy === `v-${p.produit_id}` ? "Validation…" : "Valider la proposition"}
                       </button>
                     )}
-                    <Link
-                      to="/espace/produits/$id"
-                      params={{ id: p.produit_id }}
-                      className="rounded-full border border-line px-3 py-1 text-xs text-ink hover:bg-background"
-                    >
-                      Relire ligne par ligne
-                    </Link>
+                    {p.compagnie_id && (
+                      <Link
+                        to="/espace/compagnies/$id"
+                        params={{ id: p.compagnie_id }}
+                        className="rounded-full border border-line px-3 py-1 text-xs text-ink hover:bg-background"
+                      >
+                        Relire ligne par ligne
+                      </Link>
+                    )}
                   </div>
                 </td>
               </tr>
