@@ -61,5 +61,9 @@ export const creerClientManuel = createServerFn({ method: "POST" })
     const { synchroniserContactBrevoSansEchec } = await import("@/lib/brevo-listes.server");
     await synchroniserContactBrevoSansEchec(supabaseAdmin as never, cree.id);
 
+    // Arborescence documentaire Google Drive du client (best-effort).
+    const { assurerArborescenceClientSansEchec } = await import("@/lib/drive-arborescence.server");
+    await assurerArborescenceClientSansEchec(supabaseAdmin as never, cree.id);
+
     return { id: cree.id };
   });

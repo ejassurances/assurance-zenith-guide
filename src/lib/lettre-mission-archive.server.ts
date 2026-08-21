@@ -89,6 +89,18 @@ export async function archiverLettreMissionSignee(
     empreinte_sha256: lettre.document_hash,
   };
 
+  // Classement direct sur Google Drive (dossier client + registre DDA/ACPR).
+  if (lettre.client_id) {
+    const { archiverPdfSurDrive } = await import("@/lib/drive-arborescence.server");
+    await archiverPdfSurDrive(supabase, {
+      client_id: lettre.client_id,
+      sous_dossier: "02_Recueil_et_Conformite",
+      nom_fichier: fileName,
+      pdf,
+      copie_registre_dda: true,
+    });
+  }
+
   let reponse = "webhook non appelé (client non rattaché)";
   if (lettre.client_id) {
     const payload = await buildClientPayload(supabase, lettre.client_id, "lettre_mission.signee");
