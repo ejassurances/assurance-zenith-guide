@@ -25,6 +25,7 @@ import { DevoirConseilPanel } from "@/components/devoir-conseil-panel";
 import { DevoirConseilRefusAnalysePanel } from "@/components/devoir-conseil-refus-analyse-panel";
 import { SouscriptionPanel } from "@/components/souscription-panel";
 import { CopilotePanel } from "@/components/copilote-panel";
+import { AnalyseRecueilPanel } from "@/components/analyse-recueil-panel";
 import { DossierDevisPanel } from "@/components/dossier-devis-panel";
 import { SimulassurConsole } from "@/components/simulassur-console";
 import { ETAPES, etapeLabel, type EtapeKey } from "@/lib/pipeline-dossier";
@@ -47,6 +48,8 @@ type Dossier = {
   statut: string;
   type_assurance: string;
   recueil_besoins: Record<string, unknown> | null;
+  analyse_ia: Record<string, unknown> | null;
+  analyse_ia_le: string | null;
   capital: number | null;
   duree_mois: number | null;
   age: number | null;
@@ -381,6 +384,14 @@ function StageContent({
         <h2 className="font-serif text-xl font-medium text-ink">{etapeLabel(step)}</h2>
         {step !== dossier.statut && <span className="text-xs text-ink-muted">Étape précédente</span>}
       </div>
+      {canEdit && (
+        <AnalyseRecueilPanel
+          dossierId={dossierId}
+          analyseInitiale={(dossier.analyse_ia ?? null) as never}
+          analyseLe={dossier.analyse_ia_le}
+          onAnalyse={onChanged}
+        />
+      )}
       {canEdit && <CopilotePanel dossierId={dossierId} />}
       {content}
     </section>
