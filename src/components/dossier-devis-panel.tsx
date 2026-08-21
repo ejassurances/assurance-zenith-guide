@@ -576,12 +576,29 @@ export function DossierDevisPanel({
 
   return (
     <div className="rounded-2xl border border-line bg-surface-elevated p-5">
-      <h2 className="font-serif text-lg font-medium text-ink">Devis comparés</h2>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:flex sm:items-center sm:justify-between">
+        <h2 className="min-w-0 font-serif text-lg font-medium text-ink">Devis comparés</h2>
+        {!produitFixe && (
+          <button
+            onClick={() => {
+              setSaisieOuverte(true);
+              setTimeout(() => {
+                document.getElementById("saisie-devis-manuel")?.scrollIntoView({ behavior: "smooth", block: "center" });
+              }, 50);
+            }}
+            className="shrink-0 rounded-full bg-ink px-4 py-2 text-xs text-primary-foreground"
+          >
+            Ajouter un devis manuellement
+          </button>
+        )}
+      </div>
       <p className="mt-1 text-xs text-ink-muted">
         {produitFixe
           ? `Produit à tarification fixe (${produitFixe.nom}) : le devis est repris directement du tarif renseigné sur la fiche produit, sans ressaisie ni classement IA.`
-          : `Saisie manuelle des devis étudiés pour ce dossier${branche ? ` (${branche})` : ""}. Ils alimentent le tableau des offres comparées du devoir de conseil.`}
+          : `Saisie manuelle des devis étudiés pour ce dossier${branche ? ` (${branche})` : ""}. Ils alimentent le tableau des offres comparées du devoir de conseil. La saisie manuelle couvre les compagnies sans API de tarification et les contrats déjà validés par la compagnie (import rétroactif).`}
       </p>
+
+
 
 
       {err && <p className="mt-2 text-sm text-destructive">{err}</p>}
