@@ -17,10 +17,14 @@ import { BRANCHES, labelForBranche } from "@/lib/recueil-besoins-schemas";
 import {
   analyserCgBibliothequeFn,
   enregistrerBrouillonCgBibliotheque,
+  enregistrerCgBibliotheque,
   listerCgBibliotheque,
   urlCgBibliotheque,
   validerCgBibliotheque,
 } from "@/lib/bibliotheque-cg.functions";
+import { BUCKET_CG_CLIENTS } from "@/lib/bibliotheque-cg";
+import { supabase } from "@/integrations/supabase/client";
+
 import { ouvrirPdf } from "@/lib/ouvrir-pdf";
 
 export const Route = createFileRoute("/_authenticated/espace/bibliotheque-cg")({
