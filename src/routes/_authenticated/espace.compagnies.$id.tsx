@@ -253,7 +253,7 @@ function CompagnieDetail() {
       {error && <p className="rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</p>}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_16rem]">
-        <div>
+        <div className="min-w-0">
           {tab === "infos" && (
             <InfosTab c={c} isAdmin={isAdmin} saving={saving} onSave={saveInfos} />
           )}

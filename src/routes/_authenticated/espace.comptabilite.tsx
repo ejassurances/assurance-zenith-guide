@@ -146,7 +146,7 @@ function AdminView() {
 
   return (
     <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_18rem]">
-      <div>
+      <div className="min-w-0">
         {section === "overview" && <Overview />}
         {section === "previsionnel" && (
           <div className="space-y-6">
@@ -824,7 +824,7 @@ function MandataireView({
 
   return (
     <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_18rem]">
-      <div>
+      <div className="min-w-0">
         {section === "commissions" && (
           <div className="space-y-6">
             {kpis}
