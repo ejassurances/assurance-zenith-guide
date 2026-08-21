@@ -562,6 +562,53 @@ export type Database = {
           },
         ]
       }
+      client_gel_avoirs: {
+        Row: {
+          client_id: string
+          created_at: string
+          drive_file_id: string | null
+          drive_url: string | null
+          effectue: boolean
+          effectue_le: string
+          effectue_par: string | null
+          id: string
+          observations: string | null
+          resultat: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          drive_file_id?: string | null
+          drive_url?: string | null
+          effectue?: boolean
+          effectue_le?: string
+          effectue_par?: string | null
+          id?: string
+          observations?: string | null
+          resultat?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          drive_file_id?: string | null
+          drive_url?: string | null
+          effectue?: boolean
+          effectue_le?: string
+          effectue_par?: string | null
+          id?: string
+          observations?: string | null
+          resultat?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_gel_avoirs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_kyc_documents: {
         Row: {
           client_id: string
@@ -1238,9 +1285,12 @@ export type Database = {
           date_versement: string | null
           dossier_id: string | null
           ecriture_id: string | null
+          etat_encaissement: string
           id: string
           montant: number
           notes: string | null
+          precomptee: boolean
+          provision_reprise: number
           statut: Database["public"]["Enums"]["commission_statut"]
           updated_at: string
         }
@@ -1253,9 +1303,12 @@ export type Database = {
           date_versement?: string | null
           dossier_id?: string | null
           ecriture_id?: string | null
+          etat_encaissement?: string
           id?: string
           montant: number
           notes?: string | null
+          precomptee?: boolean
+          provision_reprise?: number
           statut?: Database["public"]["Enums"]["commission_statut"]
           updated_at?: string
         }
@@ -1268,9 +1321,12 @@ export type Database = {
           date_versement?: string | null
           dossier_id?: string | null
           ecriture_id?: string | null
+          etat_encaissement?: string
           id?: string
           montant?: number
           notes?: string | null
+          precomptee?: boolean
+          provision_reprise?: number
           statut?: Database["public"]["Enums"]["commission_statut"]
           updated_at?: string
         }
@@ -2326,6 +2382,122 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      dora_incidents: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          detecte_le: string | null
+          gravite: string
+          id: string
+          impact_donnees: boolean
+          mesures_correctives: string | null
+          notification_acpr: boolean
+          notification_cnil: boolean
+          resolu_le: string | null
+          statut: string
+          survenu_le: string
+          systeme_id: string | null
+          titre: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          detecte_le?: string | null
+          gravite?: string
+          id?: string
+          impact_donnees?: boolean
+          mesures_correctives?: string | null
+          notification_acpr?: boolean
+          notification_cnil?: boolean
+          resolu_le?: string | null
+          statut?: string
+          survenu_le?: string
+          systeme_id?: string | null
+          titre: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          detecte_le?: string | null
+          gravite?: string
+          id?: string
+          impact_donnees?: boolean
+          mesures_correctives?: string | null
+          notification_acpr?: boolean
+          notification_cnil?: boolean
+          resolu_le?: string | null
+          statut?: string
+          survenu_le?: string
+          systeme_id?: string | null
+          titre?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dora_incidents_systeme_id_fkey"
+            columns: ["systeme_id"]
+            isOneToOne: false
+            referencedRelation: "dora_systemes_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dora_systemes_tiers: {
+        Row: {
+          actif: boolean
+          categorie: string
+          contrat_reference: string | null
+          created_at: string
+          created_by: string | null
+          criticite: string
+          derniere_revue_le: string | null
+          donnees_traitees: string | null
+          fournisseur: string | null
+          id: string
+          localisation_donnees: string | null
+          nom: string
+          plan_continuite: string | null
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          categorie?: string
+          contrat_reference?: string | null
+          created_at?: string
+          created_by?: string | null
+          criticite?: string
+          derniere_revue_le?: string | null
+          donnees_traitees?: string | null
+          fournisseur?: string | null
+          id?: string
+          localisation_donnees?: string | null
+          nom: string
+          plan_continuite?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          categorie?: string
+          contrat_reference?: string | null
+          created_at?: string
+          created_by?: string | null
+          criticite?: string
+          derniere_revue_le?: string | null
+          donnees_traitees?: string | null
+          fournisseur?: string | null
+          id?: string
+          localisation_donnees?: string | null
+          nom?: string
+          plan_continuite?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       dossier_devis: {
         Row: {
