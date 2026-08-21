@@ -35,6 +35,34 @@ const MODELES = ["google/gemini-3.6-flash", "google/gemini-2.5-flash"];
 const SEUIL_CONFIANCE = 0.8;
 const PREFIXE_SUJET = "[Réaiguillage]";
 
+/**
+ * Expéditeurs à qui on n'écrit JAMAIS : robots de plateformes, notifications,
+ * accusés automatiques. Un mail mal aiguillé venant de là est simplement
+ * réétiqueté dans le bon service, sans aucun envoi ni copie.
+ */
+const MOTIFS_AUTOMATIQUES = [
+  "no-reply",
+  "noreply",
+  "no_reply",
+  "ne-pas-repondre",
+  "nepasrepondre",
+  "donotreply",
+  "notification",
+  "notifications",
+  "mailer-daemon",
+  "postmaster",
+  "bounce",
+  "support",
+  "service-client",
+  "contact@",
+];
+
+function estExpediteurAutomatique(email: string): boolean {
+  const e = email.toLowerCase();
+  const locale = e.split("@")[0] ?? e;
+  return MOTIFS_AUTOMATIQUES.some((m) => (m.includes("@") ? e.includes(m) : locale.includes(m)));
+}
+
 export interface ResultatAiguillage {
   /** Mails renvoyés vers l'adresse du bon service. */
   renvoyes: number;
@@ -200,6 +228,14 @@ export async function aiguillerLot(
   if (!services.length) return out;
   const adresses = adressesServices(services);
 
+  // Annuaire des domaines partenaires : on ne leur écrit jamais de réaiguillage.
+  const { estEmailPartenaire } = await import("@/lib/partenaires-domaines");
+  const { chargerAnnuairePartenaires } = await import("@/lib/partenaires-emails.server");
+  const annuaire = await chargerAnnuairePartenaires(admin);
+  const annuairePartenaires = new Map(
+    [...annuaire.parDomaine.entries()].map(([d, v]) => [d, v.nom] as const),
+  );
+
   const ids = params.messages.map((m) => m.id);
   const { data: dejaVus } = await admin
     .from("crm_emails")
@@ -251,23 +287,30 @@ export async function aiguillerLot(
       const nomClient = detail.expediteur_nom?.trim() || expediteur;
       const resume = analyse.resume || "une demande dont l'objet est précisé dans le message d'origine";
 
-      await envoyerMessage({
-        to: adresseCible,
-        cc: expediteur,
-        sujet: `${PREFIXE_SUJET} ${detail.sujet ?? m.sujet ?? "(sans objet)"}`.slice(0, 200),
-        html: corpsHtml({
-          nomClient,
-          emailClient: expediteur,
-          resume,
-          serviceArrivee: arrivee,
-          serviceCible: cible,
-          sujet: detail.sujet ?? m.sujet ?? null,
-          date: detail.date ?? m.date ?? null,
-          texteOrigine: detail.texte ?? detail.snippet ?? null,
-          pieces,
-          gmailId: m.id,
-        }),
-      });
+      // Expéditeur non client (partenaire, plateforme, robot de notification) :
+      // AUCUN envoi, aucune copie — le mail est seulement réétiqueté.
+      const sansEnvoi =
+        estExpediteurAutomatique(expediteur) || estEmailPartenaire(expediteur, annuairePartenaires);
+
+      if (!sansEnvoi) {
+        await envoyerMessage({
+          to: adresseCible,
+          cc: expediteur,
+          sujet: `${PREFIXE_SUJET} ${detail.sujet ?? m.sujet ?? "(sans objet)"}`.slice(0, 200),
+          html: corpsHtml({
+            nomClient,
+            emailClient: expediteur,
+            resume,
+            serviceArrivee: arrivee,
+            serviceCible: cible,
+            sujet: detail.sujet ?? m.sujet ?? null,
+            date: detail.date ?? m.date ?? null,
+            texteOrigine: detail.texte ?? detail.snippet ?? null,
+            pieces,
+            gmailId: m.id,
+          }),
+        });
+      }
 
       // Le mail d'origine quitte la file du service d'arrivée : il est archivé
       // là, et posé en « A_Traiter » du service réellement compétent.
@@ -282,7 +325,9 @@ export async function aiguillerLot(
           gmail_thread_id: detail.thread_id ?? m.thread_id ?? null,
           direction: "entrant",
           recu_le: detail.date ?? m.date ?? null,
-          notes: `Mal aiguillé (${arrivee.libelle}) — renvoyé à ${cible.adresse}, client en copie`,
+          notes: sansEnvoi
+            ? `Mal aiguillé (${arrivee.libelle}) — réétiqueté vers ${cible.libelle}, aucun mail envoyé (expéditeur non client)`
+            : `Mal aiguillé (${arrivee.libelle}) — renvoyé à ${cible.adresse}, client en copie`,
           triage_ia: JSON.parse(
             JSON.stringify({
               agent: "aiguillage",
