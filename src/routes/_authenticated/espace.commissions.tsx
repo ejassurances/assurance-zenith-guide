@@ -247,6 +247,62 @@ function CommissionsPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
+                    {role === "admin" ? (
+                      <select
+                        value={r.etat_encaissement ?? "en_attente_bordereau"}
+                        onChange={(e) => majLigne(r, { etat_encaissement: e.target.value as EtatEncaissement })}
+                        className="rounded-md border border-line bg-background px-2 py-1 text-xs"
+                      >
+                        {ETATS.map((e) => (
+                          <option key={e.value} value={e.value}>
+                            {e.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span
+                        className={
+                          "inline-flex rounded-full px-2 py-0.5 text-xs font-medium " +
+                          ETAT_STYLE[r.etat_encaissement ?? "en_attente_bordereau"]
+                        }
+                      >
+                        {ETATS.find((e) => e.value === r.etat_encaissement)?.label ?? "En attente bordereau"}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {role === "admin" ? (
+                      <input
+                        type="checkbox"
+                        checked={Boolean(r.precomptee)}
+                        onChange={(e) => majLigne(r, { precomptee: e.target.checked })}
+                        className="h-4 w-4 accent-[#D4AF37]"
+                        aria-label="Commission précomptée"
+                      />
+                    ) : (
+                      <span className="text-xs text-ink-muted">{r.precomptee ? "Oui" : "Non"}</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {role === "admin" && r.precomptee ? (
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={Number(r.provision_reprise ?? 0)}
+                        onChange={(e) => majLigne(r, { provision_reprise: Number(e.target.value) })}
+                        className="w-24 rounded-md border border-line bg-background px-2 py-1 text-xs"
+                        aria-label="Provision pour reprise"
+                      />
+                    ) : (
+                      <span className="text-xs text-ink-muted">
+                        {Number(r.provision_reprise ?? 0) > 0
+                          ? `${Number(r.provision_reprise).toLocaleString("fr-FR")} €`
+                          : "—"}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
                     {r.date_versement ? new Date(r.date_versement).toLocaleDateString("fr-FR") : "—"}
                   </td>
                   {role === "admin" && (
