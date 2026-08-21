@@ -85,16 +85,26 @@ export const signerLettreMission = createServerFn({ method: "POST" })
     // lettre_mission_avance_dossier : le client signataire n'a pas les droits
     // RLS pour modifier le dossier, l'update côté client échouait en silence.
 
-    // PDF signé : archivage + transmission au webhook (Drive 02_Conformite_DDA)
+    // PDF signé : archivage + transmission au webhook (Drive 02_Conformite_DDA).
+    // L'archivage s'exécute avec le client de service : le signataire n'a aucun
+    // droit d'écriture sur le stockage ni sur la table documents, et un échec
+    // laissait auparavant la lettre « signée » sans PDF (échec silencieux).
     let archive: { path: string; webhook: string } | null = null;
     let archiveErreur: string | null = null;
     try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { archiverLettreMissionSignee } = await import("./lettre-mission-archive.server");
-      const res = await archiverLettreMissionSignee(supabase, data.lettre_id, userId);
+      const res = await archiverLettreMissionSignee(supabaseAdmin, data.lettre_id, userId);
       archive = { path: res.path, webhook: res.webhook };
     } catch (e) {
       archiveErreur = e instanceof Error ? e.message : "Erreur d'archivage";
       console.error("Archivage lettre de mission :", archiveErreur);
+      // Trace persistante pour la reprise automatique nocturne.
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await supabaseAdmin
+        .from("lettres_mission")
+        .update({ archive_reponse: `échec archivage : ${archiveErreur}`.slice(0, 500) })
+        .eq("id", data.lettre_id);
     }
 
     return { ok: true, archive, archive_erreur: archiveErreur };
