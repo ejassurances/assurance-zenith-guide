@@ -102,6 +102,7 @@ type SectionKey =
   | "controle-interne"
   | "cartographie"
   | "registre-rgpd"
+  | "registre-dora"
   | "formations";
 
 function ConformitePage() {
