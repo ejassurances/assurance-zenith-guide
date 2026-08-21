@@ -573,9 +573,11 @@ export async function genererPdfDevoirConseil(input: DevoirPdfInput): Promise<Ui
 
   }
 
-  /* Comparatif avec le contrat actuel du client (grille validee par le cabinet) */
+  /* Comparatif avec le contrat actuel du client — uniquement a partir des grilles
+     de garanties validees dans le CRM. Aucune source externe n'est interrogee ;
+     a defaut de grille validee, la mention "non disponible" est imprimee. */
   const cmp = c.comparatif_contrat_actuel ?? null;
-  if (cmp && Array.isArray(cmp.lignes) && cmp.lignes.length > 0) {
+  if (cmp) {
     titreSection("Comparatif avec votre contrat actuel");
     kv(
       "Contrat actuel",
@@ -595,11 +597,19 @@ export async function genererPdfDevoirConseil(input: DevoirPdfInput): Promise<Ui
       };
       kv("Souhait exprime", souhaits[String(cmp.niveau_souhaite)] ?? String(cmp.niveau_souhaite));
     }
-    tableauComparatif(cmp.lignes);
-    para(
-      "Le releve du contrat actuel provient des conditions generales que vous nous avez remises, analysees puis verifiees poste par poste par le cabinet. Aucune equivalence n'est presumee a partir d'un contrat similaire.",
-      { size: 8.5, color: MUTED, gap: 4 },
-    );
+    if (cmp.disponible && Array.isArray(cmp.lignes) && cmp.lignes.length > 0) {
+      tableauComparatif(cmp.lignes);
+      para(
+        "Le releve du contrat actuel provient des conditions generales que vous nous avez remises, analysees puis verifiees poste par poste par le cabinet. Aucune equivalence n'est presumee a partir d'un contrat similaire.",
+        { size: 8.5, color: MUTED, gap: 4 },
+      );
+    } else {
+      para(String(cmp.motif ?? "Non disponible pour comparaison."), { size: 9, color: BAD, gap: 4 });
+      para(
+        "Le cabinet ne compare que des garanties verifiees dans son propre referentiel : aucune equivalence n'est deduite d'un contrat similaire ni d'une source exterieure.",
+        { size: 8.5, color: MUTED, gap: 4 },
+      );
+    }
   }
 
   /* ---------------------- 6. Motifs ---------------------- */
