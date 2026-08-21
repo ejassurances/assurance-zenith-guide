@@ -382,13 +382,39 @@ async function listerLabels(): Promise<GmailLabel[]> {
 }
 
 /**
- * Résolution STRICTE d'une étiquette par son nom exact : renvoie l'identifiant
- * de l'étiquette existante, ou la crée uniquement si elle fait partie des
- * sous-libellés validés. Sinon l'erreur est propagée (pas de doublon silencieux).
+ * La boîte du cabinet n'utilise pas toujours le chemin complet d'une étiquette :
+ * « Service Partenaire/A_Traiter » existe sans le parent « Direction
+ * Commerciale/ ». On accepte donc l'étiquette réelle dont le nom est un suffixe
+ * du chemin attendu (le plus long d'abord) — jamais une autre étiquette.
+ */
+function trouverLabel(labels: GmailLabel[], nom: string): GmailLabel | null {
+  const attendu = nom.toLowerCase();
+  const exact = labels.find((l) => l.name.toLowerCase() === attendu);
+  if (exact) return exact;
+  const segments = nom.split("/");
+  for (let i = 1; i < segments.length; i++) {
+    const suffixe = segments.slice(i).join("/").toLowerCase();
+    const trouve = labels.find((l) => l.name.toLowerCase() === suffixe);
+    if (trouve) return trouve;
+  }
+  return null;
+}
+
+/** Nom réellement utilisé dans Gmail pour une étiquette attendue du cabinet. */
+export async function nomLabelReel(nom: string): Promise<string> {
+  const labels = await listerLabels().catch(() => [] as GmailLabel[]);
+  return trouverLabel(labels, nom)?.name ?? nom;
+}
+
+/**
+ * Résolution d'une étiquette : renvoie l'identifiant de l'étiquette existante
+ * (chemin exact ou suffixe réellement utilisé dans la boîte), ou la crée
+ * uniquement si elle fait partie des sous-libellés validés. Sinon l'erreur est
+ * propagée (pas de doublon silencieux).
  */
 export async function resoudreLabel(nom: string): Promise<string> {
   const labels = await listerLabels();
-  const existant = labels.find((l) => l.name.toLowerCase() === nom.toLowerCase());
+  const existant = trouverLabel(labels, nom);
   if (existant) return existant.id;
   if (!LABELS_CREABLES.includes(nom)) {
     throw new Error(
@@ -401,6 +427,7 @@ export async function resoudreLabel(nom: string): Promise<string> {
   });
   return cree.id;
 }
+
 
 /**
  * Applique une étiquette du cabinet à un message (et retire éventuellement des
