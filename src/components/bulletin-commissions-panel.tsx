@@ -169,7 +169,7 @@ export function BulletinCommissionsPanel({ onCommissionsCreees }: { onCommission
   };
 
   return (
-    <section className="mt-8 rounded-2xl border border-line bg-surface-elevated p-6">
+    <section className="mt-8 crm-card p-6">
       <h2 className="font-serif text-xl font-medium text-ink">Bulletins de commissions</h2>
       <p className="mt-1 text-sm text-ink-muted">
         Importez le bulletin reçu de la compagnie : l'IA lit les lignes et les rattache aux clients et contrats du CRM.
@@ -321,7 +321,7 @@ export function BulletinCommissionsPanel({ onCommissionsCreees }: { onCommission
                   <button
                     type="button"
                     onClick={() => creerCommissions(b.id)}
-                    className="rounded-md bg-ink px-4 py-2 text-sm text-surface-elevated"
+                    className="rounded-md bg-[#0A192F] px-4 py-2 text-sm font-medium text-white"
                   >
                     Créer les commissions des lignes rattachées
                   </button>

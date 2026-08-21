@@ -78,7 +78,7 @@ export function PlanComptableTab() {
         </Select>
         <span className="ml-auto self-center text-sm text-ink-muted">{rows.length} comptes</span>
       </div>
-      <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+      <div className="overflow-x-auto crm-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -213,7 +213,7 @@ function SaisieEcriture({
   };
 
   return (
-    <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+    <div className="crm-card p-5">
       <h3 className="font-serif text-lg font-medium">Nouvelle écriture</h3>
       <div className="mt-3 grid gap-3 sm:grid-cols-4">
         {!restrictJournal && (
@@ -379,7 +379,7 @@ export function EcrituresTab() {
         {rows.map((e) => {
           const totalD = e.ecritures_lignes.reduce((s, l) => s + Number(l.debit), 0);
           return (
-            <div key={e.id} className="rounded-2xl border border-line bg-surface-elevated">
+            <div key={e.id} className="crm-card">
               <div className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-3">
                 <span className="rounded bg-ink px-2 py-0.5 text-xs text-primary-foreground">{e.journal_code}</span>
                 <span className="text-sm">{new Date(e.date_ecriture).toLocaleDateString("fr-FR")}</span>
@@ -482,7 +482,7 @@ export function GrandLivreTab({ mandataireOnly = false }: { mandataireOnly?: boo
       </div>
 
       {compte && (
-        <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+        <div className="overflow-x-auto crm-card">
           <Table>
             <TableHeader>
               <TableRow>
@@ -583,7 +583,7 @@ export function BalanceTab({ mandataireOnly = false }: { mandataireOnly?: boolea
           <Input type="date" value={dateFin} onChange={(e) => setDateFin(e.target.value)} />
         </div>
       </div>
-      <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+      <div className="overflow-x-auto crm-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -670,7 +670,7 @@ export function ResultatTab({ mandataireOnly = false }: { mandataireOnly?: boole
         <p className="text-sm text-ink-muted">Chargement…</p>
       ) : (
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-2xl border border-line bg-surface-elevated">
+          <div className="crm-card">
             <div className="border-b border-line p-4">
               <h3 className="font-serif text-lg font-medium">Produits (classe 7)</h3>
             </div>
@@ -693,7 +693,7 @@ export function ResultatTab({ mandataireOnly = false }: { mandataireOnly?: boole
               </TableBody>
             </Table>
           </div>
-          <div className="rounded-2xl border border-line bg-surface-elevated">
+          <div className="crm-card">
             <div className="border-b border-line p-4">
               <h3 className="font-serif text-lg font-medium">Charges (classe 6)</h3>
             </div>
@@ -767,7 +767,7 @@ export function NotesDeFraisTab() {
         {rows.map((e) => {
           const totalD = e.ecritures_lignes.reduce((s, l) => s + Number(l.debit), 0);
           return (
-            <div key={e.id} className="rounded-2xl border border-line bg-surface-elevated">
+            <div key={e.id} className="crm-card">
               <div className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-3">
                 <span className="rounded bg-ink px-2 py-0.5 text-xs text-primary-foreground">NDF</span>
                 <span className="text-sm">{new Date(e.date_ecriture).toLocaleDateString("fr-FR")}</span>

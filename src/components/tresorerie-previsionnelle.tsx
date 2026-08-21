@@ -43,7 +43,7 @@ export function TresoreriePrevisionnelle() {
   const total = lignes.reduce((s, l) => s + l.montant, 0);
 
   return (
-    <section className="rounded-2xl border border-line bg-surface-elevated p-5">
+    <section className="crm-card p-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="font-serif text-xl font-medium text-ink">Trésorerie prévisionnelle</h2>

@@ -213,7 +213,7 @@ export function BordereauxPanel() {
         </p>
 
         {bordereaux.length === 0 && (
-          <p className="mt-4 rounded-2xl border border-line bg-surface-elevated p-6 text-sm text-ink-muted">
+          <p className="mt-4 crm-card p-6 text-sm text-ink-muted">
             Aucun bordereau importé pour l'instant.
           </p>
         )}
@@ -226,7 +226,7 @@ export function BordereauxPanel() {
             const nonRapprochees = ls.filter((l) => l.statut === "a_rapprocher").length;
             const clientsUniques = new Set(ls.map((l) => l.client_id ?? l.client_nom_detecte ?? l.id)).size;
             return (
-              <div key={b.id} className="overflow-hidden rounded-2xl border border-line bg-surface-elevated">
+              <div key={b.id} className="crm-card overflow-hidden">
                 <button
                   type="button"
                   onClick={() => setOuverts((o) => ({ ...o, [b.id]: !o[b.id] }))}
@@ -312,7 +312,7 @@ export function BordereauxPanel() {
         <p className="mt-1 text-sm text-ink-muted">
           Prévisionnel de courtage (commission_previsions) confronté aux commissions déjà encaissées.
         </p>
-        <div className="mt-4 overflow-hidden rounded-2xl border border-line bg-surface-elevated">
+        <div className="mt-4 crm-card overflow-hidden">
           {suivi.length === 0 ? (
             <p className="p-6 text-sm text-ink-muted">Aucun prévisionnel de commission enregistré.</p>
           ) : (
