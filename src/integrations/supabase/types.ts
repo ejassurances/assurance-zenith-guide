@@ -4938,6 +4938,18 @@ export type Database = {
           total_debit: number
         }[]
       }
+      trouver_taux_cabinet: {
+        Args: {
+          _compagnie_id: string
+          _date: string
+          _famille_id: string
+          _produit_id: string
+        }
+        Returns: {
+          assiette: string
+          taux: number
+        }[]
+      }
       trouver_taux_regle: {
         Args: {
           _beneficiaire_id: string
