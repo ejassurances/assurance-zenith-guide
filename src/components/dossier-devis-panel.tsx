@@ -95,6 +95,11 @@ export function DossierDevisPanel({
   /** Débrayage manuel de la route de recommandation emprunteur (auto / A / B). */
   const [modeReco, setModeReco] = useState<string>("auto");
   const [recueilDossier, setRecueilDossier] = useState<Record<string, unknown>>({});
+  const routeEmprunteurPrevue = useMemo(
+    () => routeRecommandation(recueilDossier, modeReco),
+    [recueilDossier, modeReco],
+  );
+
 
   const lancerClassement = useServerFn(classerDevisDossierFn);
   const retenirOffre = useServerFn(retenirDevisDossierFn);
