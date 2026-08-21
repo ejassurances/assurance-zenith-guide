@@ -405,6 +405,24 @@ function Field({
 }
 
 // ============ Onglet Produits ============
+type GrilleEtat = "validee" | "proposition" | "brouillon" | "absente";
+
+const GRILLE_BADGE: Record<GrilleEtat, { label: string; className: string }> = {
+  validee: { label: "Grille validée", className: "border-emerald-300 bg-emerald-50 text-emerald-800" },
+  proposition: { label: "Proposition IA à valider", className: "border-amber-300 bg-amber-50 text-amber-800" },
+  brouillon: { label: "Grille en brouillon", className: "border-amber-300 bg-amber-50 text-amber-800" },
+  absente: { label: "Grille manquante", className: "border-red-300 bg-red-50 text-red-800" },
+};
+
+function GrilleBadge({ etat }: { etat: GrilleEtat }) {
+  const b = GRILLE_BADGE[etat];
+  return (
+    <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-medium ${b.className}`}>
+      {b.label}
+    </span>
+  );
+}
+
 function ProduitsTab({
   compagnieId,
   produits,
