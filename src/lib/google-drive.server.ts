@@ -125,3 +125,22 @@ export async function deposerFichier(params: {
   const data = JSON.parse(text) as { id: string; webViewLink?: string };
   return { id: data.id, webViewLink: data.webViewLink ?? null };
 }
+
+/** Télécharge le contenu binaire d'un fichier Drive (analyse IA, archivage). */
+export async function telechargerFichier(fileId: string): Promise<Uint8Array> {
+  const res = await fetch(
+    `${GATEWAY}/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true`,
+    { headers: headers() },
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    console.error(`[drive] download ${fileId} → ${res.status} ${text.slice(0, 300)}`);
+    throw new Error(`Google Drive download ${res.status}`);
+  }
+  return new Uint8Array(await res.arrayBuffer());
+}
+
+/** Lien de consultation directe d'un fichier Drive. */
+export function urlFichierDrive(fileId: string) {
+  return `https://drive.google.com/file/d/${fileId}/view`;
+}
