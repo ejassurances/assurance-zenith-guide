@@ -42,6 +42,7 @@ export const creerClientManuel = createServerFn({ method: "POST" })
             : null,
         marque: data.marque,
         created_by: context.userId,
+        commercial_id: SITE.defaultConseiller.id,
       })
 
       .select("id")
