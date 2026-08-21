@@ -170,13 +170,17 @@ export function DossierDevisPanel({
       supabase.from("produits").select("id,nom,compagnie_id,famille_id,assureur_porteur").order("nom"),
       supabase
         .from("dossier_devis_classements")
-        .select("id,genere_le,modele_ia,classement,statut")
+        .select("id,genere_le,modele_ia,classement,statut,route,profils_specifiques")
         .eq("dossier_id", dossierId)
         .eq("statut", "propose")
         .order("genere_le", { ascending: false })
         .limit(1)
         .maybeSingle(),
-      supabase.from("dossiers").select("produit_id,type_assurance,recueil_besoins").eq("id", dossierId).maybeSingle(),
+      supabase
+        .from("dossiers")
+        .select("produit_id,type_assurance,recueil_besoins,mode_recommandation")
+        .eq("id", dossierId)
+        .maybeSingle(),
     ]);
     if (d.error) setErr(d.error.message);
     setDevis((d.data as DossierDevis[]) ?? []);
@@ -185,10 +189,18 @@ export function DossierDevisPanel({
     setClassement((cl.data as Classement | null) ?? null);
 
     const dossier = dos.data as
-      | { produit_id: string | null; type_assurance: string | null; recueil_besoins: unknown }
+      | {
+          produit_id: string | null;
+          type_assurance: string | null;
+          recueil_besoins: unknown;
+          mode_recommandation?: string | null;
+        }
       | null;
     const recueil = (dossier?.recueil_besoins ?? {}) as Record<string, unknown>;
     const brancheDossier = dossier?.type_assurance ?? "";
+    setModeReco(dossier?.mode_recommandation ?? "auto");
+    setRecueilDossier(recueil);
+
     const nb = (v: unknown) => {
       const n = Number(v);
       return Number.isFinite(n) && n > 0 ? n : null;
