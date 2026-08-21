@@ -104,6 +104,86 @@ export type Database = {
         }
         Relationships: []
       }
+      bibliotheque_cg_clients: {
+        Row: {
+          avertissements: string | null
+          branche: string
+          compagnie_nom: string
+          created_at: string
+          created_by: string | null
+          edition_annee: string | null
+          famille_code: string | null
+          grille_version: number | null
+          id: string
+          mime_type: string | null
+          modele_ia: string | null
+          nom_fichier: string | null
+          statut: string
+          storage_path: string
+          updated_at: string
+          uploaded_from: string | null
+          valeurs: Json
+          valeurs_proposees: Json | null
+          valide: boolean
+          valide_le: string | null
+          valide_par: string | null
+        }
+        Insert: {
+          avertissements?: string | null
+          branche: string
+          compagnie_nom: string
+          created_at?: string
+          created_by?: string | null
+          edition_annee?: string | null
+          famille_code?: string | null
+          grille_version?: number | null
+          id?: string
+          mime_type?: string | null
+          modele_ia?: string | null
+          nom_fichier?: string | null
+          statut?: string
+          storage_path: string
+          updated_at?: string
+          uploaded_from?: string | null
+          valeurs?: Json
+          valeurs_proposees?: Json | null
+          valide?: boolean
+          valide_le?: string | null
+          valide_par?: string | null
+        }
+        Update: {
+          avertissements?: string | null
+          branche?: string
+          compagnie_nom?: string
+          created_at?: string
+          created_by?: string | null
+          edition_annee?: string | null
+          famille_code?: string | null
+          grille_version?: number | null
+          id?: string
+          mime_type?: string | null
+          modele_ia?: string | null
+          nom_fichier?: string | null
+          statut?: string
+          storage_path?: string
+          updated_at?: string
+          uploaded_from?: string | null
+          valeurs?: Json
+          valeurs_proposees?: Json | null
+          valide?: boolean
+          valide_le?: string | null
+          valide_par?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bibliotheque_cg_clients_uploaded_from_fkey"
+            columns: ["uploaded_from"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bordereau_lignes: {
         Row: {
           assiette: number | null

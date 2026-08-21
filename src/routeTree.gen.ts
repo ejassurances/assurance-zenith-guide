@@ -54,6 +54,7 @@ import { Route as AuthenticatedEspaceDerModeleRouteImport } from './routes/_auth
 import { Route as AuthenticatedEspaceConformiteRouteImport } from './routes/_authenticated/espace.conformite'
 import { Route as AuthenticatedEspaceComptabiliteRouteImport } from './routes/_authenticated/espace.comptabilite'
 import { Route as AuthenticatedEspaceCommissionsRouteImport } from './routes/_authenticated/espace.commissions'
+import { Route as AuthenticatedEspaceBibliothequeCgRouteImport } from './routes/_authenticated/espace.bibliotheque-cg'
 import { Route as AuthenticatedEspaceAuditLogsRouteImport } from './routes/_authenticated/espace.audit-logs'
 import { Route as AuthenticatedEspaceDossiersIndexRouteImport } from './routes/_authenticated/espace.dossiers.index'
 import { Route as AuthenticatedEspaceCompagniesIndexRouteImport } from './routes/_authenticated/espace.compagnies.index'
@@ -322,6 +323,12 @@ const AuthenticatedEspaceCommissionsRoute =
     path: '/commissions',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const AuthenticatedEspaceBibliothequeCgRoute =
+  AuthenticatedEspaceBibliothequeCgRouteImport.update({
+    id: '/bibliotheque-cg',
+    path: '/bibliotheque-cg',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
 const AuthenticatedEspaceAuditLogsRoute =
   AuthenticatedEspaceAuditLogsRouteImport.update({
     id: '/audit-logs',
@@ -413,6 +420,7 @@ export interface FileRoutesByFullPath {
   '/espace/cgu': typeof EspaceCguRoute
   '/espace/confidentialite': typeof EspaceConfidentialiteRoute
   '/espace/audit-logs': typeof AuthenticatedEspaceAuditLogsRoute
+  '/espace/bibliotheque-cg': typeof AuthenticatedEspaceBibliothequeCgRoute
   '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
   '/espace/comptabilite': typeof AuthenticatedEspaceComptabiliteRoute
   '/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
@@ -472,6 +480,7 @@ export interface FileRoutesByTo {
   '/espace/cgu': typeof EspaceCguRoute
   '/espace/confidentialite': typeof EspaceConfidentialiteRoute
   '/espace/audit-logs': typeof AuthenticatedEspaceAuditLogsRoute
+  '/espace/bibliotheque-cg': typeof AuthenticatedEspaceBibliothequeCgRoute
   '/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
   '/espace/comptabilite': typeof AuthenticatedEspaceComptabiliteRoute
   '/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
@@ -534,6 +543,7 @@ export interface FileRoutesById {
   '/espace/cgu': typeof EspaceCguRoute
   '/espace/confidentialite': typeof EspaceConfidentialiteRoute
   '/_authenticated/espace/audit-logs': typeof AuthenticatedEspaceAuditLogsRoute
+  '/_authenticated/espace/bibliotheque-cg': typeof AuthenticatedEspaceBibliothequeCgRoute
   '/_authenticated/espace/commissions': typeof AuthenticatedEspaceCommissionsRoute
   '/_authenticated/espace/comptabilite': typeof AuthenticatedEspaceComptabiliteRoute
   '/_authenticated/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
@@ -596,6 +606,7 @@ export interface FileRouteTypes {
     | '/espace/cgu'
     | '/espace/confidentialite'
     | '/espace/audit-logs'
+    | '/espace/bibliotheque-cg'
     | '/espace/commissions'
     | '/espace/comptabilite'
     | '/espace/conformite'
@@ -655,6 +666,7 @@ export interface FileRouteTypes {
     | '/espace/cgu'
     | '/espace/confidentialite'
     | '/espace/audit-logs'
+    | '/espace/bibliotheque-cg'
     | '/espace/commissions'
     | '/espace/comptabilite'
     | '/espace/conformite'
@@ -716,6 +728,7 @@ export interface FileRouteTypes {
     | '/espace/cgu'
     | '/espace/confidentialite'
     | '/_authenticated/espace/audit-logs'
+    | '/_authenticated/espace/bibliotheque-cg'
     | '/_authenticated/espace/commissions'
     | '/_authenticated/espace/comptabilite'
     | '/_authenticated/espace/conformite'
@@ -1120,6 +1133,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceCommissionsRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/bibliotheque-cg': {
+      id: '/_authenticated/espace/bibliotheque-cg'
+      path: '/bibliotheque-cg'
+      fullPath: '/espace/bibliotheque-cg'
+      preLoaderRoute: typeof AuthenticatedEspaceBibliothequeCgRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
     '/_authenticated/espace/audit-logs': {
       id: '/_authenticated/espace/audit-logs'
       path: '/audit-logs'
@@ -1237,6 +1257,7 @@ const AuthenticatedEspaceSinistresRouteWithChildren =
 
 interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceAuditLogsRoute: typeof AuthenticatedEspaceAuditLogsRoute
+  AuthenticatedEspaceBibliothequeCgRoute: typeof AuthenticatedEspaceBibliothequeCgRoute
   AuthenticatedEspaceCommissionsRoute: typeof AuthenticatedEspaceCommissionsRoute
   AuthenticatedEspaceComptabiliteRoute: typeof AuthenticatedEspaceComptabiliteRoute
   AuthenticatedEspaceConformiteRoute: typeof AuthenticatedEspaceConformiteRoute
@@ -1265,6 +1286,8 @@ interface AuthenticatedEspaceRouteChildren {
 
 const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
   AuthenticatedEspaceAuditLogsRoute: AuthenticatedEspaceAuditLogsRoute,
+  AuthenticatedEspaceBibliothequeCgRoute:
+    AuthenticatedEspaceBibliothequeCgRoute,
   AuthenticatedEspaceCommissionsRoute: AuthenticatedEspaceCommissionsRoute,
   AuthenticatedEspaceComptabiliteRoute: AuthenticatedEspaceComptabiliteRoute,
   AuthenticatedEspaceConformiteRoute: AuthenticatedEspaceConformiteRoute,

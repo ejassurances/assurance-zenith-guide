@@ -1,3 +1,5 @@
+import { NIVEAU_COUVERTURE_SOUHAITE } from "@/lib/bibliotheque-cg";
+
 // Configuration du recueil des besoins par branche d'assurance.
 // Chaque champ est stocké dans dossiers.recueil_besoins (jsonb) sous sa clé.
 
@@ -27,7 +29,9 @@ export type FieldType =
   /** Liste dynamique de personnes à couvrir (voir PersonneAssuree) */
   | "personnes"
   /** Liste dynamique des assurés emprunteurs avec quotité (voir PersonneEmprunteur) */
-  | "assures_emprunteur";
+  | "assures_emprunteur"
+  /** Dépôt des conditions générales du contrat actuel du client (bibliothèque CG) */
+  | "cg_actuel";
 
 /** Niveaux de couverture proposés poste par poste en complémentaire santé. */
 export const NIVEAUX_SOINS = [
@@ -157,7 +161,64 @@ export interface BrancheConfig {
 }
 
 
-export const BRANCHES: BrancheConfig[] = [
+/**
+ * Section « Contrat actuel » commune à TOUTES les branches : elle recueille le
+ * contrat que le client détient déjà (compagnie, cotisation, conditions
+ * générales) et son intention de couverture. Les CG déposées alimentent la
+ * bibliothèque évolutive `bibliotheque_cg_clients`.
+ */
+export function sectionContratActuel(): SectionConfig {
+  return {
+    title: "Contrat actuel",
+    intro:
+      "Si vous êtes déjà couvert, ces éléments permettent de comparer garantie par garantie votre contrat actuel avec l'offre proposée.",
+    fields: [
+      {
+        key: "contrat_actuel_present",
+        label: "Avez-vous déjà un contrat en cours sur ce risque ?",
+        type: "yesno",
+      },
+      {
+        key: "contrat_actuel_compagnie",
+        label: "Compagnie actuelle",
+        type: "text",
+        placeholder: "Nom de la compagnie ou de l'assureur, même s'il n'est pas partenaire du cabinet",
+        showIf: (v) => v["contrat_actuel_present"] === true,
+      },
+      {
+        key: "contrat_actuel_cotisation",
+        label: "Cotisation actuelle",
+        type: "number",
+        suffix: "€ / mois",
+        showIf: (v) => v["contrat_actuel_present"] === true,
+      },
+      {
+        key: "contrat_actuel_cg",
+        label: "Conditions générales de votre contrat actuel",
+        question: "Pouvez-vous déposer les conditions générales de votre contrat actuel ?",
+        type: "cg_actuel",
+        help:
+          "Le document est analysé puis relu par un conseiller avant tout comparatif : rien n'est présumé à partir d'un contrat similaire.",
+        showIf: (v) => v["contrat_actuel_present"] === true,
+      },
+      {
+        key: "contrat_actuel_niveau",
+        label: "Niveau de garanties souhaité",
+        question:
+          "Souhaitez-vous conserver un niveau de garanties équivalent à votre contrat actuel, ou faire évoluer votre couverture ?",
+        type: "cards",
+        options: NIVEAU_COUVERTURE_SOUHAITE.map((n) => ({
+          value: n.value,
+          label: n.label,
+          description: n.description,
+        })),
+        showIf: (v) => v["contrat_actuel_present"] === true,
+      },
+    ],
+  };
+}
+
+const BRANCHES_BASE: BrancheConfig[] = [
   {
     value: "emprunteur",
     label: "Assurance emprunteur",
@@ -863,6 +924,12 @@ export const BRANCHES: BrancheConfig[] = [
     ],
   },
 ];
+
+/** Toutes les branches, avec la section « Contrat actuel » ajoutée en tête du parcours. */
+export const BRANCHES: BrancheConfig[] = BRANCHES_BASE.map((b) => ({
+  ...b,
+  sections: [sectionContratActuel(), ...b.sections],
+}));
 
 export function getBranche(value: string): BrancheConfig | undefined {
   return BRANCHES.find((b) => b.value === value);

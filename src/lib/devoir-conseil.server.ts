@@ -101,6 +101,66 @@ export async function garantiesValideesProduit(
 }
 
 /**
+ * Comparatif garantie par garantie « contrat actuel du client » vs « offre
+ * proposée ». Le contrat actuel n'est cité QUE si sa grille a été validée par un
+ * humain dans la bibliothèque des CG clients, et pour la même version de trame.
+ */
+export async function comparatifContratActuel(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any, any, any>,
+  recueil: Record<string, unknown> | null | undefined,
+  grille: { familleCode: string; version: number; garanties: { code: string; libelle: string }[] },
+  valeursProduit: ValeursGrille,
+) {
+  const cg = (recueil ?? {})["contrat_actuel_cg"] as Record<string, unknown> | undefined;
+  const entreeId = typeof cg?.["entree_id"] === "string" ? (cg["entree_id"] as string) : null;
+  if (!entreeId) return null;
+
+  const { data } = await supabase
+    .from("bibliotheque_cg_clients")
+    .select("compagnie_nom, edition_annee, famille_code, grille_version, valeurs, valide")
+    .eq("id", entreeId)
+    .maybeSingle();
+  const e = data as
+    | {
+        compagnie_nom: string;
+        edition_annee: string | null;
+        famille_code: string | null;
+        grille_version: number | null;
+        valeurs: ValeursGrille | null;
+        valide: boolean;
+      }
+    | null;
+  if (!e || !e.valide || !e.valeurs) return null;
+  if (e.famille_code !== grille.familleCode || e.grille_version !== grille.version) return null;
+
+  const lignes = grille.garanties.map((g) => {
+    const actuel = e.valeurs?.[g.code];
+    const propose = valeursProduit[g.code];
+    const detail = (v: typeof actuel) =>
+      [v?.plafond, v?.franchise ? `franchise ${v.franchise}` : null, v?.delai_carence ? `carence ${v.delai_carence}` : null]
+        .filter(Boolean)
+        .join(" · ") || null;
+    return {
+      code: g.code,
+      libelle: g.libelle,
+      actuel_couverture: actuel?.couverture ?? "inconnu",
+      actuel_detail: detail(actuel),
+      propose_couverture: propose?.couverture ?? "inconnu",
+      propose_detail: detail(propose),
+    };
+  });
+
+  return {
+    compagnie_actuelle: e.compagnie_nom,
+    edition_annee: e.edition_annee,
+    cotisation_actuelle: (recueil ?? {})["contrat_actuel_cotisation"] ?? null,
+    niveau_souhaite: (recueil ?? {})["contrat_actuel_niveau"] ?? null,
+    lignes,
+  };
+}
+
+/**
  * Génère (ou met à jour) le devoir de conseil natif du dossier et l'envoie
  * au client pour acceptation ou refus.
  */
@@ -189,6 +249,13 @@ export async function envoyerDevoirConseil(
       /** Tableau poste par poste (Poste / Couverture / Plafond / Délai de carence). */
       detail: garanties.synthese.detail,
     },
+    /** Comparatif contrat actuel du client vs offre proposée (grille validée uniquement). */
+    comparatif_contrat_actuel: await comparatifContratActuel(
+      supabase,
+      d.recueil_besoins ?? {},
+      garanties.grille,
+      garanties.valeurs,
+    ),
 
     modele: modele.branche,
     modele_libelle: modele.libelle,
