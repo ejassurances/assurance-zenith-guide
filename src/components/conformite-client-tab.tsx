@@ -290,6 +290,8 @@ export function ConformiteClientTab({
 
       <RisqueLcbftCard clientId={clientId} />
 
+      <GelAvoirsCard clientId={clientId} />
+
       <DerStatusCard clientId={clientId} clientEmail={clientEmail} canEdit={canEdit} />
 
       {/* Documents KYC */}
