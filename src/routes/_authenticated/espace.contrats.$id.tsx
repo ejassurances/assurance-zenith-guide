@@ -6,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { calculerEconomieEmprunteur, economieColumns } from "@/lib/economie-emprunteur";
 import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
-import { ProduitDocumentsLink } from "@/components/produit-documents-link";
 import { CommissionContratCard } from "@/components/commission-contrat-card";
 import { ContratDocumentsPanel } from "@/components/contrat-documents-panel";
 import { PageHeader } from "@/components/page-header";
@@ -90,6 +89,9 @@ function ContratDetail() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  /** Correction tracée d'un contrat verrouillé : motif obligatoire. */
+  const [correctionMotif, setCorrectionMotif] = useState<string | null>(null);
+
 
   async function load() {
     setLoading(true);
@@ -150,13 +152,56 @@ function ContratDetail() {
     return res ? economieColumns(res) : {};
   }
 
+  /** Statuts pour lesquels la compagnie a validé le contrat : données figées. */
+  const STATUTS_VERROUILLES = ["actif", "contrat_actif", "contrat_valide"];
+
   async function save(forceEconomie = false) {
     if (!c) return;
     setSaving(true);
     setErr(null);
+
+    // Contrat validé par la compagnie : la correction passe par l'action tracée
+    // (motif obligatoire, journalisée avec l'avant/après).
+    if (STATUTS_VERROUILLES.includes(c.statut) && correctionMotif !== null) {
+      const { error: rpcErr } = await supabase.rpc("corriger_contrat_actif", {
+        _contrat_id: c.id,
+        _motif: correctionMotif,
+        _champs: {
+          numero: c.numero,
+          assureur: c.assureur,
+          produit: c.produit,
+          compagnie_id: c.compagnie_id,
+          produit_id: c.produit_id,
+          date_effet: c.date_effet,
+          date_echeance: c.date_echeance,
+          duree_mois: c.duree_mois,
+          prime_annuelle: c.prime_annuelle,
+          fractionnement: c.fractionnement,
+          statut: c.statut,
+          notes: c.notes,
+          mandataire_id: c.mandataire_id,
+          prescripteur_id: c.prescripteur_id,
+          mode_commissionnement: c.mode_commissionnement,
+          commission_cabinet_taux: c.commission_cabinet_taux,
+          is_emprunteur: c.is_emprunteur,
+          capital_initial: c.capital_initial,
+          taux_pret: c.taux_pret,
+          taux_assurance_annuel: c.taux_assurance_annuel,
+          quotite: c.quotite,
+          assiette: c.assiette,
+        },
+      } as never);
+      setSaving(false);
+      if (rpcErr) return setErr(rpcErr.message);
+      setCorrectionMotif(null);
+      await load();
+      return;
+    }
+
     const { error } = await supabase
       .from("contrats")
       .update({
+
         numero: c.numero,
         assureur: c.assureur,
         produit: c.produit,
@@ -223,6 +268,13 @@ function ContratDetail() {
     { prime: 0, cabinet: 0, mand: 0, presc: 0 },
   );
 
+  /** Contrat validé par la compagnie : plus aucune édition libre. */
+  const verrouille = STATUTS_VERROUILLES.includes(c.statut);
+  const enCorrection = verrouille && correctionMotif !== null;
+  const editable = canEdit && (!verrouille || enCorrection);
+  const sorti = ["resilie", "annule", "cloture"].includes(c.statut);
+
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -261,6 +313,59 @@ function ContratDetail() {
 
       {err && <p className="rounded-md bg-red-50 p-3 text-sm text-red-800">{err}</p>}
 
+      {verrouille && (
+        <section className="crm-card space-y-3 p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="font-serif text-lg">Contrat validé par la compagnie</h3>
+              <p className="text-xs text-ink-muted">
+                Les données contractuelles sont verrouillées. Toute correction passe par une action explicite et
+                tracée (motif obligatoire, avant/après journalisé), réservée à un administrateur.
+              </p>
+            </div>
+            {role === "admin" && !enCorrection && (
+              <button
+                onClick={() => setCorrectionMotif("")}
+                className="rounded-full border border-line px-4 py-2 text-xs font-medium hover:bg-surface"
+              >
+                Corriger ce contrat (tracé)
+              </button>
+            )}
+          </div>
+          {enCorrection && (
+            <div className="space-y-2 rounded-lg border border-dashed border-line p-3">
+              <label className="block text-xs font-medium text-ink-muted">
+                Motif de la correction (obligatoire, 5 caractères minimum)
+              </label>
+              <input
+                value={correctionMotif ?? ""}
+                onChange={(e) => setCorrectionMotif(e.target.value)}
+                placeholder="Ex. : numéro de contrat erroné communiqué par la compagnie"
+                className={inp}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => save()}
+                  disabled={saving || (correctionMotif ?? "").trim().length < 5}
+                  className="rounded-full bg-[#0A192F] px-4 py-2 text-xs font-medium text-white disabled:opacity-60"
+                >
+                  {saving ? "Enregistrement…" : "Valider la correction tracée"}
+                </button>
+                <button
+                  onClick={() => {
+                    setCorrectionMotif(null);
+                    void load();
+                  }}
+                  className="rounded-full border border-line px-4 py-2 text-xs hover:bg-surface"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
       <CommissionContratCard
         dossierId={(c as unknown as { dossier_id: string | null }).dossier_id ?? null}
         isEmprunteur={c.is_emprunteur}
@@ -269,6 +374,19 @@ function ContratDetail() {
         economieRealisee={c.economie_realisee}
       />
 
+      {user && (
+        <ContratDocumentsPanel
+          contratId={c.id}
+          clientId={c.client_id}
+          userId={user.id}
+          canEdit={canEdit}
+          produitId={c.produit_id}
+          compagnieId={c.compagnie_id}
+        />
+      )}
+
+
+
       {/* Bloc identité contrat */}
       <section className="crm-card grid gap-4 p-5 md:grid-cols-3">
         <F label="Type de contrat" wide>
@@ -276,7 +394,7 @@ function ContratDetail() {
             <input
               type="checkbox"
               checked={c.is_emprunteur}
-              disabled={!canEdit}
+              disabled={!editable}
               onChange={(e) => setC({ ...c, is_emprunteur: e.target.checked })}
             />
             Assurance emprunteur
@@ -288,7 +406,7 @@ function ContratDetail() {
             branche={c.is_emprunteur ? "emprunteur" : null}
             compagnieId={c.compagnie_id}
             produitId={c.produit_id}
-            disabled={!canEdit}
+            disabled={!editable}
             onChange={(sel) =>
               setC({
                 ...c,
@@ -299,9 +417,6 @@ function ContratDetail() {
               })
             }
           />
-        </div>
-        <div className="md:col-span-3">
-          <ProduitDocumentsLink produitId={c.produit_id} compagnieId={c.compagnie_id} />
         </div>
         <F label="Assureur (libellé enregistré)">
           <input value={c.assureur} readOnly className={`${inp} bg-background/60`} />
@@ -316,28 +431,32 @@ function ContratDetail() {
         )}
 
         <F label="Numéro contrat">
-          <input value={c.numero ?? ""} onChange={(e) => setC({ ...c, numero: e.target.value })} readOnly={!canEdit} className={inp} />
+          <input value={c.numero ?? ""} onChange={(e) => setC({ ...c, numero: e.target.value })} readOnly={!editable} className={inp} />
         </F>
         <F label="Date d'effet">
-          <input type="date" value={c.date_effet ?? ""} onChange={(e) => setC({ ...c, date_effet: e.target.value || null })} readOnly={!canEdit} className={inp} />
+          <input type="date" value={c.date_effet ?? ""} onChange={(e) => setC({ ...c, date_effet: e.target.value || null })} readOnly={!editable} className={inp} />
         </F>
         <F label="Durée (mois)">
           <input
             type="number"
             value={c.duree_mois ?? ""}
             onChange={(e) => setC({ ...c, duree_mois: e.target.value ? Number(e.target.value) : null })}
-            readOnly={!canEdit}
+            readOnly={!editable}
             className={inp}
           />
         </F>
         <F label="Statut">
-          <select value={c.statut} onChange={(e) => setC({ ...c, statut: e.target.value })} disabled={!canEdit} className={inp}>
+          <select value={c.statut} onChange={(e) => setC({ ...c, statut: e.target.value })} disabled={!editable} className={inp}>
             <option value="en_cours">En cours</option>
             <option value="propose">Proposé</option>
             <option value="signe">Signé</option>
+            <option value="contrat_valide">Validé par la compagnie</option>
+            <option value="actif">Actif au portefeuille</option>
             <option value="resilie">Résilié</option>
+            <option value="annule">Annulé</option>
           </select>
         </F>
+
       </section>
 
       {/* Conseil dans la durée */}
@@ -361,7 +480,7 @@ function ContratDetail() {
               type="checkbox"
               checked={Boolean(c.recommandation_personnalisee)}
               onChange={(e) => setC({ ...c, recommandation_personnalisee: e.target.checked })}
-              disabled={!canEdit}
+              disabled={!editable}
             />
             <span className="text-ink-muted">Ramène le suivi épargne/retraite à 2 ans</span>
           </label>
@@ -382,7 +501,7 @@ function ContratDetail() {
               type="number"
               value={c.capital_initial ?? ""}
               onChange={(e) => setC({ ...c, capital_initial: e.target.value ? Number(e.target.value) : null })}
-              readOnly={!canEdit}
+              readOnly={!editable}
               className={inp}
             />
           </F>
@@ -392,7 +511,7 @@ function ContratDetail() {
               step="0.0001"
               value={c.taux_pret ?? ""}
               onChange={(e) => setC({ ...c, taux_pret: e.target.value ? Number(e.target.value) : null })}
-              readOnly={!canEdit}
+              readOnly={!editable}
               className={inp}
             />
           </F>
@@ -402,7 +521,7 @@ function ContratDetail() {
               step="0.0001"
               value={c.taux_assurance_annuel ?? ""}
               onChange={(e) => setC({ ...c, taux_assurance_annuel: e.target.value ? Number(e.target.value) : null })}
-              readOnly={!canEdit}
+              readOnly={!editable}
               className={inp}
             />
           </F>
@@ -412,7 +531,7 @@ function ContratDetail() {
               step="1"
               value={c.quotite ?? 100}
               onChange={(e) => setC({ ...c, quotite: e.target.value ? Number(e.target.value) : null })}
-              readOnly={!canEdit}
+              readOnly={!editable}
               className={inp}
             />
           </F>
@@ -420,7 +539,7 @@ function ContratDetail() {
             <select
               value={c.assiette}
               onChange={(e) => setC({ ...c, assiette: e.target.value as Contrat["assiette"] })}
-              disabled={!canEdit}
+              disabled={!editable}
               className={inp}
             >
               <option value="capital_initial">Capital initial (bancaire)</option>
@@ -437,7 +556,7 @@ function ContratDetail() {
                   délégation).
                 </p>
               </div>
-              {canEdit && c.statut === "signe" && (
+              {editable && c.statut === "signe" && (
                 <button
                   onClick={() => save(true)}
                   disabled={saving}
@@ -484,7 +603,7 @@ function ContratDetail() {
             step="0.0001"
             value={c.commission_cabinet_taux ?? ""}
             onChange={(e) => setC({ ...c, commission_cabinet_taux: e.target.value ? Number(e.target.value) : null })}
-            readOnly={!canEdit}
+            readOnly={!editable}
             className={inp}
           />
         </F>
@@ -492,7 +611,7 @@ function ContratDetail() {
           <select
             value={c.mode_commissionnement}
             onChange={(e) => setC({ ...c, mode_commissionnement: e.target.value as Contrat["mode_commissionnement"] })}
-            disabled={!canEdit}
+            disabled={!editable}
             className={inp}
           >
             <option value="lineaire">Linéaire (chaque année)</option>
@@ -512,7 +631,7 @@ function ContratDetail() {
             step="0.01"
             value={c.prime_annuelle ?? ""}
             onChange={(e) => setC({ ...c, prime_annuelle: e.target.value ? Number(e.target.value) : null })}
-            readOnly={!canEdit}
+            readOnly={!editable}
             className={inp}
           />
         </F>
@@ -520,7 +639,7 @@ function ContratDetail() {
           <select
             value={c.mandataire_id ?? ""}
             onChange={(e) => setC({ ...c, mandataire_id: e.target.value || null })}
-            disabled={role !== "admin"}
+            disabled={role !== "admin" || !editable}
             className={inp}
           >
             <option value="">— Aucun —</option>
@@ -535,7 +654,7 @@ function ContratDetail() {
           <select
             value={c.prescripteur_id ?? ""}
             onChange={(e) => setC({ ...c, prescripteur_id: e.target.value || null })}
-            disabled={role !== "admin"}
+            disabled={role !== "admin" || !editable}
             className={inp}
           >
             <option value="">— Aucun —</option>
@@ -550,14 +669,14 @@ function ContratDetail() {
           <textarea
             value={c.notes ?? ""}
             onChange={(e) => setC({ ...c, notes: e.target.value })}
-            readOnly={!canEdit}
+            readOnly={!editable}
             rows={2}
             className={inp}
           />
         </F>
       </section>
 
-      {canEdit && (
+      {editable && !verrouille && (
         <div className="flex justify-end">
           <button
             onClick={() => save()}
@@ -569,28 +688,24 @@ function ContratDetail() {
         </div>
       )}
 
-      {user && (
-        <ContratDocumentsPanel
-          contratId={c.id}
-          clientId={c.client_id}
-          userId={user.id}
-          canEdit={canEdit}
-        />
-      )}
-
       {/* Tableau des échéances */}
       <section className="space-y-3 rounded-lg border border-line bg-surface p-5">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-serif text-lg">Échéances calculées</h3>
+            <h3 className="font-serif text-lg">
+              {sorti ? "Historique des appels de cotisation" : "Échéances calculées"}
+            </h3>
             <p className="text-xs text-ink-muted">
-              Prime et commissions année par année. Recalculées automatiquement à chaque modification.
+              {sorti
+                ? "Contrat sorti du portefeuille : les appels de cotisation et commissions déjà émis avant la résiliation sont conservés en l'état, sans recalcul."
+                : "Prime et commissions année par année. Recalculées automatiquement à chaque modification."}
             </p>
           </div>
           <div className="text-right text-xs text-ink-muted">
             {ech.length} année{ech.length > 1 ? "s" : ""} · Cabinet total : {formatEuro(totaux.cabinet)}
           </div>
         </div>
+
 
         {ech.length === 0 ? (
           <p className="text-sm text-ink-muted">

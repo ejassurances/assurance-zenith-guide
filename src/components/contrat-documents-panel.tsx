@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { ProduitDocumentsLink } from "@/components/produit-documents-link";
 
 type Doc = {
   id: string;
@@ -18,45 +19,62 @@ const TYPES_DOCUMENT = [
   { code: "autre", libelle: "Autre" },
 ] as const;
 
+/** Pièces du client qui relèvent du contrat mais n'y sont pas encore rattachées. */
+const TYPES_RATTACHABLES = ["attestation_assurance", "avis_echeance", "conditions_particulieres"];
+
 function libelleType(code: string | null): string {
   return TYPES_DOCUMENT.find((t) => t.code === code)?.libelle ?? "Type non précisé";
 }
 
 /**
  * Archivage libre des documents d'un contrat (police, avis d'échéance,
- * conditions particulières…), indépendamment du parcours DDA.
+ * conditions particulières…), indépendamment du parcours DDA. Affiche aussi les
+ * pièces contractuelles du produit (CG, IPID) pour éviter toute navigation.
  */
 export function ContratDocumentsPanel({
   contratId,
   clientId,
   userId,
   canEdit = true,
+  produitId = null,
+  compagnieId = null,
 }: {
   contratId: string;
   /** Client titulaire : le fichier est rangé dans son dossier pour l'espace client. */
   clientId: string;
   userId: string;
   canEdit?: boolean;
+  /** Produit rattaché : ses CG/IPID sont affichés directement ici. */
+  produitId?: string | null;
+  compagnieId?: string | null;
 }) {
   const [docs, setDocs] = useState<Doc[]>([]);
+  const [rattachables, setRattachables] = useState<Doc[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [type, setType] = useState<string>("attestation_assurance");
   const fileRef = useRef<HTMLInputElement>(null);
 
-
   const load = async () => {
-    const { data } = await supabase
-      .from("documents")
-      .select("id,file_name,file_size,storage_path,created_at,type_document")
-      .eq("contrat_id", contratId)
-      .order("created_at", { ascending: false });
-    setDocs((data ?? []) as Doc[]);
+    const cols = "id,file_name,file_size,storage_path,created_at,type_document";
+    const [lies, duClient] = await Promise.all([
+      supabase.from("documents").select(cols).eq("contrat_id", contratId).order("created_at", { ascending: false }),
+      supabase
+        .from("documents")
+        .select(cols)
+        .eq("client_id", clientId)
+        .is("contrat_id", null)
+        .in("type_document", TYPES_RATTACHABLES)
+        .order("created_at", { ascending: false }),
+    ]);
+    setDocs((lies.data ?? []) as Doc[]);
+    setRattachables((duClient.data ?? []) as Doc[]);
   };
 
   useEffect(() => {
     load();
-  }, [contratId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contratId, clientId]);
 
   const onUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -108,16 +126,24 @@ export function ContratDocumentsPanel({
     load();
   };
 
+  /** Rattache au contrat une pièce déjà déposée au niveau du client. */
+  const rattacher = async (doc: Doc) => {
+    const { error: e } = await supabase.from("documents").update({ contrat_id: contratId }).eq("id", doc.id);
+    if (e) return setError(e.message);
+    load();
+  };
+
   return (
     <section className="crm-card min-w-0 space-y-3 p-5">
       <div>
         <h3 className="font-serif text-lg">Documents du contrat</h3>
         <p className="text-xs text-ink-muted">
-          Archivage libre des pièces contractuelles (police d'assurance, avis d'échéance, conditions
-          particulières…), indépendamment du parcours DDA. Utile lors de l'import d'un client dont le contrat
-          est déjà en cours.
+          Conditions générales et IPID du produit, puis pièces contractuelles archivées (police d'assurance, avis
+          d'échéance, conditions particulières…), indépendamment du parcours DDA.
         </p>
       </div>
+
+      {produitId && <ProduitDocumentsLink produitId={produitId} compagnieId={compagnieId} />}
 
       {canEdit && (
         <div className="flex flex-wrap items-center gap-3">
@@ -174,6 +200,40 @@ export function ContratDocumentsPanel({
           </li>
         ))}
       </ul>
+
+      {rattachables.length > 0 && (
+        <div className="rounded-lg border border-dashed border-line p-3">
+          <p className="text-xs font-medium text-ink-muted">
+            Pièces contractuelles du client non rattachées à un contrat
+          </p>
+          <ul className="mt-2 space-y-2">
+            {rattachables.map((d) => (
+              <li key={d.id} className="flex min-w-0 items-center justify-between gap-3 text-sm">
+                <span className="min-w-0">
+                  <span className="truncate font-medium text-ink">{d.file_name}</span>
+                  <span className="text-xs text-ink-muted"> · {libelleType(d.type_document)}</span>
+                </span>
+                <span className="flex shrink-0 gap-2">
+                  <button
+                    onClick={() => download(d.storage_path, d.file_name)}
+                    className="rounded-full border border-line px-3 py-1 text-xs hover:bg-surface"
+                  >
+                    Ouvrir
+                  </button>
+                  {canEdit && (
+                    <button
+                      onClick={() => rattacher(d)}
+                      className="rounded-full border border-line px-3 py-1 text-xs hover:bg-surface"
+                    >
+                      Rattacher à ce contrat
+                    </button>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }
