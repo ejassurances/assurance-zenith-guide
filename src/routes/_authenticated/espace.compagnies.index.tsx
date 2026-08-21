@@ -46,6 +46,8 @@ function CompagniesIndex() {
   const [nom, setNom] = useState("");
   const [statut, setStatut] = useState<"actif" | "prospect" | "inactif">("actif");
 
+  const [grilles, setGrilles] = useState<Record<string, { total: number; validees: number }>>({});
+
   async function load() {
     setLoading(true);
     const { data, error } = await supabase
@@ -56,8 +58,29 @@ function CompagniesIndex() {
     setRows((data as Compagnie[]) ?? []);
     setLoading(false);
   }
+
+  /** Couverture des grilles de garanties : indispensable pour que le comparatif IA puisse utiliser un produit. */
+  async function loadGrilles() {
+    const [prod, gar] = await Promise.all([
+      supabase.from("produits").select("id,compagnie_id").neq("statut", "retire"),
+      supabase.from("produit_garanties").select("produit_id").eq("statut", "valide"),
+    ]);
+    const produits = (prod.data as { id: string; compagnie_id: string }[] | null) ?? [];
+    const validees = new Set(
+      ((gar.data as { produit_id: string }[] | null) ?? []).map((g) => g.produit_id),
+    );
+    const map: Record<string, { total: number; validees: number }> = {};
+    for (const p of produits) {
+      const e = (map[p.compagnie_id] ??= { total: 0, validees: 0 });
+      e.total += 1;
+      if (validees.has(p.id)) e.validees += 1;
+    }
+    setGrilles(map);
+  }
+
   useEffect(() => {
     load();
+    loadGrilles();
   }, []);
 
   async function create(e: React.FormEvent) {
