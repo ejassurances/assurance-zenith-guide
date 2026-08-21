@@ -179,40 +179,20 @@ export async function listerParLabel(nom: string, maxResults = 100): Promise<Ema
   return details.filter((m): m is GmailMessage => !!m).map((m) => toResume(m, nomsLabels));
 }
 
-export async function listerRattrapage(params?: { maxResults?: number }): Promise<EmailResume[]> {
-
-  const search = new URLSearchParams({
-    q: `label:"${LABEL_PARENT_RATTRAPAGE}"`,
-    maxResults: String(params?.maxResults ?? 15),
-  });
-  const list = await gmailFetch<{ messages?: { id: string }[] }>(`/users/me/messages?${search.toString()}`);
-  const ids = (list.messages ?? []).map((m) => m.id);
-  if (!ids.length) return [];
-
-  const details = await Promise.all(
-    ids.map((id) =>
-      gmailFetch<GmailMessage>(
-        `/users/me/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`,
-      ).catch(() => null),
-    ),
-  );
-  const { labels } = await gmailFetch<{ labels?: { id: string; name: string }[] }>("/users/me/labels").catch(() => ({
-    labels: [] as { id: string; name: string }[],
-  }));
-  const nomsLabels = new Map((labels ?? []).map((l) => [l.id, l.name] as const));
-
-  const prefixe = `${LABEL_PARENT_RATTRAPAGE.toLowerCase()}/`;
-  return details
-    .filter((m): m is GmailMessage => !!m)
-    .map((m) => toResume(m, nomsLabels))
-    .filter((m) => !m.etiquettes.some((n) => n.toLowerCase().startsWith(prefixe)));
+/**
+ * Ancien filet de rattrapage (label parent posé seul) : sans objet depuis le
+ * passage à une arborescence à plat — « Direction Commerciale » EST désormais la
+ * file de travail, lue directement par les agents.
+ */
+export async function listerRattrapage(_params?: { maxResults?: number }): Promise<EmailResume[]> {
+  return [];
 }
 
-/** Retire l'étiquette de rattrapage « Direction Commerciale » d'un message. */
-export async function retirerLabelRattrapage(id: string): Promise<void> {
-  const labelId = await resoudreLabel(LABEL_PARENT_RATTRAPAGE);
-  await modifierLabels(id, { retirer: [labelId] });
+/** Sans objet depuis l'arborescence à plat : ne retire plus aucune étiquette. */
+export async function retirerLabelRattrapage(_id: string): Promise<void> {
+  return;
 }
+
 
 
 function collecterCorps(part: GmailPart | undefined, out: { texte: string[]; html: string[] }) {
@@ -447,10 +427,14 @@ export async function poserLabelCabinet(
   options?: { retirer?: LabelCabinet[]; sortirDeLInbox?: boolean },
 ): Promise<void> {
   const ajouter = await resoudreLabel(LABELS_CABINET[cle]);
-  const retirer = await Promise.all((options?.retirer ?? []).map((c) => resoudreLabel(LABELS_CABINET[c])));
+  const resolus = await Promise.all((options?.retirer ?? []).map((c) => resoudreLabel(LABELS_CABINET[c])));
+  // Arborescence à plat : plusieurs clés pointent vers la même étiquette. On ne
+  // retire jamais celle que l'on pose (Gmail refuse add + remove du même label).
+  const retirer = [...new Set(resolus)].filter((l) => l !== ajouter);
   if (options?.sortirDeLInbox) retirer.push("INBOX");
   await modifierLabels(id, { ajouter: [ajouter], retirer });
 }
+
 
 /**
  * Applique une étiquette Gmail existante, désignée par son nom exact. Le message
@@ -470,31 +454,27 @@ export async function etiqueterMessage(
 
 
 /**
- * Files de travail des agents : sous-étiquettes « A_Traiter » de chaque service.
- * Le PREMIER libellé de service est posé MANUELLEMENT par le staff depuis la
- * boîte principale ; les agents ne lisent QUE ces files, jamais l'inbox.
+ * Files de travail des agents : les trois étiquettes de direction. Le libellé de
+ * direction est posé MANUELLEMENT par le staff depuis la boîte principale ; les
+ * agents ne lisent QUE ces files, jamais l'inbox.
  */
 export const FILES_A_TRAITER: readonly LabelCabinet[] = [
-  "gc_a_traiter",
-  "sc_a_traiter",
-  "sp_a_traiter",
-  "achat_a_traiter",
-  "commission_a_traiter",
-  "rec_a_traiter",
-  "veille_a_traiter",
+  "gc_a_traiter", // Direction Commerciale
+  "achat_a_traiter", // Direction Financiere
+  "rec_a_traiter", // Direction Conformite
 ];
 
 /**
- * Messages en attente de traitement : union des sous-étiquettes « A_Traiter »
- * des services. Aucune lecture de la boîte de réception générale.
+ * Messages en attente de traitement : union des étiquettes de direction (noms
+ * dédoublonnés). Aucune lecture de la boîte de réception générale.
  */
 export async function listerFilesATraiter(params?: {
   maxParFile?: number;
 }): Promise<EmailResume[]> {
   const maxParFile = Math.max(1, Math.min(params?.maxParFile ?? 25, 100));
   const parId = new Map<string, EmailResume>();
-  for (const cle of FILES_A_TRAITER) {
-    const nom = LABELS_CABINET[cle];
+  const noms = [...new Set(FILES_A_TRAITER.map((cle) => LABELS_CABINET[cle]))];
+  for (const nom of noms) {
     const messages = await listerParLabel(nom, maxParFile).catch((e) => {
       console.error(`[files-a-traiter] lecture de « ${nom} » impossible`, e);
       return [] as EmailResume[];
@@ -503,6 +483,7 @@ export async function listerFilesATraiter(params?: {
   }
   return [...parId.values()];
 }
+
 
 
 

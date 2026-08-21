@@ -213,8 +213,14 @@ export async function executerAgents(
           // Contrôle du domaine expéditeur AVANT toute classification IA : un
           // email de compagnie / partenaire connu n'est ni un prospect ni une
           // demande client, il part directement en Service Partenaire.
-          const compagnieExp = compagnieDeExpediteur(annuairePartenaires, entree.expediteur_email);
+          // « +Simple » est notre fournisseur RC Pro : jamais un partenaire
+          // assureur, ses mails relèvent de la Direction Financière (agent finance).
+          const { estFournisseurFinance } = await import("@/lib/routage-specifique");
+          const compagnieExp = estFournisseurFinance(entree.expediteur_email)
+            ? null
+            : compagnieDeExpediteur(annuairePartenaires, entree.expediteur_email);
           if (compagnieExp) {
+
             await routerEmailPartenaire(admin, {
               gmail_message_id: m.id,
               gmail_thread_id: detail.thread_id ?? m.thread_id ?? null,
