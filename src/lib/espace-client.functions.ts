@@ -160,7 +160,7 @@ export const monEspaceComplement = createServerFn({ method: "POST" })
         supabaseAdmin
           .from("contrats")
           .select(
-            "id, numero, statut, date_effet, date_echeance, prime_annuelle, fractionnement, assureur, produit, compagnies(nom), produits(nom)",
+            "id, numero, statut, date_effet, date_echeance, prime_annuelle, fractionnement, assureur, produit, produit_id, compagnie_id, compagnies(nom), produits(nom)",
           )
           .eq("client_id", client.id)
           .order("date_effet", { ascending: false }),
@@ -254,6 +254,8 @@ export const monEspaceComplement = createServerFn({ method: "POST" })
           fractionnement: (r["fractionnement"] as string | null) ?? null,
           compagnie: comp?.nom ?? (r["assureur"] as string | null) ?? null,
           produit: prod?.nom ?? (r["produit"] as string | null) ?? null,
+          produit_id: (r["produit_id"] as string | null) ?? null,
+          compagnie_id: (r["compagnie_id"] as string | null) ?? null,
         };
       }),
       documents: [...parId.values()].map((d) => ({
@@ -262,6 +264,8 @@ export const monEspaceComplement = createServerFn({ method: "POST" })
         categorie: (d["categorie"] as string | null) ?? null,
         type_document: (d["type_document"] as string | null) ?? null,
         created_at: String(d["created_at"]),
+        dossier_id: (d["dossier_id"] as string | null) ?? null,
+        contrat_id: (d["contrat_id"] as string | null) ?? null,
         dossier_reference: d["dossier_id"] ? (refParDossier.get(String(d["dossier_id"])) ?? null) : null,
       })),
       der: ((der ?? []) as Record<string, unknown>[]).map((d) => {
@@ -458,6 +462,7 @@ export const mesDocumentsDda = createServerFn({ method: "POST" })
         type_assurance: String(l["type_assurance"] ?? ""),
         signed_at: (l["signed_at"] as string | null) ?? null,
         created_at: String(l["created_at"]),
+        dossier_id: (l["dossier_id"] as string | null) ?? null,
         reference: ref(l),
       })),
       devoirs: ((devoirs ?? []) as Record<string, unknown>[]).map((d) => ({
@@ -466,6 +471,7 @@ export const mesDocumentsDda = createServerFn({ method: "POST" })
         statut: String(d["statut"] ?? ""),
         signed_at: (d["signed_at"] as string | null) ?? null,
         created_at: String(d["created_at"]),
+        dossier_id: (d["dossier_id"] as string | null) ?? null,
         reference: ref(d),
       })),
     };
