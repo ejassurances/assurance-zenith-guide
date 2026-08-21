@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { dansExerciceComptable, PREMIER_EXERCICE } from "@/lib/exercice";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 /**
@@ -33,7 +34,7 @@ type Facture = {
 export function LivreAchatsTab() {
   const [factures, setFactures] = useState<Facture[]>([]);
   const [comptes, setComptes] = useState<Record<string, string>>({});
-  const [annee, setAnnee] = useState<string>(String(new Date().getFullYear()));
+  const [annee, setAnnee] = useState<string>(String(Math.max(new Date().getFullYear(), PREMIER_EXERCICE)));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -47,7 +48,8 @@ export function LivreAchatsTab() {
           .order("date_facture"),
         supabase.from("plan_comptable").select("numero,libelle"),
       ]);
-      setFactures((f as unknown as Facture[]) ?? []);
+      // Premier exercice comptable : 2026. Les pièces antérieures (2025) sont exclues.
+      setFactures(((f as unknown as Facture[]) ?? []).filter((x) => dansExerciceComptable(x.date_facture)));
       setComptes(Object.fromEntries(((pc as { numero: string; libelle: string }[]) ?? []).map((c) => [c.numero, c.libelle])));
       setLoading(false);
     })();

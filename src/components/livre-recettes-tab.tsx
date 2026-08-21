@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { dansExerciceComptable, PREMIER_EXERCICE } from "@/lib/exercice";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 /**
@@ -52,7 +53,7 @@ function encaissement(l: Ligne) {
 
 export function LivreRecettesTab() {
   const [lignes, setLignes] = useState<Ligne[]>([]);
-  const [annee, setAnnee] = useState<string>(String(new Date().getFullYear()));
+  const [annee, setAnnee] = useState<string>(String(Math.max(new Date().getFullYear(), PREMIER_EXERCICE)));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,7 +64,10 @@ export function LivreRecettesTab() {
           "id,montant,date_versement,created_at,notes,contrat_id,dossier_id,contrats(numero,assureur,clients(nom,prenom)),dossiers(reference,clients(nom,prenom)),bordereaux_commissions(periode,assureur)",
         )
         .eq("statut", "versee");
-      const rows = ((data as unknown as Ligne[]) ?? []).sort((a, b) => dateRecette(a).localeCompare(dateRecette(b)));
+      // Premier exercice comptable : 2026. Les encaissements antérieurs sont exclus.
+      const rows = ((data as unknown as Ligne[]) ?? [])
+        .filter((l) => dansExerciceComptable(dateRecette(l)))
+        .sort((a, b) => dateRecette(a).localeCompare(dateRecette(b)));
       setLignes(rows);
       setLoading(false);
     })();

@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { importerFactureFichier } from "@/lib/factures-achat.functions";
 
+import { dansExerciceComptable, PREMIER_EXERCICE } from "@/lib/exercice";
 type Compte = { numero: string; libelle: string; classe: number };
 type Exercice = { id: string; libelle: string; date_debut: string; date_fin: string; cloture: boolean };
 type Facture = {
@@ -95,7 +96,15 @@ export function FacturesAchatTab() {
   /* --- Génération de l'écriture comptable (journal AC) --- */
   const genererEcriture = async (f: Facture) => {
     if (f.ecriture_id) return;
+    // Premier exercice comptable du cabinet : 2026. Rien d'antérieur n'est comptabilisé.
+    if (!dansExerciceComptable(f.date_facture)) {
+      toast.error(
+        `Facture antérieure au premier exercice (${PREMIER_EXERCICE}) : elle n'entre pas en comptabilité.`,
+      );
+      return;
+    }
     const exercice = exercices.find((e) => f.date_facture >= e.date_debut && f.date_facture <= e.date_fin) ?? exercices[0];
+
     if (!exercice) {
       toast.error("Aucun exercice ouvert pour cette date de facture.");
       return;
