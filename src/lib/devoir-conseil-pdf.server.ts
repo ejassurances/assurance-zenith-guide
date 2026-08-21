@@ -481,6 +481,76 @@ export async function genererPdfDevoirConseil(input: DevoirPdfInput): Promise<Ui
   y -= 4;
   para(String(input.recommandation ?? "-"), { gap: 4 });
 
+  /** Comparatif garantie par garantie : contrat actuel du client vs offre proposee. */
+  const tableauComparatif = (
+    lignes: {
+      libelle: string;
+      actuel_couverture: string;
+      actuel_detail: string | null;
+      propose_couverture: string;
+      propose_detail: string | null;
+    }[],
+  ) => {
+    const cols = [
+      { label: "Poste de garantie", w: 0.34 },
+      { label: "Votre contrat actuel", w: 0.33 },
+      { label: "Offre proposee", w: 0.33 },
+    ];
+    const widths = cols.map((col) => col.w * CONTENT);
+    const headH = 20;
+    ensure(headH + 30);
+    page.drawRectangle({ x: MARGIN, y: y - headH, width: CONTENT, height: headH, color: INK });
+    let hx = MARGIN + 8;
+    cols.forEach((col, i) => {
+      page.drawText(safe(col.label), { x: hx, y: y - 13.5, size: 8, font: bold, color: WHITE });
+      hx += widths[i]!;
+    });
+    y -= headH;
+
+    const texte = (couv: string, detail: string | null) => {
+      const label = COUVERTURE_LABEL[couv as keyof typeof COUVERTURE_LABEL] ?? couv;
+      return detail ? `${label} — ${detail}` : label;
+    };
+
+    lignes.forEach((l, idx) => {
+      const c1 = wrap(l.libelle, font, 8.5, widths[0]! - 12);
+      const c2 = wrap(texte(l.actuel_couverture, l.actuel_detail), font, 8.5, widths[1]! - 12);
+      const c3 = wrap(texte(l.propose_couverture, l.propose_detail), font, 8.5, widths[2]! - 12);
+      const rowH = Math.max(20, 12 + Math.max(c1.length, c2.length, c3.length) * 11);
+      ensure(rowH);
+      if (idx % 2 === 1) {
+        page.drawRectangle({ x: MARGIN, y: y - rowH, width: CONTENT, height: rowH, color: SOFT });
+      }
+      page.drawLine({
+        start: { x: MARGIN, y: y - rowH },
+        end: { x: A4[0] - MARGIN, y: y - rowH },
+        thickness: 0.5,
+        color: LINE,
+      });
+      c1.forEach((t, i) => page.drawText(t, { x: MARGIN + 8, y: y - 14 - i * 11, size: 8.5, font, color: INK }));
+      c2.forEach((t, i) =>
+        page.drawText(t, {
+          x: MARGIN + widths[0]! + 8,
+          y: y - 14 - i * 11,
+          size: 8.5,
+          font,
+          color: l.actuel_couverture === "non" ? BAD : INK,
+        }),
+      );
+      c3.forEach((t, i) =>
+        page.drawText(t, {
+          x: MARGIN + widths[0]! + widths[1]! + 8,
+          y: y - 14 - i * 11,
+          size: 8.5,
+          font: bold,
+          color: l.propose_couverture === "oui" ? OK : l.propose_couverture === "non" ? BAD : INK,
+        }),
+      );
+      y -= rowH;
+    });
+    y -= 10;
+  };
+
   /* Garanties du produit issues de la grille validee */
   const gp = c.garanties_produit ?? null;
   if (gp) {
@@ -501,6 +571,35 @@ export async function genererPdfDevoirConseil(input: DevoirPdfInput): Promise<Ui
       { size: 8.5, color: MUTED, gap: 4 },
     );
 
+  }
+
+  /* Comparatif avec le contrat actuel du client (grille validee par le cabinet) */
+  const cmp = c.comparatif_contrat_actuel ?? null;
+  if (cmp && Array.isArray(cmp.lignes) && cmp.lignes.length > 0) {
+    titreSection("Comparatif avec votre contrat actuel");
+    kv(
+      "Contrat actuel",
+      [
+        String(cmp.compagnie_actuelle ?? "-"),
+        cmp.edition_annee ? `edition ${cmp.edition_annee}` : null,
+        cmp.cotisation_actuelle != null ? `${euro(Number(cmp.cotisation_actuelle))} / mois` : null,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    );
+    if (cmp.niveau_souhaite) {
+      const souhaits: Record<string, string> = {
+        conserver: "Conserver un niveau de garanties equivalent",
+        ameliorer: "Faire evoluer la couverture",
+        peu_importe: "Sans preference exprimee",
+      };
+      kv("Souhait exprime", souhaits[String(cmp.niveau_souhaite)] ?? String(cmp.niveau_souhaite));
+    }
+    tableauComparatif(cmp.lignes);
+    para(
+      "Le releve du contrat actuel provient des conditions generales que vous nous avez remises, analysees puis verifiees poste par poste par le cabinet. Aucune equivalence n'est presumee a partir d'un contrat similaire.",
+      { size: 8.5, color: MUTED, gap: 4 },
+    );
   }
 
   /* ---------------------- 6. Motifs ---------------------- */

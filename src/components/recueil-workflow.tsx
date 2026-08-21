@@ -17,6 +17,8 @@ import {
   type PersonneAssuree,
 } from "@/lib/recueil-besoins-schemas";
 
+import { ContratActuelCgField, lireCgActuel } from "@/components/contrat-actuel-cg-field";
+
 import imgTrottinette from "@/assets/edpm-trottinette.png";
 import imgGyroroue from "@/assets/edpm-gyroroue.png";
 import imgMonoroue from "@/assets/edpm-monoroue.png";
@@ -47,6 +49,7 @@ export function RecueilWorkflow({
   onComplete,
   onBack,
   completeLabel = "Terminer le recueil",
+  dossierId,
   children,
 }: {
   branche: BrancheConfig;
@@ -55,6 +58,8 @@ export function RecueilWorkflow({
   onComplete?: () => void;
   onBack?: () => void;
   completeLabel?: string;
+  /** Dossier d'origine, quand il existe déjà (traçabilité des CG déposées) */
+  dossierId?: string | null;
   /** Contenu affiché sur la dernière étape (récapitulatif) */
   children?: React.ReactNode;
 }) {
@@ -149,6 +154,9 @@ export function RecueilWorkflow({
                 value={values[f.key]}
                 onChange={(v) => set(f.key, v)}
                 error={showErrors && missing.some((m) => m.key === f.key)}
+                branche={branche.value}
+                values={values}
+                dossierId={dossierId ?? null}
               />
             ))}
 
@@ -281,6 +289,11 @@ function shortLabel(f: FieldConfig) {
 
 
 function formatValue(f: FieldConfig, v: unknown) {
+  if (f.type === "cg_actuel") {
+    const cg = lireCgActuel(v);
+    return cg ? `${cg.nom_fichier ?? "Conditions générales"} (${cg.compagnie_nom})` : "Non fourni";
+  }
+  if (f.type === "yesno") return v === true ? "Oui" : v === false ? "Non" : "—";
   if (f.type === "checkbox") return v === true ? "Oui" : "Non";
   if (f.type === "personnes") {
     const list = personnesAssurees(v);
@@ -539,14 +552,22 @@ export function WorkflowField({
   value,
   onChange,
   error,
+  branche,
+  values,
+  dossierId,
 }: {
   field: FieldConfig;
   value: unknown;
   onChange: (v: unknown) => void;
   error?: boolean;
+  /** Branche du recueil : nécessaire au dépôt des CG du contrat actuel */
+  branche?: string;
+  /** Autres réponses du recueil (compagnie actuelle notamment) */
+  values?: Record<string, unknown>;
+  dossierId?: string | null;
 }) {
   const heading = field.question ?? field.label;
-  const isChoice = field.type === "cards" || field.type === "yesno" || field.type === "personnes" || field.type === "assures_emprunteur";
+  const isChoice = field.type === "cg_actuel" || field.type === "cards" || field.type === "yesno" || field.type === "personnes" || field.type === "assures_emprunteur";
 
   return (
     <div className={isChoice ? "space-y-3" : "max-w-xl space-y-2"}>
@@ -567,6 +588,16 @@ export function WorkflowField({
             <p className="mt-1 text-sm leading-relaxed text-ink-muted">{field.info}</p>
           </div>
         </div>
+      )}
+
+      {field.type === "cg_actuel" && (
+        <ContratActuelCgField
+          branche={branche ?? ""}
+          compagnieNom={String(values?.["contrat_actuel_compagnie"] ?? "")}
+          dossierId={dossierId ?? null}
+          value={value}
+          onChange={onChange}
+        />
       )}
 
       {field.type === "personnes" && <PersonnesField value={value} onChange={onChange} error={error} />}

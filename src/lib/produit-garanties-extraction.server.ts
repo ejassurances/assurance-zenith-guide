@@ -313,3 +313,28 @@ export async function analyserDocumentProduit(
 ) {
   return analyserDocumentsProduit(supabase, [documentId], userId);
 }
+
+/**
+ * Analyse générique de documents contractuels (mêmes consignes, même trame que
+ * pour les CG partenaires) sans écriture en base : utilisée par la bibliothèque
+ * des CG apportées par les clients.
+ */
+export async function analyserFichiersContrat(
+  grille: GrilleGaranties,
+  fichiers: { nom: string; mime: string; base64: string; type: string }[],
+  nomContrat: string,
+) {
+  if (fichiers.length === 0) throw new Error("Aucun document à analyser.");
+  const { modele, brut } = await appelerIa(
+    consigne(
+      grille,
+      fichiers.map((f) => ({ nom: f.nom, type: f.type })),
+      nomContrat,
+    ),
+    fichiers.map((f) => ({ nom: f.nom, mime: f.mime, base64: f.base64 })),
+  );
+  const { valeurs, avertissements, porteur } = normaliser(grille, brut);
+  return { modele, valeurs, avertissements, porteur };
+}
+
+export const TAILLE_MAX_DOCUMENT = TAILLE_MAX_PDF;
