@@ -130,6 +130,37 @@ function BibliothequeCgPage() {
     }
   };
 
+  /** Dépôt interne par le cabinet : upload puis extraction IA en brouillon. */
+  const deposer = () =>
+    action(async () => {
+      const file = newFichier;
+      if (!file) throw new Error("Sélectionnez un document.");
+      if (file.size > 12 * 1024 * 1024) throw new Error("Fichier trop volumineux (12 Mo maximum).");
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) throw new Error("Session expirée : reconnectez-vous.");
+      const ext = file.name.split(".").pop()?.toLowerCase() || "pdf";
+      const chemin = `${uid}/${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from(BUCKET_CG_CLIENTS)
+        .upload(chemin, file, { upsert: false, contentType: file.type || "application/pdf" });
+      if (upErr) throw new Error(upErr.message);
+      await deposerFn({
+        data: {
+          compagnie_nom: newCompagnie.trim(),
+          branche: newBranche,
+          storage_path: chemin,
+          nom_fichier: file.name.slice(0, 300),
+          mime_type: file.type || "application/pdf",
+          edition_annee: newEdition.trim() || null,
+        },
+      });
+      setNewCompagnie("");
+      setNewEdition("");
+      setNewFichier(null);
+    }, "Document déposé : la grille proposée par l'IA doit être relue puis validée.");
+
+
   if (loading) return <p className="p-6 text-sm text-ink-muted">Chargement…</p>;
   if (!staff) return <p className="p-6 text-sm text-ink-muted">Accès réservé au cabinet.</p>;
 
