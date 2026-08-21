@@ -11,9 +11,9 @@ import { LABELS_CABINET, type LabelCabinet } from "@/lib/gmail-labels";
  * lit cette table avec un cache court (5 minutes) pour éviter une requête par
  * mail traité.
  *
- * Certains services n'ont PAS d'adresse dédiée (Gestion Commerciale, Service
- * Conformite) : un mail mal aiguillé vers eux reste sur place, aucun renvoi
- * n'est effectué.
+ * Certains services n'ont PAS d'adresse dédiée (Gestion Commerciale, Direction
+ * Juridique et Conformite) : un mail mal aiguillé vers eux reste sur place, aucun
+ * renvoi n'est effectué.
  */
 export type ServiceCabinet =
   | "gestion_commerciale"

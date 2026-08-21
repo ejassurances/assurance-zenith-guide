@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
  * Traitement des files de travail des agents IA. La boîte de réception générale
  * n'est JAMAIS lue : le staff pose manuellement le premier libellé de service
  * (Service Client, Service Partenaire, Service Achat, Service Commission,
- * Service Conformite, Service Reclamation, Gestion Commerciale). Les agents
+ * Direction Juridique et Conformite, Service Reclamation, Gestion Commerciale). Les agents
  * lisent uniquement les sous-étiquettes « A_Traiter » de ces services, puis
  * font passer chaque mail en « En_Attente_De_Validation » ou « Archive ».
  *
