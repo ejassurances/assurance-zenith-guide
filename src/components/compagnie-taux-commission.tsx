@@ -96,7 +96,7 @@ export function CompagnieTauxCommission({
   };
 
   return (
-    <section className="space-y-3 rounded-lg border border-line bg-surface p-5">
+    <section className="crm-card space-y-3 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="font-serif text-lg">Taux de commission</h3>
@@ -107,7 +107,7 @@ export function CompagnieTauxCommission({
         {canEdit && (
           <button
             onClick={() => setForm(vide())}
-            className="rounded-md bg-ink px-3 py-1.5 text-xs font-medium text-primary-foreground"
+            className="rounded-full bg-[#0A192F] px-3 py-1.5 text-xs font-medium text-white"
           >
             + Ajouter une branche
           </button>
@@ -226,7 +226,7 @@ export function CompagnieTauxCommission({
           <div className="flex gap-3 md:col-span-3">
             <button
               onClick={enregistrer}
-              className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-primary-foreground"
+              className="rounded-full bg-[#0A192F] px-4 py-2 text-sm font-medium text-white"
             >
               Enregistrer
             </button>

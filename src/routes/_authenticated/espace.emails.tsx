@@ -23,6 +23,8 @@ import {
 } from "@/lib/emails.functions";
 import { importerFactureDepuisEmail } from "@/lib/factures-achat.functions";
 import { LABELS_CABINET } from "@/lib/gmail-labels";
+import { PageHeader } from "@/components/page-header";
+import { IconMail } from "@tabler/icons-react";
 
 import { toast } from "sonner";
 
@@ -84,9 +86,9 @@ const TYPES_ASSURANCE = [
 ];
 
 /* Charte CRM : bleu nuit, accent doré, cartes détachées. */
-const CARTE = "rounded-2xl border border-line bg-surface-elevated shadow-sm";
+const CARTE = "crm-card";
 const BTN_PRIMAIRE =
-  "rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:brightness-110 disabled:opacity-60";
+  "rounded-full bg-[#0A192F] px-5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[#0A192F]/90 disabled:opacity-60";
 const BTN_SECONDAIRE =
   "rounded-full border border-line bg-surface-elevated px-4 py-2 text-sm text-ink transition hover:border-[color:var(--crm-gold)] hover:text-ink disabled:opacity-60";
 const CHAMP =
@@ -303,30 +305,17 @@ function EmailsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-5">
-        <div>
-          <h1 className="font-serif text-3xl text-ink">Emails</h1>
-          <span className="mt-2 block h-0.5 w-16 bg-[color:var(--crm-gold)]" aria-hidden />
-          <p className="mt-3 text-sm text-ink-muted">
-            Boîte de réception principale du cabinet (onglet « Principal » de Gmail).
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button onClick={() => loadBoite()} disabled={loading} className={BTN_SECONDAIRE}>
-            {loading ? "Synchronisation…" : "Synchroniser"}
-          </button>
-          <button onClick={lancerScan} disabled={scanBusy} className={BTN_SECONDAIRE}>
-            {scanBusy ? "Scan en cours…" : "Scanner les mails (lus inclus)"}
-          </button>
-
-
-
-          <button onClick={() => setCompose({ to: "", sujet: "", threadId: null })} className={BTN_PRIMAIRE}>
-            Nouvel email
-          </button>
-        </div>
-
-      </div>
+      <PageHeader eyebrow="Boîte du cabinet" title="Emails" description="Boîte de réception principale du cabinet (onglet « Principal » de Gmail)." icon={IconMail}>
+        <button onClick={() => loadBoite()} disabled={loading} className={BTN_SECONDAIRE}>
+          {loading ? "Synchronisation…" : "Synchroniser"}
+        </button>
+        <button onClick={lancerScan} disabled={scanBusy} className={BTN_SECONDAIRE}>
+          {scanBusy ? "Scan en cours…" : "Scanner les mails (lus inclus)"}
+        </button>
+        <button onClick={() => setCompose({ to: "", sujet: "", threadId: null })} className={BTN_PRIMAIRE}>
+          Nouvel email
+        </button>
+      </PageHeader>
 
       <form
         onSubmit={(e) => {
@@ -372,7 +361,7 @@ function EmailsPage() {
                       className={
                         "w-full border-l-2 px-4 py-3 text-left transition-colors " +
                         (actif
-                          ? "border-l-[color:var(--crm-gold)] bg-[rgb(212_175_55_/_0.08)]"
+                          ? "border-l-[#D4AF37] bg-[#D4AF37]/10"
                           : "border-l-transparent hover:bg-surface")
                       }
                     >

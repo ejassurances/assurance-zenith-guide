@@ -110,7 +110,7 @@ export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: 
             <button
               onClick={() => createContrat("emprunteur")}
               disabled={creating}
-              className="rounded-md bg-ink px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-60"
+              className="rounded-full bg-[#0A192F] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
             >
               + Contrat emprunteur
             </button>
@@ -126,7 +126,7 @@ export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: 
       </div>
 
       {staff && rows.length > 0 && (
-        <div className="flex items-center justify-between rounded-lg border border-line bg-surface px-4 py-3">
+        <div className="crm-card flex items-center justify-between px-4 py-3">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
               Commissions générées (cumul)

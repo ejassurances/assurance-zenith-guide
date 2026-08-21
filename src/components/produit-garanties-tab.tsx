@@ -176,7 +176,7 @@ export function ProduitGarantiesTab({
 
   if (!familleCode || !grille) {
     return (
-      <section className="rounded-lg border border-line bg-surface p-5 text-sm text-ink-muted">
+      <section className="crm-card p-5 text-sm text-ink-muted">
         Aucune grille de garanties n'est définie pour cette famille de produits.
       </section>
     );
@@ -243,7 +243,7 @@ export function ProduitGarantiesTab({
   const validee = ligne?.statut === "valide" && ligne.grille_version === grille.version;
 
   return (
-    <section className="space-y-5 rounded-lg border border-line bg-surface p-5">
+    <section className="crm-card space-y-5 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="font-serif text-lg">{titre ?? `Grille de garanties — ${familleNom ?? grille.libelle}`}</h3>
@@ -317,7 +317,7 @@ export function ProduitGarantiesTab({
                     "Proposition générée — à valider.",
                   );
                 }}
-                className="rounded-md bg-ink px-3 py-2 text-sm text-surface disabled:opacity-50"
+                className="rounded-md bg-[#0A192F] px-3 py-2 text-sm text-white disabled:opacity-50"
               >
                 {busy === "analyse"
                   ? "Analyse en cours…"

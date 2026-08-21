@@ -161,7 +161,7 @@ export function ProduitFormulesTab({
   const active = formules.find((f) => f.id === activeId) ?? null;
 
   return (
-    <section className="space-y-4 rounded-lg border border-line bg-surface p-5">
+    <section className="crm-card space-y-4 p-5">
       <div>
         <h3 className="font-serif text-lg">Formules du produit</h3>
         <p className="text-xs text-ink-muted">
@@ -179,7 +179,7 @@ export function ProduitFormulesTab({
             type="button"
             onClick={() => setActiveId(f.id)}
             className={`rounded-full border px-3 py-1.5 text-sm ${
-              f.id === activeId ? "border-ink bg-ink text-surface" : "border-line bg-background"
+              f.id === activeId ? "border-transparent bg-[#D4AF37]/25 font-semibold text-[#0A192F]" : "border-line bg-background"
             } ${f.actif ? "" : "opacity-60"}`}
           >
             {f.nom}
@@ -211,7 +211,7 @@ export function ProduitFormulesTab({
           <button
             type="button"
             onClick={ajouter}
-            className="rounded-md bg-ink px-3 py-2 text-sm text-surface disabled:opacity-50"
+            className="rounded-md bg-[#0A192F] px-3 py-2 text-sm text-white disabled:opacity-50"
             disabled={!nouveau.trim()}
           >
             Ajouter une formule
