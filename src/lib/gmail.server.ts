@@ -179,40 +179,20 @@ export async function listerParLabel(nom: string, maxResults = 100): Promise<Ema
   return details.filter((m): m is GmailMessage => !!m).map((m) => toResume(m, nomsLabels));
 }
 
-export async function listerRattrapage(params?: { maxResults?: number }): Promise<EmailResume[]> {
-
-  const search = new URLSearchParams({
-    q: `label:"${LABEL_PARENT_RATTRAPAGE}"`,
-    maxResults: String(params?.maxResults ?? 15),
-  });
-  const list = await gmailFetch<{ messages?: { id: string }[] }>(`/users/me/messages?${search.toString()}`);
-  const ids = (list.messages ?? []).map((m) => m.id);
-  if (!ids.length) return [];
-
-  const details = await Promise.all(
-    ids.map((id) =>
-      gmailFetch<GmailMessage>(
-        `/users/me/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`,
-      ).catch(() => null),
-    ),
-  );
-  const { labels } = await gmailFetch<{ labels?: { id: string; name: string }[] }>("/users/me/labels").catch(() => ({
-    labels: [] as { id: string; name: string }[],
-  }));
-  const nomsLabels = new Map((labels ?? []).map((l) => [l.id, l.name] as const));
-
-  const prefixe = `${LABEL_PARENT_RATTRAPAGE.toLowerCase()}/`;
-  return details
-    .filter((m): m is GmailMessage => !!m)
-    .map((m) => toResume(m, nomsLabels))
-    .filter((m) => !m.etiquettes.some((n) => n.toLowerCase().startsWith(prefixe)));
+/**
+ * Ancien filet de rattrapage (label parent posé seul) : sans objet depuis le
+ * passage à une arborescence à plat — « Direction Commerciale » EST désormais la
+ * file de travail, lue directement par les agents.
+ */
+export async function listerRattrapage(_params?: { maxResults?: number }): Promise<EmailResume[]> {
+  return [];
 }
 
-/** Retire l'étiquette de rattrapage « Direction Commerciale » d'un message. */
-export async function retirerLabelRattrapage(id: string): Promise<void> {
-  const labelId = await resoudreLabel(LABEL_PARENT_RATTRAPAGE);
-  await modifierLabels(id, { retirer: [labelId] });
+/** Sans objet depuis l'arborescence à plat : ne retire plus aucune étiquette. */
+export async function retirerLabelRattrapage(_id: string): Promise<void> {
+  return;
 }
+
 
 
 function collecterCorps(part: GmailPart | undefined, out: { texte: string[]; html: string[] }) {
