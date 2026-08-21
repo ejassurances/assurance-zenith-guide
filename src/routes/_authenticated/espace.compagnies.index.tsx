@@ -245,6 +245,29 @@ function CompagniesIndex() {
                   </td>
 
                   <td className="px-4 py-3 text-xs">
+                    {(() => {
+                      const g = grilles[c.id];
+                      if (!g || g.total === 0) return <span className="text-ink-muted">Aucun produit</span>;
+                      const complet = g.validees === g.total;
+                      return (
+                        <span
+                          className={
+                            "rounded-full px-2 py-0.5 font-medium " +
+                            (complet
+                              ? "bg-emerald-50 text-emerald-800"
+                              : g.validees === 0
+                                ? "bg-red-50 text-red-800"
+                                : "bg-amber-50 text-amber-800")
+                          }
+                          title="Produits dont la grille de garanties est validée (utilisable par le comparatif)"
+                        >
+                          {g.validees}/{g.total} validées
+                        </span>
+                      );
+                    })()}
+                  </td>
+
+                  <td className="px-4 py-3 text-xs">
                     {c.api_active ? (
                       <span className="rounded-full bg-blue-50 px-2 py-0.5 text-blue-800">Connectée</span>
                     ) : (
