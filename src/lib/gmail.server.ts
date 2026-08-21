@@ -427,10 +427,14 @@ export async function poserLabelCabinet(
   options?: { retirer?: LabelCabinet[]; sortirDeLInbox?: boolean },
 ): Promise<void> {
   const ajouter = await resoudreLabel(LABELS_CABINET[cle]);
-  const retirer = await Promise.all((options?.retirer ?? []).map((c) => resoudreLabel(LABELS_CABINET[c])));
+  const resolus = await Promise.all((options?.retirer ?? []).map((c) => resoudreLabel(LABELS_CABINET[c])));
+  // Arborescence à plat : plusieurs clés pointent vers la même étiquette. On ne
+  // retire jamais celle que l'on pose (Gmail refuse add + remove du même label).
+  const retirer = [...new Set(resolus)].filter((l) => l !== ajouter);
   if (options?.sortirDeLInbox) retirer.push("INBOX");
   await modifierLabels(id, { ajouter: [ajouter], retirer });
 }
+
 
 /**
  * Applique une étiquette Gmail existante, désignée par son nom exact. Le message
