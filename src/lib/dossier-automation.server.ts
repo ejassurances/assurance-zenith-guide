@@ -32,6 +32,7 @@ export interface AutomationInput {
   age?: number | null;
   fumeur?: boolean | null;
   economie_estimee?: number | null;
+  recueil_besoins?: Record<string, unknown> | null;
   pieces_jointes?: PieceJointeEntrante[];
   admin_id?: string | null;
   origin: string;
@@ -69,6 +70,7 @@ export async function creerDossierAutomatique(admin: Admin, input: AutomationInp
       age: input.age ?? null,
       fumeur: input.fumeur ?? null,
       economie_estimee: input.economie_estimee ?? null,
+      recueil_besoins: (input.recueil_besoins ?? null) as never,
       notes: input.notes ?? null,
       cree_automatiquement: true,
       created_by: input.admin_id ?? null,
