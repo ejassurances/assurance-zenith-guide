@@ -287,15 +287,23 @@ export async function aiguillerLot(
       const nomClient = detail.expediteur_nom?.trim() || expediteur;
       const resume = analyse.resume || "une demande dont l'objet est précisé dans le message d'origine";
 
+      // Groupement (Conseillons Ensemble) : renvoi toujours au dirigeant.
+      const { estEmailGroupement, ADRESSE_GROUPEMENT } = await import("@/lib/routage-specifique");
+      const groupement = estEmailGroupement(expediteur);
+      const adresseFinale = groupement ? ADRESSE_GROUPEMENT : adresseCible;
+
       // Expéditeur non client (partenaire, plateforme, robot de notification) :
-      // AUCUN envoi, aucune copie — le mail est seulement réétiqueté.
+      // AUCUN envoi, aucune copie — le mail est seulement réétiqueté. Le
+      // groupement reste renvoyé (au dirigeant), sans copie de l'expéditeur.
       const sansEnvoi =
-        estExpediteurAutomatique(expediteur) || estEmailPartenaire(expediteur, annuairePartenaires);
+        !groupement &&
+        (estExpediteurAutomatique(expediteur) || estEmailPartenaire(expediteur, annuairePartenaires));
 
       if (!sansEnvoi) {
         await envoyerMessage({
-          to: adresseCible,
-          cc: expediteur,
+          to: adresseFinale,
+          ...(groupement ? {} : { cc: expediteur }),
+
           sujet: `${PREFIXE_SUJET} ${detail.sujet ?? m.sujet ?? "(sans objet)"}`.slice(0, 200),
           html: corpsHtml({
             nomClient,
