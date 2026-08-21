@@ -113,7 +113,7 @@ function DossiersList() {
                 <th className="px-4 py-3">Client</th>
                 <th className="px-4 py-3">Type</th>
                 <th className="px-4 py-3">Statut</th>
-                <th className="px-4 py-3">Capital / valeur</th>
+                <th className="px-4 py-3">Prime d'assurances</th>
               </tr>
             </thead>
             <tbody>
