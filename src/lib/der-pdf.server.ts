@@ -85,7 +85,7 @@ export async function genererPdfDer(
     y -= 14;
   };
 
-  const cab = contenu.cabinet;
+  void contenu.cabinet;
   const refDoc = options.reference_dossier
     ? referenceDocument(options.reference_dossier, "DER")
     : `DER-v${contenu.version}`;
