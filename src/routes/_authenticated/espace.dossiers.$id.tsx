@@ -25,13 +25,13 @@ import { DevoirConseilPanel } from "@/components/devoir-conseil-panel";
 import { DevoirConseilRefusAnalysePanel } from "@/components/devoir-conseil-refus-analyse-panel";
 import { SouscriptionPanel } from "@/components/souscription-panel";
 import { CopilotePanel } from "@/components/copilote-panel";
+import { AnalyseRecueilPanel } from "@/components/analyse-recueil-panel";
 import { DossierDevisPanel } from "@/components/dossier-devis-panel";
 import { SimulassurConsole } from "@/components/simulassur-console";
 import { ETAPES, etapeLabel, type EtapeKey } from "@/lib/pipeline-dossier";
 import { CompletudeRings } from "@/components/completude-rings";
 import { useCompletudeDossier } from "@/hooks/use-completude";
 import { SectionNav, type SectionNavItem } from "@/components/section-nav";
-
 
 export const Route = createFileRoute("/_authenticated/espace/dossiers/$id")({
   component: DossierDetail,
@@ -47,6 +47,8 @@ type Dossier = {
   statut: string;
   type_assurance: string;
   recueil_besoins: Record<string, unknown> | null;
+  analyse_ia: Record<string, unknown> | null;
+  analyse_ia_le: string | null;
   capital: number | null;
   duree_mois: number | null;
   age: number | null;
@@ -77,7 +79,10 @@ function CompagnieProduitSection({
 
   const save = async (compagnie: string | null, produit: string | null) => {
     setSaving(true);
-    await supabase.from("dossiers").update({ compagnie_id: compagnie, produit_id: produit }).eq("id", dossier.id);
+    await supabase
+      .from("dossiers")
+      .update({ compagnie_id: compagnie, produit_id: produit })
+      .eq("id", dossier.id);
     setSaving(false);
     onSaved();
   };
@@ -139,7 +144,8 @@ function DossierDetail() {
 
   if (loading) return <p className="text-sm text-ink-muted">Chargement…</p>;
   if (error) return <p className="text-sm text-destructive">{error}</p>;
-  if (!dossier) return <p className="text-sm text-ink-muted">Dossier introuvable ou accès refusé.</p>;
+  if (!dossier)
+    return <p className="text-sm text-ink-muted">Dossier introuvable ou accès refusé.</p>;
 
   const canEdit = role === "admin" || role === "mandataire" || role === "prescripteur";
 
@@ -175,7 +181,11 @@ function DossierDetail() {
       <div className="crm-card p-6">
         <p className="crm-eyebrow">Complétude du dossier</p>
         <div className="mt-4">
-          {completude ? <CompletudeRings items={completude} /> : <p className="text-xs text-ink-muted">Calcul…</p>}
+          {completude ? (
+            <CompletudeRings items={completude} />
+          ) : (
+            <p className="text-xs text-ink-muted">Calcul…</p>
+          )}
         </div>
       </div>
 
@@ -217,7 +227,6 @@ function DossierDetail() {
   );
 }
 
-
 function StageContent({
   step,
   dossier,
@@ -240,7 +249,11 @@ function StageContent({
   const messages = <MessagesPanel dossierId={dossierId} userId={userId} />;
   const pieces = (
     <div id="section-pieces">
-      <PiecesSection dossierId={dossierId} clientEmail={dossier.client_email} canValidate={canEdit} />
+      <PiecesSection
+        dossierId={dossierId}
+        clientEmail={dossier.client_email}
+        canValidate={canEdit}
+      />
     </div>
   );
   const souscription = canEdit ? (
@@ -277,7 +290,9 @@ function StageContent({
               </Row>
               <Row label="Durée">{dossier.duree_mois ? `${dossier.duree_mois} mois` : "—"}</Row>
               <Row label="Économie estimée">
-                {dossier.economie_estimee ? `${Number(dossier.economie_estimee).toLocaleString("fr-FR")} €` : "—"}
+                {dossier.economie_estimee
+                  ? `${Number(dossier.economie_estimee).toLocaleString("fr-FR")} €`
+                  : "—"}
               </Row>
               <Row label="Étape">{etapeLabel(dossier.statut)}</Row>
             </Section>
@@ -295,7 +310,9 @@ function StageContent({
     case "lettre_mission_envoyee":
       content = (
         <>
-          {canEdit && <LettreMissionPanel dossierId={dossierId} clientEmail={dossier.client_email} />}
+          {canEdit && (
+            <LettreMissionPanel dossierId={dossierId} clientEmail={dossier.client_email} />
+          )}
           {documents}
         </>
       );
@@ -303,7 +320,9 @@ function StageContent({
     case "dda_validee":
       content = (
         <>
-          {canEdit && <LettreMissionPanel dossierId={dossierId} clientEmail={dossier.client_email} />}
+          {canEdit && (
+            <LettreMissionPanel dossierId={dossierId} clientEmail={dossier.client_email} />
+          )}
           <CompagnieProduitSection dossier={dossier} canEdit={canEdit} onSaved={onChanged} />
           {documents}
         </>
@@ -379,8 +398,18 @@ function StageContent({
     <section className="space-y-6" aria-label={`Contenu de l'étape ${etapeLabel(step)}`}>
       <div className="flex items-center justify-between border-b border-line pb-3">
         <h2 className="font-serif text-xl font-medium text-ink">{etapeLabel(step)}</h2>
-        {step !== dossier.statut && <span className="text-xs text-ink-muted">Étape précédente</span>}
+        {step !== dossier.statut && (
+          <span className="text-xs text-ink-muted">Étape précédente</span>
+        )}
       </div>
+      {canEdit && (
+        <AnalyseRecueilPanel
+          dossierId={dossierId}
+          analyseInitiale={(dossier.analyse_ia ?? null) as never}
+          analyseLe={dossier.analyse_ia_le}
+          onAnalyse={onChanged}
+        />
+      )}
       {canEdit && <CopilotePanel dossierId={dossierId} />}
       {content}
     </section>
@@ -412,7 +441,11 @@ function PiecesSection({
         return;
       }
       if (clientEmail) {
-        const { data: c } = await supabase.from("clients").select("id").eq("email", clientEmail).maybeSingle();
+        const { data: c } = await supabase
+          .from("clients")
+          .select("id")
+          .eq("email", clientEmail)
+          .maybeSingle();
         setClientId(c?.id ?? null);
       }
     })();
@@ -425,9 +458,20 @@ function PiecesSection({
   );
 }
 
-function Section({ id, title, children }: { id?: string; title: string; children: React.ReactNode }) {
+function Section({
+  id,
+  title,
+  children,
+}: {
+  id?: string;
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div id={id} className="scroll-mt-6 rounded-2xl border border-line bg-surface-elevated p-5 transition-all">
+    <div
+      id={id}
+      className="scroll-mt-6 rounded-2xl border border-line bg-surface-elevated p-5 transition-all"
+    >
       <h2 className="font-serif text-lg font-medium text-ink">{title}</h2>
       <div className="mt-3 space-y-2 text-sm">{children}</div>
     </div>
@@ -465,7 +509,12 @@ function MessagesPanel({ dossierId, userId }: { dossierId: string; userId: strin
       .channel(`msgs-${dossierId}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages", filter: `dossier_id=eq.${dossierId}` },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `dossier_id=eq.${dossierId}`,
+        },
         () => load(),
       )
       .subscribe();
@@ -502,7 +551,11 @@ function MessagesPanel({ dossierId, userId }: { dossierId: string; userId: strin
                 }
               >
                 <p className="whitespace-pre-wrap">{m.contenu}</p>
-                <p className={"mt-1 text-[10px] " + (mine ? "text-primary-foreground/70" : "text-ink-muted")}>
+                <p
+                  className={
+                    "mt-1 text-[10px] " + (mine ? "text-primary-foreground/70" : "text-ink-muted")
+                  }
+                >
                   {new Date(m.created_at).toLocaleString("fr-FR")}
                 </p>
               </div>
@@ -587,7 +640,9 @@ function DocumentsPanel({ dossierId, userId }: { dossierId: string; userId: stri
   };
 
   const download = async (path: string, name: string) => {
-    const { data, error } = await supabase.storage.from("dossier-documents").createSignedUrl(path, 60);
+    const { data, error } = await supabase.storage
+      .from("dossier-documents")
+      .createSignedUrl(path, 60);
     if (error || !data) return;
     const a = document.createElement("a");
     a.href = data.signedUrl;
@@ -608,14 +663,23 @@ function DocumentsPanel({ dossierId, userId }: { dossierId: string; userId: stri
       <div className="flex items-center gap-3">
         <label className="cursor-pointer rounded-full bg-ink px-4 py-2 text-sm font-medium text-primary-foreground">
           {uploading ? "Envoi…" : "Ajouter un document"}
-          <input ref={fileRef} type="file" onChange={onUpload} className="hidden" disabled={uploading} />
+          <input
+            ref={fileRef}
+            type="file"
+            onChange={onUpload}
+            className="hidden"
+            disabled={uploading}
+          />
         </label>
         {error && <span className="text-xs text-destructive">{error}</span>}
       </div>
       <ul className="mt-4 space-y-2">
         {docs.length === 0 && <li className="text-ink-muted">Aucun document.</li>}
         {docs.map((d) => (
-          <li key={d.id} className="flex items-center justify-between rounded-md border border-line bg-background px-3 py-2">
+          <li
+            key={d.id}
+            className="flex items-center justify-between rounded-md border border-line bg-background px-3 py-2"
+          >
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-ink">{d.file_name}</p>
               <p className="text-xs text-ink-muted">
@@ -661,7 +725,10 @@ function BrancheLegacyBanner({
   const reclassifier = async (type: "sante" | "prevoyance") => {
     setBusy(true);
     setError(null);
-    const { error } = await supabase.from("dossiers").update({ type_assurance: type }).eq("id", dossierId);
+    const { error } = await supabase
+      .from("dossiers")
+      .update({ type_assurance: type })
+      .eq("id", dossierId);
     if (error) setError(error.message);
     else onReclassified();
     setBusy(false);
@@ -670,12 +737,12 @@ function BrancheLegacyBanner({
   return (
     <div className="rounded-2xl border border-amber-300 bg-amber-50 p-5">
       <p className="font-serif text-base text-amber-950">
-        Ancienne branche combinée — à reclassifier en Santé ou Prévoyance avant de poursuivre le recueil ou le devoir
-        de conseil
+        Ancienne branche combinée — à reclassifier en Santé ou Prévoyance avant de poursuivre le
+        recueil ou le devoir de conseil
       </p>
       <p className="mt-1 text-sm text-amber-900">
-        Le recueil déjà saisi est conservé tel quel : il restera lisible après reclassification et pourra être
-        complété par le staff dans le nouveau recueil dédié.
+        Le recueil déjà saisi est conservé tel quel : il restera lisible après reclassification et
+        pourra être complété par le staff dans le nouveau recueil dédié.
       </p>
       {canEdit && (
         <div className="mt-3 flex flex-wrap gap-2">
@@ -719,7 +786,8 @@ function RecueilPanel({ dossier }: { dossier: Dossier }) {
                   <span className="text-ink-muted">{f.label}</span>
                   <ul className="mt-1 space-y-0.5">
                     {list.map((p, i) => {
-                      const lien = LIENS_EMPRUNTEUR.find((l) => l.value === p.lien)?.label ?? "Assuré";
+                      const lien =
+                        LIENS_EMPRUNTEUR.find((l) => l.value === p.lien)?.label ?? "Assuré";
                       const age = ageDepuisDateNaissance(p.date_naissance);
                       const csp = CSP_EMPRUNTEUR.find((c) => c.value === p.csp)?.label;
                       return (
@@ -750,10 +818,14 @@ function RecueilPanel({ dossier }: { dossier: Dossier }) {
                     {list.map((p, i) => {
                       const lien = LIENS_ASSURE.find((l) => l.value === p.lien)?.label ?? "Assuré";
                       const age = ageDepuisDateNaissance(p.date_naissance);
-                      const regime = REGIMES_OBLIGATOIRES.find((rg) => rg.value === p.regime)?.label;
+                      const regime = REGIMES_OBLIGATOIRES.find(
+                        (rg) => rg.value === p.regime,
+                      )?.label;
                       return (
                         <li key={i} className="font-medium">
-                          {[lien, age !== null ? `${age} ans` : null, regime].filter(Boolean).join(" · ")}
+                          {[lien, age !== null ? `${age} ans` : null, regime]
+                            .filter(Boolean)
+                            .join(" · ")}
                         </li>
                       );
                     })}
@@ -762,10 +834,15 @@ function RecueilPanel({ dossier }: { dossier: Dossier }) {
               );
             }
             const val =
-              typeof v === "boolean" ? "Oui" : (f.options?.find((o) => o.value === v)?.label ?? String(v));
+              typeof v === "boolean"
+                ? "Oui"
+                : (f.options?.find((o) => o.value === v)?.label ?? String(v));
 
             return (
-              <div key={f.key} className="flex justify-between gap-4 border-b border-line py-1 text-sm">
+              <div
+                key={f.key}
+                className="flex justify-between gap-4 border-b border-line py-1 text-sm"
+              >
                 <span className="text-ink-muted">{f.label}</span>
                 <span className="text-right font-medium">{val}</span>
               </div>
@@ -792,7 +869,13 @@ type LettreRow = {
   email_destinataire: string | null;
 };
 
-function LettreMissionPanel({ dossierId, clientEmail }: { dossierId: string; clientEmail: string | null }) {
+function LettreMissionPanel({
+  dossierId,
+  clientEmail,
+}: {
+  dossierId: string;
+  clientEmail: string | null;
+}) {
   const envoyer = useServerFn(creerEtEnvoyerLettreMission);
   const [lettre, setLettre] = useState<LettreRow | null>(null);
   const [busy, setBusy] = useState(false);
@@ -830,8 +913,8 @@ function LettreMissionPanel({ dossierId, clientEmail }: { dossierId: string; cli
     lettre?.statut === "signee"
       ? "bg-emerald-100 text-emerald-900"
       : lettre?.statut === "envoyee"
-      ? "bg-amber-100 text-amber-900"
-      : "bg-surface text-ink-soft";
+        ? "bg-amber-100 text-amber-900"
+        : "bg-surface text-ink-soft";
 
   return (
     <Section title="Lettre de mission">
@@ -839,12 +922,17 @@ function LettreMissionPanel({ dossierId, clientEmail }: { dossierId: string; cli
         <div className="space-y-1 text-sm">
           <div className="flex items-center gap-2">
             <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${badge}`}>
-              {lettre.statut === "signee" ? "Signée" : lettre.statut === "envoyee" ? "Envoyée · en attente de signature" : lettre.statut}
+              {lettre.statut === "signee"
+                ? "Signée"
+                : lettre.statut === "envoyee"
+                  ? "Envoyée · en attente de signature"
+                  : lettre.statut}
             </span>
           </div>
           {lettre.envoye_le && (
             <p className="text-xs text-ink-muted">
-              Envoyée le {new Date(lettre.envoye_le).toLocaleString("fr-FR")} à {lettre.email_destinataire}
+              Envoyée le {new Date(lettre.envoye_le).toLocaleString("fr-FR")} à{" "}
+              {lettre.email_destinataire}
             </p>
           )}
           {lettre.signed_at && (
@@ -864,10 +952,16 @@ function LettreMissionPanel({ dossierId, clientEmail }: { dossierId: string; cli
             disabled={busy || !clientEmail}
             className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-40"
           >
-            {busy ? "Envoi…" : lettre ? "Renvoyer la lettre de mission" : "Générer et envoyer la lettre de mission"}
+            {busy
+              ? "Envoi…"
+              : lettre
+                ? "Renvoyer la lettre de mission"
+                : "Générer et envoyer la lettre de mission"}
           </button>
           {!clientEmail && (
-            <p className="mt-2 text-xs text-destructive">Renseignez un email client pour pouvoir envoyer.</p>
+            <p className="mt-2 text-xs text-destructive">
+              Renseignez un email client pour pouvoir envoyer.
+            </p>
           )}
           {msg && <p className="mt-2 text-xs text-ink-muted">{msg}</p>}
         </div>

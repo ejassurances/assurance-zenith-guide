@@ -2568,6 +2568,9 @@ export type Database = {
         Row: {
           accuse_reception_envoye_le: string | null
           age: number | null
+          analyse_ia: Json | null
+          analyse_ia_le: string | null
+          analyse_ia_modele: string | null
           apporteur_id: string | null
           capital: number | null
           client_email: string | null
@@ -2599,6 +2602,9 @@ export type Database = {
         Insert: {
           accuse_reception_envoye_le?: string | null
           age?: number | null
+          analyse_ia?: Json | null
+          analyse_ia_le?: string | null
+          analyse_ia_modele?: string | null
           apporteur_id?: string | null
           capital?: number | null
           client_email?: string | null
@@ -2630,6 +2636,9 @@ export type Database = {
         Update: {
           accuse_reception_envoye_le?: string | null
           age?: number | null
+          analyse_ia?: Json | null
+          analyse_ia_le?: string | null
+          analyse_ia_modele?: string | null
           apporteur_id?: string | null
           capital?: number | null
           client_email?: string | null
