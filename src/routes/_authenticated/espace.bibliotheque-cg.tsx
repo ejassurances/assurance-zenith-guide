@@ -147,6 +147,74 @@ function BibliothequeCgPage() {
         <span className="text-xs text-ink-muted">{entrees.length} document(s)</span>
       </div>
 
+      <form
+        onSubmit={(ev) => {
+          ev.preventDefault();
+          void deposer();
+        }}
+        className="space-y-4 rounded-2xl border border-line bg-surface-elevated p-6"
+      >
+        <div>
+          <h2 className="font-serif text-lg text-ink">Ajouter des conditions générales (interne)</h2>
+          <p className="text-xs text-ink-muted">
+            Dépôt par le cabinet, pour le compte d'un client. L'extraction IA reste un brouillon à valider.
+          </p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-4">
+          <label className="block text-sm">
+            <span className="mb-1 block text-xs uppercase tracking-wide text-ink-muted">Compagnie déclarée</span>
+            <input
+              value={newCompagnie}
+              onChange={(e) => setNewCompagnie(e.target.value)}
+              required
+              placeholder="Ex. Cardif"
+              className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="mb-1 block text-xs uppercase tracking-wide text-ink-muted">Branche</span>
+            <select
+              value={newBranche}
+              onChange={(e) => setNewBranche(e.target.value)}
+              className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+            >
+              {BRANCHES.map((b) => (
+                <option key={b.value} value={b.value}>
+                  {b.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-sm">
+            <span className="mb-1 block text-xs uppercase tracking-wide text-ink-muted">Année d'édition</span>
+            <input
+              value={newEdition}
+              onChange={(e) => setNewEdition(e.target.value)}
+              placeholder="Ex. 2024"
+              className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="mb-1 block text-xs uppercase tracking-wide text-ink-muted">Document (PDF)</span>
+            <input
+              type="file"
+              accept="application/pdf,.pdf"
+              onChange={(e) => setNewFichier(e.target.files?.[0] ?? null)}
+              required
+              className="w-full rounded-md border border-line bg-background px-3 py-1.5 text-xs"
+            />
+          </label>
+        </div>
+        <button
+          type="submit"
+          disabled={busy || !newFichier}
+          className="rounded-full bg-accent px-4 py-2 text-xs font-medium text-accent-foreground disabled:opacity-50"
+        >
+          {busy ? "Dépôt en cours…" : "Déposer et analyser"}
+        </button>
+      </form>
+
+
       {message && <p className="text-sm text-ink">{message}</p>}
 
       <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
