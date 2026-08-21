@@ -104,8 +104,10 @@ export const signerDevoirConseil = createServerFn({ method: "POST" })
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { archiverDevoirConseil } = await import("./devoir-conseil-archive.server");
       await archiverDevoirConseil(supabaseAdmin, data.devoir_id, userId);
-    } catch {
-      // la signature reste valide même si l'archivage échoue
+    } catch (e) {
+      // La signature reste valide ; l'échec est tracé et repris par le job
+      // nocturne de reprise des PDF DDA (plus d'échec silencieux).
+      console.error("[dda] archivage devoir de conseil signé échoué", e);
     }
 
     return { ok: true };
@@ -149,8 +151,10 @@ export const refuserDevoirConseil = createServerFn({ method: "POST" })
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { archiverDevoirConseil } = await import("./devoir-conseil-archive.server");
       await archiverDevoirConseil(supabaseAdmin, data.devoir_id, userId);
-    } catch {
-      // le refus reste enregistré même si l'archivage échoue
+    } catch (e) {
+      // Le refus reste enregistré ; l'échec est tracé et repris par le job
+      // nocturne de reprise des PDF DDA.
+      console.error("[dda] archivage devoir de conseil refusé échoué", e);
     }
 
     // Analyse IA du motif de refus (contre-proposition ou clôture en perdu).
