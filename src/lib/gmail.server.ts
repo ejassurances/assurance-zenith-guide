@@ -159,8 +159,10 @@ export const LABEL_PARENT_RATTRAPAGE = "Direction Commerciale";
  */
 /** Messages portant une étiquette donnée (nom exact), métadonnées uniquement. */
 export async function listerParLabel(nom: string, maxResults = 100): Promise<EmailResume[]> {
-  const search = new URLSearchParams({ q: `label:"${nom}"`, maxResults: String(Math.min(maxResults, 200)) });
+  const nomReel = await nomLabelReel(nom);
+  const search = new URLSearchParams({ q: `label:"${nomReel}"`, maxResults: String(Math.min(maxResults, 200)) });
   const list = await gmailFetch<{ messages?: { id: string }[] }>(`/users/me/messages?${search.toString()}`);
+
   const ids = (list.messages ?? []).map((m) => m.id);
   if (!ids.length) return [];
   const details = await Promise.all(
