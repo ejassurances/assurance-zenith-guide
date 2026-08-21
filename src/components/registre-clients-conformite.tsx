@@ -325,11 +325,3 @@ export function RegistreClientsConformite({ isAdmin }: { isAdmin: boolean }) {
   );
 }
 
-function Compteur({ libelle, valeur, alerte }: { libelle: string; valeur: number; alerte?: boolean }) {
-  return (
-    <div className="crm-card p-4">
-      <p className="text-xs uppercase tracking-wide text-ink-muted">{libelle}</p>
-      <p className={`mt-1 font-serif text-2xl ${alerte ? "text-red-700" : "text-ink"}`}>{valeur}</p>
-    </div>
-  );
-}

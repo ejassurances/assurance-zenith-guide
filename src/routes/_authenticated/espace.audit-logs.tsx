@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { PageHeader } from "@/components/page-header";
+import { IconHistory } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/_authenticated/espace/audit-logs")({
   component: AuditLogsPage,
@@ -69,10 +71,12 @@ function AuditLogsPage() {
 
   return (
     <div>
-      <h1 className="font-serif text-3xl font-medium text-ink">Journaux d'audit</h1>
-      <p className="mt-1 text-sm text-ink-muted">
-        Traçabilité des accès et modifications sur les configurations sensibles et fonctions protégées.
-      </p>
+      <PageHeader
+        eyebrow="Conformité"
+        title="Journaux d'audit"
+        description="Traçabilité des accès et modifications sur les configurations sensibles et fonctions protégées."
+        icon={IconHistory}
+      />
 
       <div className="mt-6 flex flex-wrap gap-3">
         <input
@@ -104,7 +108,7 @@ function AuditLogsPage() {
         </select>
       </div>
 
-      <div className="mt-6 overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+      <div className="crm-card mt-6 overflow-x-auto">
         {loading ? (
           <p className="p-4 text-sm text-ink-muted">Chargement…</p>
         ) : filtered.length === 0 ? (

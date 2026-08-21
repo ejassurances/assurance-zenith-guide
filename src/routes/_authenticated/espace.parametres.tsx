@@ -5,6 +5,8 @@ import { validerChangementMotDePasse, enregistrerConsentementsPlateforme } from 
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { PageHeader } from "@/components/page-header";
+import { IconSettings } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/_authenticated/espace/parametres")({
   component: Parametres,
@@ -118,15 +120,15 @@ function Parametres() {
         </div>
       )}
 
-      <div>
-        <h1 className="font-serif text-3xl">Paramètres du compte</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          {user?.email} · {role}
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Mon compte"
+        title="Paramètres du compte"
+        description={`${user?.email ?? ""} · ${role ?? ""}`}
+        icon={IconSettings}
+      />
 
-      <form onSubmit={saveProfile} className="space-y-4 rounded-lg border border-line bg-surface p-5">
-        <h2 className="font-serif text-lg">Profil</h2>
+      <form onSubmit={saveProfile} className="crm-card space-y-4 p-5">
+        <h2 className="crm-eyebrow">Profil</h2>
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-muted">Nom complet</label>
           <input
@@ -155,15 +157,15 @@ function Parametres() {
           <button
             type="submit"
             disabled={savingProfile}
-            className="rounded-md bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+            className="rounded-md bg-[#0A192F] px-5 py-2 text-sm font-medium text-white hover:bg-[#0A192F]/90 disabled:opacity-60"
           >
             {savingProfile ? "Enregistrement…" : "Enregistrer"}
           </button>
         </div>
       </form>
 
-      <form onSubmit={changePassword} className="space-y-4 rounded-lg border border-line bg-surface p-5">
-        <h2 className="font-serif text-lg">Changer de mot de passe</h2>
+      <form onSubmit={changePassword} className="crm-card space-y-4 p-5">
+        <h2 className="crm-eyebrow">Changer de mot de passe</h2>
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-muted">Mot de passe actuel</label>
           <input
@@ -239,7 +241,7 @@ function Parametres() {
           <button
             type="submit"
             disabled={savingPwd || (mustChange && (!okRgpd || !okCgu))}
-            className="rounded-md bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+            className="rounded-md bg-[#0A192F] px-5 py-2 text-sm font-medium text-white hover:bg-[#0A192F]/90 disabled:opacity-60"
           >
             {savingPwd ? "Modification…" : "Modifier le mot de passe"}
           </button>
