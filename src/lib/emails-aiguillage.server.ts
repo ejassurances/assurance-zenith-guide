@@ -325,7 +325,9 @@ export async function aiguillerLot(
           gmail_thread_id: detail.thread_id ?? m.thread_id ?? null,
           direction: "entrant",
           recu_le: detail.date ?? m.date ?? null,
-          notes: `Mal aiguillé (${arrivee.libelle}) — renvoyé à ${cible.adresse}, client en copie`,
+          notes: sansEnvoi
+            ? `Mal aiguillé (${arrivee.libelle}) — réétiqueté vers ${cible.libelle}, aucun mail envoyé (expéditeur non client)`
+            : `Mal aiguillé (${arrivee.libelle}) — renvoyé à ${cible.adresse}, client en copie`,
           triage_ia: JSON.parse(
             JSON.stringify({
               agent: "aiguillage",
