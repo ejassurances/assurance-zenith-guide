@@ -10,6 +10,8 @@ import {
   listerClientsRisqueNonEvalues,
 } from "@/lib/risque-lcbft.functions";
 import { useServerFn } from "@tanstack/react-start";
+import { StatCard } from "@/components/stat-card";
+
 
 /* Registre clients de l'onglet Conformité : vue d'ensemble ACPR (score KYC, risque LCB-FT, vigilance, revues). */
 
