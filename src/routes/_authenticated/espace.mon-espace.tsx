@@ -495,20 +495,9 @@ function MonEspace() {
         </div>
       )}
 
-      <div className="flex gap-1 border-b border-line">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={
-              "-mb-px border-b-2 px-4 py-2 text-sm transition-colors " +
-              (tab === t.key ? "border-ink font-medium text-ink" : "border-transparent text-ink-muted hover:text-ink")
-            }
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <div className="grid gap-6 lg:grid-cols-[1fr_16rem]">
+        <div className="space-y-6">
+
 
       {tab === "projet" && (
         <div className="space-y-6">
