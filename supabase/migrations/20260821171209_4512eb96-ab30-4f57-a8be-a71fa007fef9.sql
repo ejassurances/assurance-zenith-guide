@@ -1,0 +1,1 @@
+UPDATE public.config_labels_gmail SET prefixe = 'Direction Juridique et Conformite' WHERE service_cle IN ('service_reclamation','service_conformite');
