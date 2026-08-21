@@ -210,12 +210,15 @@ function CommissionsPage() {
           </p>
         ) : (
           <div className="overflow-x-auto">
-          <table className="w-full min-w-[860px] text-sm">
+          <table className="w-full min-w-[1120px] text-sm">
             <thead className="border-b border-line bg-background/50 text-left text-xs uppercase tracking-wide text-ink-muted">
               <tr>
                 <th className="px-4 py-3">Origine</th>
                 <th className="px-4 py-3">Montant</th>
                 <th className="px-4 py-3">Statut</th>
+                <th className="px-4 py-3">État d'encaissement</th>
+                <th className="px-4 py-3">Précomptée</th>
+                <th className="px-4 py-3">Provision reprise</th>
                 <th className="px-4 py-3">Versement</th>
                 {role === "admin" && <th className="px-4 py-3">Comptabilité</th>}
               </tr>
