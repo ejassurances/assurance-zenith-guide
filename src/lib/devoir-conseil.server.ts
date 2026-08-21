@@ -401,7 +401,7 @@ export async function genererDevoirConseilAuto(
       ],
       ...(emprunteur
         ? {
-            assiette: "capital_restant_du" as const,
+            assiette,
             capital_assure: typeof d.capital === "number" ? d.capital : null,
             duree_mois: typeof d.duree_mois === "number" ? d.duree_mois : null,
           }
