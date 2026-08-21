@@ -22,14 +22,25 @@ export const Route = createFileRoute("/api/public/analyse-recueil")({
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { analyserRecueilDossier } = await import("@/lib/analyse-recueil.server");
 
-        const { data: dossiers, error } = await supabaseAdmin
-          .from("dossiers")
-          .select("id, reference")
-          .in("statut", ["dda_validee", "en_cours"])
-          .is("analyse_ia", null)
-          .not("recueil_besoins", "is", null)
-          .limit(25);
+        // Rattrapage ciblé possible : { "dossier_id": "..." }
+        let cible: string | null = null;
+        try {
+          const corps = (await request.json()) as { dossier_id?: unknown };
+          if (typeof corps?.dossier_id === "string") cible = corps.dossier_id;
+        } catch {
+          // corps vide : traitement du lot
+        }
+
+        const requete = supabaseAdmin.from("dossiers").select("id, reference");
+        const { data: dossiers, error } = cible
+          ? await requete.eq("id", cible).limit(1)
+          : await requete
+              .in("statut", ["dda_validee", "en_cours"])
+              .is("analyse_ia", null)
+              .not("recueil_besoins", "is", null)
+              .limit(25);
         if (error) return Response.json({ error: error.message }, { status: 500 });
+
 
         const details: { dossier: string; ok: boolean; statut?: string; erreur?: string }[] = [];
         for (const d of dossiers ?? []) {
