@@ -53,6 +53,18 @@ export async function archiverDevoirConseil(
 
   await supabase.from("devoirs_conseil").update({ pdf_path: path }).eq("id", devoirId);
 
+  // Classement direct sur Google Drive (dossier client + registre DDA/ACPR).
+  if (d.client_id) {
+    const { archiverPdfSurDrive } = await import("@/lib/drive-arborescence.server");
+    await archiverPdfSurDrive(supabase, {
+      client_id: d.client_id,
+      sous_dossier: "02_Recueil_et_Conformite",
+      nom_fichier: fileName,
+      pdf,
+      copie_registre_dda: true,
+    });
+  }
+
   // Le document définitif (réponse du client) est rattaché au dossier.
   if ((d.statut === "signe" || d.statut === "refuse") && uploaderId) {
     const { data: deja } = await supabase
