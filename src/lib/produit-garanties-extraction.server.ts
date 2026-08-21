@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   grillePourFamille,
   groupesGrille,
+  libellesChamps,
   type GrilleGaranties,
   type ValeurGarantie,
   type ValeursGrille,
@@ -44,6 +45,7 @@ function consigne(grille: GrilleGaranties, docs: { nom: string; type: string }[]
     })
     .join("\n\n");
 
+  const champs = libellesChamps(grille);
   const liste = docs.map((d, i) => `${i + 1}. ${TYPE_LABEL[d.type] ?? d.type} — ${d.nom}`).join("\n");
 
   return [
@@ -61,13 +63,17 @@ function consigne(grille: GrilleGaranties, docs: { nom: string; type: string }[]
     "- Croise les documents : les conditions générales prévalent sur la fiche produit ou l'IPID en cas de contradiction ; signale la contradiction dans avertissements.",
     "- N'infère jamais : si aucun document ne mentionne explicitement la ligne, réponds \"inconnu\" ; réponds \"non\" seulement lorsqu'un document l'exclut.",
     '- "option" uniquement si la garantie est présentée comme facultative ou en supplément de cotisation.',
-    "- Pour les lignes qui décrivent une modalité et non une garantie (type d'indemnisation, franchise, âges limites, base de calcul, formalités médicales, équivalence CCSF…), mets couverture=\"oui\" si l'information figure au contrat et place la valeur exacte dans plafond (montant/limite), franchise (durée de franchise) ou conditions (texte court : « forfaitaire », « 90 jours », « 65 ans en ITT / 90 ans en décès », « capital restant dû », « questionnaire simplifié, Loi Lemoine si < 200 000 € et fin avant 60 ans », « 11/11 critères CCSF + 4 »).",
+    `- Pour les lignes qui décrivent une modalité et non une garantie, mets couverture="oui" si l'information figure au contrat et place la valeur exacte dans plafond (${champs.plafond}), franchise (${champs.franchise}), delai_carence (${champs.delai_carence}) ou conditions (${champs.conditions}), en texte court et littéral.`,
     "- Renseigne delai_carence quand un délai d'attente ou de carence spécifique s'applique à la ligne.",
     "- Pour chaque ligne, cite un extrait littéral court (champ extrait) issu des documents, en précisant le document si utile ; laisse-le vide si tu réponds \"inconnu\".",
     "- confiance : nombre entre 0 et 1.",
     "",
+    `Grille de lecture propre à la branche « ${grille.libelle} » — n'applique aucune autre trame :`,
+    ...(grille.consignes ?? []).map((c) => `- ${c}`),
+    "",
     "Trame standardisée à remplir :",
     sections,
+
     "",
     "Identifie aussi l'ASSUREUR PORTEUR DU RISQUE : la compagnie d'assurance qui porte réellement",
     "l'engagement (ex. CARDIF, MNCAP, SURAVENIR, AXA France Vie…), et NON le grossiste, le courtier",

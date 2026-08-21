@@ -8,6 +8,7 @@ import {
   COUVERTURE_LABEL,
   grillePourFamille,
   groupesGrille,
+  libellesChamps,
   valeurVide,
   type Couverture,
   type ValeurGarantie,
@@ -104,6 +105,7 @@ function BibliothequeCgPage() {
 
   const courante = useMemo(() => entrees.find((e) => e.id === selection) ?? null, [entrees, selection]);
   const grille = useMemo(() => grillePourFamille(courante?.famille_code ?? null), [courante]);
+  const champs = libellesChamps(grille);
 
   const ouvrir = (e: Entree) => {
     setSelection(e.id);
@@ -411,13 +413,13 @@ function BibliothequeCgPage() {
                           <input
                             value={v.plafond ?? ""}
                             onChange={(e) => majValeur(def.code, { plafond: e.target.value || null })}
-                            placeholder="Plafond / limite"
+                            placeholder={champs.plafond}
                             className="rounded-md border border-line bg-background px-2 py-1 text-sm"
                           />
                           <input
                             value={v.delai_carence ?? ""}
                             onChange={(e) => majValeur(def.code, { delai_carence: e.target.value || null })}
-                            placeholder="Délai de carence"
+                            placeholder={champs.delai_carence}
                             className="rounded-md border border-line bg-background px-2 py-1 text-sm"
                           />
                         </div>
