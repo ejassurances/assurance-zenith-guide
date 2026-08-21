@@ -341,6 +341,9 @@ export async function classerDevisDossier(
         client_id: (di?.client_id as string | null) ?? null,
         created_by: userId,
       });
+    } else if (route === "B") {
+      // Route B : le classement est technique, le rang 1 prime sur le tarif.
+      choisi = top3[0]?.dossier_devis_id ?? null;
     } else {
 
       const tarifes = candidats.filter((d) => d.cotisation_mensuelle != null);
@@ -354,6 +357,7 @@ export async function classerDevisDossier(
       });
       choisi = (tri[0]?.id as string | undefined) ?? null;
     }
+
   }
 
   if (choisi) {
