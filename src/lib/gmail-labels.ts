@@ -7,7 +7,7 @@
  *  - « Direction Commerciale » : tout ce qui concerne les clients, les
  *    partenaires assureurs et le groupement.
  *  - « Direction Financiere » : factures, comptabilité, commissions.
- *  - « Direction Conformite » : toute la conformité du cabinet.
+ *  - « Direction Juridique et Conformite » : toute la conformité et le juridique du cabinet.
  *  - « Archive » : mail traité, plus rien à faire.
  *  - « A_Valider » : mail dont la réponse / le traitement attend la validation
  *    du dirigeant (dernière étiquette du circuit).
