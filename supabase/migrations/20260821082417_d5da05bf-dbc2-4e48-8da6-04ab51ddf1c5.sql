@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.trouver_taux_cabinet(uuid, uuid, uuid, date) FROM anon, authenticated;
