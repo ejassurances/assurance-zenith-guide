@@ -18,6 +18,7 @@ import { Route as EspaceConfidentialiteRouteImport } from './routes/espace.confi
 import { Route as EspaceCguRouteImport } from './routes/espace.cgu'
 import { Route as AuthenticatedEspaceRouteImport } from './routes/_authenticated/espace'
 import { Route as AuthenticatedEspaceIndexRouteImport } from './routes/_authenticated/espace.index'
+import { Route as ApiPublicTmpRegenDcRouteImport } from './routes/api/public/tmp-regen-dc'
 import { Route as ApiPublicTmpPjRouteImport } from './routes/api/public/tmp-pj'
 import { Route as ApiPublicSuiviContratsRouteImport } from './routes/api/public/suivi-contrats'
 import { Route as ApiPublicScanEmailsRouteImport } from './routes/api/public/scan-emails'
@@ -114,6 +115,11 @@ const AuthenticatedEspaceIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const ApiPublicTmpRegenDcRoute = ApiPublicTmpRegenDcRouteImport.update({
+  id: '/api/public/tmp-regen-dc',
+  path: '/api/public/tmp-regen-dc',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicTmpPjRoute = ApiPublicTmpPjRouteImport.update({
   id: '/api/public/tmp-pj',
   path: '/api/public/tmp-pj',
@@ -450,6 +456,7 @@ export interface FileRoutesByFullPath {
   '/api/public/scan-emails': typeof ApiPublicScanEmailsRoute
   '/api/public/suivi-contrats': typeof ApiPublicSuiviContratsRoute
   '/api/public/tmp-pj': typeof ApiPublicTmpPjRoute
+  '/api/public/tmp-regen-dc': typeof ApiPublicTmpRegenDcRoute
   '/espace/': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
@@ -509,6 +516,7 @@ export interface FileRoutesByTo {
   '/api/public/scan-emails': typeof ApiPublicScanEmailsRoute
   '/api/public/suivi-contrats': typeof ApiPublicSuiviContratsRoute
   '/api/public/tmp-pj': typeof ApiPublicTmpPjRoute
+  '/api/public/tmp-regen-dc': typeof ApiPublicTmpRegenDcRoute
   '/espace': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
@@ -571,6 +579,7 @@ export interface FileRoutesById {
   '/api/public/scan-emails': typeof ApiPublicScanEmailsRoute
   '/api/public/suivi-contrats': typeof ApiPublicSuiviContratsRoute
   '/api/public/tmp-pj': typeof ApiPublicTmpPjRoute
+  '/api/public/tmp-regen-dc': typeof ApiPublicTmpRegenDcRoute
   '/_authenticated/espace/': typeof AuthenticatedEspaceIndexRoute
   '/_authenticated/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/_authenticated/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
@@ -633,6 +642,7 @@ export interface FileRouteTypes {
     | '/api/public/scan-emails'
     | '/api/public/suivi-contrats'
     | '/api/public/tmp-pj'
+    | '/api/public/tmp-regen-dc'
     | '/espace/'
     | '/espace/clients/$id'
     | '/espace/compagnies/$id'
@@ -692,6 +702,7 @@ export interface FileRouteTypes {
     | '/api/public/scan-emails'
     | '/api/public/suivi-contrats'
     | '/api/public/tmp-pj'
+    | '/api/public/tmp-regen-dc'
     | '/espace'
     | '/espace/clients/$id'
     | '/espace/compagnies/$id'
@@ -753,6 +764,7 @@ export interface FileRouteTypes {
     | '/api/public/scan-emails'
     | '/api/public/suivi-contrats'
     | '/api/public/tmp-pj'
+    | '/api/public/tmp-regen-dc'
     | '/_authenticated/espace/'
     | '/_authenticated/espace/clients/$id'
     | '/_authenticated/espace/compagnies/$id'
@@ -796,6 +808,7 @@ export interface RootRouteChildren {
   ApiPublicScanEmailsRoute: typeof ApiPublicScanEmailsRoute
   ApiPublicSuiviContratsRoute: typeof ApiPublicSuiviContratsRoute
   ApiPublicTmpPjRoute: typeof ApiPublicTmpPjRoute
+  ApiPublicTmpRegenDcRoute: typeof ApiPublicTmpRegenDcRoute
   ApiPublicWebhooksCrmRoute: typeof ApiPublicWebhooksCrmRoute
   ApiPublicWebhooksNeolianeRoute: typeof ApiPublicWebhooksNeolianeRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -867,6 +880,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/espace/'
       preLoaderRoute: typeof AuthenticatedEspaceIndexRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
+    }
+    '/api/public/tmp-regen-dc': {
+      id: '/api/public/tmp-regen-dc'
+      path: '/api/public/tmp-regen-dc'
+      fullPath: '/api/public/tmp-regen-dc'
+      preLoaderRoute: typeof ApiPublicTmpRegenDcRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/tmp-pj': {
       id: '/api/public/tmp-pj'
@@ -1343,6 +1363,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicScanEmailsRoute: ApiPublicScanEmailsRoute,
   ApiPublicSuiviContratsRoute: ApiPublicSuiviContratsRoute,
   ApiPublicTmpPjRoute: ApiPublicTmpPjRoute,
+  ApiPublicTmpRegenDcRoute: ApiPublicTmpRegenDcRoute,
   ApiPublicWebhooksCrmRoute: ApiPublicWebhooksCrmRoute,
   ApiPublicWebhooksNeolianeRoute: ApiPublicWebhooksNeolianeRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
