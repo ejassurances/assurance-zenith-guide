@@ -31,6 +31,7 @@ import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
 import { Route as ApiPublicFormationsRappelsRouteImport } from './routes/api/public/formations-rappels'
 import { Route as ApiPublicEnvoisPlanifiesRouteImport } from './routes/api/public/envois-planifies'
 import { Route as ApiPublicDevoirsConseilEnvoisRouteImport } from './routes/api/public/devoirs-conseil-envois'
+import { Route as ApiPublicDdaPdfRepairRouteImport } from './routes/api/public/dda-pdf-repair'
 import { Route as ApiPublicCorrigerLabelsPartenairesRouteImport } from './routes/api/public/corriger-labels-partenaires'
 import { Route as ApiPublicControleInterneRappelRouteImport } from './routes/api/public/controle-interne-rappel'
 import { Route as ApiPublicCartographieRisquesRevisionRouteImport } from './routes/api/public/cartographie-risques-revision'
@@ -186,6 +187,11 @@ const ApiPublicDevoirsConseilEnvoisRoute =
     path: '/api/public/devoirs-conseil-envois',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicDdaPdfRepairRoute = ApiPublicDdaPdfRepairRouteImport.update({
+  id: '/api/public/dda-pdf-repair',
+  path: '/api/public/dda-pdf-repair',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCorrigerLabelsPartenairesRoute =
   ApiPublicCorrigerLabelsPartenairesRouteImport.update({
     id: '/api/public/corriger-labels-partenaires',
@@ -429,6 +435,7 @@ export interface FileRoutesByFullPath {
   '/api/public/cartographie-risques-revision': typeof ApiPublicCartographieRisquesRevisionRoute
   '/api/public/controle-interne-rappel': typeof ApiPublicControleInterneRappelRoute
   '/api/public/corriger-labels-partenaires': typeof ApiPublicCorrigerLabelsPartenairesRoute
+  '/api/public/dda-pdf-repair': typeof ApiPublicDdaPdfRepairRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
@@ -487,6 +494,7 @@ export interface FileRoutesByTo {
   '/api/public/cartographie-risques-revision': typeof ApiPublicCartographieRisquesRevisionRoute
   '/api/public/controle-interne-rappel': typeof ApiPublicControleInterneRappelRoute
   '/api/public/corriger-labels-partenaires': typeof ApiPublicCorrigerLabelsPartenairesRoute
+  '/api/public/dda-pdf-repair': typeof ApiPublicDdaPdfRepairRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
@@ -548,6 +556,7 @@ export interface FileRoutesById {
   '/api/public/cartographie-risques-revision': typeof ApiPublicCartographieRisquesRevisionRoute
   '/api/public/controle-interne-rappel': typeof ApiPublicControleInterneRappelRoute
   '/api/public/corriger-labels-partenaires': typeof ApiPublicCorrigerLabelsPartenairesRoute
+  '/api/public/dda-pdf-repair': typeof ApiPublicDdaPdfRepairRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
@@ -609,6 +618,7 @@ export interface FileRouteTypes {
     | '/api/public/cartographie-risques-revision'
     | '/api/public/controle-interne-rappel'
     | '/api/public/corriger-labels-partenaires'
+    | '/api/public/dda-pdf-repair'
     | '/api/public/devoirs-conseil-envois'
     | '/api/public/envois-planifies'
     | '/api/public/formations-rappels'
@@ -667,6 +677,7 @@ export interface FileRouteTypes {
     | '/api/public/cartographie-risques-revision'
     | '/api/public/controle-interne-rappel'
     | '/api/public/corriger-labels-partenaires'
+    | '/api/public/dda-pdf-repair'
     | '/api/public/devoirs-conseil-envois'
     | '/api/public/envois-planifies'
     | '/api/public/formations-rappels'
@@ -727,6 +738,7 @@ export interface FileRouteTypes {
     | '/api/public/cartographie-risques-revision'
     | '/api/public/controle-interne-rappel'
     | '/api/public/corriger-labels-partenaires'
+    | '/api/public/dda-pdf-repair'
     | '/api/public/devoirs-conseil-envois'
     | '/api/public/envois-planifies'
     | '/api/public/formations-rappels'
@@ -770,6 +782,7 @@ export interface RootRouteChildren {
   ApiPublicCartographieRisquesRevisionRoute: typeof ApiPublicCartographieRisquesRevisionRoute
   ApiPublicControleInterneRappelRoute: typeof ApiPublicControleInterneRappelRoute
   ApiPublicCorrigerLabelsPartenairesRoute: typeof ApiPublicCorrigerLabelsPartenairesRoute
+  ApiPublicDdaPdfRepairRoute: typeof ApiPublicDdaPdfRepairRoute
   ApiPublicDevoirsConseilEnvoisRoute: typeof ApiPublicDevoirsConseilEnvoisRoute
   ApiPublicEnvoisPlanifiesRoute: typeof ApiPublicEnvoisPlanifiesRoute
   ApiPublicFormationsRappelsRoute: typeof ApiPublicFormationsRappelsRoute
@@ -944,6 +957,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/devoirs-conseil-envois'
       fullPath: '/api/public/devoirs-conseil-envois'
       preLoaderRoute: typeof ApiPublicDevoirsConseilEnvoisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/dda-pdf-repair': {
+      id: '/api/public/dda-pdf-repair'
+      path: '/api/public/dda-pdf-repair'
+      fullPath: '/api/public/dda-pdf-repair'
+      preLoaderRoute: typeof ApiPublicDdaPdfRepairRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/corriger-labels-partenaires': {
@@ -1307,6 +1327,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicControleInterneRappelRoute: ApiPublicControleInterneRappelRoute,
   ApiPublicCorrigerLabelsPartenairesRoute:
     ApiPublicCorrigerLabelsPartenairesRoute,
+  ApiPublicDdaPdfRepairRoute: ApiPublicDdaPdfRepairRoute,
   ApiPublicDevoirsConseilEnvoisRoute: ApiPublicDevoirsConseilEnvoisRoute,
   ApiPublicEnvoisPlanifiesRoute: ApiPublicEnvoisPlanifiesRoute,
   ApiPublicFormationsRappelsRoute: ApiPublicFormationsRappelsRoute,
