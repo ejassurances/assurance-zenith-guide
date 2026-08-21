@@ -203,6 +203,7 @@ function ClientDetail() {
           conseiller={contexte.conseiller}
         >
           <ScoreRings valeur={scoreValeur ?? 0} />
+          {canEdit && <DriveDossierButton clientId={client.id} />}
           {canEdit && client.email && (
             <AccesEspaceClientButton clientId={client.id} hasAccount={!!client.user_id} />
           )}
