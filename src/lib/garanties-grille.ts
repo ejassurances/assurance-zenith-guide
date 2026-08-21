@@ -27,12 +27,41 @@ export type GarantieDef = {
   groupe?: string;
 };
 
+/** Libellés des colonnes de valeur, adaptés à la grille de lecture de la branche. */
+export type LibellesChamps = {
+  plafond: string;
+  franchise: string;
+  delai_carence: string;
+  conditions: string;
+};
+
+export const LIBELLES_CHAMPS_DEFAUT: LibellesChamps = {
+  plafond: "Plafond",
+  franchise: "Franchise",
+  delai_carence: "Délai de carence",
+  conditions: "Conditions / limites",
+};
+
 export type GrilleGaranties = {
   familleCode: string;
   libelle: string;
   version: number;
   garanties: GarantieDef[];
+  /**
+   * Consignes de lecture propres à la branche, transmises telles quelles à
+   * l'analyse automatique : chaque type de contrat a SA grille de lecture
+   * (une assurance emprunteur ne se lit pas comme une complémentaire santé).
+   */
+  consignes?: string[];
+  /** Libellés des colonnes de valeur pour cette branche. */
+  champs?: Partial<LibellesChamps>;
 };
+
+/** Libellés de colonnes effectifs d'une grille. */
+export function libellesChamps(grille: GrilleGaranties | null | undefined): LibellesChamps {
+  return { ...LIBELLES_CHAMPS_DEFAUT, ...(grille?.champs ?? {}) };
+}
+
 
 export type ValeurGarantie = {
   couverture: Couverture;
@@ -124,39 +153,98 @@ export const GRILLES: GrilleGaranties[] = [
       GS("Limites", "exclusions", "Exclusions et limitations notables", true),
       GS("Limites", "delai_renonciation_resiliation", "Renonciation / résiliation annuelle (Loi Lemoine)"),
     ],
+    champs: {
+      plafond: "Montant / limite (capital, quotité, taux)",
+      franchise: "Franchise (jours)",
+      delai_carence: "Carence / délai d'attente",
+      conditions: "Conditions de mise en jeu / exclusions",
+    },
+    consignes: [
+      "Grille de lecture EMPRUNTEUR : on ne raisonne PAS en postes de soins ni en plafonds de remboursement par acte.",
+      "Pour chaque garantie de base (Décès, PTIA, ITT, IPT, IPP, dos & psy, perte d'emploi) : indique si elle est acquise, en option ou exclue, puis ses conditions de mise en jeu (définition retenue, seuil d'invalidité, obligation d'hospitalisation ou d'intervention chirurgicale pour le dos & psy, profession de référence).",
+      "Traite séparément les options (rachat dos/psy, rachat des exclusions sportives, IP Pro / invalidité professionnelle, perte d'emploi) : couverture = \"option\" et coût ou modalité dans conditions.",
+      "Franchises et délais de carence : renseigne-les garantie par garantie lorsqu'ils diffèrent (ex. ITT 90 jours, dos & psy 180 jours), dans franchise et delai_carence de la ligne concernée.",
+      "N'invente aucun montant : les capitaux, quotités et taux se déduisent du contrat, pas d'un barème générique.",
+    ],
   },
 
   {
     familleCode: "prevoyance",
     libelle: "Prévoyance",
-    version: 1,
+    version: 2,
     garanties: [
-      G("deces", "Capital décès", true),
-      G("iad", "Invalidité absolue et définitive"),
-      G("itt", "Incapacité temporaire de travail"),
-      G("ipt", "Invalidité permanente totale"),
-      G("ipp", "Invalidité permanente partielle"),
-      G("rente_conjoint", "Rente de conjoint"),
-      G("rente_education", "Rente éducation"),
-      G("franchise_itt", "Franchise ITT"),
-      G("exclusions", "Exclusions et limitations notables"),
+      GS("Garanties", "deces", "Capital décès", true),
+      GS("Garanties", "deces_accidentel", "Doublement / capital en cas de décès accidentel"),
+      GS("Garanties", "iad", "Invalidité absolue et définitive (IAD / PTIA)"),
+      GS("Garanties", "itt", "Incapacité temporaire de travail (indemnités journalières)"),
+      GS("Garanties", "ipt", "Invalidité permanente totale"),
+      GS("Garanties", "ipp", "Invalidité permanente partielle"),
+      GS("Garanties", "hospitalisation", "Indemnité d'hospitalisation"),
+      GS("Garanties", "dependance", "Dépendance (rente)"),
+      GS("Garanties", "maladies_redoutees", "Maladies redoutées / graves"),
+      GS("Garanties", "rente_conjoint", "Rente de conjoint"),
+      GS("Garanties", "rente_education", "Rente éducation"),
+      GS("Garanties", "obseques", "Prestation obsèques / assistance funéraire"),
+
+      GS("Prestations", "base_prestation", "Nature de la prestation (capital, rente, indemnité journalière)", true),
+      GS("Prestations", "montant_garanti", "Montants garantis / plafonds de souscription", true),
+      GS("Prestations", "franchise_itt", "Franchise ITT (jours)", true),
+      GS("Prestations", "delai_carence", "Délais d'attente par garantie", true),
+      GS("Prestations", "duree_indemnisation", "Durée maximale d'indemnisation"),
+      GS("Prestations", "revalorisation", "Revalorisation des prestations"),
+
+      GS("Portée", "ages_limites", "Âges limites (adhésion, cessation)", true),
+      GS("Portée", "formalites_medicales", "Formalités médicales / questionnaire de santé", true),
+      GS("Portée", "beneficiaires", "Clause bénéficiaire"),
+      GS("Limites", "professions_sports", "Professions et sports à risque"),
+      GS("Limites", "exclusions", "Exclusions et limitations notables", true),
+    ],
+    champs: {
+      plafond: "Montant garanti / plafond",
+      franchise: "Franchise (jours)",
+      delai_carence: "Délai d'attente",
+      conditions: "Conditions de versement / exclusions",
+    },
+    consignes: [
+      "Grille de lecture PRÉVOYANCE : ce qui compte est la nature de la prestation (capital, rente, indemnité journalière), son montant, les franchises et délais d'attente, les conditions de versement.",
+      "Ne transpose aucune logique santé (pas de taux de remboursement de la Sécurité sociale, pas de poste de soins).",
+      "Renseigne franchise et delai_carence garantie par garantie quand ils diffèrent.",
     ],
   },
   {
     familleCode: "sante",
     libelle: "Complémentaire santé",
-    version: 1,
+    version: 2,
     garanties: [
-      G("hospitalisation", "Hospitalisation", true),
-      G("soins_courants", "Soins courants", true),
-      G("optique", "Optique"),
-      G("dentaire", "Dentaire"),
-      G("aides_auditives", "Aides auditives"),
-      G("medecines_douces", "Médecines douces"),
-      G("assistance", "Assistance"),
-      G("delai_carence", "Délai de carence"),
+      GS("Postes de soins", "hospitalisation", "Hospitalisation (honoraires, chambre particulière, forfait)", true),
+      GS("Postes de soins", "soins_courants", "Soins courants (consultations, analyses, radiologie)", true),
+      GS("Postes de soins", "pharmacie", "Pharmacie et dispositifs médicaux"),
+      GS("Postes de soins", "optique", "Optique (verres, monture, 100 % Santé)"),
+      GS("Postes de soins", "dentaire", "Dentaire (soins, prothèses, orthodontie, 100 % Santé)"),
+      GS("Postes de soins", "aides_auditives", "Aides auditives (100 % Santé)"),
+      GS("Postes de soins", "medecines_douces", "Médecines douces et prévention"),
+      GS("Postes de soins", "cure_maternite", "Cures, maternité et forfaits spécifiques"),
+
+      GS("Modalités", "niveau_remboursement", "Base et taux de remboursement (% BRSS, frais réels, forfaits)", true),
+      GS("Modalités", "plafonds_annuels", "Plafonds annuels et limites par acte", true),
+      GS("Modalités", "delai_carence", "Délais de carence par poste", true),
+      GS("Modalités", "reseau_soins", "Réseau de soins / tiers payant"),
+      GS("Modalités", "assistance", "Assistance et services"),
+      GS("Modalités", "responsable_100_sante", "Contrat responsable et paniers 100 % Santé", true),
+      GS("Modalités", "exclusions", "Exclusions et limitations notables"),
+    ],
+    champs: {
+      plafond: "Plafond / niveau de remboursement",
+      franchise: "Franchise / reste à charge",
+      delai_carence: "Délai de carence",
+      conditions: "Conditions / limites",
+    },
+    consignes: [
+      "Grille de lecture SANTÉ : postes de soins, taux et bases de remboursement (% BRSS, frais réels, forfaits en euros), plafonds annuels, délais de carence, paniers 100 % Santé.",
+      "Reprends les niveaux exactement comme le tableau de garanties les exprime, sans les convertir.",
     ],
   },
+
   {
     familleCode: "auto",
     libelle: "Assurance auto",
@@ -236,7 +324,172 @@ export const GRILLES: GrilleGaranties[] = [
       G("disponibilite", "Disponibilité / conditions de rachat"),
     ],
   },
+  {
+    familleCode: "animaux",
+    libelle: "Assurance chien / chat",
+    version: 1,
+    garanties: [
+      GS("Prises en charge", "maladie", "Frais de maladie", true),
+      GS("Prises en charge", "accident", "Frais d'accident", true),
+      GS("Prises en charge", "chirurgie", "Chirurgie et hospitalisation"),
+      GS("Prises en charge", "medicaments", "Médicaments et analyses"),
+      GS("Prises en charge", "prevention", "Forfait prévention (vaccins, vermifuges, stérilisation)"),
+      GS("Prises en charge", "euthanasie_deces", "Euthanasie / décès"),
+      GS("Prises en charge", "rc_animal", "Responsabilité civile de l'animal"),
+      GS("Prises en charge", "assistance", "Assistance (recherche, garde, rapatriement)"),
+
+      GS("Modalités", "taux_remboursement", "Taux de remboursement des frais vétérinaires", true),
+      GS("Modalités", "plafond_annuel", "Plafond annuel d'indemnisation", true),
+      GS("Modalités", "franchise", "Franchise (fixe ou en pourcentage)", true),
+      GS("Modalités", "delai_carence", "Délais de carence (maladie / accident)", true),
+
+      GS("Limites", "ages_limites", "Âges limites à la souscription et à la résiliation", true),
+      GS("Limites", "races_exclues", "Races, catégories et animaux exclus"),
+      GS("Limites", "affections_hereditaires", "Affections héréditaires, congénitales et préexistantes", true),
+      GS("Limites", "exclusions", "Autres exclusions notables"),
+    ],
+    champs: {
+      plafond: "Plafond / taux de prise en charge",
+      franchise: "Franchise",
+      delai_carence: "Délai de carence",
+      conditions: "Conditions / exclusions",
+    },
+    consignes: [
+      "Grille de lecture ANIMAUX : taux de remboursement des frais vétérinaires, plafond annuel, franchise, délais de carence distincts maladie/accident, âges limites, races et affections exclues.",
+      "N'applique aucune logique de complémentaire santé humaine (pas de BRSS, pas de 100 % Santé).",
+    ],
+  },
+  {
+    familleCode: "gav",
+    libelle: "Garantie des accidents de la vie",
+    version: 1,
+    garanties: [
+      GS("Événements couverts", "accidents_vie_privee", "Accidents de la vie privée", true),
+      GS("Événements couverts", "accidents_medicaux", "Accidents médicaux / aléa thérapeutique"),
+      GS("Événements couverts", "agressions_attentats", "Agressions et attentats"),
+      GS("Événements couverts", "catastrophes", "Catastrophes naturelles et technologiques"),
+      GS("Événements couverts", "deces_accidentel", "Décès accidentel"),
+
+      GS("Indemnisation", "seuil_aipp", "Seuil d'intervention (taux d'AIPP)", true),
+      GS("Indemnisation", "capital_reference", "Capital / plafond d'indemnisation par victime", true),
+      GS("Indemnisation", "prejudices_indemnises", "Préjudices indemnisés (économiques et personnels)", true),
+      GS("Indemnisation", "assistance", "Assistance et aide à domicile"),
+      GS("Indemnisation", "delai_carence", "Délai d'attente"),
+
+      GS("Portée", "beneficiaires", "Assurés couverts (souscripteur, conjoint, enfants)", true),
+      GS("Portée", "ages_limites", "Âges limites"),
+      GS("Limites", "sports_exclus", "Sports et activités exclus"),
+      GS("Limites", "exclusions", "Exclusions notables", true),
+    ],
+    champs: {
+      plafond: "Capital / plafond",
+      franchise: "Seuil d'AIPP / franchise",
+      delai_carence: "Délai d'attente",
+      conditions: "Conditions / exclusions",
+    },
+    consignes: [
+      "Grille de lecture GAV : événements couverts, seuil d'AIPP déclenchant l'indemnisation, capitaux et préjudices indemnisés selon le droit commun, assurés couverts.",
+      "Pas de logique de remboursement de soins.",
+    ],
+  },
+  {
+    familleCode: "pj",
+    libelle: "Protection juridique",
+    version: 1,
+    garanties: [
+      GS("Domaines", "consommation", "Litiges consommation et achats", true),
+      GS("Domaines", "habitation_voisinage", "Habitation, voisinage, immobilier"),
+      GS("Domaines", "travail", "Droit du travail"),
+      GS("Domaines", "administratif_fiscal", "Litiges administratifs et fiscaux"),
+      GS("Domaines", "famille", "Droit de la famille"),
+      GS("Domaines", "penal", "Défense pénale et recours"),
+
+      GS("Prestations", "information_juridique", "Information juridique par téléphone", true),
+      GS("Prestations", "prise_en_charge_honoraires", "Prise en charge des honoraires d'avocat / expertise", true),
+      GS("Prestations", "plafond_par_litige", "Plafond par litige et par année", true),
+      GS("Prestations", "seuil_intervention", "Seuil d'intervention (montant minimal du litige)", true),
+      GS("Prestations", "libre_choix_avocat", "Libre choix de l'avocat"),
+
+      GS("Limites", "delai_carence", "Délai de carence / d'attente", true),
+      GS("Limites", "litiges_anterieurs", "Litiges antérieurs et en cours", true),
+      GS("Limites", "exclusions", "Exclusions notables"),
+    ],
+    champs: {
+      plafond: "Plafond de prise en charge",
+      franchise: "Seuil d'intervention",
+      delai_carence: "Délai de carence",
+      conditions: "Conditions / exclusions",
+    },
+    consignes: [
+      "Grille de lecture PROTECTION JURIDIQUE : domaines de litige couverts, seuil d'intervention, plafonds d'honoraires par litige et par an, libre choix de l'avocat, délais de carence, litiges antérieurs exclus.",
+    ],
+  },
+  {
+    familleCode: "risques_divers",
+    libelle: "Risques divers (soutien financier, décès accidentel, juridique)",
+    version: 1,
+    garanties: [
+      GS("Prestations", "capital_forfaitaire", "Capital ou prestation forfaitaire garantie", true),
+      GS("Prestations", "evenements_couverts", "Événements ouvrant droit à la prestation", true),
+      GS("Prestations", "beneficiaires", "Bénéficiaires de la prestation", true),
+      GS("Prestations", "assistance", "Services et assistance associés"),
+
+      GS("Modalités", "plafonds", "Plafonds et limites de garantie", true),
+      GS("Modalités", "franchise", "Franchise applicable"),
+      GS("Modalités", "delai_carence", "Délai de carence / d'attente", true),
+      GS("Modalités", "duree_garantie", "Durée de la garantie"),
+
+      GS("Limites", "ages_limites", "Âges limites"),
+      GS("Limites", "formalites", "Formalités médicales ou déclaratives"),
+      GS("Limites", "exclusions", "Exclusions notables", true),
+    ],
+    champs: {
+      plafond: "Montant / plafond garanti",
+      franchise: "Franchise",
+      delai_carence: "Délai de carence",
+      conditions: "Conditions / exclusions",
+    },
+    consignes: [
+      "Grille de lecture RISQUES DIVERS : prestation forfaitaire garantie, événements déclencheurs, bénéficiaires, plafonds, délais de carence.",
+      "Aucune logique de remboursement de frais de soins.",
+    ],
+  },
+  {
+    familleCode: "nomade",
+    libelle: "Nomade / expatriés",
+    version: 1,
+    garanties: [
+      GS("Couverture", "frais_medicaux_etranger", "Frais médicaux à l'étranger", true),
+      GS("Couverture", "hospitalisation", "Hospitalisation à l'étranger", true),
+      GS("Couverture", "rapatriement", "Rapatriement sanitaire et transport", true),
+      GS("Couverture", "assistance_24h", "Assistance 24h/24 et avance de frais"),
+      GS("Couverture", "responsabilite_civile", "Responsabilité civile à l'étranger"),
+      GS("Couverture", "bagages", "Bagages et effets personnels"),
+      GS("Couverture", "interruption_voyage", "Annulation / interruption de séjour"),
+      GS("Couverture", "capital_deces_invalidite", "Capital décès / invalidité accidentelle"),
+
+      GS("Modalités", "plafonds", "Plafonds par garantie", true),
+      GS("Modalités", "franchise", "Franchises applicables", true),
+      GS("Modalités", "zones_geographiques", "Zones géographiques couvertes", true),
+      GS("Modalités", "duree_sejour", "Durée maximale de séjour couverte", true),
+      GS("Modalités", "delai_carence", "Délai de carence"),
+
+      GS("Limites", "pays_exclus", "Pays et zones exclus"),
+      GS("Limites", "affections_preexistantes", "Affections préexistantes", true),
+      GS("Limites", "exclusions", "Exclusions notables"),
+    ],
+    champs: {
+      plafond: "Plafond par garantie",
+      franchise: "Franchise",
+      delai_carence: "Délai de carence",
+      conditions: "Conditions / exclusions",
+    },
+    consignes: [
+      "Grille de lecture NOMADE / EXPATRIÉS : zones géographiques et durées de séjour couvertes, plafonds par garantie, rapatriement et assistance, exclusions de pays et d'affections préexistantes.",
+    ],
+  },
 ];
+
 
 /** Grille de référence d'une famille (par code de famille produit). */
 export function grillePourFamille(familleCode: string | null | undefined): GrilleGaranties | null {

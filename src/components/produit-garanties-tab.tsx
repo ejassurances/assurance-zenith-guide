@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   COUVERTURE_LABEL,
   grillePourFamille,
+  libellesChamps,
   groupesGrille,
   valeurVide,
   type Couverture,
@@ -87,6 +88,7 @@ export function ProduitGarantiesTab({
 }) {
   const modeFormule = Boolean(formuleId);
   const grille = useMemo(() => grillePourFamille(familleCode), [familleCode]);
+  const champs = libellesChamps(grille);
   const [valeurs, setValeurs] = useState<ValeursGrille>({});
   const [ligne, setLigne] = useState<Grille | null>(null);
   const [proposition, setProposition] = useState<Proposition | null>(null);
@@ -478,25 +480,25 @@ export function ProduitGarantiesTab({
                   ))}
                 </select>
                 <input
-                  placeholder="Plafond"
+                  placeholder={champs.plafond}
                   value={v.plafond ?? ""}
                   onChange={(e) => setVal(g.code, { plafond: e.target.value || null })}
                   className="rounded-md border border-line bg-background px-2 py-1.5 text-sm"
                 />
                 <input
-                  placeholder="Franchise"
+                  placeholder={champs.franchise}
                   value={v.franchise ?? ""}
                   onChange={(e) => setVal(g.code, { franchise: e.target.value || null })}
                   className="rounded-md border border-line bg-background px-2 py-1.5 text-sm"
                 />
                 <input
-                  placeholder="Délai de carence"
+                  placeholder={champs.delai_carence}
                   value={v.delai_carence ?? ""}
                   onChange={(e) => setVal(g.code, { delai_carence: e.target.value || null })}
                   className="rounded-md border border-line bg-background px-2 py-1.5 text-sm"
                 />
                 <input
-                  placeholder="Conditions / limites"
+                  placeholder={champs.conditions}
                   value={v.conditions ?? ""}
                   onChange={(e) => setVal(g.code, { conditions: e.target.value || null })}
                   className="rounded-md border border-line bg-background px-2 py-1.5 text-sm"
