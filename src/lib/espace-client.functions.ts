@@ -364,6 +364,11 @@ export const demanderNouvelleEtude = createServerFn({ method: "POST" })
       .object({
         type_assurance: z.string().trim().min(2).max(60),
         message: z.string().trim().max(2000).optional().nullable(),
+        recueil_besoins: z.record(z.string(), z.unknown()).optional().nullable(),
+        capital: z.number().finite().nonnegative().optional().nullable(),
+        duree_mois: z.number().int().positive().max(600).optional().nullable(),
+        age: z.number().int().positive().max(120).optional().nullable(),
+        fumeur: z.boolean().optional().nullable(),
       })
       .parse(input),
   )
@@ -383,10 +388,11 @@ export const demanderNouvelleEtude = createServerFn({ method: "POST" })
       telephone: null,
       type_assurance: data.type_assurance,
       notes: data.message ?? "Demande d'étude déposée depuis l'espace client.",
-      capital: null,
-      duree_mois: null,
-      age: null,
-      fumeur: null,
+      recueil_besoins: data.recueil_besoins ?? null,
+      capital: data.capital ?? null,
+      duree_mois: data.duree_mois ?? null,
+      age: data.age ?? null,
+      fumeur: data.fumeur ?? null,
       economie_estimee: null,
       admin_id: adminId,
       origin: "espace-client",
