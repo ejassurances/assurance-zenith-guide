@@ -3212,6 +3212,7 @@ export type Database = {
           fichier_nom: string | null
           fichier_path: string | null
           fournisseur: string
+          fournisseur_id: string | null
           id: string
           montant_ht: number
           montant_ttc: number
@@ -3235,6 +3236,7 @@ export type Database = {
           fichier_nom?: string | null
           fichier_path?: string | null
           fournisseur: string
+          fournisseur_id?: string | null
           id?: string
           montant_ht?: number
           montant_ttc?: number
@@ -3258,6 +3260,7 @@ export type Database = {
           fichier_nom?: string | null
           fichier_path?: string | null
           fournisseur?: string
+          fournisseur_id?: string | null
           id?: string
           montant_ht?: number
           montant_ttc?: number
@@ -3275,6 +3278,13 @@ export type Database = {
             columns: ["ecriture_id"]
             isOneToOne: false
             referencedRelation: "ecritures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_achat_fournisseur_id_fkey"
+            columns: ["fournisseur_id"]
+            isOneToOne: false
+            referencedRelation: "fournisseurs"
             referencedColumns: ["id"]
           },
           {
@@ -3488,6 +3498,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      fournisseurs: {
+        Row: {
+          adresse: string | null
+          categorie: string
+          compte_charge_defaut: string | null
+          contact_nom: string | null
+          contrat_reference: string | null
+          created_at: string
+          created_by: string | null
+          domaines_email: string[]
+          echeance_jours: number | null
+          email: string | null
+          id: string
+          moyen_paiement_habituel: string | null
+          nom: string
+          notes: string | null
+          numero_tva: string | null
+          siret: string | null
+          site_web: string | null
+          slug: string
+          statut: string
+          telephone: string | null
+          updated_at: string
+        }
+        Insert: {
+          adresse?: string | null
+          categorie?: string
+          compte_charge_defaut?: string | null
+          contact_nom?: string | null
+          contrat_reference?: string | null
+          created_at?: string
+          created_by?: string | null
+          domaines_email?: string[]
+          echeance_jours?: number | null
+          email?: string | null
+          id?: string
+          moyen_paiement_habituel?: string | null
+          nom: string
+          notes?: string | null
+          numero_tva?: string | null
+          siret?: string | null
+          site_web?: string | null
+          slug: string
+          statut?: string
+          telephone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          adresse?: string | null
+          categorie?: string
+          compte_charge_defaut?: string | null
+          contact_nom?: string | null
+          contrat_reference?: string | null
+          created_at?: string
+          created_by?: string | null
+          domaines_email?: string[]
+          echeance_jours?: number | null
+          email?: string | null
+          id?: string
+          moyen_paiement_habituel?: string | null
+          nom?: string
+          notes?: string | null
+          numero_tva?: string | null
+          siret?: string | null
+          site_web?: string | null
+          slug?: string
+          statut?: string
+          telephone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       journaux: {
         Row: {
