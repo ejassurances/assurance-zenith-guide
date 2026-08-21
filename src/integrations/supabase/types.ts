@@ -854,6 +854,9 @@ export type Database = {
           csp: string | null
           date_naissance: string | null
           dda_statut: string
+          drive_folder_id: string | null
+          drive_folder_url: string | null
+          drive_sync_le: string | null
           email: string | null
           email2: string | null
           etiquettes: string[] | null
@@ -907,6 +910,9 @@ export type Database = {
           csp?: string | null
           date_naissance?: string | null
           dda_statut?: string
+          drive_folder_id?: string | null
+          drive_folder_url?: string | null
+          drive_sync_le?: string | null
           email?: string | null
           email2?: string | null
           etiquettes?: string[] | null
@@ -960,6 +966,9 @@ export type Database = {
           csp?: string | null
           date_naissance?: string | null
           dda_statut?: string
+          drive_folder_id?: string | null
+          drive_folder_url?: string | null
+          drive_sync_le?: string | null
           email?: string | null
           email2?: string | null
           etiquettes?: string[] | null
