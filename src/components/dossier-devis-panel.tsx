@@ -92,6 +92,10 @@ export function DossierDevisPanel({
   const [classement, setClassement] = useState<Classement | null>(null);
   const [iaEtat, setIaEtat] = useState<"idle" | "classement" | "selection">("idle");
   const [iaMsg, setIaMsg] = useState<string | null>(null);
+  /** Débrayage manuel de la route de recommandation emprunteur (auto / A / B). */
+  const [modeReco, setModeReco] = useState<string>("auto");
+  const [recueilDossier, setRecueilDossier] = useState<Record<string, unknown>>({});
+
   const lancerClassement = useServerFn(classerDevisDossierFn);
   const retenirOffre = useServerFn(retenirDevisDossierFn);
   const creerFixe = useServerFn(creerDevisTarifFixeFn);
