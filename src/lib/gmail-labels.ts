@@ -40,7 +40,7 @@ export const LABELS_CABINET = {
   achat_archive: ARCHIVE,
   commission_a_traiter: DIRECTION_FINANCIERE,
   commission_archive: ARCHIVE,
-  // Direction Conformité : réclamations et veille réglementaire.
+  // Direction Juridique et Conformité : réclamations et veille réglementaire.
   rec_a_traiter: DIRECTION_CONFORMITE,
   rec_attente_validation: A_VALIDER,
   rec_archive: ARCHIVE,
