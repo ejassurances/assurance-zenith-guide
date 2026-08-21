@@ -31,7 +31,8 @@ export async function reparerPdfDdaManquants(): Promise<{
     .eq("statut", "signee");
 
   for (const l of (lettres ?? []) as any[]) {
-    if (l.pdf_storage_path) continue;
+    // PDF absent OU archivage jamais mené à son terme (Drive/webhook/documents).
+    if (l.pdf_storage_path && l.archive_envoye_le) continue;
     const reference = l.contenu?.dossier?.reference ?? null;
     try {
       const res = await archiverLettreMissionSignee(
