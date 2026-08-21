@@ -279,7 +279,6 @@ export async function aiguillerLot(
       const adresseCible = cible?.adresse ?? null;
       if (!cible || !adresseCible || adresseCible === arrivee.adresse) continue;
 
-      const nomClient = detail.expediteur_nom?.trim() || expediteur;
       const resume = analyse.resume || "une demande dont l'objet est précisé dans le message d'origine";
 
       // Groupement (Conseillons Ensemble) : renvoi toujours au dirigeant.
@@ -288,32 +287,34 @@ export async function aiguillerLot(
       const adresseFinale = groupement ? ADRESSE_GROUPEMENT : adresseCible;
 
       // Expéditeur non client (partenaire, plateforme, robot de notification) :
-      // AUCUN envoi, aucune copie — le mail est seulement réétiqueté. Le
-      // groupement reste renvoyé (au dirigeant), sans copie de l'expéditeur.
+      // AUCUN envoi — le mail est seulement réétiqueté. Le groupement reste
+      // renvoyé au dirigeant, sans l'expéditeur en destinataire.
       const sansEnvoi =
         !groupement &&
         (estExpediteurAutomatique(expediteur) || estEmailPartenaire(expediteur, annuairePartenaires));
 
       if (!sansEnvoi) {
+        // Aucun mail de réponse rédigé : simple transfert du message d'origine.
+        // Destinataires = le bon service + l'expéditeur initial.
+        const destinataires = groupement
+          ? adresseFinale
+          : [adresseFinale, expediteur].join(", ");
         await envoyerMessage({
-          to: adresseFinale,
-          ...(groupement ? {} : { cc: expediteur }),
-
+          to: destinataires,
           sujet: `${PREFIXE_SUJET} ${detail.sujet ?? m.sujet ?? "(sans objet)"}`.slice(0, 200),
           html: corpsHtml({
-            nomClient,
-            emailClient: expediteur,
-            resume,
             serviceArrivee: arrivee,
             serviceCible: cible,
             sujet: detail.sujet ?? m.sujet ?? null,
             date: detail.date ?? m.date ?? null,
+            expediteur: `${detail.expediteur_nom ?? ""} <${expediteur}>`.trim(),
             texteOrigine: detail.texte ?? detail.snippet ?? null,
             pieces,
             gmailId: m.id,
           }),
         });
       }
+
 
       // Le mail d'origine quitte la file du service d'arrivée : il est archivé
       // là, et posé en « A_Traiter » du service réellement compétent.
