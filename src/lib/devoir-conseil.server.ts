@@ -102,8 +102,15 @@ export async function garantiesValideesProduit(
 
 /**
  * Comparatif garantie par garantie « contrat actuel du client » vs « offre
- * proposée ». Le contrat actuel n'est cité QUE si sa grille a été validée par un
- * humain dans la bibliothèque des CG clients, et pour la même version de trame.
+ * proposée ».
+ *
+ * SOURCE UNIQUE : les grilles de garanties déjà VALIDÉES par un humain dans le
+ * CRM — `produit_garanties` pour nos produits partenaires, et
+ * `bibliotheque_cg_clients` pour le contrat apporté par le client. Aucun appel
+ * live à un outil externe (Notebook / NotebookLM / IA) n'est effectué ici : le
+ * Notebook reste un outil d'analyse EN AMONT, jamais une source au moment de
+ * produire un document client. Sans grille validée, on renvoie explicitement
+ * « non disponible pour comparaison ».
  */
 export async function comparatifContratActuel(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -114,7 +121,25 @@ export async function comparatifContratActuel(
 ) {
   const cg = (recueil ?? {})["contrat_actuel_cg"] as Record<string, unknown> | undefined;
   const entreeId = typeof cg?.["entree_id"] === "string" ? (cg["entree_id"] as string) : null;
-  if (!entreeId) return null;
+  const compagnieDeclaree =
+    typeof (recueil ?? {})["contrat_actuel_compagnie"] === "string"
+      ? ((recueil ?? {})["contrat_actuel_compagnie"] as string)
+      : null;
+  const contexte = {
+    compagnie_actuelle: compagnieDeclaree,
+    edition_annee: null as string | null,
+    cotisation_actuelle: (recueil ?? {})["contrat_actuel_cotisation"] ?? null,
+    niveau_souhaite: (recueil ?? {})["contrat_actuel_niveau"] ?? null,
+    lignes: [] as never[],
+  };
+  const indisponible = (motif: string) => ({ ...contexte, disponible: false as const, motif });
+
+  if (!entreeId) {
+    if ((recueil ?? {})["contrat_actuel_present"] !== true) return null;
+    return indisponible(
+      "Non disponible pour comparaison : les conditions générales du contrat actuel n'ont pas été remises au cabinet.",
+    );
+  }
 
   const { data } = await supabase
     .from("bibliotheque_cg_clients")
@@ -131,8 +156,20 @@ export async function comparatifContratActuel(
         valide: boolean;
       }
     | null;
-  if (!e || !e.valide || !e.valeurs) return null;
-  if (e.famille_code !== grille.familleCode || e.grille_version !== grille.version) return null;
+  if (!e) return indisponible("Non disponible pour comparaison : document du contrat actuel introuvable.");
+  contexte.compagnie_actuelle = e.compagnie_nom ?? compagnieDeclaree;
+  contexte.edition_annee = e.edition_annee;
+
+  if (!e.valide || !e.valeurs) {
+    return indisponible(
+      "Non disponible pour comparaison : la grille de garanties de ce contrat n'a pas encore été validée par un conseiller du cabinet.",
+    );
+  }
+  if (e.famille_code !== grille.familleCode || e.grille_version !== grille.version) {
+    return indisponible(
+      "Non disponible pour comparaison : la grille validée pour ce contrat ne correspond pas à la trame de garanties en vigueur pour ce risque.",
+    );
+  }
 
   const lignes = grille.garanties.map((g) => {
     const actuel = e.valeurs?.[g.code];
@@ -152,10 +189,12 @@ export async function comparatifContratActuel(
   });
 
   return {
-    compagnie_actuelle: e.compagnie_nom,
+    disponible: true as const,
+    motif: null,
+    compagnie_actuelle: contexte.compagnie_actuelle,
     edition_annee: e.edition_annee,
-    cotisation_actuelle: (recueil ?? {})["contrat_actuel_cotisation"] ?? null,
-    niveau_souhaite: (recueil ?? {})["contrat_actuel_niveau"] ?? null,
+    cotisation_actuelle: contexte.cotisation_actuelle,
+    niveau_souhaite: contexte.niveau_souhaite,
     lignes,
   };
 }
