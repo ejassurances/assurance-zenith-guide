@@ -8,6 +8,8 @@ import { maLettreMissionUrl } from "@/lib/espace-client.functions";
 import { ouvrirPdf } from "@/lib/ouvrir-pdf";
 import { labelForBranche, getBranche } from "@/lib/recueil-besoins-schemas";
 import { SITE } from "@/lib/site";
+import { PageHeader } from "@/components/page-header";
+import { IconFileDescription } from "@tabler/icons-react";
 
 
 export const Route = createFileRoute("/_authenticated/espace/signer-lettre-mission")({
@@ -81,11 +83,13 @@ function SignerLettreMission() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
+      <PageHeader
+        eyebrow="Document réglementaire"
+        title="Lettre de mission"
+        description={`${labelForBranche(lettre.type_assurance)} · Dossier ${c?.dossier?.reference ?? ""} · ${SITE.shortName}`}
+        icon={IconFileDescription}
+      />
       <div>
-        <h1 className="font-serif text-2xl">Lettre de mission</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          {labelForBranche(lettre.type_assurance)} · Dossier {c?.dossier?.reference ?? ""} · {SITE.shortName}
-        </p>
         <button
           onClick={async () => {
             setError(null);
@@ -171,7 +175,7 @@ function SignerLettreMission() {
           <button
             onClick={submit}
             disabled={!accepte || !signature || submitting}
-            className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-40"
+            className="rounded-full bg-[#D4AF37] px-5 py-2 text-sm font-semibold text-[#0A192F] transition-colors hover:bg-[#c8a233] disabled:opacity-40"
           >
             {submitting ? "Signature en cours…" : "Signer électroniquement"}
           </button>

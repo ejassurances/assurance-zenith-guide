@@ -9,6 +9,8 @@ import {
   souscriptionSignerParClient,
 } from "@/lib/neoliane-signature-client.functions";
 import { SITE } from "@/lib/site";
+import { PageHeader } from "@/components/page-header";
+import { IconWritingSign } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/_authenticated/espace/signer-souscription")({
   component: SignerSouscription,
@@ -128,13 +130,12 @@ function SignerSouscription() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
-      <div>
-        <h1 className="font-serif text-2xl">Signature de votre souscription</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          {SITE.shortName} · ORIAS {SITE.orias} — signez votre bulletin d'adhésion et votre mandat de
-          prélèvement pour finaliser votre contrat.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Souscription"
+        title="Signature de votre souscription"
+        description={`${SITE.shortName} · ORIAS ${SITE.orias} — signez votre bulletin d'adhésion et votre mandat de prélèvement pour finaliser votre contrat.`}
+        icon={IconWritingSign}
+      />
 
       {parcours.signature_client_statut === "echec_depot" && (
         <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-4 text-sm">
@@ -221,7 +222,7 @@ function SignerSouscription() {
             submitting || !accepte || signataire.trim().length < 2 || Object.keys(paraphes).length === 0
           }
           onClick={soumettre}
-          className="mt-4 rounded-full bg-ink px-6 py-2 text-sm text-background disabled:opacity-50"
+          className="mt-4 rounded-full bg-[#D4AF37] px-6 py-2 text-sm font-semibold text-[#0A192F] transition-colors hover:bg-[#c8a233] disabled:opacity-50"
         >
           {submitting ? "Signature en cours…" : "Signer et transmettre à l'assureur"}
         </button>
