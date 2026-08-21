@@ -98,15 +98,17 @@ export async function archiverLettreMissionSignee(
   };
 
   // Classement direct sur Google Drive (dossier client + registre DDA/ACPR).
+  let drive = "drive non appelé (client non rattaché)";
   if (lettre.client_id) {
     const { archiverPdfSurDrive } = await import("@/lib/drive-arborescence.server");
-    await archiverPdfSurDrive(supabase, {
+    const res = await archiverPdfSurDrive(supabase, {
       client_id: lettre.client_id,
       sous_dossier: "02_Recueil_et_Conformite",
       nom_fichier: fileName,
       pdf,
       copie_registre_dda: true,
     });
+    drive = res.ok ? "drive ok" : `drive échec : ${res.error}`;
   }
 
   let reponse = "webhook non appelé (client non rattaché)";
@@ -122,8 +124,11 @@ export async function archiverLettreMissionSignee(
 
   await supabase
     .from("lettres_mission")
-    .update({ archive_envoye_le: new Date().toISOString(), archive_reponse: reponse.slice(0, 500) })
+    .update({
+      archive_envoye_le: new Date().toISOString(),
+      archive_reponse: `${drive} — ${reponse}`.slice(0, 500),
+    })
     .eq("id", lettreId);
 
-  return { path, pdf_size: pdf.byteLength, webhook: reponse };
+  return { path, pdf_size: pdf.byteLength, webhook: reponse, drive };
 }
