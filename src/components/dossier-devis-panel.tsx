@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   classerDevisDossierFn,
   retenirDevisDossierFn,
+  retenirDevisManuelFn,
   creerDevisTarifFixeFn,
 } from "@/lib/devis-classement.functions";
 import { neolianeTariferDossier } from "@/lib/neoliane.functions";
@@ -105,6 +106,7 @@ export function DossierDevisPanel({
 
   const lancerClassement = useServerFn(classerDevisDossierFn);
   const retenirOffre = useServerFn(retenirDevisDossierFn);
+  const retenirManuel = useServerFn(retenirDevisManuelFn);
   const creerFixe = useServerFn(creerDevisTarifFixeFn);
 
   /** Produit du dossier en tarification fixe : formules et options à cotisation connue. */
@@ -146,6 +148,11 @@ export function DossierDevisPanel({
   const [moisRestants, setMoisRestants] = useState<number | null>(null);
   const [crdRecueil, setCrdRecueil] = useState<number | null>(null);
 
+  /** Bloc de saisie manuelle : ouvert à la demande depuis l'en-tête du panneau. */
+  const [saisieOuverte, setSaisieOuverte] = useState(false);
+  /** Motif de la saisie manuelle (traçabilité DDA). */
+  const [motifSaisie, setMotifSaisie] = useState<"sans_api" | "retroactif" | "autre">("sans_api");
+
   const [form, setForm] = useState({
     compagnie_id: "",
     produit_id: "",
@@ -159,6 +166,12 @@ export function DossierDevisPanel({
     garanties_resume: "",
     assure_rang: "1",
   });
+
+  const LIBELLE_MOTIF: Record<"sans_api" | "retroactif" | "autre", string> = {
+    sans_api: "compagnie sans API de tarification (devis reçu par e-mail ou extranet)",
+    retroactif: "contrat déjà validé par la compagnie (import rétroactif)",
+    autre: "saisie manuelle par le conseiller",
+  };
 
   /** Têtes assurées issues du recueil des besoins (co-emprunteurs inclus). */
   const [assuresRecueil, setAssuresRecueil] = useState<{ rang: number; label: string }[]>([]);
@@ -351,8 +364,9 @@ export function DossierDevisPanel({
 
 
 
-  const ajouter = async () => {
+  const ajouter = async (retenirDirect = false) => {
     setErr(null);
+    setIaMsg(null);
     if (!form.compagnie_id || !form.produit_id) {
       setErr("Choisissez une compagnie et un produit.");
       return;
@@ -369,24 +383,44 @@ export function DossierDevisPanel({
       : mensuelMoyenDerive != null
         ? Math.round(mensuelMoyenDerive * 100) / 100
         : null;
-    const { error } = await supabase.from("dossier_devis").insert({
-      dossier_id: dossierId,
-      compagnie_id: form.compagnie_id,
-      produit_id: form.produit_id,
-      formule_id: form.formule_id || null,
-      montant_total_saisi: form.montant_total_saisi ? Number(form.montant_total_saisi) : null,
-      type_cotisation: form.type_cotisation || null,
-      cotisation_mensuelle: mensuel,
-      cotisation_min: form.type_cotisation === "CRD" && form.cotisation_min ? Number(form.cotisation_min) : null,
-      cotisation_max: form.type_cotisation === "CRD" && form.cotisation_max ? Number(form.cotisation_max) : null,
-      quotite_pct: form.quotite_pct ? Number(form.quotite_pct) : null,
-      assure_rang: form.assure_rang ? Number(form.assure_rang) : 1,
-      garanties_resume: form.garanties_resume.trim() || null,
-      source: "manuel",
-      saisi_par: userId,
-    });
+    const noteMotif = `Saisie manuelle — ${LIBELLE_MOTIF[motifSaisie]}`;
+    const resume = [form.garanties_resume.trim(), noteMotif].filter(Boolean).join("\n");
+    const { data: cree, error } = await supabase
+      .from("dossier_devis")
+      .insert({
+        dossier_id: dossierId,
+        compagnie_id: form.compagnie_id,
+        produit_id: form.produit_id,
+        formule_id: form.formule_id || null,
+        montant_total_saisi: form.montant_total_saisi ? Number(form.montant_total_saisi) : null,
+        type_cotisation: form.type_cotisation || null,
+        cotisation_mensuelle: mensuel,
+        cotisation_min: form.type_cotisation === "CRD" && form.cotisation_min ? Number(form.cotisation_min) : null,
+        cotisation_max: form.type_cotisation === "CRD" && form.cotisation_max ? Number(form.cotisation_max) : null,
+        quotite_pct: form.quotite_pct ? Number(form.quotite_pct) : null,
+        assure_rang: form.assure_rang ? Number(form.assure_rang) : 1,
+        garanties_resume: resume || null,
+        source: "manuel",
+        saisi_par: userId,
+      })
+      .select("id")
+      .single();
+    if (error) {
+      setSaving(false);
+      return setErr(error.message);
+    }
+    if (retenirDirect) {
+      try {
+        await retenirManuel({ data: { devis_id: (cree as { id: string }).id, motif: LIBELLE_MOTIF[motifSaisie] } });
+        setIaMsg(
+          "Devis enregistré et retenu : compagnie et produit reportés sur le dossier, devoir de conseil créé en brouillon (aucun envoi au client).",
+        );
+      } catch (e) {
+        setSaving(false);
+        return setErr(e instanceof Error ? e.message : "Sélection directe impossible");
+      }
+    }
     setSaving(false);
-    if (error) return setErr(error.message);
     setForm({
       compagnie_id: "",
       produit_id: "",
@@ -576,12 +610,29 @@ export function DossierDevisPanel({
 
   return (
     <div className="rounded-2xl border border-line bg-surface-elevated p-5">
-      <h2 className="font-serif text-lg font-medium text-ink">Devis comparés</h2>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:flex sm:items-center sm:justify-between">
+        <h2 className="min-w-0 font-serif text-lg font-medium text-ink">Devis comparés</h2>
+        {!produitFixe && (
+          <button
+            onClick={() => {
+              setSaisieOuverte(true);
+              setTimeout(() => {
+                document.getElementById("saisie-devis-manuel")?.scrollIntoView({ behavior: "smooth", block: "center" });
+              }, 50);
+            }}
+            className="shrink-0 rounded-full bg-ink px-4 py-2 text-xs text-primary-foreground"
+          >
+            Ajouter un devis manuellement
+          </button>
+        )}
+      </div>
       <p className="mt-1 text-xs text-ink-muted">
         {produitFixe
           ? `Produit à tarification fixe (${produitFixe.nom}) : le devis est repris directement du tarif renseigné sur la fiche produit, sans ressaisie ni classement IA.`
-          : `Saisie manuelle des devis étudiés pour ce dossier${branche ? ` (${branche})` : ""}. Ils alimentent le tableau des offres comparées du devoir de conseil.`}
+          : `Saisie manuelle des devis étudiés pour ce dossier${branche ? ` (${branche})` : ""}. Ils alimentent le tableau des offres comparées du devoir de conseil. La saisie manuelle couvre les compagnies sans API de tarification et les contrats déjà validés par la compagnie (import rétroactif).`}
       </p>
+
+
 
 
       {err && <p className="mt-2 text-sm text-destructive">{err}</p>}
@@ -985,7 +1036,36 @@ export function DossierDevisPanel({
       )}
 
       {!produitFixe && (
-      <div className="mt-4 grid gap-3 border-t border-line pt-4 sm:grid-cols-2">
+      <div
+        id="saisie-devis-manuel"
+        className={`mt-4 grid gap-3 rounded-xl border-t border-line pt-4 sm:grid-cols-2 ${
+          saisieOuverte ? "ring-2 ring-[color:var(--crm-gold)] ring-offset-2 ring-offset-surface-elevated" : ""
+        }`}
+      >
+        <div className="sm:col-span-2">
+          <h3 className="text-sm font-medium text-ink">Saisie manuelle d'un devis</h3>
+          <p className="mt-1 text-xs text-ink-muted">
+            Pour une compagnie sans API de tarification (devis reçu par e-mail ou extranet) ou pour un contrat déjà
+            validé par la compagnie que l'on reprend rétroactivement.
+          </p>
+        </div>
+        <label className="block sm:col-span-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Motif de la saisie manuelle</span>
+          <select
+            value={motifSaisie}
+            onChange={(e) => setMotifSaisie(e.target.value as "sans_api" | "retroactif" | "autre")}
+            className={inp}
+          >
+            <option value="sans_api">Compagnie sans API de tarification — devis reçu par un autre canal</option>
+            <option value="retroactif">Contrat déjà validé par la compagnie — import rétroactif</option>
+            <option value="autre">Autre saisie manuelle</option>
+          </select>
+          <span className="mt-1 block text-xs text-ink-muted">
+            Le motif est journalisé sur le devis (traçabilité DDA).
+            {motifSaisie === "retroactif" &&
+              " Ce motif permet de retenir directement cette offre, sans repasser par le comparatif IA."}
+          </span>
+        </label>
 
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Compagnie</span>
@@ -1169,14 +1249,30 @@ export function DossierDevisPanel({
             className={inp}
           />
         </label>
-        <div className="sm:col-span-2">
+        <div className="flex flex-wrap gap-2 sm:col-span-2">
           <button
-            onClick={ajouter}
+            onClick={() => void ajouter(false)}
             disabled={saving}
             className="rounded-full bg-ink px-4 py-2 text-sm text-primary-foreground disabled:opacity-60"
           >
             {saving ? "Enregistrement…" : "Ajouter ce devis"}
           </button>
+          {motifSaisie === "retroactif" && (
+            <button
+              onClick={() => {
+                if (
+                  confirm(
+                    "Enregistrer ce devis comme offre retenue du dossier et générer le devoir de conseil en brouillon (sans envoi au client) ?",
+                  )
+                )
+                  void ajouter(true);
+              }}
+              disabled={saving}
+              className="rounded-full border border-[color:var(--crm-gold)] bg-[color:var(--crm-gold)]/10 px-4 py-2 text-sm text-ink disabled:opacity-60"
+            >
+              Ajouter et retenir directement cette offre
+            </button>
+          )}
         </div>
       </div>
       )}

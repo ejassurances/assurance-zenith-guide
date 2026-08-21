@@ -45,3 +45,15 @@ export const creerDevisTarifFixeFn = createServerFn({ method: "POST" })
     );
     return { ok: true, ...res };
   });
+
+/** Devis manuel retenu directement (compagnie sans API / contrat déjà validé) : devoir de conseil en brouillon. */
+export const retenirDevisManuelFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ devis_id: z.string().uuid(), motif: z.string().min(3).max(200) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { retenirDevisManuel } = await import("./devis-classement.server");
+    const res = await retenirDevisManuel(context.supabase, data.devis_id, context.userId, data.motif);
+    return { ok: true, ...res };
+  });
