@@ -174,11 +174,15 @@ function CommissionsPage() {
       )}
 
       <p className="mt-6 crm-eyebrow">Toutes périodes confondues</p>
-      <div className="mt-2 grid gap-4 sm:grid-cols-3">
+      <div className="mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard label="Total enregistré" value={`${total.toLocaleString("fr-FR")} €`} />
         <StatCard label="Versées" value={`${verse.toLocaleString("fr-FR")} €`} accent />
         <StatCard label="À venir (bordereaux)" value={`${attente.toLocaleString("fr-FR")} €`} />
+        <StatCard label="Provisions pour reprise" value={`${provisions.toLocaleString("fr-FR")} €`} />
+        <StatCard label="CA réel net de reprises" value={`${caNet.toLocaleString("fr-FR")} €`} accent />
       </div>
+
+      {role === "admin" && <ExportFecCard exercices={exercices} />}
 
       {role === "admin" && aComptabiliser > 0 && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 crm-card p-4">
