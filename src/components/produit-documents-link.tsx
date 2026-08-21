@@ -9,7 +9,9 @@ type ProduitDoc = {
   nom: string;
   version: string | null;
   date_effet: string | null;
-  storage_path: string;
+  storage_path: string | null;
+  /** Lien de consultation Drive (source unique des CGV / IPID). */
+  drive_url: string | null;
   interne: boolean;
 };
 
@@ -37,7 +39,7 @@ export function ProduitDocumentsLink({ produitId, compagnieId }: { produitId: st
     (async () => {
       const { data } = await supabase
         .from("produit_documents")
-        .select("id,type,nom,version,date_effet,storage_path,interne")
+        .select("id,type,nom,version,date_effet,storage_path,drive_url,interne")
         .eq("produit_id", produitId)
         .order("created_at", { ascending: false });
       const all = (data as ProduitDoc[]) ?? [];
@@ -46,6 +48,11 @@ export function ProduitDocumentsLink({ produitId, compagnieId }: { produitId: st
   }, [produitId, isStaff]);
 
   const open = async (d: ProduitDoc) => {
+    if (d.drive_url) {
+      window.open(d.drive_url, "_blank", "noopener");
+      return;
+    }
+    if (!d.storage_path) return;
     const { data } = await supabase.storage.from("produits-documents").createSignedUrl(d.storage_path, 60);
     if (data?.signedUrl) window.open(data.signedUrl, "_blank");
   };

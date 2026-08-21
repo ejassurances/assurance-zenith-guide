@@ -147,9 +147,8 @@ export async function analyserTableauGarantiesFormules(
   const grille = grillePourFamille(familleCode);
   if (!grille) throw new Error("Aucune grille de garanties n'est définie pour cette famille de produits.");
 
-  const { data: blob, error: sErr } = await supabase.storage.from("produits-documents").download(d.storage_path);
-  if (sErr || !blob) throw new Error("Téléchargement du document impossible");
-  const buffer = Buffer.from(await blob.arrayBuffer());
+  const { contenuDocumentProduit } = await import("@/lib/documents-partenaires.server");
+  const buffer = await contenuDocumentProduit(supabase as never, d);
   if (buffer.byteLength === 0) throw new Error("Le document est vide");
   if (buffer.byteLength > TAILLE_MAX_PDF) {
     throw new Error("Document trop volumineux pour l'analyse automatique (12 Mo maximum).");

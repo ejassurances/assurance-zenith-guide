@@ -552,22 +552,28 @@ export const mesDocumentsProduitContrat = createServerFn({ method: "POST" })
 
     const { data: docs } = await supabaseAdmin
       .from("produit_documents")
-      .select("id, type, nom, version, storage_path, interne")
+      .select("id, type, nom, version, storage_path, drive_url, interne")
       .eq("produit_id", c.produit_id)
       .eq("interne", false)
       .order("created_at", { ascending: false });
 
     const liste: { id: string; type: string; nom: string; version: string | null; url: string | null }[] = [];
     for (const d of (docs ?? []) as Record<string, unknown>[]) {
-      const { data: signed } = await supabaseAdmin.storage
-        .from("produits-documents")
-        .createSignedUrl(String(d["storage_path"]), 600);
+      // CGV / IPID : consultation directe sur le Drive du cabinet. Les documents
+      // historiques encore hébergés dans le CRM restent servis par URL signée.
+      let url = (d["drive_url"] as string | null) ?? null;
+      if (!url && d["storage_path"]) {
+        const { data: signed } = await supabaseAdmin.storage
+          .from("produits-documents")
+          .createSignedUrl(String(d["storage_path"]), 600);
+        url = signed?.signedUrl ?? null;
+      }
       liste.push({
         id: String(d["id"]),
         type: String(d["type"] ?? "autre"),
         nom: String(d["nom"] ?? "Document"),
         version: (d["version"] as string | null) ?? null,
-        url: signed?.signedUrl ?? null,
+        url,
       });
     }
     return { documents: liste };

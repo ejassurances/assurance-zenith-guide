@@ -1311,11 +1311,14 @@ export type Database = {
           created_at: string
           date_fin: string | null
           date_signature: string | null
+          drive_chemin: string | null
+          drive_file_id: string | null
+          drive_url: string | null
           id: string
           nom: string
           notes: string | null
           reference: string | null
-          storage_path: string
+          storage_path: string | null
           type: Database["public"]["Enums"]["compagnie_doc_type"]
           updated_at: string
           uploaded_by: string | null
@@ -1325,11 +1328,14 @@ export type Database = {
           created_at?: string
           date_fin?: string | null
           date_signature?: string | null
+          drive_chemin?: string | null
+          drive_file_id?: string | null
+          drive_url?: string | null
           id?: string
           nom: string
           notes?: string | null
           reference?: string | null
-          storage_path: string
+          storage_path?: string | null
           type?: Database["public"]["Enums"]["compagnie_doc_type"]
           updated_at?: string
           uploaded_by?: string | null
@@ -1339,11 +1345,14 @@ export type Database = {
           created_at?: string
           date_fin?: string | null
           date_signature?: string | null
+          drive_chemin?: string | null
+          drive_file_id?: string | null
+          drive_url?: string | null
           id?: string
           nom?: string
           notes?: string | null
           reference?: string | null
-          storage_path?: string
+          storage_path?: string | null
           type?: Database["public"]["Enums"]["compagnie_doc_type"]
           updated_at?: string
           uploaded_by?: string | null
@@ -3643,12 +3652,15 @@ export type Database = {
         Row: {
           created_at: string
           date_effet: string | null
+          drive_chemin: string | null
+          drive_file_id: string | null
+          drive_url: string | null
           id: string
           interne: boolean
           mime_type: string | null
           nom: string
           produit_id: string
-          storage_path: string
+          storage_path: string | null
           taille_bytes: number | null
           type: Database["public"]["Enums"]["produit_document_type"]
           updated_at: string
@@ -3658,12 +3670,15 @@ export type Database = {
         Insert: {
           created_at?: string
           date_effet?: string | null
+          drive_chemin?: string | null
+          drive_file_id?: string | null
+          drive_url?: string | null
           id?: string
           interne?: boolean
           mime_type?: string | null
           nom: string
           produit_id: string
-          storage_path: string
+          storage_path?: string | null
           taille_bytes?: number | null
           type: Database["public"]["Enums"]["produit_document_type"]
           updated_at?: string
@@ -3673,12 +3688,15 @@ export type Database = {
         Update: {
           created_at?: string
           date_effet?: string | null
+          drive_chemin?: string | null
+          drive_file_id?: string | null
+          drive_url?: string | null
           id?: string
           interne?: boolean
           mime_type?: string | null
           nom?: string
           produit_id?: string
-          storage_path?: string
+          storage_path?: string | null
           taille_bytes?: number | null
           type?: Database["public"]["Enums"]["produit_document_type"]
           updated_at?: string

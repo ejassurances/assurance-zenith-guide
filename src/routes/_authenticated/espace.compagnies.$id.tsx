@@ -12,6 +12,8 @@ import { CompagnieTauxCommission } from "@/components/compagnie-taux-commission"
 import { PageHeader } from "@/components/page-header";
 import { SectionNav, type SectionNavItem } from "@/components/section-nav";
 import { IconBuildingBank } from "@tabler/icons-react";
+import { useServerFn } from "@tanstack/react-start";
+import { deposerDocumentProduitDrive } from "@/lib/documents-partenaires.functions";
 
 type CompagnieDocRow = {
   id: string;
@@ -118,7 +120,10 @@ type ProduitDoc = {
   nom: string;
   version: string | null;
   date_effet: string | null;
-  storage_path: string;
+  storage_path: string | null;
+  /** CGV / IPID : le fichier vit sur le Drive du cabinet, le CRM ne garde que le lien. */
+  drive_url: string | null;
+  drive_chemin: string | null;
   interne: boolean;
   created_at: string;
 };
@@ -981,47 +986,66 @@ function DocumentsBlock({
   const [version, setVersion] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const deposerSurDrive = useServerFn(deposerDocumentProduitDrive);
 
+  /**
+   * Règle d'architecture n°2 : le fichier est déposé sur le Drive du cabinet
+   * (04_PARTENAIRES_ET_COMPAGNIES/[Compagnie]/[Branche]) ; le CRM ne conserve
+   * que le lien de consultation.
+   */
   async function upload(e: React.FormEvent) {
     e.preventDefault();
     if (!file) return;
     setUploading(true);
-    const ext = file.name.split(".").pop() ?? "bin";
-    const path = `${produitId}/${typeEffectif}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
-    const { error: upErr } = await supabase.storage.from("produits-documents").upload(path, file, {
-      contentType: file.type || undefined,
-      upsert: false,
-    });
-    if (upErr) {
+    try {
+      const buffer = await file.arrayBuffer();
+      const octets = new Uint8Array(buffer);
+      let binaire = "";
+      for (let i = 0; i < octets.length; i += 0x8000) {
+        binaire += String.fromCharCode(...octets.subarray(i, i + 0x8000));
+      }
+      await deposerSurDrive({
+        data: {
+          produit_id: produitId,
+          type: typeEffectif,
+          nom: file.name,
+          version: version || null,
+          mime_type: file.type || "application/pdf",
+          interne: typeEffectif === "fiche_produit",
+          contenu_base64: btoa(binaire),
+        },
+      });
+      setFile(null);
+      setVersion("");
+      onChange();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Dépôt sur Google Drive impossible");
+    } finally {
       setUploading(false);
-      return alert(upErr.message);
     }
-    const { error: insErr } = await supabase.from("produit_documents").insert({
-      produit_id: produitId,
-      type: typeEffectif,
-      nom: file.name,
-      version: version || null,
-      storage_path: path,
-      taille_bytes: file.size,
-      mime_type: file.type,
-      interne: typeEffectif === "fiche_produit",
-    });
-    setUploading(false);
-    if (insErr) return alert(insErr.message);
-    setFile(null);
-    setVersion("");
-    onChange();
   }
 
   async function download(d: ProduitDoc) {
+    if (d.drive_url) {
+      window.open(d.drive_url, "_blank", "noopener");
+      return;
+    }
+    if (!d.storage_path) return alert("Aucun fichier rattaché à ce document.");
     const { data, error } = await supabase.storage.from("produits-documents").createSignedUrl(d.storage_path, 60);
     if (error || !data) return alert(error?.message ?? "Erreur");
     window.open(data.signedUrl, "_blank");
   }
 
   async function del(d: ProduitDoc) {
-    if (!confirm(`Supprimer ${d.nom} ?`)) return;
-    await supabase.storage.from("produits-documents").remove([d.storage_path]);
+    if (
+      !confirm(
+        d.drive_url
+          ? `Retirer ${d.nom} du catalogue CRM ? Le fichier reste conservé sur le Drive du cabinet.`
+          : `Supprimer ${d.nom} ?`,
+      )
+    )
+      return;
+    if (d.storage_path) await supabase.storage.from("produits-documents").remove([d.storage_path]);
     await supabase.from("produit_documents").delete().eq("id", d.id);
     onChange();
   }
@@ -1032,7 +1056,8 @@ function DocumentsBlock({
         <h3 className="font-serif text-lg">Documents du produit</h3>
         <p className="text-xs text-ink-muted">
           Liste adaptée à la branche : {typesDisponibles.map((t) => DOC_TYPE_LABEL[t]).join(" · ")}. Les fiches produit
-          sont marquées internes.
+          sont marquées internes. Les fichiers sont déposés sur le Drive du cabinet
+          (04_PARTENAIRES_ET_COMPAGNIES/[Compagnie]/[Branche]) — le CRM ne conserve que le lien.
         </p>
       </div>
 
