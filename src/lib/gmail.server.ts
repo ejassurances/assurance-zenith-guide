@@ -454,31 +454,27 @@ export async function etiqueterMessage(
 
 
 /**
- * Files de travail des agents : sous-étiquettes « A_Traiter » de chaque service.
- * Le PREMIER libellé de service est posé MANUELLEMENT par le staff depuis la
- * boîte principale ; les agents ne lisent QUE ces files, jamais l'inbox.
+ * Files de travail des agents : les trois étiquettes de direction. Le libellé de
+ * direction est posé MANUELLEMENT par le staff depuis la boîte principale ; les
+ * agents ne lisent QUE ces files, jamais l'inbox.
  */
 export const FILES_A_TRAITER: readonly LabelCabinet[] = [
-  "gc_a_traiter",
-  "sc_a_traiter",
-  "sp_a_traiter",
-  "achat_a_traiter",
-  "commission_a_traiter",
-  "rec_a_traiter",
-  "veille_a_traiter",
+  "gc_a_traiter", // Direction Commerciale
+  "achat_a_traiter", // Direction Financiere
+  "rec_a_traiter", // Direction Conformite
 ];
 
 /**
- * Messages en attente de traitement : union des sous-étiquettes « A_Traiter »
- * des services. Aucune lecture de la boîte de réception générale.
+ * Messages en attente de traitement : union des étiquettes de direction (noms
+ * dédoublonnés). Aucune lecture de la boîte de réception générale.
  */
 export async function listerFilesATraiter(params?: {
   maxParFile?: number;
 }): Promise<EmailResume[]> {
   const maxParFile = Math.max(1, Math.min(params?.maxParFile ?? 25, 100));
   const parId = new Map<string, EmailResume>();
-  for (const cle of FILES_A_TRAITER) {
-    const nom = LABELS_CABINET[cle];
+  const noms = [...new Set(FILES_A_TRAITER.map((cle) => LABELS_CABINET[cle]))];
+  for (const nom of noms) {
     const messages = await listerParLabel(nom, maxParFile).catch((e) => {
       console.error(`[files-a-traiter] lecture de « ${nom} » impossible`, e);
       return [] as EmailResume[];
@@ -487,6 +483,7 @@ export async function listerFilesATraiter(params?: {
   }
   return [...parId.values()];
 }
+
 
 
 
