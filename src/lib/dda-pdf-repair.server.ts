@@ -27,7 +27,7 @@ export async function reparerPdfDdaManquants(): Promise<{
 
   const { data: lettres } = await supabaseAdmin
     .from("lettres_mission")
-    .select("id, contenu, envoye_par, created_by, pdf_storage_path")
+    .select("id, contenu, envoye_par, created_by, pdf_storage_path, archive_envoye_le")
     .eq("statut", "signee");
 
   for (const l of (lettres ?? []) as any[]) {
