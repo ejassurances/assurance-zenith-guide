@@ -127,11 +127,16 @@ export function RegistreRgpdPanel({ isAdmin }: { isAdmin: boolean }) {
               </p>
             )}
           </div>
-          {isAdmin && (
-            <Button onClick={validerVersion} disabled={validation || loading || lignes.length === 0}>
-              {validation ? "Validation…" : "Valider la version actuelle"}
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={exporterPdf} disabled={exportEnCours || loading}>
+              {exportEnCours ? "Export…" : "Exporter en PDF (Drive)"}
             </Button>
-          )}
+            {isAdmin && (
+              <Button onClick={validerVersion} disabled={validation || loading || lignes.length === 0}>
+                {validation ? "Validation…" : "Valider la version actuelle"}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
