@@ -36,6 +36,7 @@ import { Route as ApiPublicControleInterneRappelRouteImport } from './routes/api
 import { Route as ApiPublicCartographieRisquesRevisionRouteImport } from './routes/api/public/cartographie-risques-revision'
 import { Route as ApiPublicBrevoListesSyncRouteImport } from './routes/api/public/brevo-listes-sync'
 import { Route as ApiPublicBootstrapAdminRouteImport } from './routes/api/public/bootstrap-admin'
+import { Route as ApiPublicAnalyseRecueilRouteImport } from './routes/api/public/analyse-recueil'
 import { Route as AuthenticatedEspaceUtilisateursRouteImport } from './routes/_authenticated/espace.utilisateurs'
 import { Route as AuthenticatedEspaceTachesRouteImport } from './routes/_authenticated/espace.taches'
 import { Route as AuthenticatedEspaceSinistresRouteImport } from './routes/_authenticated/espace.sinistres'
@@ -213,6 +214,11 @@ const ApiPublicBrevoListesSyncRoute =
 const ApiPublicBootstrapAdminRoute = ApiPublicBootstrapAdminRouteImport.update({
   id: '/api/public/bootstrap-admin',
   path: '/api/public/bootstrap-admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicAnalyseRecueilRoute = ApiPublicAnalyseRecueilRouteImport.update({
+  id: '/api/public/analyse-recueil',
+  path: '/api/public/analyse-recueil',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedEspaceUtilisateursRoute =
@@ -425,6 +431,7 @@ export interface FileRoutesByFullPath {
   '/espace/sinistres': typeof AuthenticatedEspaceSinistresRouteWithChildren
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
+  '/api/public/analyse-recueil': typeof ApiPublicAnalyseRecueilRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
   '/api/public/brevo-listes-sync': typeof ApiPublicBrevoListesSyncRoute
   '/api/public/cartographie-risques-revision': typeof ApiPublicCartographieRisquesRevisionRoute
@@ -483,6 +490,7 @@ export interface FileRoutesByTo {
   '/espace/sinistres': typeof AuthenticatedEspaceSinistresRouteWithChildren
   '/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
+  '/api/public/analyse-recueil': typeof ApiPublicAnalyseRecueilRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
   '/api/public/brevo-listes-sync': typeof ApiPublicBrevoListesSyncRoute
   '/api/public/cartographie-risques-revision': typeof ApiPublicCartographieRisquesRevisionRoute
@@ -544,6 +552,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/sinistres': typeof AuthenticatedEspaceSinistresRouteWithChildren
   '/_authenticated/espace/taches': typeof AuthenticatedEspaceTachesRoute
   '/_authenticated/espace/utilisateurs': typeof AuthenticatedEspaceUtilisateursRoute
+  '/api/public/analyse-recueil': typeof ApiPublicAnalyseRecueilRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
   '/api/public/brevo-listes-sync': typeof ApiPublicBrevoListesSyncRoute
   '/api/public/cartographie-risques-revision': typeof ApiPublicCartographieRisquesRevisionRoute
@@ -605,6 +614,7 @@ export interface FileRouteTypes {
     | '/espace/sinistres'
     | '/espace/taches'
     | '/espace/utilisateurs'
+    | '/api/public/analyse-recueil'
     | '/api/public/bootstrap-admin'
     | '/api/public/brevo-listes-sync'
     | '/api/public/cartographie-risques-revision'
@@ -663,6 +673,7 @@ export interface FileRouteTypes {
     | '/espace/sinistres'
     | '/espace/taches'
     | '/espace/utilisateurs'
+    | '/api/public/analyse-recueil'
     | '/api/public/bootstrap-admin'
     | '/api/public/brevo-listes-sync'
     | '/api/public/cartographie-risques-revision'
@@ -723,6 +734,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/sinistres'
     | '/_authenticated/espace/taches'
     | '/_authenticated/espace/utilisateurs'
+    | '/api/public/analyse-recueil'
     | '/api/public/bootstrap-admin'
     | '/api/public/brevo-listes-sync'
     | '/api/public/cartographie-risques-revision'
@@ -765,6 +777,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   EspaceCguRoute: typeof EspaceCguRoute
   EspaceConfidentialiteRoute: typeof EspaceConfidentialiteRoute
+  ApiPublicAnalyseRecueilRoute: typeof ApiPublicAnalyseRecueilRoute
   ApiPublicBootstrapAdminRoute: typeof ApiPublicBootstrapAdminRoute
   ApiPublicBrevoListesSyncRoute: typeof ApiPublicBrevoListesSyncRoute
   ApiPublicCartographieRisquesRevisionRoute: typeof ApiPublicCartographieRisquesRevisionRoute
@@ -979,6 +992,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/bootstrap-admin'
       fullPath: '/api/public/bootstrap-admin'
       preLoaderRoute: typeof ApiPublicBootstrapAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/analyse-recueil': {
+      id: '/api/public/analyse-recueil'
+      path: '/api/public/analyse-recueil'
+      fullPath: '/api/public/analyse-recueil'
+      preLoaderRoute: typeof ApiPublicAnalyseRecueilRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/espace/utilisateurs': {
@@ -1301,6 +1321,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   EspaceCguRoute: EspaceCguRoute,
   EspaceConfidentialiteRoute: EspaceConfidentialiteRoute,
+  ApiPublicAnalyseRecueilRoute: ApiPublicAnalyseRecueilRoute,
   ApiPublicBootstrapAdminRoute: ApiPublicBootstrapAdminRoute,
   ApiPublicBrevoListesSyncRoute: ApiPublicBrevoListesSyncRoute,
   ApiPublicCartographieRisquesRevisionRoute:
