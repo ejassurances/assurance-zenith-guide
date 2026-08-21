@@ -7,7 +7,7 @@
  *  - « Direction Commerciale » : tout ce qui concerne les clients, les
  *    partenaires assureurs et le groupement.
  *  - « Direction Financiere » : factures, comptabilité, commissions.
- *  - « Direction Conformite » : toute la conformité du cabinet.
+ *  - « Direction Juridique et Conformite » : toute la conformité et le juridique du cabinet.
  *  - « Archive » : mail traité, plus rien à faire.
  *  - « A_Valider » : mail dont la réponse / le traitement attend la validation
  *    du dirigeant (dernière étiquette du circuit).
@@ -20,7 +20,7 @@
  */
 const DIRECTION_COMMERCIALE = "Direction Commerciale";
 const DIRECTION_FINANCIERE = "Direction Financiere";
-const DIRECTION_CONFORMITE = "Direction Conformite";
+const DIRECTION_CONFORMITE = "Direction Juridique et Conformite";
 const ARCHIVE = "Archive";
 const A_VALIDER = "A_Valider";
 
@@ -40,7 +40,7 @@ export const LABELS_CABINET = {
   achat_archive: ARCHIVE,
   commission_a_traiter: DIRECTION_FINANCIERE,
   commission_archive: ARCHIVE,
-  // Direction Conformité : réclamations et veille réglementaire.
+  // Direction Juridique et Conformité : réclamations et veille réglementaire.
   rec_a_traiter: DIRECTION_CONFORMITE,
   rec_attente_validation: A_VALIDER,
   rec_archive: ARCHIVE,

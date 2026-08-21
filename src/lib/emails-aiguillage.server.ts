@@ -22,7 +22,7 @@ import {
  *
  * Garde-fous contre les faux positifs :
  *  - confiance IA minimale de 0,8 et service détecté explicitement différent ;
- *  - services sans adresse dédiée (Gestion Commerciale, Service Conformite) :
+ *  - services sans adresse dédiée (Gestion Commerciale, Direction Juridique et Conformite) :
  *    aucun renvoi, le mail reste sur place ;
  *  - adresse cible identique à l'adresse d'arrivée : aucun renvoi ;
  *  - expéditeur interne ou adresse de service : aucun renvoi (anti-boucle) ;

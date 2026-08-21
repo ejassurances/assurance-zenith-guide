@@ -461,7 +461,7 @@ export async function etiqueterMessage(
 export const FILES_A_TRAITER: readonly LabelCabinet[] = [
   "gc_a_traiter", // Direction Commerciale
   "achat_a_traiter", // Direction Financiere
-  "rec_a_traiter", // Direction Conformite
+  "rec_a_traiter", // Direction Juridique et Conformite
 ];
 
 /**

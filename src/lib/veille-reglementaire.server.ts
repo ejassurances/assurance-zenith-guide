@@ -227,7 +227,7 @@ export async function traiterEmailVeille(
   }
 
   // Étiquetage Gmail : toute erreur remonte à l'appelant (jamais avalée).
-  // Service Conformité : A_Traiter à la réception puis Archive (la veille ne
+  // Direction Juridique et Conformité : A_Traiter à la réception puis Archive (la veille ne
   // bloque sur aucune validation). Hors périmètre assurance : label « à ignorer ».
   if (analyse.impact_assurance) {
     await poserLabelCabinet(params.gmail_message_id, "veille_archive", { retirer: ["veille_a_traiter"] });
