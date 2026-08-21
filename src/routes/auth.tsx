@@ -5,6 +5,7 @@ import { SITE } from "@/lib/site";
 import { useServerFn } from "@tanstack/react-start";
 import { autoInscriptionClient } from "@/lib/client-espace.functions";
 import { demanderReinitialisationMotDePasse } from "@/lib/auth-email.functions";
+import { lovable } from "@/integrations/lovable";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -24,6 +25,8 @@ function AuthPage() {
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
 
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
@@ -44,6 +47,28 @@ function AuthPage() {
       if (data.session) navigate({ to: "/espace" });
     });
   }, [navigate]);
+
+  /** Connexion Google Workspace (comptes @ej-assurances.fr en priorité). */
+  const connexionGoogle = async () => {
+    setGoogleError(null);
+    setGoogleLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+        extraParams: { prompt: "select_account" },
+      });
+      if (result.error) {
+        setGoogleError(result.error.message || "Connexion Google impossible.");
+        return;
+      }
+      if (result.redirected) return;
+      navigate({ to: "/espace" });
+    } catch (err) {
+      setGoogleError(err instanceof Error ? err.message : "Connexion Google impossible.");
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
