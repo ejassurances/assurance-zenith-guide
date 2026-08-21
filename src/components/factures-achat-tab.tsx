@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { importerFactureFichier } from "@/lib/factures-achat.functions";
 
+import { dansExerciceComptable, PREMIER_EXERCICE } from "@/lib/exercice";
 type Compte = { numero: string; libelle: string; classe: number };
 type Exercice = { id: string; libelle: string; date_debut: string; date_fin: string; cloture: boolean };
 type Facture = {
