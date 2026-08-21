@@ -228,6 +228,14 @@ export async function aiguillerLot(
   if (!services.length) return out;
   const adresses = adressesServices(services);
 
+  // Annuaire des domaines partenaires : on ne leur écrit jamais de réaiguillage.
+  const { estEmailPartenaire } = await import("@/lib/partenaires-domaines");
+  const { chargerAnnuairePartenaires } = await import("@/lib/partenaires-emails.server");
+  const annuaire = await chargerAnnuairePartenaires(admin);
+  const annuairePartenaires = new Map(
+    [...annuaire.parDomaine.entries()].map(([d, v]) => [d, v.nom] as const),
+  );
+
   const ids = params.messages.map((m) => m.id);
   const { data: dejaVus } = await admin
     .from("crm_emails")
