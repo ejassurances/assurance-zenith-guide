@@ -9,4 +9,9 @@ export const SITE = {
   email: "contact@ej-assurances.fr",
   phone: "01 89 31 40 29",
   address: "71 Rue du Docteur Roux, 95600 Eaubonne",
+  defaultConseiller: {
+    id: "937a8dc4-f8a1-491d-8937-a5e380dd04ce",
+    name: "Erwan JAFFRELOT",
+    email: "erwan.jaffrelot@ej-assurances.fr",
+  },
 } as const;
