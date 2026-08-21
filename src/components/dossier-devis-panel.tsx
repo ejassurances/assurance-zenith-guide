@@ -146,6 +146,11 @@ export function DossierDevisPanel({
   const [moisRestants, setMoisRestants] = useState<number | null>(null);
   const [crdRecueil, setCrdRecueil] = useState<number | null>(null);
 
+  /** Bloc de saisie manuelle : ouvert à la demande depuis l'en-tête du panneau. */
+  const [saisieOuverte, setSaisieOuverte] = useState(false);
+  /** Motif de la saisie manuelle (traçabilité DDA). */
+  const [motifSaisie, setMotifSaisie] = useState<"sans_api" | "retroactif" | "autre">("sans_api");
+
   const [form, setForm] = useState({
     compagnie_id: "",
     produit_id: "",
@@ -159,6 +164,12 @@ export function DossierDevisPanel({
     garanties_resume: "",
     assure_rang: "1",
   });
+
+  const LIBELLE_MOTIF: Record<"sans_api" | "retroactif" | "autre", string> = {
+    sans_api: "compagnie sans API de tarification (devis reçu par e-mail ou extranet)",
+    retroactif: "contrat déjà validé par la compagnie (import rétroactif)",
+    autre: "saisie manuelle par le conseiller",
+  };
 
   /** Têtes assurées issues du recueil des besoins (co-emprunteurs inclus). */
   const [assuresRecueil, setAssuresRecueil] = useState<{ rang: number; label: string }[]>([]);
