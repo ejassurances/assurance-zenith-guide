@@ -29,7 +29,7 @@ function normaliser(valeur: string | null | undefined) {
     .replace(/^_|_$/g, "");
 }
 
-/** CLI-[Année]-[ID]_[NOM]_[Prénom] */
+/** CLI-AAAA-XXXX_[NOM]_[Prénom] (nomenclature officielle du cabinet) */
 export function nomDossierClient(client: {
   id: string;
   reference?: string | null;
@@ -37,13 +37,20 @@ export function nomDossierClient(client: {
   prenom?: string | null;
   created_at?: string | null;
 }) {
-  const annee = new Date(client.created_at ?? Date.now()).getFullYear();
-  const identifiant = normaliser(client.reference) || client.id.slice(0, 8).toUpperCase();
-  const parties = [`CLI-${annee}-${identifiant}`, normaliser(client.nom).toUpperCase()];
+  const reference = (client.reference ?? "").trim().toUpperCase();
+  let identifiant: string;
+  if (/^CLI-\d{4}-\d{4}$/.test(reference)) {
+    identifiant = reference;
+  } else {
+    const annee = new Date(client.created_at ?? Date.now()).getFullYear();
+    identifiant = `CLI-${annee}-${normaliser(reference) || client.id.slice(0, 8).toUpperCase()}`;
+  }
+  const parties = [identifiant, normaliser(client.nom).toUpperCase()];
   const prenom = normaliser(client.prenom);
   if (prenom) parties.push(prenom);
   return parties.filter(Boolean).join("_");
 }
+
 
 /**
  * Crée (ou retrouve) l'arborescence Drive du client et mémorise
