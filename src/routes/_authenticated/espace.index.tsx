@@ -9,7 +9,7 @@ import type { SyntheseAnnee } from "@/lib/commission-previsions";
 import { ScoreRings } from "@/components/score-rings";
 import { useScoresValeur } from "@/hooks/use-scores-valeur";
 import type { NiveauConformite } from "@/lib/conformite-score";
-import { Users, Folder, Building2, Receipt, ShieldCheck, Mail } from "lucide-react";
+import { Users, Folder, Building2, Receipt, ShieldCheck } from "lucide-react";
 import { IconUsers, IconFileDescription, IconFileCheck, IconFileEuro, IconCoins } from "@tabler/icons-react";
 import { StatCard } from "@/components/stat-card";
 
