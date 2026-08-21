@@ -195,7 +195,19 @@ function EspaceLayout() {
               </span>
             </span>
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              setMenuOuvert(false);
+              void signOut();
+            }}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-sm border border-[color:var(--crm-gold)]/40 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--crm-gold)] transition-colors hover:bg-[color:var(--crm-gold)]/10"
+          >
+            <span aria-hidden="true">⏻</span>
+            Se déconnecter
+          </button>
         </div>
+
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
