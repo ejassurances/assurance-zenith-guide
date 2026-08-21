@@ -381,24 +381,44 @@ export function DossierDevisPanel({
       : mensuelMoyenDerive != null
         ? Math.round(mensuelMoyenDerive * 100) / 100
         : null;
-    const { error } = await supabase.from("dossier_devis").insert({
-      dossier_id: dossierId,
-      compagnie_id: form.compagnie_id,
-      produit_id: form.produit_id,
-      formule_id: form.formule_id || null,
-      montant_total_saisi: form.montant_total_saisi ? Number(form.montant_total_saisi) : null,
-      type_cotisation: form.type_cotisation || null,
-      cotisation_mensuelle: mensuel,
-      cotisation_min: form.type_cotisation === "CRD" && form.cotisation_min ? Number(form.cotisation_min) : null,
-      cotisation_max: form.type_cotisation === "CRD" && form.cotisation_max ? Number(form.cotisation_max) : null,
-      quotite_pct: form.quotite_pct ? Number(form.quotite_pct) : null,
-      assure_rang: form.assure_rang ? Number(form.assure_rang) : 1,
-      garanties_resume: form.garanties_resume.trim() || null,
-      source: "manuel",
-      saisi_par: userId,
-    });
+    const noteMotif = `Saisie manuelle — ${LIBELLE_MOTIF[motifSaisie]}`;
+    const resume = [form.garanties_resume.trim(), noteMotif].filter(Boolean).join("\n");
+    const { data: cree, error } = await supabase
+      .from("dossier_devis")
+      .insert({
+        dossier_id: dossierId,
+        compagnie_id: form.compagnie_id,
+        produit_id: form.produit_id,
+        formule_id: form.formule_id || null,
+        montant_total_saisi: form.montant_total_saisi ? Number(form.montant_total_saisi) : null,
+        type_cotisation: form.type_cotisation || null,
+        cotisation_mensuelle: mensuel,
+        cotisation_min: form.type_cotisation === "CRD" && form.cotisation_min ? Number(form.cotisation_min) : null,
+        cotisation_max: form.type_cotisation === "CRD" && form.cotisation_max ? Number(form.cotisation_max) : null,
+        quotite_pct: form.quotite_pct ? Number(form.quotite_pct) : null,
+        assure_rang: form.assure_rang ? Number(form.assure_rang) : 1,
+        garanties_resume: resume || null,
+        source: "manuel",
+        saisi_par: userId,
+      })
+      .select("id")
+      .single();
+    if (error) {
+      setSaving(false);
+      return setErr(error.message);
+    }
+    if (retenirDirect) {
+      try {
+        await retenirManuel({ data: { devis_id: (cree as { id: string }).id, motif: LIBELLE_MOTIF[motifSaisie] } });
+        setIaMsg(
+          "Devis enregistré et retenu : compagnie et produit reportés sur le dossier, devoir de conseil créé en brouillon (aucun envoi au client).",
+        );
+      } catch (e) {
+        setSaving(false);
+        return setErr(e instanceof Error ? e.message : "Sélection directe impossible");
+      }
+    }
     setSaving(false);
-    if (error) return setErr(error.message);
     setForm({
       compagnie_id: "",
       produit_id: "",
