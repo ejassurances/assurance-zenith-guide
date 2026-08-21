@@ -172,13 +172,11 @@ function echapper(v: string): string {
 }
 
 function corpsHtml(params: {
-  nomClient: string;
-  emailClient: string | null;
-  resume: string;
   serviceArrivee: DefinitionService;
   serviceCible: DefinitionService;
   sujet: string | null;
   date: string | null;
+  expediteur: string | null;
   texteOrigine: string | null;
   pieces: string[];
   gmailId: string;
@@ -186,15 +184,12 @@ function corpsHtml(params: {
   const origine = (params.texteOrigine ?? "").slice(0, 8000);
   return [
     "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#111\">",
-    "<p>Bonjour,</p>",
-    `<p>${echapper(params.nomClient)}${
-      params.emailClient ? ` (${echapper(params.emailClient)})` : ""
-    } a écrit pour demander : ${echapper(params.resume)}.</p>`,
-    `<p>Ce message avait été rangé dans « ${echapper(params.serviceArrivee.libelle)} » ; il relève du service « ${echapper(
-      params.serviceCible.libelle,
-    )} » et vous est transféré ici pour traitement. Le client est en copie de ce message afin qu'il sache que sa demande a été redirigée.</p>`,
+    `<p style="color:#555;font-size:13px">Message reçu dans « ${echapper(
+      params.serviceArrivee.libelle,
+    )} », transféré à « ${echapper(params.serviceCible.libelle)} » pour traitement.</p>`,
     "<hr style=\"border:none;border-top:1px solid #ddd;margin:18px 0\" />",
-    "<p style=\"color:#555;font-size:13px\"><strong>Message d'origine (référence)</strong><br />",
+    "<p style=\"color:#555;font-size:13px\"><strong>Message d'origine</strong><br />",
+    `De : ${echapper(params.expediteur ?? "non précisé")}<br />`,
     `Objet : ${echapper(params.sujet ?? "(sans objet)")}<br />`,
     `Date : ${echapper(params.date ?? "non précisée")}<br />`,
     `Pièces jointes : ${echapper(params.pieces.join(", ") || "aucune")}<br />`,
@@ -203,10 +198,10 @@ function corpsHtml(params: {
     `<blockquote style="margin:0;padding:10px 14px;border-left:3px solid #ccc;color:#333;white-space:pre-wrap">${echapper(
       origine,
     )}</blockquote>`,
-    "<p style=\"color:#777;font-size:12px\">Message généré automatiquement par le CRM du cabinet (routage interne, sans conseil).</p>",
     "</div>",
   ].join("\n");
 }
+
 
 /**
  * Renvoie les mails mal aiguillés d'un lot vers l'adresse du bon service.
