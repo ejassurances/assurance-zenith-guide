@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PageHeader } from "@/components/page-header";
+import { IconFileText } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/espace/cgu")({
   head: () => ({
@@ -34,7 +36,12 @@ function Bloc({ titre, children }: { titre: string; children: React.ReactNode })
 function Cgu() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-14">
-      <h1 className="font-serif text-3xl font-medium text-ink">Conditions générales d'utilisation</h1>
+      <PageHeader
+        eyebrow="Espace client"
+        title="Conditions générales d'utilisation"
+        description="Règles d'accès et d'utilisation de votre espace client sécurisé."
+        icon={IconFileText}
+      />
 
       <Bloc titre="Objet">
         <p>
