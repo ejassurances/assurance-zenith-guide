@@ -1,0 +1,3 @@
+UPDATE public.config_labels_gmail SET prefixe = 'Direction Commerciale' WHERE service_cle IN ('gestion_commerciale','service_client','service_partenaire');
+UPDATE public.config_labels_gmail SET prefixe = 'Direction Financiere' WHERE service_cle IN ('service_achat','service_commission');
+UPDATE public.config_labels_gmail SET prefixe = 'Direction Conformite' WHERE service_cle IN ('service_reclamation','service_conformite');
