@@ -15,9 +15,10 @@ import {
  * Renvoi des mails MAL AIGUILLÉS. Le premier libellé de service est posé
  * manuellement par le staff : l'erreur est donc humaine. Quand le contenu du
  * message ne correspond manifestement pas au thème du service dans lequel il a
- * été posé, l'agent renvoie le mail vers l'adresse réelle du bon service, en
- * REFORMULANT la demande (jamais un transfert brut), avec le client d'origine
- * en copie et le mail d'origine cité en référence.
+ * été posé, l'agent transfère le message d'origine (aucun mail de réponse
+ * rédigé) en mettant en destinataires le bon service ET l'expéditeur initial,
+ * afin qu'il sache où sa demande a été redirigée.
+
  *
  * Garde-fous contre les faux positifs :
  *  - confiance IA minimale de 0,8 et service détecté explicitement différent ;
