@@ -160,7 +160,7 @@ export const monEspaceComplement = createServerFn({ method: "POST" })
         supabaseAdmin
           .from("contrats")
           .select(
-            "id, numero, statut, date_effet, date_echeance, prime_annuelle, fractionnement, assureur, produit, compagnies(nom), produits(nom)",
+            "id, numero, statut, date_effet, date_echeance, prime_annuelle, fractionnement, assureur, produit, produit_id, compagnie_id, compagnies(nom), produits(nom)",
           )
           .eq("client_id", client.id)
           .order("date_effet", { ascending: false }),
@@ -254,6 +254,8 @@ export const monEspaceComplement = createServerFn({ method: "POST" })
           fractionnement: (r["fractionnement"] as string | null) ?? null,
           compagnie: comp?.nom ?? (r["assureur"] as string | null) ?? null,
           produit: prod?.nom ?? (r["produit"] as string | null) ?? null,
+          produit_id: (r["produit_id"] as string | null) ?? null,
+          compagnie_id: (r["compagnie_id"] as string | null) ?? null,
         };
       }),
       documents: [...parId.values()].map((d) => ({
@@ -262,6 +264,8 @@ export const monEspaceComplement = createServerFn({ method: "POST" })
         categorie: (d["categorie"] as string | null) ?? null,
         type_document: (d["type_document"] as string | null) ?? null,
         created_at: String(d["created_at"]),
+        dossier_id: (d["dossier_id"] as string | null) ?? null,
+        contrat_id: (d["contrat_id"] as string | null) ?? null,
         dossier_reference: d["dossier_id"] ? (refParDossier.get(String(d["dossier_id"])) ?? null) : null,
       })),
       der: ((der ?? []) as Record<string, unknown>[]).map((d) => {
@@ -458,6 +462,7 @@ export const mesDocumentsDda = createServerFn({ method: "POST" })
         type_assurance: String(l["type_assurance"] ?? ""),
         signed_at: (l["signed_at"] as string | null) ?? null,
         created_at: String(l["created_at"]),
+        dossier_id: (l["dossier_id"] as string | null) ?? null,
         reference: ref(l),
       })),
       devoirs: ((devoirs ?? []) as Record<string, unknown>[]).map((d) => ({
@@ -466,6 +471,7 @@ export const mesDocumentsDda = createServerFn({ method: "POST" })
         statut: String(d["statut"] ?? ""),
         signed_at: (d["signed_at"] as string | null) ?? null,
         created_at: String(d["created_at"]),
+        dossier_id: (d["dossier_id"] as string | null) ?? null,
         reference: ref(d),
       })),
     };
@@ -515,3 +521,46 @@ export const monDevoirConseilUrl = createServerFn({ method: "POST" })
     return { url };
   });
 
+/**
+ * Documents du produit assuré (conditions générales, IPID, tableau de
+ * garanties…) rattachés au contrat du client. Seules les pièces non internes
+ * sont exposées, avec une URL signée de courte durée.
+ */
+export const mesDocumentsProduitContrat = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ contrat_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin, client } = await maFicheClient(context.userId);
+    if (!client) throw new Error("Aucune fiche client rattachée à votre compte.");
+
+    const { data: contrat } = await supabaseAdmin
+      .from("contrats")
+      .select("id, client_id, produit_id")
+      .eq("id", data.contrat_id)
+      .maybeSingle();
+    const c = contrat as { client_id: string | null; produit_id: string | null } | null;
+    if (!c || c.client_id !== client.id) throw new Error("Accès refusé");
+    if (!c.produit_id) return { documents: [] };
+
+    const { data: docs } = await supabaseAdmin
+      .from("produit_documents")
+      .select("id, type, nom, version, storage_path, interne")
+      .eq("produit_id", c.produit_id)
+      .eq("interne", false)
+      .order("created_at", { ascending: false });
+
+    const liste: { id: string; type: string; nom: string; version: string | null; url: string | null }[] = [];
+    for (const d of (docs ?? []) as Record<string, unknown>[]) {
+      const { data: signed } = await supabaseAdmin.storage
+        .from("produits-documents")
+        .createSignedUrl(String(d["storage_path"]), 600);
+      liste.push({
+        id: String(d["id"]),
+        type: String(d["type"] ?? "autre"),
+        nom: String(d["nom"] ?? "Document"),
+        version: (d["version"] as string | null) ?? null,
+        url: signed?.signedUrl ?? null,
+      });
+    }
+    return { documents: liste };
+  });

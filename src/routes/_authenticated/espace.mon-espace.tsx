@@ -20,6 +20,7 @@ import {
 } from "@/lib/espace-client.functions";
 import { ouvrirPdf } from "@/lib/ouvrir-pdf";
 import { ClientPortalHeader } from "@/components/client-portal-header";
+import { EspaceClientContratDocuments } from "@/components/espace-client-contrat-documents";
 import { StatCard } from "@/components/stat-card";
 import { CompletudeRings } from "@/components/completude-rings";
 import { SectionNav, type SectionNavItem } from "@/components/section-nav";
@@ -525,6 +526,95 @@ function MonEspace() {
                 )}
               </div>
               <DossierPipelineClient statut={d.statut} />
+
+              {(() => {
+                const lettres = (dda?.lettres ?? []).filter((l) => l.dossier_id === d.id);
+                const devoirs = (dda?.devoirs ?? []).filter((x) => x.dossier_id === d.id);
+                const docs = (comp?.documents ?? []).filter((x) => x.dossier_id === d.id);
+                const ders = comp?.der ?? [];
+                if (lettres.length === 0 && devoirs.length === 0 && docs.length === 0 && ders.length === 0) return null;
+                return (
+                  <div className="rounded-lg border border-line bg-surface p-5">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                      Documents de ce dossier
+                    </h3>
+                    <ul className="mt-3 space-y-2 text-sm">
+                      {ders.map((x) => (
+                        <li key={x.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-2">
+                          <span>
+                            <strong>Document d'entrée en relation (DER)</strong>
+                            <span className="ml-2 text-xs text-ink-muted">
+                              remis le {jour(x.envoye_le)} ·{" "}
+                              {x.signed_at ? `signé le ${jour(x.signed_at)}` : "signature en attente"}
+                            </span>
+                          </span>
+                          {x.telechargeable ? (
+                            <button
+                              onClick={() => telechargerDer(x.id)}
+                              className="shrink-0 rounded-full border border-line px-3 py-1 text-xs hover:bg-background"
+                            >
+                              Télécharger
+                            </button>
+                          ) : (
+                            <Link to="/espace/signer-der" className="shrink-0 rounded-full border border-line px-3 py-1 text-xs">
+                              Consulter
+                            </Link>
+                          )}
+                        </li>
+                      ))}
+                      {lettres.map((l) => (
+                        <li key={l.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-2">
+                          <span>
+                            <strong>Lettre de mission</strong>
+                            <span className="ml-2 text-xs text-ink-muted">
+                              {l.signed_at ? `signée le ${jour(l.signed_at)}` : "signature en attente"}
+                            </span>
+                          </span>
+                          <button
+                            onClick={() => ouvrirLettreMission(l.id)}
+                            className="shrink-0 rounded-full border border-line px-3 py-1 text-xs hover:bg-background"
+                          >
+                            Ouvrir / imprimer le PDF
+                          </button>
+                        </li>
+                      ))}
+                      {devoirs.map((x) => (
+                        <li key={x.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-2">
+                          <span>
+                            <strong>Devoir de conseil</strong>
+                            <span className="ml-2 text-xs text-ink-muted">
+                              {x.signed_at ? `validé le ${jour(x.signed_at)}` : x.statut}
+                            </span>
+                          </span>
+                          <button
+                            onClick={() => ouvrirDevoirConseil(x.id)}
+                            className="shrink-0 rounded-full border border-line px-3 py-1 text-xs hover:bg-background"
+                          >
+                            Ouvrir / imprimer le PDF
+                          </button>
+                        </li>
+                      ))}
+                      {docs.map((doc) => (
+                        <li key={doc.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-2">
+                          <span className="min-w-0">
+                            <strong>{doc.file_name}</strong>
+                            <span className="ml-2 text-xs text-ink-muted">
+                              {doc.categorie ? `${doc.categorie} · ` : ""}
+                              {jour(doc.created_at)}
+                            </span>
+                          </span>
+                          <button
+                            onClick={() => telechargerDocument(doc.id)}
+                            className="shrink-0 rounded-full border border-line px-3 py-1 text-xs hover:bg-background"
+                          >
+                            Télécharger
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })()}
             </div>
           ))}
         </div>
@@ -556,6 +646,11 @@ function MonEspace() {
                   <Info label="Échéance">{jour(c.date_echeance)}</Info>
                   <Info label="Fractionnement">{c.fractionnement ?? "—"}</Info>
                 </dl>
+                <EspaceClientContratDocuments
+                  contratId={c.id}
+                  documents={(comp?.documents ?? []).filter((d) => d.contrat_id === c.id)}
+                  onTelecharger={telechargerDocument}
+                />
               </div>
             ))
           )}
