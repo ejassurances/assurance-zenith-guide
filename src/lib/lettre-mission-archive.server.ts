@@ -58,17 +58,25 @@ export async function archiverLettreMissionSignee(
 
   await supabase.from("lettres_mission").update({ pdf_storage_path: path }).eq("id", lettreId);
 
-  // Rattachement du document au dossier (onglet Projet)
-  await supabase.from("documents").insert({
-    dossier_id: lettre.dossier_id,
-    client_id: lettre.client_id,
-    uploader_id: uploaderId,
-    storage_path: path,
-    file_name: fileName,
-    file_size: pdf.byteLength,
-    mime_type: "application/pdf",
-    categorie: "dda",
-  });
+  // Rattachement du document au dossier (onglet Projet) — idempotent : la
+  // reprise d'archivage ne doit pas créer de doublon.
+  const { data: dejaRattache } = await supabase
+    .from("documents")
+    .select("id")
+    .eq("storage_path", path)
+    .maybeSingle();
+  if (!dejaRattache) {
+    await supabase.from("documents").insert({
+      dossier_id: lettre.dossier_id,
+      client_id: lettre.client_id,
+      uploader_id: uploaderId,
+      storage_path: path,
+      file_name: fileName,
+      file_size: pdf.byteLength,
+      mime_type: "application/pdf",
+      categorie: "dda",
+    });
+  }
 
   const { data: signed } = await supabase.storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 24 * 7);
 
