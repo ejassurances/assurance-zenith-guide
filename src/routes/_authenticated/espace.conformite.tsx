@@ -122,6 +122,7 @@ function ConformitePage() {
     { key: "controle-interne", label: "Contrôle interne" },
     { key: "cartographie", label: "Cartographie des risques" },
     { key: "registre-rgpd", label: "Registre RGPD" },
+    { key: "registre-dora", label: "Registre DORA & incidents" },
     { key: "formations", label: "Formation du personnel" },
   ];
 
