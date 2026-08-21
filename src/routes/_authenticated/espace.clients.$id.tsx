@@ -15,6 +15,7 @@ import { useScoreValeur } from "@/hooks/use-scores-valeur";
 import { useCompletudeClient } from "@/hooks/use-completude";
 import { CompletudeRings } from "@/components/completude-rings";
 import { ClientHeader } from "@/components/client-header";
+import { BoutonEnvoiEmail } from "@/components/envoi-rapide-email";
 import { ClientApercuCards, useClientContexte } from "@/components/client-apercu";
 import { SectionNav, type SectionNavItem } from "@/components/section-nav";
 import { type NiveauConformite } from "@/lib/conformite-score";
@@ -204,6 +205,7 @@ function ClientDetail() {
           conseiller={contexte.conseiller}
         >
           <ScoreRings valeur={scoreValeur ?? 0} />
+          {canEdit && <BoutonEnvoiEmail type="client" id={client.id} />}
           {canEdit && <DriveDossierButton clientId={client.id} />}
           {canEdit && client.email && (
             <AccesEspaceClientButton clientId={client.id} hasAccount={!!client.user_id} />
