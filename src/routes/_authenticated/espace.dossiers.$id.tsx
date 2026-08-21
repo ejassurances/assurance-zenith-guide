@@ -654,7 +654,7 @@ function DocumentsPanel({ dossierId, userId }: { dossierId: string; userId: stri
 
   const remove = async (doc: Doc) => {
     await supabase.storage.from("dossier-documents").remove([doc.storage_path]);
-    await supabase.from("documents").delete().eq("id", doc.id);
+    await supabase.from("documents").update({ archive_le: new Date().toISOString() }).eq("id", doc.id);
     load();
   };
 

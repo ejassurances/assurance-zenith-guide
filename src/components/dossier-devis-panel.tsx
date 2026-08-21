@@ -575,6 +575,18 @@ export function DossierDevisPanel({
         </div>
       )}
 
+      {assuresRecueil.length >= 2 &&
+        assuresRecueil.some((a) => !devis.some((d) => (d.assure_rang ?? 1) === a.rang)) && (
+          <p className="mt-4 rounded-xl border border-[color:var(--crm-gold)]/50 bg-[color:var(--crm-gold)]/10 px-3 py-2 text-sm text-ink">
+            Prêt à deux têtes : un devis distinct est obligatoire pour chaque assuré. Manquant pour{" "}
+            {assuresRecueil
+              .filter((a) => !devis.some((d) => (d.assure_rang ?? 1) === a.rang))
+              .map((a) => a.label)
+              .join(", ")}
+            .
+          </p>
+        )}
+
       <div className="mt-4 space-y-2">
         {devis.length === 0 && <p className="text-sm text-ink-muted">Aucun devis saisi pour ce dossier.</p>}
         {devisAffiches.map((d) => {
