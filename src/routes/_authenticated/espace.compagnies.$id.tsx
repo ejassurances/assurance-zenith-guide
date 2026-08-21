@@ -539,11 +539,30 @@ function ProduitsTab({
           </form>
         )}
 
+        {produits.length > 0 && (
+          <div className="rounded-md border border-line bg-surface p-3 text-xs">
+            <p className="font-medium text-ink">
+              Grilles de garanties : {nbValidees}/{produits.length} validées
+            </p>
+            <p className="mt-1 text-ink-muted">
+              Sans grille validée, le produit est exclu du comparatif de garanties (mention « non disponible pour
+              comparaison »).
+            </p>
+            <Link
+              to="/espace/grilles-garanties"
+              className="mt-2 inline-block text-[#0A192F] underline underline-offset-2"
+            >
+              Atelier des grilles de garanties →
+            </Link>
+          </div>
+        )}
+
         <div className="space-y-1">
           {produits.length === 0 && <p className="text-sm text-ink-muted">Aucun produit.</p>}
           {produits.map((p) => {
             const f = familles.find((x) => x.id === p.famille_id);
             const isActive = p.id === selected;
+            const etat = grilles[p.id] ?? "absente";
             return (
               <button
                 key={p.id}
@@ -564,6 +583,9 @@ function ProduitsTab({
                 </div>
                 <div className={"text-xs " + (isActive ? "text-primary-foreground/70" : "text-ink-muted")}>
                   {f?.nom ?? "—"} · {p.statut}
+                </div>
+                <div className="mt-1">
+                  <GrilleBadge etat={etat} />
                 </div>
               </button>
             );
