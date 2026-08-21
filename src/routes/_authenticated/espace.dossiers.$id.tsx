@@ -602,6 +602,7 @@ function DocumentsPanel({ dossierId, userId }: { dossierId: string; userId: stri
       .from("documents")
       .select("id,file_name,file_size,storage_path,created_at,uploader_id")
       .eq("dossier_id", dossierId)
+      .is("archive_le", null)
       .order("created_at", { ascending: false });
     setDocs(data ?? []);
   };
