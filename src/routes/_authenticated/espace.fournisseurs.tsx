@@ -109,6 +109,8 @@ function FournisseursPage() {
     const map: Record<string, { nb: number; total: number }> = {};
     for (const f of factures) {
       if (!f.fournisseur_id) continue;
+      // Cumuls comptables : premier exercice 2026, on ignore 2025 et avant.
+      if (!dansExerciceComptable(f.date_facture)) continue;
       const e = (map[f.fournisseur_id] ??= { nb: 0, total: 0 });
       e.nb += 1;
       e.total += Number(f.montant_ttc);
@@ -161,7 +163,9 @@ function FournisseursPage() {
     load();
   }
 
-  const totalAchats = factures.reduce((s, f) => s + Number(f.montant_ttc), 0);
+  const totalAchats = factures
+    .filter((f) => dansExerciceComptable(f.date_facture))
+    .reduce((s, f) => s + Number(f.montant_ttc), 0);
 
   return (
     <div className="space-y-8">
