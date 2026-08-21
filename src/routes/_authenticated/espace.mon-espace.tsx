@@ -19,6 +19,11 @@ import {
   monDevoirConseilUrl,
 } from "@/lib/espace-client.functions";
 import { ouvrirPdf } from "@/lib/ouvrir-pdf";
+import { ClientPortalHeader } from "@/components/client-portal-header";
+import { StatCard } from "@/components/stat-card";
+import { CompletudeRings } from "@/components/completude-rings";
+import { SectionNav, type SectionNavItem } from "@/components/section-nav";
+import { IconFileCheck, IconFileEuro, IconFolders } from "@tabler/icons-react";
 
 
 export const Route = createFileRoute("/_authenticated/espace/mon-espace")({

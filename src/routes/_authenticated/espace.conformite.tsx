@@ -196,7 +196,7 @@ function MesDocuments({ userId, isAdmin }: { userId: string; isAdmin: boolean })
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+      <div className="crm-card p-5">
         <h3 className="font-serif text-lg font-medium">Checklist obligatoire</h3>
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
           {CONF_TYPES.filter((t) => t.obligatoire).map((t) => {
@@ -261,7 +261,7 @@ function UploadConfForm({ userId, onUploaded }: { userId: string; onUploaded: ()
   };
 
   return (
-    <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+    <div className="crm-card p-5">
       <h3 className="font-serif text-lg font-medium">Téléverser un document</h3>
       <div className="mt-3 grid gap-3 sm:grid-cols-3">
         <Select value={type} onValueChange={(v) => setType(v as ConfType)}>
@@ -315,7 +315,7 @@ function DocsList({
     || profiles?.find((p) => p.id === id)?.email || id.slice(0, 8);
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+    <div className="crm-card overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -407,7 +407,7 @@ function EquipeConformite() {
 
   return (
     <div className="space-y-6">
-      <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+      <div className="crm-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -491,7 +491,7 @@ export function CompagnieDocsTable({
     onChanged();
   };
   return (
-    <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+    <div className="crm-card overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -574,7 +574,7 @@ export function UploadCompagnieDocForm({
   };
 
   return (
-    <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+    <div className="crm-card p-5">
       <h3 className="font-serif text-lg font-medium">Ajouter un document compagnie</h3>
       <div className="mt-3 grid gap-3 sm:grid-cols-3">
         {!defaultCompagnieId && (

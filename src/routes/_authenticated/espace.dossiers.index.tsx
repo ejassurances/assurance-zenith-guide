@@ -19,6 +19,10 @@ import {
   type FieldConfig,
 } from "@/lib/recueil-besoins-schemas";
 
+import { PageHeader } from "@/components/page-header";
+import { StatCard } from "@/components/stat-card";
+import { IconFolders, IconClockHour4, IconCircleCheck, IconAlertTriangle } from "@tabler/icons-react";
+
 export const Route = createFileRoute("/_authenticated/espace/dossiers/")({
   component: DossiersList,
 });
@@ -56,18 +60,33 @@ function DossiersList() {
     load();
   }, []);
 
+  const enCours = items.filter((d) => d.statut === "en_cours").length;
+  const signes = items.filter((d) => d.statut === "signe").length;
+  const perdus = items.filter((d) => d.statut === "perdu").length;
+
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h1 className="font-serif text-3xl font-medium text-ink">Dossiers</h1>
+      <PageHeader
+        eyebrow="Activité commerciale"
+        title="Dossiers"
+        description="Suivi des dossiers de souscription, de leur recueil à la signature."
+        icon={IconFolders}
+      >
         {canCreate && (
           <button
             onClick={() => setShowForm((v) => !v)}
-            className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-primary-foreground"
+            className="rounded-full bg-[#D4AF37] px-4 py-2 text-sm font-semibold text-[#0A192F] transition hover:brightness-95"
           >
             {showForm ? "Annuler" : "Nouveau dossier"}
           </button>
         )}
+      </PageHeader>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Total dossiers" value={items.length} icon={IconFolders} accent />
+        <StatCard label="En cours" value={enCours} icon={IconClockHour4} />
+        <StatCard label="Signés" value={signes} icon={IconCircleCheck} />
+        <StatCard label="Perdus" value={perdus} icon={IconAlertTriangle} />
       </div>
 
       {showForm && canCreate && (
@@ -292,7 +311,7 @@ export function NewDossierForm({
         <div className="mt-6 flex justify-end">
           <button
             onClick={() => setStep(2)}
-            className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground"
+            className="rounded-full bg-[#0A192F] px-5 py-2 text-sm font-medium text-white"
           >
             Continuer → Recueil des besoins
           </button>

@@ -37,16 +37,14 @@ export function CommissionMoisCard() {
   const mois = new Date().toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
 
   return (
-    <div className="mt-6 flex flex-wrap items-end justify-between gap-3 rounded-2xl border border-line bg-surface-elevated p-5">
+    <div className="mt-6 crm-card flex flex-wrap items-end justify-between gap-3 p-5">
       <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
-          Commissions encaissées ce mois
-        </p>
+        <p className="crm-eyebrow">Commissions encaissées ce mois</p>
         <p className="mt-1 text-xs text-ink-muted">
           {mois} · {nb} ligne{nb > 1 ? "s" : ""} de bordereau
         </p>
       </div>
-      <p className="font-serif text-2xl font-medium text-[color:var(--crm-gold,#D4AF37)]">{fmtEuros(total)}</p>
+      <p className="crm-figure text-2xl text-[color:var(--crm-gold-muted)]">{fmtEuros(total)}</p>
     </div>
   );
 }

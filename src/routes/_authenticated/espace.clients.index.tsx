@@ -13,6 +13,9 @@ import { ORIGINES, origineAvecClientSource, type OrigineKey } from "@/lib/crm-or
 import { ClientOriginePicker } from "@/components/client-origine-picker";
 import { ScoreRings } from "@/components/score-rings";
 import { useScoresValeur } from "@/hooks/use-scores-valeur";
+import { PageHeader } from "@/components/page-header";
+import { StatCard } from "@/components/stat-card";
+import { IconUsers, IconUserCheck, IconShieldCheck, IconUserPlus } from "@tabler/icons-react";
 
 
 
@@ -99,21 +102,34 @@ function ClientsList() {
   }, [items, q, statutFilter, marqueFilter]);
 
 
+  const actifs = items.filter((c) => c.statut === "actif").length;
+  const prospects = items.filter((c) => c.statut === "prospect").length;
+  const evalues = items.filter((c) => c.client_risque_lcbft).length;
+
   return (
     <div>
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="font-serif text-3xl font-medium text-ink">Clients</h1>
-        <div className="flex items-center gap-2">
-          {canCreate && <LcbRattrapageButton onDone={load} />}
-          {canCreate && (
-            <button
-              onClick={() => setShowForm((v) => !v)}
-              className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-primary-foreground"
-            >
-              {showForm ? "Annuler" : "Nouveau client"}
-            </button>
-          )}
-        </div>
+      <PageHeader
+        eyebrow="Portefeuille"
+        title="Clients"
+        description="Fiches clients, conformité et suivi commercial du cabinet."
+        icon={IconUsers}
+      >
+        {canCreate && <LcbRattrapageButton onDone={load} />}
+        {canCreate && (
+          <button
+            onClick={() => setShowForm((v) => !v)}
+            className="rounded-full bg-[#D4AF37] px-4 py-2 text-sm font-semibold text-[#0A192F] transition hover:brightness-95"
+          >
+            {showForm ? "Annuler" : "Nouveau client"}
+          </button>
+        )}
+      </PageHeader>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Total clients" value={items.length} icon={IconUsers} accent />
+        <StatCard label="Clients actifs" value={actifs} icon={IconUserCheck} />
+        <StatCard label="Prospects" value={prospects} icon={IconUserPlus} />
+        <StatCard label="LCB-FT évalués" value={evalues} icon={IconShieldCheck} />
       </div>
 
       {showForm && canCreate && (
@@ -151,7 +167,7 @@ function ClientsList() {
           onClick={() => setMarqueFilter("")}
           className={
             "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors " +
-            (marqueFilter === "" ? "border-transparent bg-ink text-primary-foreground" : "border-line text-ink-soft hover:bg-surface")
+            (marqueFilter === "" ? "border-transparent bg-[#0A192F] text-white" : "border-line text-ink-soft hover:bg-surface")
           }
         >
           Toutes les marques ({items.length})
@@ -165,7 +181,7 @@ function ClientsList() {
               onClick={() => setMarqueFilter(active ? "" : k)}
               className={
                 "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors " +
-                (active ? MARQUES[k].badge + " ring-1 ring-current" : "border-line text-ink-soft hover:bg-surface")
+                (active ? "border-transparent bg-[#D4AF37]/20 text-[#0A192F] ring-1 ring-[#D4AF37]" : "border-line text-ink-soft hover:bg-surface")
               }
             >
               <span className={`size-1.5 rounded-full ${MARQUES[k].dot}`} />
@@ -398,7 +414,7 @@ function NewClientForm({ onCreated }: { onCreated: (id: string) => void }) {
         <button
           type="submit"
           disabled={saving}
-          className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+          className="rounded-full bg-[#0A192F] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
         >
           {saving ? "Création…" : "Créer la fiche"}
         </button>
