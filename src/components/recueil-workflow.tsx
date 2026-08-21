@@ -320,8 +320,6 @@ const ASSURE_EMPRUNTEUR_VIDE = (lien: string): PersonneEmprunteur => ({
   quotite_pct: null,
   csp: "",
   fumeur: false,
-  sports_risque: "",
-  antecedents_sante: "",
 });
 
 function AssuresEmprunteurField({
@@ -404,18 +402,6 @@ function AssuresEmprunteurField({
                   ))}
                 </select>
               </label>
-              <label className="block">
-                <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
-                  Sports à risque pratiqués
-                </span>
-                <input
-                  type="text"
-                  value={p.sports_risque}
-                  onChange={(e) => update(i, { sports_risque: e.target.value })}
-                  className={inputCls}
-                  placeholder="Aucun / Moto / Alpinisme…"
-                />
-              </label>
               <label className="flex items-center gap-2 pt-6">
                 <input
                   type="checkbox"
@@ -426,17 +412,11 @@ function AssuresEmprunteurField({
                 <span className="text-sm text-ink">Fumeur (ou vapoteur)</span>
               </label>
             </div>
-            <label className="mt-3 block">
-              <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
-                Antécédents de santé notables
-              </span>
-              <textarea
-                rows={2}
-                value={p.antecedents_sante}
-                onChange={(e) => update(i, { antecedents_sante: e.target.value })}
-                className={inputCls}
-              />
-            </label>
+            <p className="mt-3 rounded-lg border border-line bg-background/60 px-3 py-2 text-xs text-ink-muted">
+              Conformément à la loi Lemoine et à la politique du cabinet, aucun questionnaire médical
+              n'est recueilli : antécédents de santé, pathologies et sports à risque ne sont ni demandés
+              ni conservés.
+            </p>
             {rows.length > 1 && (
               <button
                 type="button"

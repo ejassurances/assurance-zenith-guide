@@ -105,9 +105,12 @@ export type PersonneEmprunteur = {
   date_naissance: string;
   quotite_pct: number | null;
   csp: string;
+  /**
+   * Statut fumeur : donnée de tarification standard, jamais un questionnaire
+   * médical. Aucune donnée d'état de santé (antécédents, pathologies, sports à
+   * risque) n'est collectée sur la branche emprunteur — loi Lemoine.
+   */
   fumeur: boolean;
-  sports_risque: string;
-  antecedents_sante: string;
 };
 
 
@@ -899,8 +902,6 @@ export function assuresEmprunteur(value: unknown): PersonneEmprunteur[] {
         quotite_pct: Number.isFinite(q) && q > 0 ? q : null,
         csp: typeof p.csp === "string" ? p.csp : "",
         fumeur: p.fumeur === true,
-        sports_risque: typeof p.sports_risque === "string" ? p.sports_risque : "",
-        antecedents_sante: typeof p.antecedents_sante === "string" ? p.antecedents_sante : "",
       };
     });
 }

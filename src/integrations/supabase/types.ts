@@ -2142,6 +2142,7 @@ export type Database = {
       }
       devoirs_conseil: {
         Row: {
+          archive_le: string | null
           client_id: string | null
           contenu: Json
           created_at: string
@@ -2169,6 +2170,7 @@ export type Database = {
           valide_par: string | null
         }
         Insert: {
+          archive_le?: string | null
           client_id?: string | null
           contenu?: Json
           created_at?: string
@@ -2196,6 +2198,7 @@ export type Database = {
           valide_par?: string | null
         }
         Update: {
+          archive_le?: string | null
           client_id?: string | null
           contenu?: Json
           created_at?: string
@@ -2241,6 +2244,7 @@ export type Database = {
       }
       documents: {
         Row: {
+          archive_le: string | null
           categorie: string
           client_id: string | null
           contrat_id: string | null
@@ -2257,6 +2261,7 @@ export type Database = {
           uploader_id: string
         }
         Insert: {
+          archive_le?: string | null
           categorie?: string
           client_id?: string | null
           contrat_id?: string | null
@@ -2273,6 +2278,7 @@ export type Database = {
           uploader_id: string
         }
         Update: {
+          archive_le?: string | null
           categorie?: string
           client_id?: string | null
           contrat_id?: string | null
@@ -2314,6 +2320,9 @@ export type Database = {
       }
       dossier_devis: {
         Row: {
+          archive_le: string | null
+          assure_personne_id: string | null
+          assure_rang: number | null
           assureur_porteur: string | null
           compagnie_id: string | null
           cotisation_max: number | null
@@ -2333,6 +2342,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archive_le?: string | null
+          assure_personne_id?: string | null
+          assure_rang?: number | null
           assureur_porteur?: string | null
           compagnie_id?: string | null
           cotisation_max?: number | null
@@ -2352,6 +2364,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archive_le?: string | null
+          assure_personne_id?: string | null
+          assure_rang?: number | null
           assureur_porteur?: string | null
           compagnie_id?: string | null
           cotisation_max?: number | null
@@ -3239,6 +3254,7 @@ export type Database = {
       lettres_mission: {
         Row: {
           archive_envoye_le: string | null
+          archive_le: string | null
           archive_reponse: string | null
           client_id: string | null
           contenu: Json
@@ -3261,6 +3277,7 @@ export type Database = {
         }
         Insert: {
           archive_envoye_le?: string | null
+          archive_le?: string | null
           archive_reponse?: string | null
           client_id?: string | null
           contenu: Json
@@ -3283,6 +3300,7 @@ export type Database = {
         }
         Update: {
           archive_envoye_le?: string | null
+          archive_le?: string | null
           archive_reponse?: string | null
           client_id?: string | null
           contenu?: Json
@@ -4909,6 +4927,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      nb_assures_emprunteur: { Args: { _dossier_id: string }; Returns: number }
       neoliane_reduire_json: { Args: { _data: Json }; Returns: Json }
       periodicite_suivi_mois: {
         Args: { _branche: string; _recommandation: boolean }
