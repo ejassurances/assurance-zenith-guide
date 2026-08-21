@@ -20,7 +20,7 @@
  */
 const DIRECTION_COMMERCIALE = "Direction Commerciale";
 const DIRECTION_FINANCIERE = "Direction Financiere";
-const DIRECTION_CONFORMITE = "Direction Conformite";
+const DIRECTION_CONFORMITE = "Direction Juridique et Conformite";
 const ARCHIVE = "Archive";
 const A_VALIDER = "A_Valider";
 
