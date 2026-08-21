@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
+import { dansExerciceComptable } from "@/lib/exercice";
 import { IconTruckDelivery, IconFileInvoice, IconCash } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/_authenticated/espace/fournisseurs")({
