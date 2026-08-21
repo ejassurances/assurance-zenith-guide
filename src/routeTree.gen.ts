@@ -45,6 +45,7 @@ import { Route as AuthenticatedEspaceSignerSouscriptionRouteImport } from './rou
 import { Route as AuthenticatedEspaceSignerLettreMissionRouteImport } from './routes/_authenticated/espace.signer-lettre-mission'
 import { Route as AuthenticatedEspaceSignerDevoirConseilRouteImport } from './routes/_authenticated/espace.signer-devoir-conseil'
 import { Route as AuthenticatedEspaceSignerDerRouteImport } from './routes/_authenticated/espace.signer-der'
+import { Route as AuthenticatedEspaceRelationClientRouteImport } from './routes/_authenticated/espace.relation-client'
 import { Route as AuthenticatedEspacePrescripteursRouteImport } from './routes/_authenticated/espace.prescripteurs'
 import { Route as AuthenticatedEspaceParametresRouteImport } from './routes/_authenticated/espace.parametres'
 import { Route as AuthenticatedEspaceNeolianeRouteImport } from './routes/_authenticated/espace.neoliane'
@@ -271,6 +272,12 @@ const AuthenticatedEspaceSignerDerRoute =
     path: '/signer-der',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const AuthenticatedEspaceRelationClientRoute =
+  AuthenticatedEspaceRelationClientRouteImport.update({
+    id: '/relation-client',
+    path: '/relation-client',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
 const AuthenticatedEspacePrescripteursRoute =
   AuthenticatedEspacePrescripteursRouteImport.update({
     id: '/prescripteurs',
@@ -446,6 +453,7 @@ export interface FileRoutesByFullPath {
   '/espace/neoliane': typeof AuthenticatedEspaceNeolianeRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/espace/prescripteurs': typeof AuthenticatedEspacePrescripteursRoute
+  '/espace/relation-client': typeof AuthenticatedEspaceRelationClientRoute
   '/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
   '/espace/signer-devoir-conseil': typeof AuthenticatedEspaceSignerDevoirConseilRoute
   '/espace/signer-lettre-mission': typeof AuthenticatedEspaceSignerLettreMissionRoute
@@ -508,6 +516,7 @@ export interface FileRoutesByTo {
   '/espace/neoliane': typeof AuthenticatedEspaceNeolianeRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/espace/prescripteurs': typeof AuthenticatedEspacePrescripteursRoute
+  '/espace/relation-client': typeof AuthenticatedEspaceRelationClientRoute
   '/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
   '/espace/signer-devoir-conseil': typeof AuthenticatedEspaceSignerDevoirConseilRoute
   '/espace/signer-lettre-mission': typeof AuthenticatedEspaceSignerLettreMissionRoute
@@ -573,6 +582,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/neoliane': typeof AuthenticatedEspaceNeolianeRoute
   '/_authenticated/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/_authenticated/espace/prescripteurs': typeof AuthenticatedEspacePrescripteursRoute
+  '/_authenticated/espace/relation-client': typeof AuthenticatedEspaceRelationClientRoute
   '/_authenticated/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
   '/_authenticated/espace/signer-devoir-conseil': typeof AuthenticatedEspaceSignerDevoirConseilRoute
   '/_authenticated/espace/signer-lettre-mission': typeof AuthenticatedEspaceSignerLettreMissionRoute
@@ -638,6 +648,7 @@ export interface FileRouteTypes {
     | '/espace/neoliane'
     | '/espace/parametres'
     | '/espace/prescripteurs'
+    | '/espace/relation-client'
     | '/espace/signer-der'
     | '/espace/signer-devoir-conseil'
     | '/espace/signer-lettre-mission'
@@ -700,6 +711,7 @@ export interface FileRouteTypes {
     | '/espace/neoliane'
     | '/espace/parametres'
     | '/espace/prescripteurs'
+    | '/espace/relation-client'
     | '/espace/signer-der'
     | '/espace/signer-devoir-conseil'
     | '/espace/signer-lettre-mission'
@@ -764,6 +776,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/neoliane'
     | '/_authenticated/espace/parametres'
     | '/_authenticated/espace/prescripteurs'
+    | '/_authenticated/espace/relation-client'
     | '/_authenticated/espace/signer-der'
     | '/_authenticated/espace/signer-devoir-conseil'
     | '/_authenticated/espace/signer-lettre-mission'
@@ -1096,6 +1109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceSignerDerRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/relation-client': {
+      id: '/_authenticated/espace/relation-client'
+      path: '/relation-client'
+      fullPath: '/espace/relation-client'
+      preLoaderRoute: typeof AuthenticatedEspaceRelationClientRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
     '/_authenticated/espace/prescripteurs': {
       id: '/_authenticated/espace/prescripteurs'
       path: '/prescripteurs'
@@ -1309,6 +1329,7 @@ interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceNeolianeRoute: typeof AuthenticatedEspaceNeolianeRoute
   AuthenticatedEspaceParametresRoute: typeof AuthenticatedEspaceParametresRoute
   AuthenticatedEspacePrescripteursRoute: typeof AuthenticatedEspacePrescripteursRoute
+  AuthenticatedEspaceRelationClientRoute: typeof AuthenticatedEspaceRelationClientRoute
   AuthenticatedEspaceSignerDerRoute: typeof AuthenticatedEspaceSignerDerRoute
   AuthenticatedEspaceSignerDevoirConseilRoute: typeof AuthenticatedEspaceSignerDevoirConseilRoute
   AuthenticatedEspaceSignerLettreMissionRoute: typeof AuthenticatedEspaceSignerLettreMissionRoute
@@ -1343,6 +1364,8 @@ const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
   AuthenticatedEspaceNeolianeRoute: AuthenticatedEspaceNeolianeRoute,
   AuthenticatedEspaceParametresRoute: AuthenticatedEspaceParametresRoute,
   AuthenticatedEspacePrescripteursRoute: AuthenticatedEspacePrescripteursRoute,
+  AuthenticatedEspaceRelationClientRoute:
+    AuthenticatedEspaceRelationClientRoute,
   AuthenticatedEspaceSignerDerRoute: AuthenticatedEspaceSignerDerRoute,
   AuthenticatedEspaceSignerDevoirConseilRoute:
     AuthenticatedEspaceSignerDevoirConseilRoute,
