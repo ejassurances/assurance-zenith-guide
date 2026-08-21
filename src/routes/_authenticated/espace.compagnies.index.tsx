@@ -178,6 +178,7 @@ function CompagniesIndex() {
                 <th className="px-4 py-3 text-left">Contact</th>
                 <th className="px-4 py-3 text-left">Statut</th>
                 <th className="px-4 py-3 text-left">Favorite</th>
+                <th className="px-4 py-3 text-left">Grilles garanties</th>
                 <th className="px-4 py-3 text-left">API</th>
                 <th className="px-4 py-3" />
 
