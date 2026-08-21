@@ -435,8 +435,13 @@ export async function creerDevisTarifFixe(
     `Total : ${total.toLocaleString("fr-FR")} € / mois`,
   ].join("\n");
 
-  // Tarif fixe : une seule tarification connue, donc une seule offre au dossier.
-  await supabase.from("dossier_devis").delete().eq("dossier_id", params.dossierId);
+  // Tarif fixe : une seule tarification connue, donc une seule offre active au
+  // dossier. Traçabilité ACPR : les offres précédentes sont archivées, jamais supprimées.
+  await supabase
+    .from("dossier_devis")
+    .update({ archive_le: new Date().toISOString() })
+    .eq("dossier_id", params.dossierId)
+    .is("archive_le", null);
 
   const { data: devis, error: iErr } = await supabase
     .from("dossier_devis")

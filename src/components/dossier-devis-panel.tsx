@@ -35,6 +35,8 @@ export type DossierDevis = {
   source: "manuel" | "api" | "pdf";
   garanties_resume: string | null;
   quotite_pct: number | null;
+  /** Tête assurée visée par ce devis (1 = assuré principal, 2 = co-emprunteur). Un devis = une tête. */
+  assure_rang: number | null;
   assureur_porteur: string | null;
   created_at: string;
 };
@@ -141,7 +143,11 @@ export function DossierDevisPanel({
     cotisation_max: "",
     quotite_pct: "",
     garanties_resume: "",
+    assure_rang: "1",
   });
+
+  /** Têtes assurées issues du recueil des besoins (co-emprunteurs inclus). */
+  const [assuresRecueil, setAssuresRecueil] = useState<{ rang: number; label: string }[]>([]);
 
   /** Mensuel moyen dérivé : montant total sur la durée ÷ mois restants du recueil. */
   const mensuelMoyenDerive =
@@ -153,8 +159,9 @@ export function DossierDevisPanel({
     const [d, c, p, cl, dos] = await Promise.all([
       supabase
         .from("dossier_devis")
-        .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,type_cotisation,cotisation_min,cotisation_max,montant_total_saisi,source,garanties_resume,quotite_pct,assureur_porteur,created_at")
+        .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,type_cotisation,cotisation_min,cotisation_max,montant_total_saisi,source,garanties_resume,quotite_pct,assure_rang,assureur_porteur,created_at")
         .eq("dossier_id", dossierId)
+        .is("archive_le", null)
         .order("created_at", { ascending: true }),
       supabase.from("compagnies").select("id,nom").order("nom"),
       supabase.from("produits").select("id,nom,compagnie_id,famille_id,assureur_porteur").order("nom"),
@@ -183,6 +190,15 @@ export function DossierDevisPanel({
       const n = Number(v);
       return Number.isFinite(n) && n > 0 ? n : null;
     };
+    const assures = Array.isArray(recueil["assures"]) ? (recueil["assures"] as Record<string, unknown>[]) : [];
+    setAssuresRecueil(
+      assures.map((a, i) => ({
+        rang: i + 1,
+        label: `${
+          a?.["lien"] === "co_emprunteur" ? "Co-emprunteur" : "Assuré principal"
+        }${a?.["quotite_pct"] ? ` — quotité ${a["quotite_pct"]} %` : ""}`,
+      })),
+    );
     setMoisRestants(nb(recueil["mois_restants"]) ?? nb(recueil["duree_mois"]));
     setCrdRecueil(nb(recueil["capital_restant_du"]) ?? nb(recueil["capital"]));
     setNbAssuresApi(
@@ -315,6 +331,12 @@ export function DossierDevisPanel({
       setErr("Choisissez une compagnie et un produit.");
       return;
     }
+    if (assuresRecueil.length >= 2 && !form.assure_rang) {
+      setErr(
+        "Ce dossier comporte un co-emprunteur : indiquez la tête assurée visée. Un devis combiné unique est interdit (DDA).",
+      );
+      return;
+    }
     setSaving(true);
     const mensuel = form.cotisation_mensuelle
       ? Number(form.cotisation_mensuelle)
@@ -332,6 +354,7 @@ export function DossierDevisPanel({
       cotisation_min: form.type_cotisation === "CRD" && form.cotisation_min ? Number(form.cotisation_min) : null,
       cotisation_max: form.type_cotisation === "CRD" && form.cotisation_max ? Number(form.cotisation_max) : null,
       quotite_pct: form.quotite_pct ? Number(form.quotite_pct) : null,
+      assure_rang: form.assure_rang ? Number(form.assure_rang) : 1,
       garanties_resume: form.garanties_resume.trim() || null,
       source: "manuel",
       saisi_par: userId,
@@ -349,14 +372,19 @@ export function DossierDevisPanel({
       cotisation_max: "",
       quotite_pct: "",
       garanties_resume: "",
+      assure_rang: "1",
     });
     await load();
     onChanged?.();
   };
 
+  /** Traçabilité ACPR : le devis n'est jamais supprimé, il est archivé (masqué). */
   const supprimer = async (d: DossierDevis) => {
-    if (!confirm("Supprimer ce devis du comparatif ?")) return;
-    const { error } = await supabase.from("dossier_devis").delete().eq("id", d.id);
+    if (!confirm("Archiver ce devis ? Il sera retiré du comparatif mais conservé comme preuve (ACPR).")) return;
+    const { error } = await supabase
+      .from("dossier_devis")
+      .update({ archive_le: new Date().toISOString() })
+      .eq("id", d.id);
     if (error) return setErr(error.message);
     await load();
     onChanged?.();
@@ -547,6 +575,18 @@ export function DossierDevisPanel({
         </div>
       )}
 
+      {assuresRecueil.length >= 2 &&
+        assuresRecueil.some((a) => !devis.some((d) => (d.assure_rang ?? 1) === a.rang)) && (
+          <p className="mt-4 rounded-xl border border-[color:var(--crm-gold)]/50 bg-[color:var(--crm-gold)]/10 px-3 py-2 text-sm text-ink">
+            Prêt à deux têtes : un devis distinct est obligatoire pour chaque assuré. Manquant pour{" "}
+            {assuresRecueil
+              .filter((a) => !devis.some((d) => (d.assure_rang ?? 1) === a.rang))
+              .map((a) => a.label)
+              .join(", ")}
+            .
+          </p>
+        )}
+
       <div className="mt-4 space-y-2">
         {devis.length === 0 && <p className="text-sm text-ink-muted">Aucun devis saisi pour ce dossier.</p>}
         {devisAffiches.map((d) => {
@@ -563,6 +603,12 @@ export function DossierDevisPanel({
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-medium text-ink">
+                  {assuresRecueil.length >= 2 && (
+                    <span className="mr-2 rounded-full border border-[color:var(--crm-gold)]/50 px-2 py-0.5 text-xs text-ink-soft">
+                      {assuresRecueil.find((a) => a.rang === (d.assure_rang ?? 1))?.label ??
+                        `Tête ${d.assure_rang ?? 1}`}
+                    </span>
+                  )}
                   {nomCompagnie(d.compagnie_id)} — {nomProduit(d.produit_id)}
                   {formule && <FormuleNom formuleId={formule} />}
                 </p>
@@ -595,7 +641,7 @@ export function DossierDevisPanel({
                     )}
                   </span>
                   <button onClick={() => supprimer(d)} className="text-xs text-red-700 underline underline-offset-4">
-                    Supprimer
+                    Archiver
                   </button>
                 </div>
               </div>
@@ -1007,6 +1053,28 @@ export function DossierDevisPanel({
               />
             </label>
           </>
+        )}
+        {assuresRecueil.length >= 2 && (
+          <label className="block sm:col-span-2">
+            <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+              Tête assurée couverte par ce devis <span className="text-accent">*</span>
+            </span>
+            <select
+              value={form.assure_rang}
+              onChange={(e) => setForm({ ...form, assure_rang: e.target.value })}
+              className={inp}
+            >
+              {assuresRecueil.map((a) => (
+                <option key={a.rang} value={String(a.rang)}>
+                  {a.label}
+                </option>
+              ))}
+            </select>
+            <span className="mt-1 block text-xs text-ink-muted">
+              Obligation DDA : sur un prêt à deux têtes, un devis distinct est établi par assuré. Le devis
+              combiné unique est refusé.
+            </span>
+          </label>
         )}
         {branche === "emprunteur" && (
           <label className="block">

@@ -30,8 +30,21 @@ export interface SendTemplateEmailOptions {
 
 
 /**
- * Rend un template enregistré et l'envoie via le connecteur Brevo
- * (passerelle Lovable). Toute erreur d'envoi lève une exception.
+ * Courriers officiels DDA : ils sont expédiés depuis la boîte Gmail
+ * d'entreprise (API Gmail, adresse du cabinet) et non via Brevo, afin que la
+ * trace de l'envoi figure dans la messagerie du cabinet (exigence ACPR).
+ */
+const TEMPLATES_DDA = new Set([
+  'der-envoi',
+  'lettre-mission-envoi',
+  'devoir-conseil-envoi',
+  'souscription-signature-client',
+])
+
+/**
+ * Rend un template enregistré et l'envoie : via l'API Gmail du cabinet pour les
+ * courriers DDA, via le connecteur Brevo pour le reste. Toute erreur d'envoi
+ * lève une exception.
  */
 export async function sendTemplateEmail(
   templateName: string,
@@ -41,10 +54,6 @@ export async function sendTemplateEmail(
   const lovableApiKey = process.env['LOVABLE_API_KEY']
   if (!lovableApiKey) {
     throw new Error('LOVABLE_API_KEY is not configured')
-  }
-  const brevoKey = process.env['BREVO_API_KEY']
-  if (!brevoKey) {
-    throw new Error('BREVO_API_KEY is not configured')
   }
 
   const template = TEMPLATES[templateName]
@@ -69,6 +78,28 @@ export async function sendTemplateEmail(
     typeof template.subject === 'function'
       ? template.subject(templateData)
       : template.subject
+
+  if (TEMPLATES_DDA.has(templateName)) {
+    const { envoyerMessage } = await import('@/lib/gmail.server')
+    const envoi = await envoyerMessage({
+      to: recipient,
+      sujet: subject,
+      html: withHtmlSignature(html),
+      from: `${SITE_NAME} <${FROM_EMAIL}>`,
+      replyTo: options.replyTo ?? null,
+      attachments: options.attachments,
+    })
+    console.log(
+      `[email] OK (Gmail entreprise) template=${templateName} destinataire=${recipient} messageId=${envoi.id}`
+    )
+    return { sent: true }
+  }
+
+  const brevoKey = process.env['BREVO_API_KEY']
+  if (!brevoKey) {
+    throw new Error('BREVO_API_KEY is not configured')
+  }
+
 
   const response = await fetch(`${GATEWAY_URL}/smtp/email`, {
     method: 'POST',

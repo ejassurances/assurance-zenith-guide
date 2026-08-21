@@ -58,12 +58,18 @@ export function ContratDocumentsPanel({
   const load = async () => {
     const cols = "id,file_name,file_size,storage_path,created_at,type_document";
     const [lies, duClient] = await Promise.all([
-      supabase.from("documents").select(cols).eq("contrat_id", contratId).order("created_at", { ascending: false }),
+      supabase
+        .from("documents")
+        .select(cols)
+        .eq("contrat_id", contratId)
+        .is("archive_le", null)
+        .order("created_at", { ascending: false }),
       supabase
         .from("documents")
         .select(cols)
         .eq("client_id", clientId)
         .is("contrat_id", null)
+        .is("archive_le", null)
         .in("type_document", TYPES_RATTACHABLES)
         .order("created_at", { ascending: false }),
     ]);
@@ -120,9 +126,9 @@ export function ContratDocumentsPanel({
     a.click();
   };
 
+  /** Traçabilité ACPR : le document est archivé (masqué), jamais supprimé. */
   const remove = async (doc: Doc) => {
-    await supabase.storage.from("dossier-documents").remove([doc.storage_path]);
-    await supabase.from("documents").delete().eq("id", doc.id);
+    await supabase.from("documents").update({ archive_le: new Date().toISOString() }).eq("id", doc.id);
     load();
   };
 

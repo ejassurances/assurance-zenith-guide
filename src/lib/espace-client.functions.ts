@@ -173,6 +173,7 @@ export const monEspaceComplement = createServerFn({ method: "POST" })
           .from("documents")
           .select("id, file_name, categorie, type_document, created_at, dossier_id, contrat_id, client_id")
           .eq("client_id", client.id)
+          .is("archive_le", null)
           .order("created_at", { ascending: false })
           .limit(200),
         supabaseAdmin
@@ -197,6 +198,7 @@ export const monEspaceComplement = createServerFn({ method: "POST" })
         .from("documents")
         .select("id, file_name, categorie, type_document, created_at, dossier_id, contrat_id, client_id")
         .in("dossier_id", dossierIds)
+        .is("archive_le", null)
         .order("created_at", { ascending: false })
         .limit(200);
       docsDossier = (data ?? []) as Record<string, unknown>[];
