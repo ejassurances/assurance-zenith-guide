@@ -283,23 +283,56 @@ function encodeSujet(sujet: string): string {
   return /^[\x20-\x7E]*$/.test(sujet) ? sujet : `=?UTF-8?B?${encodeB64Url(sujet).replace(/-/g, "+").replace(/_/g, "/")}?=`;
 }
 
-/** Envoie un email HTML depuis la boîte du cabinet. */
+/**
+ * Envoie un email HTML depuis la boîte du cabinet (adresse d'entreprise).
+ * Les pièces jointes sont transmises en base64 (multipart/mixed).
+ */
 export async function envoyerMessage(params: {
   to: string;
   cc?: string | null;
   sujet: string;
   html: string;
   threadId?: string | null;
+  from?: string | null;
+  replyTo?: string | null;
+  attachments?: { name: string; base64: string; mime?: string }[];
 }): Promise<{ id: string; threadId: string }> {
-  const lignes = [
+  const entetes = [
     `To: ${params.to}`,
     ...(params.cc ? [`Cc: ${params.cc}`] : []),
+    ...(params.from ? [`From: ${params.from}`] : []),
+    ...(params.replyTo ? [`Reply-To: ${params.replyTo}`] : []),
     `Subject: ${encodeSujet(params.sujet)}`,
     "MIME-Version: 1.0",
-    'Content-Type: text/html; charset="UTF-8"',
-    "",
-    params.html,
   ];
+
+  let lignes: string[];
+  if (params.attachments && params.attachments.length > 0) {
+    const frontiere = `ejp_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+    lignes = [
+      ...entetes,
+      `Content-Type: multipart/mixed; boundary="${frontiere}"`,
+      "",
+      `--${frontiere}`,
+      'Content-Type: text/html; charset="UTF-8"',
+      "Content-Transfer-Encoding: 7bit",
+      "",
+      params.html,
+      ...params.attachments.flatMap((a) => [
+        `--${frontiere}`,
+        `Content-Type: ${a.mime ?? "application/pdf"}; name="${a.name}"`,
+        "Content-Transfer-Encoding: base64",
+        `Content-Disposition: attachment; filename="${a.name}"`,
+        "",
+        ...(a.base64.match(/.{1,76}/g) ?? []),
+      ]),
+      `--${frontiere}--`,
+      "",
+    ];
+  } else {
+    lignes = [...entetes, 'Content-Type: text/html; charset="UTF-8"', "", params.html];
+  }
+
   const body: Record<string, unknown> = { raw: encodeB64Url(lignes.join("\r\n")) };
   if (params.threadId) body["threadId"] = params.threadId;
 
