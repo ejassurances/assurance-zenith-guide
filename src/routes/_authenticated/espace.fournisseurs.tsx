@@ -139,12 +139,16 @@ function FournisseursPage() {
   async function enregistrer(patch: Partial<Fournisseur>) {
     if (!fiche) return;
     setRows((rs) => rs.map((r) => (r.id === fiche.id ? { ...r, ...patch } : r)));
-    const { error } = await supabase.from("fournisseurs").update(patch).eq("id", fiche.id);
+    const { error } = await supabase
+      .from("fournisseurs")
+      .update(patch as never)
+      .eq("id", fiche.id);
     if (error) {
       setError(error.message);
       load();
     }
   }
+
 
   /** Rattache une facture existante à la fiche fournisseur ouverte. */
   async function rattacher(factureId: string) {
