@@ -5,6 +5,7 @@ import { rechercherSanctionsPPE, marquerVerificationLCB } from "@/lib/lcb-ft.fun
 import { traiterPieceIdentite } from "@/lib/cni-extraction.functions";
 import { DerStatusCard } from "@/components/der-status-card";
 import { RisqueLcbftCard } from "@/components/risque-lcbft-card";
+import { GelAvoirsCard } from "@/components/gel-avoirs-card";
 import { detailConformite, NIVEAU_BAR, SEUIL_BLOCAGE_CONTRAT, type NiveauConformite } from "@/lib/conformite-score";
 
 
@@ -289,6 +290,8 @@ export function ConformiteClientTab({
       </div>
 
       <RisqueLcbftCard clientId={clientId} />
+
+      <GelAvoirsCard clientId={clientId} />
 
       <DerStatusCard clientId={clientId} clientEmail={clientEmail} canEdit={canEdit} />
 

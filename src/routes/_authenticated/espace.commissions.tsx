@@ -12,10 +12,13 @@ import type { SyntheseAnnee } from "@/lib/commission-previsions";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { IconCoins } from "@tabler/icons-react";
+import { ExportFecCard } from "@/components/export-fec-card";
 
 export const Route = createFileRoute("/_authenticated/espace/commissions")({
   component: CommissionsPage,
 });
+
+type EtatEncaissement = "en_attente_bordereau" | "valide_bordereau" | "encaisse_banque";
 
 type Row = {
   id: string;
@@ -28,6 +31,9 @@ type Row = {
   beneficiaire_id: string;
   ecriture_id: string | null;
   compte_produit: string | null;
+  precomptee: boolean;
+  provision_reprise: number;
+  etat_encaissement: EtatEncaissement;
   dossiers: { reference: string; client_nom: string } | null;
 };
 
@@ -35,6 +41,18 @@ type Compte = { numero: string; libelle: string };
 type Exercice = { id: string; date_debut: string; date_fin: string };
 
 const COMPTE_BANQUE = "512000";
+
+const ETATS: { value: EtatEncaissement; label: string }[] = [
+  { value: "en_attente_bordereau", label: "En attente bordereau" },
+  { value: "valide_bordereau", label: "Validé bordereau" },
+  { value: "encaisse_banque", label: "Encaissé banque" },
+];
+
+const ETAT_STYLE: Record<EtatEncaissement, string> = {
+  en_attente_bordereau: "bg-amber-100 text-amber-900",
+  valide_bordereau: "bg-sky-100 text-sky-900",
+  encaisse_banque: "bg-emerald-100 text-emerald-900",
+};
 
 function CommissionsPage() {
   const { role } = useAuth();
@@ -50,7 +68,7 @@ function CommissionsPage() {
     const { data } = await supabase
       .from("commissions")
       .select(
-        "id,montant,statut,date_versement,notes,dossier_id,contrat_id,beneficiaire_id,ecriture_id,compte_produit,dossiers(reference,client_nom)",
+        "id,montant,statut,date_versement,notes,dossier_id,contrat_id,beneficiaire_id,ecriture_id,compte_produit,precomptee,provision_reprise,etat_encaissement,dossiers(reference,client_nom)",
       )
       .order("created_at", { ascending: false });
     setRows((data as unknown as Row[]) ?? []);
@@ -74,10 +92,23 @@ function CommissionsPage() {
   const verse = rows.filter((r) => r.statut === "versee").reduce((s, r) => s + Number(r.montant), 0);
   const attente = rows.filter((r) => r.statut === "prevue").reduce((s, r) => s + Number(r.montant), 0);
   const aComptabiliser = rows.filter((r) => r.statut === "versee" && !r.ecriture_id).length;
+  const provisions = rows
+    .filter((r) => r.statut !== "annulee")
+    .reduce((s, r) => s + Number(r.provision_reprise ?? 0), 0);
+  const caNet = verse - provisions;
 
   const majCompte = async (r: Row, compte: string) => {
     await supabase.from("commissions").update({ compte_produit: compte }).eq("id", r.id);
     setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, compte_produit: compte } : x)));
+  };
+
+  const majLigne = async (r: Row, champs: Partial<Row>) => {
+    setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, ...champs } : x)));
+    const { error } = await supabase.from("commissions").update(champs as never).eq("id", r.id);
+    if (error) {
+      toast.error(error.message);
+      load();
+    }
   };
 
   /* Comptabilisation d'une commission encaissée : journal Ventes, banque au débit. */
@@ -144,11 +175,15 @@ function CommissionsPage() {
       )}
 
       <p className="mt-6 crm-eyebrow">Toutes périodes confondues</p>
-      <div className="mt-2 grid gap-4 sm:grid-cols-3">
+      <div className="mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard label="Total enregistré" value={`${total.toLocaleString("fr-FR")} €`} />
         <StatCard label="Versées" value={`${verse.toLocaleString("fr-FR")} €`} accent />
         <StatCard label="À venir (bordereaux)" value={`${attente.toLocaleString("fr-FR")} €`} />
+        <StatCard label="Provisions pour reprise" value={`${provisions.toLocaleString("fr-FR")} €`} />
+        <StatCard label="CA réel net de reprises" value={`${caNet.toLocaleString("fr-FR")} €`} accent />
       </div>
+
+      {role === "admin" && <ExportFecCard exercices={exercices} />}
 
       {role === "admin" && aComptabiliser > 0 && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 crm-card p-4">
@@ -176,12 +211,15 @@ function CommissionsPage() {
           </p>
         ) : (
           <div className="overflow-x-auto">
-          <table className="w-full min-w-[860px] text-sm">
+          <table className="w-full min-w-[1120px] text-sm">
             <thead className="border-b border-line bg-background/50 text-left text-xs uppercase tracking-wide text-ink-muted">
               <tr>
                 <th className="px-4 py-3">Origine</th>
                 <th className="px-4 py-3">Montant</th>
                 <th className="px-4 py-3">Statut</th>
+                <th className="px-4 py-3">État d'encaissement</th>
+                <th className="px-4 py-3">Précomptée</th>
+                <th className="px-4 py-3">Provision reprise</th>
                 <th className="px-4 py-3">Versement</th>
                 {role === "admin" && <th className="px-4 py-3">Comptabilité</th>}
               </tr>
@@ -208,6 +246,62 @@ function CommissionsPage() {
                     >
                       {r.statut}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {role === "admin" ? (
+                      <select
+                        value={r.etat_encaissement ?? "en_attente_bordereau"}
+                        onChange={(e) => majLigne(r, { etat_encaissement: e.target.value as EtatEncaissement })}
+                        className="rounded-md border border-line bg-background px-2 py-1 text-xs"
+                      >
+                        {ETATS.map((e) => (
+                          <option key={e.value} value={e.value}>
+                            {e.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span
+                        className={
+                          "inline-flex rounded-full px-2 py-0.5 text-xs font-medium " +
+                          ETAT_STYLE[r.etat_encaissement ?? "en_attente_bordereau"]
+                        }
+                      >
+                        {ETATS.find((e) => e.value === r.etat_encaissement)?.label ?? "En attente bordereau"}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {role === "admin" ? (
+                      <input
+                        type="checkbox"
+                        checked={Boolean(r.precomptee)}
+                        onChange={(e) => majLigne(r, { precomptee: e.target.checked })}
+                        className="h-4 w-4 accent-[#D4AF37]"
+                        aria-label="Commission précomptée"
+                      />
+                    ) : (
+                      <span className="text-xs text-ink-muted">{r.precomptee ? "Oui" : "Non"}</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {role === "admin" && r.precomptee ? (
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={Number(r.provision_reprise ?? 0)}
+                        onChange={(e) => majLigne(r, { provision_reprise: Number(e.target.value) })}
+                        className="w-24 rounded-md border border-line bg-background px-2 py-1 text-xs"
+                        aria-label="Provision pour reprise"
+                      />
+                    ) : (
+                      <span className="text-xs text-ink-muted">
+                        {Number(r.provision_reprise ?? 0) > 0
+                          ? `${Number(r.provision_reprise).toLocaleString("fr-FR")} €`
+                          : "—"}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     {r.date_versement ? new Date(r.date_versement).toLocaleDateString("fr-FR") : "—"}

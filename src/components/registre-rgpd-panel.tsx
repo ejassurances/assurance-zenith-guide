@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { revisionAnnuelleDue } from "@/lib/cartographie-risques";
+import { exporterRegistreRgpdPdf } from "@/lib/conformite-registres.functions";
+import { telechargerPdfBase64 } from "@/lib/telecharger-pdf";
 
 /* Registre des traitements RGPD (Art. 30) — consultation cabinet, édition admin. */
 
@@ -40,6 +43,25 @@ export function RegistreRgpdPanel({ isAdmin }: { isAdmin: boolean }) {
   const [lignes, setLignes] = useState<Traitement[]>([]);
   const [loading, setLoading] = useState(true);
   const [validation, setValidation] = useState(false);
+  const [exportEnCours, setExportEnCours] = useState(false);
+  const exporter = useServerFn(exporterRegistreRgpdPdf);
+
+  const exporterPdf = async () => {
+    setExportEnCours(true);
+    try {
+      const res = await exporter({});
+      telechargerPdfBase64(res.pdf_base64, res.nom_fichier);
+      toast.success(
+        res.drive_url
+          ? "Registre exporté et archivé dans 02_RESPONSABLE_CONFORMITE_ET_FINANCES/01_Registre_DDA_et_ACPR."
+          : "Registre exporté (archivage Drive à resynchroniser).",
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Export impossible.");
+    } finally {
+      setExportEnCours(false);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -124,11 +146,16 @@ export function RegistreRgpdPanel({ isAdmin }: { isAdmin: boolean }) {
               </p>
             )}
           </div>
-          {isAdmin && (
-            <Button onClick={validerVersion} disabled={validation || loading || lignes.length === 0}>
-              {validation ? "Validation…" : "Valider la version actuelle"}
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={exporterPdf} disabled={exportEnCours || loading}>
+              {exportEnCours ? "Export…" : "Exporter en PDF (Drive)"}
             </Button>
-          )}
+            {isAdmin && (
+              <Button onClick={validerVersion} disabled={validation || loading || lignes.length === 0}>
+                {validation ? "Validation…" : "Valider la version actuelle"}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 

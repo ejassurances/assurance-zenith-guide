@@ -17,6 +17,7 @@ import { ControleInternePanel } from "@/components/controle-interne-panel";
 import { CartographieRisquesPanel } from "@/components/cartographie-risques-panel";
 import { RegistreRgpdPanel } from "@/components/registre-rgpd-panel";
 import { FormationsPersonnelPanel } from "@/components/formations-personnel-panel";
+import { DoraRegistrePanel } from "@/components/dora-registre-panel";
 
 export const Route = createFileRoute("/_authenticated/espace/conformite")({
   component: ConformitePage,
@@ -101,6 +102,7 @@ type SectionKey =
   | "controle-interne"
   | "cartographie"
   | "registre-rgpd"
+  | "registre-dora"
   | "formations";
 
 function ConformitePage() {
@@ -120,6 +122,7 @@ function ConformitePage() {
     { key: "controle-interne", label: "Contrôle interne" },
     { key: "cartographie", label: "Cartographie des risques" },
     { key: "registre-rgpd", label: "Registre RGPD" },
+    { key: "registre-dora", label: "Registre DORA & incidents" },
     { key: "formations", label: "Formation du personnel" },
   ];
 
@@ -155,6 +158,8 @@ function ConformitePage() {
           {section === "cartographie" && <CartographieRisquesPanel isAdmin={role === "admin"} />}
 
           {section === "registre-rgpd" && <RegistreRgpdPanel isAdmin={role === "admin"} />}
+
+          {section === "registre-dora" && <DoraRegistrePanel isAdmin={role === "admin"} />}
 
           {section === "formations" && <FormationsPersonnelPanel isAdmin={role === "admin"} />}
         </div>
