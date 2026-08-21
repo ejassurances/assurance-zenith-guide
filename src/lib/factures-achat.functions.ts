@@ -106,12 +106,14 @@ export const importerFactureDepuisEmail = createServerFn({ method: "POST" })
       .from("factures_achat")
       .insert({
         fournisseur: fournisseur.slice(0, 160),
+        fournisseur_id: fiche?.id ?? null,
         numero_facture: lue?.numero_facture ?? null,
         date_facture: lue?.date_facture ?? (data.recu_le ? data.recu_le.slice(0, 10) : new Date().toISOString().slice(0, 10)),
         date_echeance: lue?.date_echeance ?? null,
         montant_ht: ht,
         montant_tva: tva,
         montant_ttc: ttc,
+        compte_charge: fiche?.compte_charge_defaut ?? null,
         statut: "a_payer",
         notes,
         fichier_path: chemin,
