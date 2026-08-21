@@ -1036,7 +1036,36 @@ export function DossierDevisPanel({
       )}
 
       {!produitFixe && (
-      <div className="mt-4 grid gap-3 border-t border-line pt-4 sm:grid-cols-2">
+      <div
+        id="saisie-devis-manuel"
+        className={`mt-4 grid gap-3 rounded-xl border-t border-line pt-4 sm:grid-cols-2 ${
+          saisieOuverte ? "ring-2 ring-[color:var(--crm-gold)] ring-offset-2 ring-offset-surface-elevated" : ""
+        }`}
+      >
+        <div className="sm:col-span-2">
+          <h3 className="text-sm font-medium text-ink">Saisie manuelle d'un devis</h3>
+          <p className="mt-1 text-xs text-ink-muted">
+            Pour une compagnie sans API de tarification (devis reçu par e-mail ou extranet) ou pour un contrat déjà
+            validé par la compagnie que l'on reprend rétroactivement.
+          </p>
+        </div>
+        <label className="block sm:col-span-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Motif de la saisie manuelle</span>
+          <select
+            value={motifSaisie}
+            onChange={(e) => setMotifSaisie(e.target.value as "sans_api" | "retroactif" | "autre")}
+            className={inp}
+          >
+            <option value="sans_api">Compagnie sans API de tarification — devis reçu par un autre canal</option>
+            <option value="retroactif">Contrat déjà validé par la compagnie — import rétroactif</option>
+            <option value="autre">Autre saisie manuelle</option>
+          </select>
+          <span className="mt-1 block text-xs text-ink-muted">
+            Le motif est journalisé sur le devis (traçabilité DDA).
+            {motifSaisie === "retroactif" &&
+              " Ce motif permet de retenir directement cette offre, sans repasser par le comparatif IA."}
+          </span>
+        </label>
 
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Compagnie</span>
