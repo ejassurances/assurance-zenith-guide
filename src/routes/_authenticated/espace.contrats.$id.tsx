@@ -676,7 +676,7 @@ function ContratDetail() {
         </F>
       </section>
 
-      {canEdit && (
+      {editable && !verrouille && (
         <div className="flex justify-end">
           <button
             onClick={() => save()}
@@ -688,28 +688,24 @@ function ContratDetail() {
         </div>
       )}
 
-      {user && (
-        <ContratDocumentsPanel
-          contratId={c.id}
-          clientId={c.client_id}
-          userId={user.id}
-          canEdit={canEdit}
-        />
-      )}
-
       {/* Tableau des échéances */}
       <section className="space-y-3 rounded-lg border border-line bg-surface p-5">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-serif text-lg">Échéances calculées</h3>
+            <h3 className="font-serif text-lg">
+              {sorti ? "Historique des appels de cotisation" : "Échéances calculées"}
+            </h3>
             <p className="text-xs text-ink-muted">
-              Prime et commissions année par année. Recalculées automatiquement à chaque modification.
+              {sorti
+                ? "Contrat sorti du portefeuille : les appels de cotisation et commissions déjà émis avant la résiliation sont conservés en l'état, sans recalcul."
+                : "Prime et commissions année par année. Recalculées automatiquement à chaque modification."}
             </p>
           </div>
           <div className="text-right text-xs text-ink-muted">
             {ech.length} année{ech.length > 1 ? "s" : ""} · Cabinet total : {formatEuro(totaux.cabinet)}
           </div>
         </div>
+
 
         {ech.length === 0 ? (
           <p className="text-sm text-ink-muted">
