@@ -83,13 +83,13 @@ export function dessinerPiedsDePage(
 
     page.drawRectangle({
       x: opts.margin,
-      y: 60,
+      y: 66,
       width: width - opts.margin * 2,
       height: 0.6,
       color: PDF_GOLD,
     });
 
-    let y = 49;
+    let y = 55;
     for (const ligne of PDF_PIED_LIGNES) {
       const size = 5.9;
       // Repli sur plusieurs lignes si la mention dépasse la largeur utile.
@@ -113,7 +113,7 @@ export function dessinerPiedsDePage(
     const pagination = `${index + 1}/${total}`;
     page.drawText(pagination, {
       x: width - opts.margin - opts.font.widthOfTextAtSize(pagination, 7),
-      y: 49,
+      y: 55,
       size: 7,
       font: opts.font,
       color: PDF_GREY,
