@@ -21,7 +21,7 @@
 const DIRECTION_COMMERCIALE = "Direction Commerciale";
 const DIRECTION_FINANCIERE = "Direction Financiere";
 const DIRECTION_CONFORMITE = "Direction Juridique et Conformite";
-const ARCHIVE = "Archive";
+const ARCHIVE = "Archives";
 const A_VALIDER = "A_Valider";
 
 export const LABELS_CABINET = {
