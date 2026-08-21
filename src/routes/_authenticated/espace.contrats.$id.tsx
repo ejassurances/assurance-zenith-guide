@@ -269,6 +269,13 @@ function ContratDetail() {
     { prime: 0, cabinet: 0, mand: 0, presc: 0 },
   );
 
+  /** Contrat validé par la compagnie : plus aucune édition libre. */
+  const verrouille = STATUTS_VERROUILLES.includes(c.statut);
+  const enCorrection = verrouille && correctionMotif !== null;
+  const editable = canEdit && (!verrouille || enCorrection);
+  const sorti = ["resilie", "annule", "cloture"].includes(c.statut);
+
+
   return (
     <div className="space-y-6">
       <PageHeader
