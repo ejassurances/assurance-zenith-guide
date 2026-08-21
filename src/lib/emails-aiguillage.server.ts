@@ -35,6 +35,34 @@ const MODELES = ["google/gemini-3.6-flash", "google/gemini-2.5-flash"];
 const SEUIL_CONFIANCE = 0.8;
 const PREFIXE_SUJET = "[Réaiguillage]";
 
+/**
+ * Expéditeurs à qui on n'écrit JAMAIS : robots de plateformes, notifications,
+ * accusés automatiques. Un mail mal aiguillé venant de là est simplement
+ * réétiqueté dans le bon service, sans aucun envoi ni copie.
+ */
+const MOTIFS_AUTOMATIQUES = [
+  "no-reply",
+  "noreply",
+  "no_reply",
+  "ne-pas-repondre",
+  "nepasrepondre",
+  "donotreply",
+  "notification",
+  "notifications",
+  "mailer-daemon",
+  "postmaster",
+  "bounce",
+  "support",
+  "service-client",
+  "contact@",
+];
+
+function estExpediteurAutomatique(email: string): boolean {
+  const e = email.toLowerCase();
+  const locale = e.split("@")[0] ?? e;
+  return MOTIFS_AUTOMATIQUES.some((m) => (m.includes("@") ? e.includes(m) : locale.includes(m)));
+}
+
 export interface ResultatAiguillage {
   /** Mails renvoyés vers l'adresse du bon service. */
   renvoyes: number;
