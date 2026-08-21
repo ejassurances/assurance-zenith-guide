@@ -12,6 +12,11 @@ import { DerTab } from "@/components/der-tab";
 import { ConformiteClientTab } from "@/components/conformite-client-tab";
 import { ScoreRings } from "@/components/score-rings";
 import { useScoreValeur } from "@/hooks/use-scores-valeur";
+import { useCompletudeClient } from "@/hooks/use-completude";
+import { CompletudeRings } from "@/components/completude-rings";
+import { ClientHeader } from "@/components/client-header";
+import { ClientApercuCards, useClientContexte } from "@/components/client-apercu";
+import { SectionNav, type SectionNavItem } from "@/components/section-nav";
 import { type NiveauConformite } from "@/lib/conformite-score";
 import { SinistresPanel } from "@/components/sinistres-panel";
 import { DeleteClientButton } from "@/components/delete-client-button";
@@ -73,6 +78,7 @@ type Client = {
   ppe_fonction: string | null;
   ppe_pays: string | null;
   user_id: string | null;
+  commercial_id: string | null;
   created_at: string;
 };
 
@@ -136,6 +142,8 @@ function ClientDetail() {
     search.tab === "conformite" ? "conformite" : "identite",
   );
   const scoreValeur = useScoreValeur(id);
+  const completude = useCompletudeClient(id);
+  const contexte = useClientContexte(id, client?.commercial_id ?? null);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -162,24 +170,39 @@ function ClientDetail() {
   const fullName = [client.civilite, client.prenom, client.nom].filter(Boolean).join(" ");
   const canEdit = role === "admin" || role === "mandataire";
 
+  const navItems: SectionNavItem<Tab>[] = [
+    { key: "identite", label: "Vue 360" },
+    { key: "famille", label: "Famille" },
+    { key: "entreprise", label: "Entreprise" },
+    { key: "equipements", label: "Équipements" },
+    { key: "contrats", label: "Contrats" },
+    { key: "taches", label: "Tâches" },
+    { key: "historique", label: "Historique" },
+    { key: "documents", label: "Documents" },
+    { key: "dossiers", label: "Dossiers" },
+    { key: "der", label: "DER" },
+    { key: "emails", label: "Emails" },
+    { key: "sinistres", label: "Sinistres" },
+    { key: "conformite", label: "Conformité" },
+  ];
+
   return (
     <div>
       <Link to="/espace/clients" className="text-xs text-ink-muted hover:underline">
         ← Clients
       </Link>
-      <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-ink">{fullName}</h1>
-          <p className="mt-1 text-xs text-ink-muted">
-            <span className="font-mono">{client.reference}</span> · Créé le{" "}
-            {new Date(client.created_at).toLocaleDateString("fr-FR")}
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
+
+      <div className="mt-2">
+        <ClientHeader
+          prenom={client.prenom}
+          nom={client.nom}
+          fullName={fullName}
+          statut={client.statut}
+          reference={client.reference}
+          branche={contexte.branche}
+          conseiller={contexte.conseiller}
+        >
           <ScoreRings valeur={scoreValeur ?? 0} />
-          <span className="rounded-full border border-line bg-surface-elevated px-3 py-1 text-xs font-medium">
-            {client.statut}
-          </span>
           {canEdit && client.email && (
             <AccesEspaceClientButton clientId={client.id} hasAccount={!!client.user_id} />
           )}
@@ -190,75 +213,60 @@ function ClientDetail() {
               onDeleted={() => navigate({ to: "/espace/clients" })}
             />
           )}
+        </ClientHeader>
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_18rem]">
+        <div className="min-w-0 space-y-6">
+          <div className="crm-card p-6">
+            <p className="crm-eyebrow">Complétude du dossier</p>
+            <div className="mt-4">
+              {completude ? (
+                <CompletudeRings items={completude} />
+              ) : (
+                <p className="text-xs text-ink-muted">Calcul…</p>
+              )}
+            </div>
+          </div>
+
+          <ClientApercuCards clientId={client.id} />
+
+          <CrmBrandPanel clientId={client.id} canEdit={canEdit} />
+
+          <div>
+            {tab === "identite" && <IdentiteTab client={client} canEdit={canEdit} onSaved={load} />}
+            {tab === "famille" && <FamilleTab clientId={client.id} canEdit={canEdit} />}
+            {tab === "entreprise" && <EntrepriseTab clientId={client.id} canEdit={canEdit} />}
+            {tab === "equipements" && <EquipementsTab clientId={client.id} canEdit={canEdit} />}
+            {tab === "contrats" && <ContratsTab clientId={client.id} canEdit={canEdit} />}
+            {tab === "taches" && <TachesTab clientId={client.id} canEdit={canEdit} />}
+            {tab === "historique" && <HistoriqueTab clientId={client.id} />}
+            {tab === "documents" && <DocumentsTab clientId={client.id} canEdit={canEdit} />}
+            {tab === "dossiers" && <DossiersTab client={client} />}
+            {tab === "der" && <DerTab clientId={client.id} clientEmail={client.email} />}
+            {tab === "emails" && (
+              <EmailsLiesPanel
+                liens={{ client_id: client.id }}
+                destinataireParDefaut={client.email}
+                titre="Emails du client"
+                canEdit={canEdit}
+              />
+            )}
+            {tab === "sinistres" && <SinistresPanel clientId={client.id} mode="staff" canEdit={canEdit} />}
+            {tab === "conformite" && (
+              <ConformiteClientTab clientId={client.id} clientEmail={client.email} canEdit={canEdit} />
+            )}
+          </div>
         </div>
-      </div>
 
-      <div className="mt-4">
-        <CrmBrandPanel clientId={client.id} canEdit={canEdit} />
-      </div>
-
-
-
-      <div className="mt-6 flex gap-1 overflow-x-auto border-b border-line">
-        {(
-          [
-            ["identite", "Identité"],
-            ["famille", "Famille"],
-            ["entreprise", "Entreprise"],
-            ["equipements", "Équipements"],
-            ["contrats", "Contrats"],
-            ["taches", "Tâches"],
-            ["historique", "Historique"],
-            ["documents", "Documents"],
-            ["dossiers", "Dossiers"],
-            ["der", "DER"],
-            ["emails", "Emails"],
-            ["sinistres", "Sinistres"],
-            ["conformite", "Conformité"],
-          ] as [Tab, string][]
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className={
-              "shrink-0 border-b-2 px-4 py-2 text-sm transition-colors " +
-              (tab === key ? "border-ink text-ink" : "border-transparent text-ink-muted hover:text-ink")
-            }
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-6">
-        {tab === "identite" && <IdentiteTab client={client} canEdit={canEdit} onSaved={load} />}
-        {tab === "famille" && <FamilleTab clientId={client.id} canEdit={canEdit} />}
-        {tab === "entreprise" && <EntrepriseTab clientId={client.id} canEdit={canEdit} />}
-        {tab === "equipements" && <EquipementsTab clientId={client.id} canEdit={canEdit} />}
-        {tab === "contrats" && <ContratsTab clientId={client.id} canEdit={canEdit} />}
-        {tab === "taches" && <TachesTab clientId={client.id} canEdit={canEdit} />}
-        {tab === "historique" && <HistoriqueTab clientId={client.id} />}
-        {tab === "documents" && <DocumentsTab clientId={client.id} canEdit={canEdit} />}
-        {tab === "dossiers" && <DossiersTab client={client} />}
-        {tab === "der" && <DerTab clientId={client.id} clientEmail={client.email} />}
-        {tab === "emails" && (
-          <EmailsLiesPanel
-            liens={{ client_id: client.id }}
-            destinataireParDefaut={client.email}
-            titre="Emails du client"
-            canEdit={canEdit}
-          />
-        )}
-        {tab === "sinistres" && (
-          <SinistresPanel clientId={client.id} mode="staff" canEdit={canEdit} />
-        )}
-        {tab === "conformite" && (
-          <ConformiteClientTab clientId={client.id} clientEmail={client.email} canEdit={canEdit} />
-        )}
+        <aside className="lg:sticky lg:top-6 lg:self-start">
+          <SectionNav title="Sections" items={navItems} active={tab} onSelect={setTab} />
+        </aside>
       </div>
     </div>
   );
 }
+
 
 /* -------------------- IDENTITÉ -------------------- */
 
