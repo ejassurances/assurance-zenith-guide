@@ -18,7 +18,6 @@ import { Route as EspaceConfidentialiteRouteImport } from './routes/espace.confi
 import { Route as EspaceCguRouteImport } from './routes/espace.cgu'
 import { Route as AuthenticatedEspaceRouteImport } from './routes/_authenticated/espace'
 import { Route as AuthenticatedEspaceIndexRouteImport } from './routes/_authenticated/espace.index'
-import { Route as ApiPublicTmpExtractGarantiesRouteImport } from './routes/api/public/tmp-extract-garanties'
 import { Route as ApiPublicSuiviContratsRouteImport } from './routes/api/public/suivi-contrats'
 import { Route as ApiPublicScanEmailsRouteImport } from './routes/api/public/scan-emails'
 import { Route as ApiPublicRevueLcbftRouteImport } from './routes/api/public/revue-lcbft'
@@ -113,12 +112,6 @@ const AuthenticatedEspaceIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedEspaceRoute,
-  } as any)
-const ApiPublicTmpExtractGarantiesRoute =
-  ApiPublicTmpExtractGarantiesRouteImport.update({
-    id: '/api/public/tmp-extract-garanties',
-    path: '/api/public/tmp-extract-garanties',
-    getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicSuiviContratsRoute = ApiPublicSuiviContratsRouteImport.update({
   id: '/api/public/suivi-contrats',
@@ -450,7 +443,6 @@ export interface FileRoutesByFullPath {
   '/api/public/revue-lcbft': typeof ApiPublicRevueLcbftRoute
   '/api/public/scan-emails': typeof ApiPublicScanEmailsRoute
   '/api/public/suivi-contrats': typeof ApiPublicSuiviContratsRoute
-  '/api/public/tmp-extract-garanties': typeof ApiPublicTmpExtractGarantiesRoute
   '/espace/': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
@@ -509,7 +501,6 @@ export interface FileRoutesByTo {
   '/api/public/revue-lcbft': typeof ApiPublicRevueLcbftRoute
   '/api/public/scan-emails': typeof ApiPublicScanEmailsRoute
   '/api/public/suivi-contrats': typeof ApiPublicSuiviContratsRoute
-  '/api/public/tmp-extract-garanties': typeof ApiPublicTmpExtractGarantiesRoute
   '/espace': typeof AuthenticatedEspaceIndexRoute
   '/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
@@ -571,7 +562,6 @@ export interface FileRoutesById {
   '/api/public/revue-lcbft': typeof ApiPublicRevueLcbftRoute
   '/api/public/scan-emails': typeof ApiPublicScanEmailsRoute
   '/api/public/suivi-contrats': typeof ApiPublicSuiviContratsRoute
-  '/api/public/tmp-extract-garanties': typeof ApiPublicTmpExtractGarantiesRoute
   '/_authenticated/espace/': typeof AuthenticatedEspaceIndexRoute
   '/_authenticated/espace/clients/$id': typeof AuthenticatedEspaceClientsIdRoute
   '/_authenticated/espace/compagnies/$id': typeof AuthenticatedEspaceCompagniesIdRoute
@@ -633,7 +623,6 @@ export interface FileRouteTypes {
     | '/api/public/revue-lcbft'
     | '/api/public/scan-emails'
     | '/api/public/suivi-contrats'
-    | '/api/public/tmp-extract-garanties'
     | '/espace/'
     | '/espace/clients/$id'
     | '/espace/compagnies/$id'
@@ -692,7 +681,6 @@ export interface FileRouteTypes {
     | '/api/public/revue-lcbft'
     | '/api/public/scan-emails'
     | '/api/public/suivi-contrats'
-    | '/api/public/tmp-extract-garanties'
     | '/espace'
     | '/espace/clients/$id'
     | '/espace/compagnies/$id'
@@ -753,7 +741,6 @@ export interface FileRouteTypes {
     | '/api/public/revue-lcbft'
     | '/api/public/scan-emails'
     | '/api/public/suivi-contrats'
-    | '/api/public/tmp-extract-garanties'
     | '/_authenticated/espace/'
     | '/_authenticated/espace/clients/$id'
     | '/_authenticated/espace/compagnies/$id'
@@ -796,7 +783,6 @@ export interface RootRouteChildren {
   ApiPublicRevueLcbftRoute: typeof ApiPublicRevueLcbftRoute
   ApiPublicScanEmailsRoute: typeof ApiPublicScanEmailsRoute
   ApiPublicSuiviContratsRoute: typeof ApiPublicSuiviContratsRoute
-  ApiPublicTmpExtractGarantiesRoute: typeof ApiPublicTmpExtractGarantiesRoute
   ApiPublicWebhooksCrmRoute: typeof ApiPublicWebhooksCrmRoute
   ApiPublicWebhooksNeolianeRoute: typeof ApiPublicWebhooksNeolianeRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -868,13 +854,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/espace/'
       preLoaderRoute: typeof AuthenticatedEspaceIndexRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
-    }
-    '/api/public/tmp-extract-garanties': {
-      id: '/api/public/tmp-extract-garanties'
-      path: '/api/public/tmp-extract-garanties'
-      fullPath: '/api/public/tmp-extract-garanties'
-      preLoaderRoute: typeof ApiPublicTmpExtractGarantiesRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/api/public/suivi-contrats': {
       id: '/api/public/suivi-contrats'
@@ -1343,7 +1322,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicRevueLcbftRoute: ApiPublicRevueLcbftRoute,
   ApiPublicScanEmailsRoute: ApiPublicScanEmailsRoute,
   ApiPublicSuiviContratsRoute: ApiPublicSuiviContratsRoute,
-  ApiPublicTmpExtractGarantiesRoute: ApiPublicTmpExtractGarantiesRoute,
   ApiPublicWebhooksCrmRoute: ApiPublicWebhooksCrmRoute,
   ApiPublicWebhooksNeolianeRoute: ApiPublicWebhooksNeolianeRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
