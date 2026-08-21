@@ -90,6 +90,9 @@ function ContratDetail() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  /** Correction tracée d'un contrat verrouillé : motif obligatoire. */
+  const [correctionMotif, setCorrectionMotif] = useState<string | null>(null);
+
 
   async function load() {
     setLoading(true);
