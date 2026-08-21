@@ -1,5 +1,12 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { DER_SECTIONS, type DerContenu } from "@/lib/der-modele";
+import {
+  PDF_FOOTER_HEIGHT,
+  dessinerEntete,
+  dessinerPiedsDePage,
+  referenceDocument,
+} from "@/lib/pdf-entete-pied";
+
 
 /** Rendu PDF natif du DER (pdf-lib, JS pur — compatible runtime serverless). */
 
@@ -18,21 +25,25 @@ function safe(text: string) {
     .replace(/[^\x20-\x7E\u00A1-\u00FF]/g, "");
 }
 
-export async function genererPdfDer(contenu: DerContenu): Promise<Uint8Array> {
+export async function genererPdfDer(
+  contenu: DerContenu,
+  options: { reference_dossier?: string | null } = {},
+): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
   let page = doc.addPage(A4);
-  let y = A4[1] - MARGIN;
+  let y = dessinerEntete(page, { font, bold, margin: MARGIN });
 
   const newPage = () => {
     page = doc.addPage(A4);
-    y = A4[1] - MARGIN;
+    y = dessinerEntete(page, { font, bold, margin: MARGIN });
   };
   const ensure = (needed: number) => {
-    if (y - needed < MARGIN) newPage();
+    if (y - needed < PDF_FOOTER_HEIGHT + 8) newPage();
   };
+
 
   const write = (
     text: string,
@@ -74,18 +85,18 @@ export async function genererPdfDer(contenu: DerContenu): Promise<Uint8Array> {
     y -= 14;
   };
 
-  const cab = contenu.cabinet;
-
-  write(cab.nom, { size: 18, bold: true });
-  write(`SIRET ${cab.siret} - ORIAS ${cab.orias} - ${cab.adresse}`, { size: 9, color: MUTED });
-  write(`${cab.telephone} - ${cab.email}`, { size: 9, color: MUTED, gap: 6 });
-  rule();
+  void contenu.cabinet;
+  const refDoc = options.reference_dossier
+    ? referenceDocument(options.reference_dossier, "DER")
+    : `DER-v${contenu.version}`;
 
   write("DOCUMENT D'ENTREE EN RELATION (DER)", { size: 14, bold: true, gap: 2 });
+  write(`Reference du document : ${refDoc}`, { size: 9, bold: true, color: GOLD, gap: 2 });
   write(
     `Version ${contenu.version} - genere le ${new Date(contenu.genere_le).toLocaleDateString("fr-FR")}`,
     { size: 9, color: MUTED, gap: 12 },
   );
+
 
   for (const s of DER_SECTIONS) {
     const texte = contenu.mentions[s.cle];
@@ -128,5 +139,7 @@ export async function genererPdfDer(contenu: DerContenu): Promise<Uint8Array> {
     { size: 8, color: MUTED },
   );
 
+  dessinerPiedsDePage(doc, { font, margin: MARGIN });
   return doc.save();
+
 }

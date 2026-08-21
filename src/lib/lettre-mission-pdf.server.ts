@@ -1,5 +1,11 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { getBranche, labelForBranche } from "@/lib/recueil-besoins-schemas";
+import {
+  PDF_FOOTER_HEIGHT,
+  dessinerEntete,
+  dessinerPiedsDePage,
+  referenceDocument,
+} from "@/lib/pdf-entete-pied";
 
 /**
  * Génération native du PDF de la lettre de mission signée (pdf-lib, JS pur —
@@ -45,14 +51,14 @@ export async function genererPdfLettreMission(input: LettrePdfInput): Promise<Ui
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
   let page = doc.addPage(A4);
-  let y = A4[1] - MARGIN;
+  let y = dessinerEntete(page, { font, bold, margin: MARGIN });
 
   const newPage = () => {
     page = doc.addPage(A4);
-    y = A4[1] - MARGIN;
+    y = dessinerEntete(page, { font, bold, margin: MARGIN });
   };
   const ensure = (needed: number) => {
-    if (y - needed < MARGIN) newPage();
+    if (y - needed < PDF_FOOTER_HEIGHT + 8) newPage();
   };
 
   const write = (
@@ -108,16 +114,13 @@ export async function genererPdfLettreMission(input: LettrePdfInput): Promise<Ui
   const cli = c.client ?? {};
   const dos = c.dossier ?? {};
 
-  // En-tête
-  write(String(cab.nom ?? "EJ Partners Assurances"), { size: 18, bold: true });
-  write(
-    `SIRET ${cab.siret ?? "-"} - ORIAS ${cab.orias ?? "-"} - ${cab.adresse ?? ""}`,
-    { size: 9, color: MUTED },
-  );
-  write(`${cab.telephone ?? ""} - ${cab.email ?? ""}`, { size: 9, color: MUTED, gap: 6 });
-  rule();
-
   write("LETTRE DE MISSION DE COURTAGE", { size: 14, bold: true, gap: 2 });
+  write(`Reference du document : ${referenceDocument(dos.reference, "LM")}`, {
+    size: 9,
+    bold: true,
+    color: GOLD,
+    gap: 2,
+  });
   write(
     `${labelForBranche(input.type_assurance)} - Dossier ${dos.reference ?? "-"}`,
     { size: 10, color: MUTED, gap: 10 },
@@ -199,5 +202,6 @@ export async function genererPdfLettreMission(input: LettrePdfInput): Promise<Ui
     { size: 8, color: MUTED },
   );
 
+  dessinerPiedsDePage(doc, { font, margin: MARGIN });
   return doc.save();
 }
