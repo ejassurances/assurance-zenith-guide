@@ -68,10 +68,16 @@ export async function assurerArborescenceClient(
   if (error || !client) throw new Error(error?.message ?? "Client introuvable");
 
   let folderId: string | null = (client as any).drive_folder_id ?? null;
+  const nomAttendu = nomDossierClient(client as any);
   if (!folderId) {
     const racine = await assurerDossier(DRIVE_RACINE_CLIENTS);
-    folderId = await assurerDossier(nomDossierClient(client as any), racine);
+    folderId = await assurerDossier(nomAttendu, racine);
+  } else {
+    // Nomenclature officielle : le dossier suit toujours la référence CLI-AAAA-XXXX.
+    const nomActuel = await nomDrive(folderId);
+    if (nomActuel && nomActuel !== nomAttendu) await renommerDrive(folderId, nomAttendu);
   }
+
 
   for (const sous of DRIVE_SOUS_DOSSIERS) {
     await assurerDossier(sous, folderId);
