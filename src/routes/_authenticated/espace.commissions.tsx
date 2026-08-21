@@ -12,6 +12,7 @@ import type { SyntheseAnnee } from "@/lib/commission-previsions";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { IconCoins } from "@tabler/icons-react";
+import { ExportFecCard } from "@/components/export-fec-card";
 
 export const Route = createFileRoute("/_authenticated/espace/commissions")({
   component: CommissionsPage,
