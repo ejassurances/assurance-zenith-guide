@@ -2435,6 +2435,9 @@ export type Database = {
           genere_le: string
           id: string
           modele_ia: string | null
+          profils_specifiques: string[] | null
+          route: string | null
+          scores: Json | null
           statut: string
           updated_at: string
         }
@@ -2447,6 +2450,9 @@ export type Database = {
           genere_le?: string
           id?: string
           modele_ia?: string | null
+          profils_specifiques?: string[] | null
+          route?: string | null
+          scores?: Json | null
           statut?: string
           updated_at?: string
         }
@@ -2459,6 +2465,9 @@ export type Database = {
           genere_le?: string
           id?: string
           modele_ia?: string | null
+          profils_specifiques?: string[] | null
+          route?: string | null
+          scores?: Json | null
           statut?: string
           updated_at?: string
         }
@@ -2618,6 +2627,7 @@ export type Database = {
           economie_estimee: number | null
           fumeur: boolean | null
           id: string
+          mode_recommandation: string
           notes: string | null
           produit_id: string | null
           recueil_besoins: Json | null
@@ -2652,6 +2662,7 @@ export type Database = {
           economie_estimee?: number | null
           fumeur?: boolean | null
           id?: string
+          mode_recommandation?: string
           notes?: string | null
           produit_id?: string | null
           recueil_besoins?: Json | null
@@ -2686,6 +2697,7 @@ export type Database = {
           economie_estimee?: number | null
           fumeur?: boolean | null
           id?: string
+          mode_recommandation?: string
           notes?: string | null
           produit_id?: string | null
           recueil_besoins?: Json | null
@@ -3986,6 +3998,7 @@ export type Database = {
           code_produit: string | null
           commission_taux: number | null
           compagnie_id: string
+          contrat_star: boolean
           couplage_message: string | null
           created_at: string
           created_by: string | null
@@ -4011,6 +4024,7 @@ export type Database = {
           code_produit?: string | null
           commission_taux?: number | null
           compagnie_id: string
+          contrat_star?: boolean
           couplage_message?: string | null
           created_at?: string
           created_by?: string | null
@@ -4036,6 +4050,7 @@ export type Database = {
           code_produit?: string | null
           commission_taux?: number | null
           compagnie_id?: string
+          contrat_star?: boolean
           couplage_message?: string | null
           created_at?: string
           created_by?: string | null
