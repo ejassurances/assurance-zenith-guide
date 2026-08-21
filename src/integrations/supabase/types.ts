@@ -1067,8 +1067,9 @@ export type Database = {
           contrat_id: string | null
           created_at: string
           date_estimation: string | null
-          dossier_id: string
+          dossier_id: string | null
           id: string
+          mois_debut_offset: number
           mois_restants_actuels: number | null
           mois_restants_initial: number | null
           montant_mensuel_estime: number | null
@@ -1087,8 +1088,9 @@ export type Database = {
           contrat_id?: string | null
           created_at?: string
           date_estimation?: string | null
-          dossier_id: string
+          dossier_id?: string | null
           id?: string
+          mois_debut_offset?: number
           mois_restants_actuels?: number | null
           mois_restants_initial?: number | null
           montant_mensuel_estime?: number | null
@@ -1107,8 +1109,9 @@ export type Database = {
           contrat_id?: string | null
           created_at?: string
           date_estimation?: string | null
-          dossier_id?: string
+          dossier_id?: string | null
           id?: string
+          mois_debut_offset?: number
           mois_restants_actuels?: number | null
           mois_restants_initial?: number | null
           montant_mensuel_estime?: number | null
@@ -4855,6 +4858,10 @@ export type Database = {
       can_access_client: { Args: { _client_id: string }; Returns: boolean }
       can_access_contrat: { Args: { _contrat_id: string }; Returns: boolean }
       can_access_dossier: { Args: { _dossier_id: string }; Returns: boolean }
+      corriger_contrat_actif: {
+        Args: { _champs: Json; _contrat_id: string; _motif: string }
+        Returns: undefined
+      }
       current_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
@@ -4892,6 +4899,10 @@ export type Database = {
       purger_neoliane_evenements: { Args: never; Returns: undefined }
       purger_simulassur_evenements: { Args: never; Returns: undefined }
       recalculer_echeances_contrat: {
+        Args: { _contrat_id: string }
+        Returns: undefined
+      }
+      recalculer_prevision_contrat: {
         Args: { _contrat_id: string }
         Returns: undefined
       }
