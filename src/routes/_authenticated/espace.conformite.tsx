@@ -17,6 +17,7 @@ import { ControleInternePanel } from "@/components/controle-interne-panel";
 import { CartographieRisquesPanel } from "@/components/cartographie-risques-panel";
 import { RegistreRgpdPanel } from "@/components/registre-rgpd-panel";
 import { FormationsPersonnelPanel } from "@/components/formations-personnel-panel";
+import { DoraRegistrePanel } from "@/components/dora-registre-panel";
 
 export const Route = createFileRoute("/_authenticated/espace/conformite")({
   component: ConformitePage,
