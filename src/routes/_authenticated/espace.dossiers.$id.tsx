@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
+import { BoutonEnvoiEmail } from "@/components/envoi-rapide-email";
 import { useEffect, useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -189,6 +190,9 @@ function DossierDetail() {
         <p className="mt-1 text-sm text-ink-muted">
           Référence {dossier.reference} · {labelForBranche(dossier.type_assurance)}
         </p>
+        <div className="mt-3">
+          <BoutonEnvoiEmail type="dossier" id={dossier.id} />
+        </div>
       </div>
 
       {kycBloquant && (

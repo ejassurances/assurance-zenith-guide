@@ -280,11 +280,7 @@ function CompagnieDetail() {
             </div>
           )}
           {tab === "emails" && (
-            <EmailsLiesPanel
-              liens={{ compagnie_id: c.id }}
-              destinataireParDefaut={c.contact_email}
-              titre="Emails de la compagnie"
-            />
+            <EmailsLiesPanel liens={{ compagnie_id: c.id }} titre="Historique des échanges" />
           )}
           {tab === "api" && <ApiTab compagnieId={c.id} apiActive={c.api_active} isAdmin={isAdmin} onApiActiveChange={(v) => saveInfos({ api_active: v })} />}
         </div>

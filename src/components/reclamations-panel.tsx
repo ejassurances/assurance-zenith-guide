@@ -4,6 +4,7 @@ import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { BoutonEnvoiEmail } from "@/components/envoi-rapide-email";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -137,11 +138,14 @@ export function ReclamationsPanel({ canManage }: { canManage: boolean }) {
                   </Link>
                 </h3>
               </div>
-              <span
-                className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase ${STATUT_STYLE[r.statut] ?? ""}`}
-              >
-                {STATUT_LABEL[r.statut] ?? r.statut}
-              </span>
+              <div className="flex items-center gap-2">
+                {canManage && <BoutonEnvoiEmail type="reclamation" id={r.id} />}
+                <span
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase ${STATUT_STYLE[r.statut] ?? ""}`}
+                >
+                  {STATUT_LABEL[r.statut] ?? r.statut}
+                </span>
+              </div>
             </div>
 
             {r.resume && <p className="mt-3 whitespace-pre-line text-sm text-ink">{r.resume}</p>}

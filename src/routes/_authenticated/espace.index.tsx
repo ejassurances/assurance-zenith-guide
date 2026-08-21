@@ -9,7 +9,7 @@ import type { SyntheseAnnee } from "@/lib/commission-previsions";
 import { ScoreRings } from "@/components/score-rings";
 import { useScoresValeur } from "@/hooks/use-scores-valeur";
 import type { NiveauConformite } from "@/lib/conformite-score";
-import { Users, Folder, Building2, Receipt, ShieldCheck, Mail } from "lucide-react";
+import { Users, Folder, Building2, Receipt, ShieldCheck } from "lucide-react";
 import { IconUsers, IconFileDescription, IconFileCheck, IconFileEuro, IconCoins } from "@tabler/icons-react";
 import { StatCard } from "@/components/stat-card";
 
@@ -37,7 +37,6 @@ const ACCES_RAPIDE = [
   { to: "/espace/compagnies", label: "Compagnies", icon: Building2, badge: "bg-amber-100 text-amber-700" },
   { to: "/espace/commissions", label: "Commissions", icon: Receipt, badge: "bg-rose-100 text-rose-700" },
   { to: "/espace/conformite", label: "Conformité", icon: ShieldCheck, badge: "bg-violet-100 text-violet-700" },
-  { to: "/espace/emails", label: "Emails", icon: Mail, badge: "bg-teal-100 text-teal-700" },
 ] as const;
 
 /** Statut de relance déduit de la priorité et de l'échéance de la tâche. */

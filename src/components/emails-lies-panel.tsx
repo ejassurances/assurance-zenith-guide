@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { messageComplet } from "@/lib/emails.functions";
-import { EmailComposeDialog, type EmailLiens } from "@/components/email-compose-dialog";
+
+export interface EmailLiens {
+  client_id?: string | null;
+  dossier_id?: string | null;
+  contrat_id?: string | null;
+  compagnie_id?: string | null;
+}
 
 type LienEmail = {
   id: string;
@@ -22,90 +28,79 @@ type EmailAffiche = LienEmail & {
 };
 
 /**
- * Liste des emails rattachés à un client, un dossier, un contrat ou une
- * compagnie. Seul le lien vers le message Gmail est conservé en base : le
- * contenu est lu en direct via l'API Gmail à l'affichage.
+ * Historique des échanges rattachés à un client, un dossier, un contrat ou une
+ * compagnie. Affichage passif en lecture seule : seul le lien vers le message
+ * Gmail est conservé en base, le contenu est lu en direct via l'API Gmail.
  */
 export function EmailsLiesPanel({
   liens,
-  destinataireParDefaut,
-  titre = "Emails",
-  canEdit = true,
+  titre = "Historique des échanges",
 }: {
   liens: EmailLiens;
-  destinataireParDefaut?: string | null;
   titre?: string;
-  canEdit?: boolean;
 }) {
   const [emails, setEmails] = useState<EmailAffiche[]>([]);
   const [loading, setLoading] = useState(true);
-  const [compose, setCompose] = useState(false);
-
-  const load = async () => {
-    setLoading(true);
-    let query = supabase
-      .from("crm_emails")
-      .select("id, gmail_message_id, direction, recu_le, notes, created_at")
-      .order("recu_le", { ascending: false, nullsFirst: false });
-    if (liens.client_id) query = query.eq("client_id", liens.client_id);
-    if (liens.dossier_id) query = query.eq("dossier_id", liens.dossier_id);
-    if (liens.contrat_id) query = query.eq("contrat_id", liens.contrat_id);
-    if (liens.compagnie_id) query = query.eq("compagnie_id", liens.compagnie_id);
-    const { data } = await query;
-    const lignes = (data ?? []) as LienEmail[];
-
-    const enrichis = await Promise.all(
-      lignes.map(async (l): Promise<EmailAffiche> => {
-        try {
-          const { message } = await messageComplet({ data: { id: l.gmail_message_id } });
-          return {
-            ...l,
-            sujet: message.sujet ?? null,
-            expediteur_nom: message.expediteur_nom ?? null,
-            expediteur_email: message.expediteur_email ?? null,
-            destinataires: message.destinataires ?? null,
-            extrait: (message.texte ?? message.snippet ?? null)?.slice(0, 600) ?? null,
-          };
-        } catch {
-          return {
-            ...l,
-            sujet: null,
-            expediteur_nom: null,
-            expediteur_email: null,
-            destinataires: null,
-            extrait: null,
-            erreur: "Contenu indisponible (message introuvable dans la boîte du cabinet).",
-          };
-        }
-      }),
-    );
-    setEmails(enrichis);
-    setLoading(false);
-  };
 
   useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      let query = supabase
+        .from("crm_emails")
+        .select("id, gmail_message_id, direction, recu_le, notes, created_at")
+        .order("recu_le", { ascending: false, nullsFirst: false });
+      if (liens.client_id) query = query.eq("client_id", liens.client_id);
+      if (liens.dossier_id) query = query.eq("dossier_id", liens.dossier_id);
+      if (liens.contrat_id) query = query.eq("contrat_id", liens.contrat_id);
+      if (liens.compagnie_id) query = query.eq("compagnie_id", liens.compagnie_id);
+      const { data } = await query;
+      const lignes = (data ?? []) as LienEmail[];
+
+      const enrichis = await Promise.all(
+        lignes.map(async (l): Promise<EmailAffiche> => {
+          try {
+            const { message } = await messageComplet({ data: { id: l.gmail_message_id } });
+            return {
+              ...l,
+              sujet: message.sujet ?? null,
+              expediteur_nom: message.expediteur_nom ?? null,
+              expediteur_email: message.expediteur_email ?? null,
+              destinataires: message.destinataires ?? null,
+              extrait: (message.texte ?? message.snippet ?? null)?.slice(0, 600) ?? null,
+            };
+          } catch {
+            return {
+              ...l,
+              sujet: null,
+              expediteur_nom: null,
+              expediteur_email: null,
+              destinataires: null,
+              extrait: null,
+              erreur: "Contenu indisponible (message introuvable dans la boîte du cabinet).",
+            };
+          }
+        }),
+      );
+      setEmails(enrichis);
+      setLoading(false);
+    };
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liens.client_id, liens.dossier_id, liens.contrat_id, liens.compagnie_id]);
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div>
         <h3 className="crm-eyebrow">{titre}</h3>
-        {canEdit && (
-          <button
-            onClick={() => setCompose(true)}
-            className="rounded-full bg-[#0A192F] px-4 py-2 text-sm font-medium text-white hover:bg-[#0A192F]/90"
-          >
-            Envoyer un email
-          </button>
-        )}
+        <p className="mt-1 text-xs text-ink-muted">
+          Lecture seule : consultation directe des messages de la boîte du cabinet. Utilisez « Envoyer un e-mail » sur
+          la fiche pour écrire.
+        </p>
       </div>
 
       {loading ? (
         <p className="text-sm text-ink-muted">Chargement…</p>
       ) : emails.length === 0 ? (
-        <p className="text-sm text-ink-muted">Aucun email rattaché pour le moment.</p>
+        <p className="text-sm text-ink-muted">Aucun échange rattaché pour le moment.</p>
       ) : (
         <ul className="space-y-2">
           {emails.map((m) => (
@@ -146,14 +141,6 @@ export function EmailsLiesPanel({
           ))}
         </ul>
       )}
-
-      <EmailComposeDialog
-        open={compose}
-        onClose={() => setCompose(false)}
-        onSent={load}
-        defaultTo={destinataireParDefaut ?? ""}
-        liens={liens}
-      />
     </div>
   );
 }

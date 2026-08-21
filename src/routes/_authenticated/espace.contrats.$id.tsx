@@ -9,6 +9,7 @@ import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
 import { CommissionContratCard } from "@/components/commission-contrat-card";
 import { ContratDocumentsPanel } from "@/components/contrat-documents-panel";
 import { PageHeader } from "@/components/page-header";
+import { BoutonEnvoiEmail } from "@/components/envoi-rapide-email";
 import { StatCard } from "@/components/stat-card";
 import { IconFileText } from "@tabler/icons-react";
 
@@ -292,6 +293,13 @@ function ContratDetail() {
             ← {client.prenom ? client.prenom + " " : ""}
             {client.nom} · {client.reference}
           </Link>
+        )}
+        {canEdit && (
+          <BoutonEnvoiEmail
+            type="contrat"
+            id={c.id}
+            className="inline-flex items-center gap-2 rounded-full border border-white/30 px-3 py-1.5 text-xs text-white hover:bg-white/10"
+          />
         )}
         {canEdit && (
           <button onClick={recalc} className="rounded-full border border-white/30 px-3 py-1.5 text-xs text-white hover:bg-white/10">
