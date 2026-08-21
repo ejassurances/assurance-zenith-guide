@@ -425,9 +425,49 @@ function ProduitsTab({
   const [nom, setNom] = useState("");
   const [familleId, setFamilleId] = useState(familles[0]?.id ?? "");
   const [creating, setCreating] = useState(false);
+  const [grilles, setGrilles] = useState<Record<string, GrilleEtat>>({});
   useEffect(() => {
     if (!familleId && familles[0]) setFamilleId(familles[0].id);
   }, [familles, familleId]);
+
+  const produitIds = useMemo(() => produits.map((p) => p.id).sort().join(","), [produits]);
+  useEffect(() => {
+    const ids = produitIds ? produitIds.split(",") : [];
+    if (ids.length === 0) {
+      setGrilles({});
+      return;
+    }
+    let annule = false;
+    (async () => {
+      const [gar, prop] = await Promise.all([
+        supabase.from("produit_garanties").select("produit_id,statut").in("produit_id", ids),
+        supabase
+          .from("produit_garanties_propositions")
+          .select("produit_id")
+          .eq("statut", "proposee")
+          .in("produit_id", ids),
+      ]);
+      if (annule) return;
+      const map: Record<string, GrilleEtat> = {};
+      for (const id of ids) map[id] = "absente";
+      for (const g of (gar.data as { produit_id: string; statut: string }[] | null) ?? []) {
+        if (g.statut === "valide") map[g.produit_id] = "validee";
+        else if (map[g.produit_id] !== "validee") map[g.produit_id] = "brouillon";
+      }
+      for (const p of (prop.data as { produit_id: string }[] | null) ?? []) {
+        if (map[p.produit_id] === "absente") map[p.produit_id] = "proposition";
+      }
+      setGrilles(map);
+    })();
+    return () => {
+      annule = true;
+    };
+  }, [produitIds]);
+
+  const nbValidees = useMemo(
+    () => produits.filter((p) => grilles[p.id] === "validee").length,
+    [produits, grilles],
+  );
 
   const active = useMemo(() => produits.find((p) => p.id === selected), [produits, selected]);
 
