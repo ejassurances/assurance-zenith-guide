@@ -31,6 +31,7 @@ import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
 import { Route as ApiPublicFormationsRappelsRouteImport } from './routes/api/public/formations-rappels'
 import { Route as ApiPublicEnvoisPlanifiesRouteImport } from './routes/api/public/envois-planifies'
 import { Route as ApiPublicDevoirsConseilEnvoisRouteImport } from './routes/api/public/devoirs-conseil-envois'
+import { Route as ApiPublicDdaPdfRepriseRouteImport } from './routes/api/public/dda-pdf-reprise'
 import { Route as ApiPublicDdaPdfRepairRouteImport } from './routes/api/public/dda-pdf-repair'
 import { Route as ApiPublicCorrigerLabelsPartenairesRouteImport } from './routes/api/public/corriger-labels-partenaires'
 import { Route as ApiPublicControleInterneRappelRouteImport } from './routes/api/public/controle-interne-rappel'
@@ -187,6 +188,11 @@ const ApiPublicDevoirsConseilEnvoisRoute =
     path: '/api/public/devoirs-conseil-envois',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicDdaPdfRepriseRoute = ApiPublicDdaPdfRepriseRouteImport.update({
+  id: '/api/public/dda-pdf-reprise',
+  path: '/api/public/dda-pdf-reprise',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicDdaPdfRepairRoute = ApiPublicDdaPdfRepairRouteImport.update({
   id: '/api/public/dda-pdf-repair',
   path: '/api/public/dda-pdf-repair',
@@ -436,6 +442,7 @@ export interface FileRoutesByFullPath {
   '/api/public/controle-interne-rappel': typeof ApiPublicControleInterneRappelRoute
   '/api/public/corriger-labels-partenaires': typeof ApiPublicCorrigerLabelsPartenairesRoute
   '/api/public/dda-pdf-repair': typeof ApiPublicDdaPdfRepairRoute
+  '/api/public/dda-pdf-reprise': typeof ApiPublicDdaPdfRepriseRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
@@ -495,6 +502,7 @@ export interface FileRoutesByTo {
   '/api/public/controle-interne-rappel': typeof ApiPublicControleInterneRappelRoute
   '/api/public/corriger-labels-partenaires': typeof ApiPublicCorrigerLabelsPartenairesRoute
   '/api/public/dda-pdf-repair': typeof ApiPublicDdaPdfRepairRoute
+  '/api/public/dda-pdf-reprise': typeof ApiPublicDdaPdfRepriseRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
@@ -557,6 +565,7 @@ export interface FileRoutesById {
   '/api/public/controle-interne-rappel': typeof ApiPublicControleInterneRappelRoute
   '/api/public/corriger-labels-partenaires': typeof ApiPublicCorrigerLabelsPartenairesRoute
   '/api/public/dda-pdf-repair': typeof ApiPublicDdaPdfRepairRoute
+  '/api/public/dda-pdf-reprise': typeof ApiPublicDdaPdfRepriseRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
@@ -619,6 +628,7 @@ export interface FileRouteTypes {
     | '/api/public/controle-interne-rappel'
     | '/api/public/corriger-labels-partenaires'
     | '/api/public/dda-pdf-repair'
+    | '/api/public/dda-pdf-reprise'
     | '/api/public/devoirs-conseil-envois'
     | '/api/public/envois-planifies'
     | '/api/public/formations-rappels'
@@ -678,6 +688,7 @@ export interface FileRouteTypes {
     | '/api/public/controle-interne-rappel'
     | '/api/public/corriger-labels-partenaires'
     | '/api/public/dda-pdf-repair'
+    | '/api/public/dda-pdf-reprise'
     | '/api/public/devoirs-conseil-envois'
     | '/api/public/envois-planifies'
     | '/api/public/formations-rappels'
@@ -739,6 +750,7 @@ export interface FileRouteTypes {
     | '/api/public/controle-interne-rappel'
     | '/api/public/corriger-labels-partenaires'
     | '/api/public/dda-pdf-repair'
+    | '/api/public/dda-pdf-reprise'
     | '/api/public/devoirs-conseil-envois'
     | '/api/public/envois-planifies'
     | '/api/public/formations-rappels'
@@ -783,6 +795,7 @@ export interface RootRouteChildren {
   ApiPublicControleInterneRappelRoute: typeof ApiPublicControleInterneRappelRoute
   ApiPublicCorrigerLabelsPartenairesRoute: typeof ApiPublicCorrigerLabelsPartenairesRoute
   ApiPublicDdaPdfRepairRoute: typeof ApiPublicDdaPdfRepairRoute
+  ApiPublicDdaPdfRepriseRoute: typeof ApiPublicDdaPdfRepriseRoute
   ApiPublicDevoirsConseilEnvoisRoute: typeof ApiPublicDevoirsConseilEnvoisRoute
   ApiPublicEnvoisPlanifiesRoute: typeof ApiPublicEnvoisPlanifiesRoute
   ApiPublicFormationsRappelsRoute: typeof ApiPublicFormationsRappelsRoute
@@ -957,6 +970,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/devoirs-conseil-envois'
       fullPath: '/api/public/devoirs-conseil-envois'
       preLoaderRoute: typeof ApiPublicDevoirsConseilEnvoisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/dda-pdf-reprise': {
+      id: '/api/public/dda-pdf-reprise'
+      path: '/api/public/dda-pdf-reprise'
+      fullPath: '/api/public/dda-pdf-reprise'
+      preLoaderRoute: typeof ApiPublicDdaPdfRepriseRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/dda-pdf-repair': {
@@ -1328,6 +1348,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicCorrigerLabelsPartenairesRoute:
     ApiPublicCorrigerLabelsPartenairesRoute,
   ApiPublicDdaPdfRepairRoute: ApiPublicDdaPdfRepairRoute,
+  ApiPublicDdaPdfRepriseRoute: ApiPublicDdaPdfRepriseRoute,
   ApiPublicDevoirsConseilEnvoisRoute: ApiPublicDevoirsConseilEnvoisRoute,
   ApiPublicEnvoisPlanifiesRoute: ApiPublicEnvoisPlanifiesRoute,
   ApiPublicFormationsRappelsRoute: ApiPublicFormationsRappelsRoute,
