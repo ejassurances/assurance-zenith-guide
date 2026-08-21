@@ -1,5 +1,12 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { DER_SECTIONS, type DerContenu } from "@/lib/der-modele";
+import {
+  PDF_FOOTER_HEIGHT,
+  dessinerEntete,
+  dessinerPiedsDePage,
+  referenceDocument,
+} from "@/lib/pdf-entete-pied";
+
 
 /** Rendu PDF natif du DER (pdf-lib, JS pur — compatible runtime serverless). */
 
