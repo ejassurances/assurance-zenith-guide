@@ -270,11 +270,17 @@ export const BRANCHES: BrancheConfig[] = [
             ],
           },
           {
+            key: "rachat_exclusions",
+            label: "Rachat d'exclusions demandé (dos / psy) ou exigence particulière de la banque",
+            type: "checkbox",
+          },
+          {
             key: "garanties_souhaitees",
             label: "Garanties souhaitées",
             type: "textarea",
             placeholder: "Décès, PTIA, IPT, ITT, IPP, exonération dos/psy…",
           },
+
         ],
       },
     ],
