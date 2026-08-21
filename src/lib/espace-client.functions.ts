@@ -521,3 +521,46 @@ export const monDevoirConseilUrl = createServerFn({ method: "POST" })
     return { url };
   });
 
+/**
+ * Documents du produit assuré (conditions générales, IPID, tableau de
+ * garanties…) rattachés au contrat du client. Seules les pièces non internes
+ * sont exposées, avec une URL signée de courte durée.
+ */
+export const mesDocumentsProduitContrat = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ contrat_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin, client } = await maFicheClient(context.userId);
+    if (!client) throw new Error("Aucune fiche client rattachée à votre compte.");
+
+    const { data: contrat } = await supabaseAdmin
+      .from("contrats")
+      .select("id, client_id, produit_id")
+      .eq("id", data.contrat_id)
+      .maybeSingle();
+    const c = contrat as { client_id: string | null; produit_id: string | null } | null;
+    if (!c || c.client_id !== client.id) throw new Error("Accès refusé");
+    if (!c.produit_id) return { documents: [] };
+
+    const { data: docs } = await supabaseAdmin
+      .from("produit_documents")
+      .select("id, type, nom, version, storage_path, interne")
+      .eq("produit_id", c.produit_id)
+      .eq("interne", false)
+      .order("created_at", { ascending: false });
+
+    const liste: { id: string; type: string; nom: string; version: string | null; url: string | null }[] = [];
+    for (const d of (docs ?? []) as Record<string, unknown>[]) {
+      const { data: signed } = await supabaseAdmin.storage
+        .from("produits-documents")
+        .createSignedUrl(String(d["storage_path"]), 600);
+      liste.push({
+        id: String(d["id"]),
+        type: String(d["type"] ?? "autre"),
+        nom: String(d["nom"] ?? "Document"),
+        version: (d["version"] as string | null) ?? null,
+        url: signed?.signedUrl ?? null,
+      });
+    }
+    return { documents: liste };
+  });
