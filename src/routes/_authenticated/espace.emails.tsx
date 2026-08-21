@@ -306,13 +306,24 @@ function EmailsPage() {
   return (
     <div className="space-y-6">
       <PageHeader eyebrow="Boîte du cabinet" title="Emails" description="Boîte de réception principale du cabinet (onglet « Principal » de Gmail)." icon={IconMail}>
-        <button onClick={() => loadBoite()} disabled={loading} className={BTN_SECONDAIRE}>
+        <button
+          onClick={() => loadBoite()}
+          disabled={loading}
+          className="rounded-full border border-white/30 px-4 py-2 text-sm text-white transition hover:border-[#D4AF37] disabled:opacity-60"
+        >
           {loading ? "Synchronisation…" : "Synchroniser"}
         </button>
-        <button onClick={lancerScan} disabled={scanBusy} className={BTN_SECONDAIRE}>
+        <button
+          onClick={lancerScan}
+          disabled={scanBusy}
+          className="rounded-full border border-white/30 px-4 py-2 text-sm text-white transition hover:border-[#D4AF37] disabled:opacity-60"
+        >
           {scanBusy ? "Scan en cours…" : "Scanner les mails (lus inclus)"}
         </button>
-        <button onClick={() => setCompose({ to: "", sujet: "", threadId: null })} className={BTN_PRIMAIRE}>
+        <button
+          onClick={() => setCompose({ to: "", sujet: "", threadId: null })}
+          className="rounded-full bg-[#D4AF37] px-5 py-2 text-sm font-semibold text-[#0A192F] transition hover:brightness-95"
+        >
           Nouvel email
         </button>
       </PageHeader>
