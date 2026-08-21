@@ -9,6 +9,9 @@ import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
 import { ProduitDocumentsLink } from "@/components/produit-documents-link";
 import { CommissionContratCard } from "@/components/commission-contrat-card";
 import { ContratDocumentsPanel } from "@/components/contrat-documents-panel";
+import { PageHeader } from "@/components/page-header";
+import { StatCard } from "@/components/stat-card";
+import { IconFileText } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/_authenticated/espace/contrats/$id")({
   component: ContratDetail,
@@ -222,35 +225,38 @@ function ContratDetail() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          {client && (
-            <Link
-              to="/espace/clients/$id"
-              params={{ id: client.id }}
-              className="text-xs text-ink-muted underline underline-offset-4"
-            >
-              ← {client.prenom ? client.prenom + " " : ""}
-              {client.nom} · {client.reference}
-            </Link>
-          )}
-          <h1 className="mt-2 font-serif text-3xl">{c.produit}</h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            {c.assureur} · {c.is_emprunteur ? "Emprunteur" : "Standard"}
-          </p>
-        </div>
-        {canEdit && (
-          <div className="flex gap-2">
-            <button onClick={recalc} className="rounded-md border border-line px-3 py-1.5 text-xs">
-              Recalculer
-            </button>
-            {role === "admin" && (
-              <button onClick={del} className="text-xs text-red-700 underline underline-offset-4">
-                Supprimer
-              </button>
-            )}
-          </div>
+      <PageHeader
+        eyebrow={c.assureur}
+        title={c.produit}
+        description={c.is_emprunteur ? "Contrat d'assurance emprunteur" : "Contrat standard"}
+        icon={IconFileText}
+      >
+        {client && (
+          <Link
+            to="/espace/clients/$id"
+            params={{ id: client.id }}
+            className="text-xs text-white/70 underline underline-offset-4 hover:text-white"
+          >
+            ← {client.prenom ? client.prenom + " " : ""}
+            {client.nom} · {client.reference}
+          </Link>
         )}
+        {canEdit && (
+          <button onClick={recalc} className="rounded-full border border-white/30 px-3 py-1.5 text-xs text-white hover:bg-white/10">
+            Recalculer
+          </button>
+        )}
+        {canEdit && role === "admin" && (
+          <button onClick={del} className="text-xs text-red-300 underline underline-offset-4 hover:text-red-200">
+            Supprimer
+          </button>
+        )}
+      </PageHeader>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard label="Prime annuelle" value={formatEuro(c.prime_annuelle)} icon={IconFileText} accent />
+        <StatCard label="Commission cabinet (cumul)" value={formatEuro(totaux.cabinet)} />
+        <StatCard label="Économie réalisée" value={c.economie_realisee !== null ? formatEuro(c.economie_realisee) : "—"} />
       </div>
 
       {err && <p className="rounded-md bg-red-50 p-3 text-sm text-red-800">{err}</p>}
