@@ -113,7 +113,7 @@ export const importerFactureDepuisEmail = createServerFn({ method: "POST" })
         montant_ht: ht,
         montant_tva: tva,
         montant_ttc: ttc,
-        compte_charge: fiche?.compte_charge_defaut ?? null,
+        compte_charge: fiche?.compte_charge_defaut ?? undefined,
         statut: "a_payer",
         notes,
         fichier_path: chemin,
