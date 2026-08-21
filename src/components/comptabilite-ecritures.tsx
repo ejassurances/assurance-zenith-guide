@@ -716,7 +716,7 @@ export function ResultatTab({ mandataireOnly = false }: { mandataireOnly?: boole
               </TableBody>
             </Table>
           </div>
-          <div className="rounded-2xl border-2 border-ink bg-surface-elevated p-5 lg:col-span-2">
+          <div className="crm-card border-2 border-[#0A192F] p-5 lg:col-span-2">
             <div className="flex items-center justify-between">
               <h3 className="font-serif text-xl font-medium">Résultat net</h3>
               <span className={"font-serif text-3xl font-medium " + (resultat >= 0 ? "text-emerald-700" : "text-red-700")}>{fmt(resultat)}</span>

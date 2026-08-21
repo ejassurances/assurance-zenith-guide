@@ -147,8 +147,8 @@ function AdminView() {
 
 function Card({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-2xl border border-line bg-surface-elevated p-5">
-      <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">{label}</p>
+    <div className="crm-card p-5">
+      <p className="crm-eyebrow">{label}</p>
       <p className="mt-2 font-serif text-2xl font-medium text-ink">{value}</p>
       {hint && <p className="mt-1 text-xs text-ink-muted">{hint}</p>}
     </div>
@@ -201,14 +201,14 @@ function Overview() {
         <Card label="Prévisionnel" value={fmt(stats.previsionnel)} hint="Toutes années" />
         <Card label={`Prévu ${currentYear}`} value={fmt(stats.previsionnelYear)} />
       </div>
-      <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+      <div className="crm-card p-5">
         <h3 className="font-serif text-lg font-medium">Poste « Commissions de courtage »</h3>
         <p className="mt-1 text-xs text-ink-muted">
           Commissions calculées selon le barème cabinet (branche / compagnie) — poste de produit d'exploitation.
         </p>
         <CommissionMoisCard />
       </div>
-      <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+      <div className="crm-card p-5">
         <h3 className="font-serif text-lg font-medium">Commissions cabinet par année</h3>
         <Table>
           <TableHeader>
@@ -324,7 +324,7 @@ function Previsionnel() {
         <Button variant="outline" onClick={exportCsv}>Export CSV</Button>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+      <div className="overflow-x-auto crm-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -405,7 +405,7 @@ function Encaissements() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+      <div className="crm-card p-5">
         <h3 className="font-serif text-lg font-medium">Saisir un bordereau compagnie</h3>
         <div className="mt-3 grid gap-3 sm:grid-cols-5">
           <Input placeholder="Période (2026-01)" value={form.periode} onChange={(e) => setForm({ ...form, periode: e.target.value })} />
@@ -417,7 +417,7 @@ function Encaissements() {
         <Input className="mt-3" placeholder="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+      <div className="overflow-x-auto crm-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -516,7 +516,7 @@ function Retrocessions({ portee }: { portee: "mandataire" | "prescripteur" }) {
 
   return (
     <div className="space-y-6">
-      <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+      <div className="overflow-x-auto crm-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -542,7 +542,7 @@ function Retrocessions({ portee }: { portee: "mandataire" | "prescripteur" }) {
         </Table>
       </div>
 
-      <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+      <div className="crm-card p-5">
         <h3 className="font-serif text-lg font-medium">Enregistrer un versement</h3>
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
           <Select value={form.beneficiaire_id} onValueChange={(v) => setForm({ ...form, beneficiaire_id: v })}>
@@ -563,7 +563,7 @@ function Retrocessions({ portee }: { portee: "mandataire" | "prescripteur" }) {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+      <div className="overflow-x-auto crm-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -643,7 +643,7 @@ function ReglesCommission() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+      <div className="crm-card p-5">
         <h3 className="font-serif text-lg font-medium">Nouvelle règle</h3>
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
           <Select value={form.portee} onValueChange={(v) => setForm({ ...form, portee: v as any })}>
@@ -674,7 +674,7 @@ function ReglesCommission() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+      <div className="overflow-x-auto crm-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -804,7 +804,7 @@ function PartnerCommissionsTables({
 
       <div>
         <h3 className="mb-2 font-serif text-lg font-medium">Mes commissions par contrat</h3>
-        <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+        <div className="overflow-x-auto crm-card">
           <Table>
             <TableHeader>
               <TableRow>
@@ -840,7 +840,7 @@ function PartnerCommissionsTables({
 
       <div>
         <h3 className="mb-2 font-serif text-lg font-medium">Versements reçus</h3>
-        <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+        <div className="overflow-x-auto crm-card">
           <Table>
             <TableHeader>
               <TableRow>
@@ -872,7 +872,7 @@ function PartnerCommissionsTables({
       {regles.length > 0 && (
         <div>
           <h3 className="mb-2 font-serif text-lg font-medium">Mes règles de rétrocession</h3>
-          <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+          <div className="overflow-x-auto crm-card">
             <Table>
               <TableHeader>
                 <TableRow>
