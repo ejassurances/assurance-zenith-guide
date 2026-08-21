@@ -279,23 +279,30 @@ export async function aiguillerLot(
       const nomClient = detail.expediteur_nom?.trim() || expediteur;
       const resume = analyse.resume || "une demande dont l'objet est précisé dans le message d'origine";
 
-      await envoyerMessage({
-        to: adresseCible,
-        cc: expediteur,
-        sujet: `${PREFIXE_SUJET} ${detail.sujet ?? m.sujet ?? "(sans objet)"}`.slice(0, 200),
-        html: corpsHtml({
-          nomClient,
-          emailClient: expediteur,
-          resume,
-          serviceArrivee: arrivee,
-          serviceCible: cible,
-          sujet: detail.sujet ?? m.sujet ?? null,
-          date: detail.date ?? m.date ?? null,
-          texteOrigine: detail.texte ?? detail.snippet ?? null,
-          pieces,
-          gmailId: m.id,
-        }),
-      });
+      // Expéditeur non client (partenaire, plateforme, robot de notification) :
+      // AUCUN envoi, aucune copie — le mail est seulement réétiqueté.
+      const sansEnvoi =
+        estExpediteurAutomatique(expediteur) || estEmailPartenaire(expediteur, annuairePartenaires);
+
+      if (!sansEnvoi) {
+        await envoyerMessage({
+          to: adresseCible,
+          cc: expediteur,
+          sujet: `${PREFIXE_SUJET} ${detail.sujet ?? m.sujet ?? "(sans objet)"}`.slice(0, 200),
+          html: corpsHtml({
+            nomClient,
+            emailClient: expediteur,
+            resume,
+            serviceArrivee: arrivee,
+            serviceCible: cible,
+            sujet: detail.sujet ?? m.sujet ?? null,
+            date: detail.date ?? m.date ?? null,
+            texteOrigine: detail.texte ?? detail.snippet ?? null,
+            pieces,
+            gmailId: m.id,
+          }),
+        });
+      }
 
       // Le mail d'origine quitte la file du service d'arrivée : il est archivé
       // là, et posé en « A_Traiter » du service réellement compétent.
