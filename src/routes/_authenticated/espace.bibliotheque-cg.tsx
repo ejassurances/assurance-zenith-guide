@@ -17,10 +17,14 @@ import { BRANCHES, labelForBranche } from "@/lib/recueil-besoins-schemas";
 import {
   analyserCgBibliothequeFn,
   enregistrerBrouillonCgBibliotheque,
+  enregistrerCgBibliotheque,
   listerCgBibliotheque,
   urlCgBibliotheque,
   validerCgBibliotheque,
 } from "@/lib/bibliotheque-cg.functions";
+import { BUCKET_CG_CLIENTS } from "@/lib/bibliotheque-cg";
+import { supabase } from "@/integrations/supabase/client";
+
 import { ouvrirPdf } from "@/lib/ouvrir-pdf";
 
 export const Route = createFileRoute("/_authenticated/espace/bibliotheque-cg")({
@@ -82,6 +86,12 @@ function BibliothequeCgPage() {
   const [edition, setEdition] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const deposerFn = useServerFn(enregistrerCgBibliotheque);
+  const [newCompagnie, setNewCompagnie] = useState("");
+  const [newBranche, setNewBranche] = useState<string>(BRANCHES[0]?.value ?? "emprunteur");
+  const [newEdition, setNewEdition] = useState("");
+  const [newFichier, setNewFichier] = useState<File | null>(null);
+
 
   const charger = useCallback(async () => {
     const res = (await lister({ data: { branche: filtre || null } })) as { entrees: Entree[] };
@@ -120,6 +130,37 @@ function BibliothequeCgPage() {
     }
   };
 
+  /** Dépôt interne par le cabinet : upload puis extraction IA en brouillon. */
+  const deposer = () =>
+    action(async () => {
+      const file = newFichier;
+      if (!file) throw new Error("Sélectionnez un document.");
+      if (file.size > 12 * 1024 * 1024) throw new Error("Fichier trop volumineux (12 Mo maximum).");
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) throw new Error("Session expirée : reconnectez-vous.");
+      const ext = file.name.split(".").pop()?.toLowerCase() || "pdf";
+      const chemin = `${uid}/${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from(BUCKET_CG_CLIENTS)
+        .upload(chemin, file, { upsert: false, contentType: file.type || "application/pdf" });
+      if (upErr) throw new Error(upErr.message);
+      await deposerFn({
+        data: {
+          compagnie_nom: newCompagnie.trim(),
+          branche: newBranche,
+          storage_path: chemin,
+          nom_fichier: file.name.slice(0, 300),
+          mime_type: file.type || "application/pdf",
+          edition_annee: newEdition.trim() || null,
+        },
+      });
+      setNewCompagnie("");
+      setNewEdition("");
+      setNewFichier(null);
+    }, "Document déposé : la grille proposée par l'IA doit être relue puis validée.");
+
+
   if (loading) return <p className="p-6 text-sm text-ink-muted">Chargement…</p>;
   if (!staff) return <p className="p-6 text-sm text-ink-muted">Accès réservé au cabinet.</p>;
 
@@ -146,6 +187,74 @@ function BibliothequeCgPage() {
         </select>
         <span className="text-xs text-ink-muted">{entrees.length} document(s)</span>
       </div>
+
+      <form
+        onSubmit={(ev) => {
+          ev.preventDefault();
+          void deposer();
+        }}
+        className="space-y-4 rounded-2xl border border-line bg-surface-elevated p-6"
+      >
+        <div>
+          <h2 className="font-serif text-lg text-ink">Ajouter des conditions générales (interne)</h2>
+          <p className="text-xs text-ink-muted">
+            Dépôt par le cabinet, pour le compte d'un client. L'extraction IA reste un brouillon à valider.
+          </p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-4">
+          <label className="block text-sm">
+            <span className="mb-1 block text-xs uppercase tracking-wide text-ink-muted">Compagnie déclarée</span>
+            <input
+              value={newCompagnie}
+              onChange={(e) => setNewCompagnie(e.target.value)}
+              required
+              placeholder="Ex. Cardif"
+              className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="mb-1 block text-xs uppercase tracking-wide text-ink-muted">Branche</span>
+            <select
+              value={newBranche}
+              onChange={(e) => setNewBranche(e.target.value)}
+              className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+            >
+              {BRANCHES.map((b) => (
+                <option key={b.value} value={b.value}>
+                  {b.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-sm">
+            <span className="mb-1 block text-xs uppercase tracking-wide text-ink-muted">Année d'édition</span>
+            <input
+              value={newEdition}
+              onChange={(e) => setNewEdition(e.target.value)}
+              placeholder="Ex. 2024"
+              className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="mb-1 block text-xs uppercase tracking-wide text-ink-muted">Document (PDF)</span>
+            <input
+              type="file"
+              accept="application/pdf,.pdf"
+              onChange={(e) => setNewFichier(e.target.files?.[0] ?? null)}
+              required
+              className="w-full rounded-md border border-line bg-background px-3 py-1.5 text-xs"
+            />
+          </label>
+        </div>
+        <button
+          type="submit"
+          disabled={busy || !newFichier}
+          className="rounded-full bg-accent px-4 py-2 text-xs font-medium text-accent-foreground disabled:opacity-50"
+        >
+          {busy ? "Dépôt en cours…" : "Déposer et analyser"}
+        </button>
+      </form>
+
 
       {message && <p className="text-sm text-ink">{message}</p>}
 
