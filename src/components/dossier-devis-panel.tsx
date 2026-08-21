@@ -106,6 +106,7 @@ export function DossierDevisPanel({
 
   const lancerClassement = useServerFn(classerDevisDossierFn);
   const retenirOffre = useServerFn(retenirDevisDossierFn);
+  const retenirManuel = useServerFn(retenirDevisManuelFn);
   const creerFixe = useServerFn(creerDevisTarifFixeFn);
 
   /** Produit du dossier en tarification fixe : formules et options à cotisation connue. */
