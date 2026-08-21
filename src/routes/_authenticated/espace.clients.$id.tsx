@@ -31,6 +31,7 @@ import {
   labelClientOrigine,
 } from "@/lib/crm-origines";
 import { ClientOriginePicker } from "@/components/client-origine-picker";
+import { DriveDossierButton } from "@/components/drive-dossier-button";
 
 export const Route = createFileRoute("/_authenticated/espace/clients/$id")({
   validateSearch: (search: Record<string, unknown>): { tab?: string } => ({
