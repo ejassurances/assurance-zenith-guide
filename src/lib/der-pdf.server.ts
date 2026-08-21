@@ -139,5 +139,7 @@ export async function genererPdfDer(
     { size: 8, color: MUTED },
   );
 
+  dessinerPiedsDePage(doc, { font, margin: MARGIN });
   return doc.save();
+
 }
