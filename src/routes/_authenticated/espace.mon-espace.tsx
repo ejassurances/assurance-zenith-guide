@@ -6,7 +6,14 @@ import { useAuth } from "@/lib/auth-context";
 import { DossierPiecesPanel } from "@/components/dossier-pieces-panel";
 import { DossierPipelineClient } from "@/components/dossier-pipeline-client";
 import { SinistresPanel } from "@/components/sinistres-panel";
-import { labelForBranche, BRANCHES_CREATION } from "@/lib/recueil-besoins-schemas";
+import {
+  labelForBranche,
+  BRANCHES_CREATION,
+  getBranche,
+  assurePrincipalEmprunteur,
+  ageDepuisDateNaissance,
+} from "@/lib/recueil-besoins-schemas";
+import { RecueilWorkflow } from "@/components/recueil-workflow";
 import {
   majMesCoordonnees,
   monFichierUrl,
@@ -129,6 +136,8 @@ function MonEspace() {
   const [envoiMsg, setEnvoiMsg] = useState(false);
   const [etudeBranche, setEtudeBranche] = useState("");
   const [etudeMessage, setEtudeMessage] = useState("");
+  const [etudeRecueil, setEtudeRecueil] = useState<Record<string, unknown>>({});
+  const [etudeEtape, setEtudeEtape] = useState<1 | 2>(1);
   const [etudeOuverte, setEtudeOuverte] = useState(false);
   const [etudeEnvoi, setEtudeEnvoi] = useState(false);
   const [etudeOk, setEtudeOk] = useState<string | null>(null);
@@ -331,13 +340,35 @@ function MonEspace() {
     setEtudeEnvoi(true);
     setSaveErr(null);
     try {
+      // Champs de compat emprunteur, calculés comme côté courtier.
+      let capital: number | null = null;
+      let duree_mois: number | null = null;
+      let age: number | null = null;
+      let fumeur: boolean | null = null;
+      if (etudeBranche === "emprunteur") {
+        capital = Number(etudeRecueil["capital"]) || null;
+        duree_mois = Number(etudeRecueil["duree_mois"]) || null;
+        const principal = assurePrincipalEmprunteur(etudeRecueil["assures"]);
+        age = principal ? ageDepuisDateNaissance(principal.date_naissance) : null;
+        fumeur = principal?.fumeur === true;
+      }
       const res = await demanderEtude({
-        data: { type_assurance: etudeBranche, message: etudeMessage.trim() || null },
+        data: {
+          type_assurance: etudeBranche,
+          message: etudeMessage.trim() || null,
+          recueil_besoins: etudeRecueil,
+          capital,
+          duree_mois,
+          age,
+          fumeur,
+        },
       });
       setEtudeOk(`Demande enregistrée — dossier ${res.reference}. Votre conseiller vous contacte sous 48 h.`);
       setEtudeOuverte(false);
       setEtudeBranche("");
       setEtudeMessage("");
+      setEtudeRecueil({});
+      setEtudeEtape(1);
       await load();
     } catch (e) {
       setSaveErr(e instanceof Error ? e.message : "Demande impossible");
@@ -431,39 +462,68 @@ function MonEspace() {
       {etudeOk && <p className="rounded-lg border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-800">{etudeOk}</p>}
 
       {etudeOuverte && (
-        <div className="space-y-3 rounded-lg border border-line bg-surface p-5">
-          <h2 className="font-serif text-lg">Nouvelle demande d'étude</h2>
-          <label className="block">
-            <span className="mb-1 block text-xs uppercase tracking-wide text-ink-muted">Type d'assurance</span>
-            <select
-              value={etudeBranche}
-              onChange={(e) => setEtudeBranche(e.target.value)}
-              className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm sm:max-w-sm"
+        <div className="space-y-4">
+          {etudeEtape === 1 || !getBranche(etudeBranche) ? (
+            <div className="rounded-2xl border border-line bg-surface-elevated p-6">
+              <h2 className="font-serif text-lg">Nouvelle demande d'étude</h2>
+              <p className="mt-1 text-sm text-ink-muted">
+                Choisissez la branche concernée : vous remplirez ensuite le même recueil des besoins que celui
+                utilisé par votre conseiller.
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {BRANCHES_CREATION.map((b) => (
+                  <button
+                    key={b.value}
+                    type="button"
+                    onClick={() => setEtudeBranche(b.value)}
+                    className={`rounded-2xl border p-4 text-left transition ${
+                      etudeBranche === b.value
+                        ? "border-ink bg-background"
+                        : "border-line bg-background/40 hover:border-ink/40"
+                    }`}
+                  >
+                    <p className="font-medium text-ink">{b.label}</p>
+                    <p className="mt-1 text-xs text-ink-muted">{b.description}</p>
+                  </button>
+                ))}
+              </div>
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setEtudeEtape(2)}
+                  disabled={!getBranche(etudeBranche)}
+                  className="rounded-full bg-[#0A192F] px-5 py-2 text-sm font-medium text-white disabled:opacity-50"
+                >
+                  Continuer → Recueil des besoins
+                </button>
+              </div>
+            </div>
+          ) : (
+            <RecueilWorkflow
+              branche={getBranche(etudeBranche)!}
+              values={etudeRecueil}
+              onChange={setEtudeRecueil}
+              onBack={() => setEtudeEtape(1)}
+              onComplete={() => soumettreEtude()}
+              completeLabel={etudeEnvoi ? "Envoi…" : "Envoyer ma demande"}
             >
-              <option value="">Choisir…</option>
-              {BRANCHES_CREATION.map((b) => (
-                <option key={b.value} value={b.value}>
-                  {b.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-xs uppercase tracking-wide text-ink-muted">Précisions (facultatif)</span>
-            <textarea
-              value={etudeMessage}
-              onChange={(e) => setEtudeMessage(e.target.value)}
-              rows={3}
-              className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
-            />
-          </label>
-          <button
-            onClick={soumettreEtude}
-            disabled={etudeEnvoi || !etudeBranche}
-            className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
-          >
-            {etudeEnvoi ? "Envoi…" : "Envoyer ma demande"}
-          </button>
+              <div className="space-y-4">
+                <label className="block">
+                  <span className="mb-1 block text-xs uppercase tracking-wide text-ink-muted">
+                    Précisions pour mon conseiller (facultatif)
+                  </span>
+                  <textarea
+                    value={etudeMessage}
+                    onChange={(e) => setEtudeMessage(e.target.value)}
+                    rows={3}
+                    className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+                  />
+                </label>
+                <p className="text-xs text-ink-muted">
+                  Vos réponses sont transmises à votre conseiller, qui vous contacte sous 48 h.
+                </p>
+              </div>
+            </RecueilWorkflow>
+          )}
         </div>
       )}
 
