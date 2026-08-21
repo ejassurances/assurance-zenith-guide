@@ -358,6 +358,22 @@ export async function genererDevoirConseilAuto(
 
   const emprunteur = d.type_assurance === "emprunteur";
 
+  // L'assiette de cotisation est celle du devis retenu (CI = capital initial
+  // fixe / CRD = capital restant dû dégressif) et non une valeur figée.
+  let assiette: "capital_initial" | "capital_restant_du" = "capital_restant_du";
+  if (emprunteur) {
+    const { data: devis } = await supabase
+      .from("dossier_devis")
+      .select("type_cotisation, created_at")
+      .eq("dossier_id", dossierId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const type = (devis as { type_cotisation: string | null } | null)?.type_cotisation ?? null;
+    if (type === "CI") assiette = "capital_initial";
+  }
+
+
   return envoyerDevoirConseil(
     supabase,
     dossierId,
