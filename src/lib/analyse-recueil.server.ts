@@ -14,7 +14,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 type Db = SupabaseClient<any, any, any>;
 
 const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
-const MODELES = ["gemini-2.5-flash", "gemini-2.0-flash"];
+const MODELES = ["gemini-3.6-flash", "gemini-2.5-flash", "gemini-2.0-flash"];
 
 export interface AnalyseRecueil {
   synthese: string;
