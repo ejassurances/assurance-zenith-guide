@@ -27,7 +27,10 @@ import { SouscriptionPanel } from "@/components/souscription-panel";
 import { CopilotePanel } from "@/components/copilote-panel";
 import { DossierDevisPanel } from "@/components/dossier-devis-panel";
 import { SimulassurConsole } from "@/components/simulassur-console";
-import { etapeLabel, type EtapeKey } from "@/lib/pipeline-dossier";
+import { ETAPES, etapeLabel, type EtapeKey } from "@/lib/pipeline-dossier";
+import { CompletudeRings } from "@/components/completude-rings";
+import { useCompletudeDossier } from "@/hooks/use-completude";
+import { SectionNav, type SectionNavItem } from "@/components/section-nav";
 
 
 export const Route = createFileRoute("/_authenticated/espace/dossiers/$id")({
@@ -114,6 +117,7 @@ function DossierDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedStep, setSelectedStep] = useState<EtapeKey | null>(null);
+  const completude = useCompletudeDossier(id, dossier?.client_id ?? null);
   const [contreProposition, setContreProposition] = useState<{
     suggestion: string;
     motif: string;
@@ -146,6 +150,12 @@ function DossierDetail() {
     load();
   };
 
+  const etapesNav: SectionNavItem<EtapeKey>[] = ETAPES.map((e) => ({
+    key: e.key,
+    label: e.label,
+    atone: e.horsParcours,
+  }));
+
   return (
     <div className="space-y-8">
       <div>
@@ -162,7 +172,12 @@ function DossierDetail() {
         <BrancheLegacyBanner dossierId={id} canEdit={canEdit} onReclassified={load} />
       )}
 
-
+      <div className="crm-card p-6">
+        <p className="crm-eyebrow">Complétude du dossier</p>
+        <div className="mt-4">
+          {completude ? <CompletudeRings items={completude} /> : <p className="text-xs text-ink-muted">Calcul…</p>}
+        </div>
+      </div>
 
       <DossierPipeline
         dossierId={id}
@@ -173,22 +188,35 @@ function DossierDetail() {
         onStepClick={setSelectedStep}
       />
 
-      {userId && (
-        <StageContent
-          step={displayedStep}
-          dossier={dossier}
-          userId={userId}
-          canEdit={canEdit}
-          contreProposition={contreProposition}
-          onChanged={load}
-          onContreProposition={(suggestion, motif) => {
-            setContreProposition({ suggestion, motif, key: Date.now() });
-          }}
-        />
-      )}
+      <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
+        <div className="min-w-0">
+          {userId && (
+            <StageContent
+              step={displayedStep}
+              dossier={dossier}
+              userId={userId}
+              canEdit={canEdit}
+              contreProposition={contreProposition}
+              onChanged={load}
+              onContreProposition={(suggestion, motif) => {
+                setContreProposition({ suggestion, motif, key: Date.now() });
+              }}
+            />
+          )}
+        </div>
+        <aside className="lg:sticky lg:top-6 lg:self-start">
+          <SectionNav
+            title="Étapes du dossier"
+            items={etapesNav}
+            active={displayedStep}
+            onSelect={setSelectedStep}
+          />
+        </aside>
+      </div>
     </div>
   );
 }
+
 
 function StageContent({
   step,

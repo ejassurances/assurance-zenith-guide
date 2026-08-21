@@ -10,6 +10,8 @@ import { ScoreRings } from "@/components/score-rings";
 import { useScoresValeur } from "@/hooks/use-scores-valeur";
 import type { NiveauConformite } from "@/lib/conformite-score";
 import { Users, Folder, Building2, Receipt, ShieldCheck, Mail } from "lucide-react";
+import { IconUsers, IconFileDescription, IconFileCheck, IconFileEuro, IconCoins } from "@tabler/icons-react";
+import { StatCard } from "@/components/stat-card";
 
 export const Route = createFileRoute("/_authenticated/espace/")({
   component: Dashboard,
@@ -134,20 +136,33 @@ function Dashboard() {
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
         {role !== "client" && (
-          <Card label="Prospects" value={stats.prospects} sub={`${stats.clients} fiches au total`} accent />
+          <Card
+            label="Prospects"
+            value={stats.prospects}
+            sub={`${stats.clients} fiches au total`}
+            accent
+            icon={IconUsers}
+          />
         )}
-        <Card label="Devis en cours" value={stats.enCours} sub={`${stats.dossiers} dossiers ouverts`} />
-        <Card label="Affaires conclues" value={stats.signes} />
+        <Card
+          label="Devis en cours"
+          value={stats.enCours}
+          sub={`${stats.dossiers} dossiers ouverts`}
+          icon={IconFileDescription}
+        />
+        <Card label="Affaires conclues" value={stats.signes} icon={IconFileCheck} />
         {role !== "client" && synthese && (
           <Card
             label={`Reste à encaisser ${synthese.annee}`}
             value={`${synthese.previsionnelRestant.toLocaleString("fr-FR")} €`}
             sub={`Total attendu ${synthese.annee} : ${synthese.totalAttendu.toLocaleString("fr-FR")} €`}
             accent
+            icon={IconFileEuro}
           />
         )}
         {role !== "client" && caReal && <CaRealCard data={caReal} />}
       </div>
+
 
 
       {(role === "admin" || role === "mandataire") && <CommissionMoisCard />}
@@ -212,32 +227,8 @@ function Dashboard() {
   );
 }
 
-function Card({
-  label,
-  value,
-  sub,
-  accent,
-}: {
-  label: string;
-  value: number | string;
-  sub?: string;
-  accent?: boolean;
-}) {
-  return (
-    <div className={"crm-card p-6 " + (accent ? "crm-card-accent" : "")}>
-      <p className="crm-eyebrow">{label}</p>
-      <p
-        className={
-          "crm-figure mt-3 text-3xl " + (accent ? "text-[color:var(--crm-gold-muted)]" : "text-ink")
-        }
-      >
-        {value}
-      </p>
-      {sub && <p className="mt-2 text-xs text-ink-muted">{sub}</p>}
-    </div>
-  );
+const Card = StatCard;
 
-}
 
 function CaRealCard({ data }: { data: CaRealSummary }) {
   const format = (n: number) =>
@@ -250,12 +241,18 @@ function CaRealCard({ data }: { data: CaRealSummary }) {
     : "text-red-600";
   const evolutionSign = evolution === null ? "" : evolution >= 0 ? "+" : "";
   return (
-    <div className="crm-card crm-card-accent p-6">
-      <p className="crm-eyebrow">CA réel {new Date().getFullYear()}</p>
-      <p className="crm-figure mt-3 text-3xl text-[color:var(--crm-gold-muted)]">
+    <div className="crm-card crm-card-accent relative overflow-hidden p-6">
+      <IconCoins
+        size={48}
+        stroke={1.4}
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-3 right-3 text-[color:var(--crm-gold)]/15"
+      />
+      <p className="crm-eyebrow relative">CA réel {new Date().getFullYear()}</p>
+      <p className="crm-figure relative mt-3 text-3xl text-[color:var(--crm-gold-muted)]">
         {format(data.anneeEnCours)}
       </p>
-      <p className="mt-2 text-xs text-ink-muted">
+      <p className="relative mt-2 text-xs text-ink-muted">
         {evolution === null ? (
           "Aucune donnée N-1"
         ) : (
