@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { LIBELLES_PROFILS, routeRecommandation } from "@/lib/emprunteur-notebook";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -48,7 +50,10 @@ type Classement = {
   modele_ia: string | null;
   classement: LigneClassement[];
   statut: string;
+  route: string | null;
+  profils_specifiques: string[] | null;
 };
+
 
 type Ref = { id: string; nom: string };
 type ProduitRef = {
@@ -89,6 +94,15 @@ export function DossierDevisPanel({
   const [classement, setClassement] = useState<Classement | null>(null);
   const [iaEtat, setIaEtat] = useState<"idle" | "classement" | "selection">("idle");
   const [iaMsg, setIaMsg] = useState<string | null>(null);
+  /** Débrayage manuel de la route de recommandation emprunteur (auto / A / B). */
+  const [modeReco, setModeReco] = useState<string>("auto");
+  const [recueilDossier, setRecueilDossier] = useState<Record<string, unknown>>({});
+  const routeEmprunteurPrevue = useMemo(
+    () => routeRecommandation(recueilDossier, modeReco),
+    [recueilDossier, modeReco],
+  );
+
+
   const lancerClassement = useServerFn(classerDevisDossierFn);
   const retenirOffre = useServerFn(retenirDevisDossierFn);
   const creerFixe = useServerFn(creerDevisTarifFixeFn);
@@ -167,13 +181,17 @@ export function DossierDevisPanel({
       supabase.from("produits").select("id,nom,compagnie_id,famille_id,assureur_porteur").order("nom"),
       supabase
         .from("dossier_devis_classements")
-        .select("id,genere_le,modele_ia,classement,statut")
+        .select("id,genere_le,modele_ia,classement,statut,route,profils_specifiques")
         .eq("dossier_id", dossierId)
         .eq("statut", "propose")
         .order("genere_le", { ascending: false })
         .limit(1)
         .maybeSingle(),
-      supabase.from("dossiers").select("produit_id,type_assurance,recueil_besoins").eq("id", dossierId).maybeSingle(),
+      supabase
+        .from("dossiers")
+        .select("produit_id,type_assurance,recueil_besoins,mode_recommandation")
+        .eq("id", dossierId)
+        .maybeSingle(),
     ]);
     if (d.error) setErr(d.error.message);
     setDevis((d.data as DossierDevis[]) ?? []);
@@ -182,10 +200,18 @@ export function DossierDevisPanel({
     setClassement((cl.data as Classement | null) ?? null);
 
     const dossier = dos.data as
-      | { produit_id: string | null; type_assurance: string | null; recueil_besoins: unknown }
+      | {
+          produit_id: string | null;
+          type_assurance: string | null;
+          recueil_besoins: unknown;
+          mode_recommandation?: string | null;
+        }
       | null;
     const recueil = (dossier?.recueil_besoins ?? {}) as Record<string, unknown>;
     const brancheDossier = dossier?.type_assurance ?? "";
+    setModeReco(dossier?.mode_recommandation ?? "auto");
+    setRecueilDossier(recueil);
+
     const nb = (v: unknown) => {
       const n = Number(v);
       return Number.isFinite(n) && n > 0 ? n : null;
@@ -841,6 +867,42 @@ export function DossierDevisPanel({
         {devis.length < 2 && (
           <p className="mt-2 text-xs text-ink-muted">Saisissez au moins 2 devis pour activer le classement.</p>
         )}
+
+        {branche === "emprunteur" && (
+          <div className="mt-3 rounded-xl border border-line bg-surface-2 p-3 text-xs">
+            <p className="font-medium text-ink">
+              Route de recommandation :{" "}
+              {routeEmprunteurPrevue.route === "A"
+                ? "A — prix croissant"
+                : "B — score d'adéquation technique (Notebook Emprunteur)"}
+            </p>
+            <p className="mt-1 text-ink-muted">
+              {routeEmprunteurPrevue.profils.length > 0
+                ? `Spécificité détectée dans le recueil : ${routeEmprunteurPrevue.profils
+                    .map((p) => LIBELLES_PROFILS[p])
+                    .join(", ")}.`
+                : "Aucune spécificité déclarée dans le recueil : le classement retient le critère du coût."}{" "}
+              Base de calcul restreinte aux contrats stars du cabinet.
+            </p>
+            <label className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="text-ink-muted">Mode :</span>
+              <select
+                value={modeReco}
+                onChange={async (e) => {
+                  const v = e.target.value;
+                  setModeReco(v);
+                  await supabase.from("dossiers").update({ mode_recommandation: v }).eq("id", dossierId);
+                }}
+                className="rounded-lg border border-line bg-surface px-2 py-1 text-ink"
+              >
+                <option value="auto">Automatique (selon le recueil)</option>
+                <option value="A">Forcer la route A — prix</option>
+                <option value="B">Forcer la route B — adéquation technique</option>
+              </select>
+            </label>
+          </div>
+        )}
+
         {iaMsg && <p className="mt-2 text-sm text-emerald-700">{iaMsg}</p>}
 
         {classement && (
@@ -848,7 +910,12 @@ export function DossierDevisPanel({
             <p className="text-xs text-ink-muted">
               Généré le {new Date(classement.genere_le).toLocaleString("fr-FR")}
               {classement.modele_ia ? ` · ${classement.modele_ia}` : ""}
+              {classement.route ? ` · Route ${classement.route}` : ""}
+              {classement.profils_specifiques && classement.profils_specifiques.length > 0
+                ? ` · ${classement.profils_specifiques.join(", ")}`
+                : ""}
             </p>
+
             {[...classement.classement]
               .sort((a, b) => a.rang - b.rang)
               .filter((l) => afficherDoublons || !estDoublonMasque(devis.find((x) => x.id === l.dossier_devis_id)))

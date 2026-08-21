@@ -87,30 +87,51 @@ export async function classerDevisDossier(
 ) {
   const { data: dossier, error: dErr } = await supabase
     .from("dossiers")
-    .select("id, type_assurance, recueil_besoins")
+    .select("id, type_assurance, recueil_besoins, mode_recommandation")
     .eq("id", dossierId)
     .maybeSingle();
   if (dErr || !dossier) throw new Error("Dossier introuvable ou accès refusé");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const dos = dossier as any;
+  const branche = String(dos.type_assurance ?? "");
 
   const { data: devisRows, error: devErr } = await supabase
     .from("dossier_devis")
     .select(
-      "id, cotisation_mensuelle, garanties_resume, source, assureur_porteur, compagnies:compagnie_id(nom, tier_favori), produits:produit_id(id, nom, assureur_porteur), produit_formules:formule_id(nom)",
+      "id, cotisation_mensuelle, garanties_resume, source, assureur_porteur, compagnies:compagnie_id(nom, tier_favori), produits:produit_id(id, nom, assureur_porteur, contrat_star), produit_formules:formule_id(nom)",
     )
     .eq("dossier_id", dossierId)
     .order("created_at", { ascending: true });
   if (devErr) throw new Error(devErr.message);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const devis = (devisRows ?? []) as any[];
+  let devis = (devisRows ?? []) as any[];
+
+  // EMPRUNTEUR : la base de calcul du moteur est restreinte aux contrats stars
+  // du cabinet. Les devis rattachés à un produit hors stars sont écartés du
+  // classement (et signalés au conseiller).
+  let horsStars = 0;
+  if (branche === "emprunteur") {
+    const retenus = devis.filter((d) => d.produits?.contrat_star === true);
+    horsStars = devis.length - retenus.length;
+    if (retenus.length === 0) {
+      throw new Error(
+        "Aucun devis rattaché aux contrats stars du cabinet : le classement emprunteur se calcule uniquement sur cette base. Rattachez les devis aux produits stars du catalogue.",
+      );
+    }
+    devis = retenus;
+  }
+
   // Le classement doit produire un TOP 3 : 3 devis minimum, SAUF si le catalogue
   // actif du cabinet ne contient qu'un seul produit pour cette branche (niche à
   // un seul partenaire). Dans ce cas, le classement se fait avec l'unique devis.
   const { catalogueOffreUnique } = await import("./catalogue-branche.server");
   const offreUnique = await catalogueOffreUnique(supabase, dos.type_assurance ?? null);
   if (devis.length < 3 && !offreUnique) {
-    throw new Error("Saisissez au moins 3 devis pour lancer le classement IA (TOP 3 exigé).");
+    throw new Error(
+      horsStars > 0
+        ? `Seuls ${devis.length} devis sur les contrats stars sont exploitables (${horsStars} devis hors stars écartés) : il en faut 3 pour lancer le classement.`
+        : "Saisissez au moins 3 devis pour lancer le classement IA (TOP 3 exigé).",
+    );
   }
   if (devis.length === 0) throw new Error("Aucun devis saisi sur ce dossier.");
 
@@ -124,34 +145,69 @@ export async function classerDevisDossier(
     garanties_resume: d.garanties_resume,
   }));
 
+  let modele: string | null = null;
+  let classement: LigneClassement[] = [];
+  let route: "A" | "B" | null = null;
+  let profils: string[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let scores: any = null;
 
-  const { modele, brut } = await appelerIa(
-    consigne({ branche: dos.type_assurance ?? null, recueil: dos.recueil_besoins ?? null, devis: payload }),
-  );
+  if (branche === "emprunteur") {
+    const { routeRecommandation } = await import("./emprunteur-notebook");
+    const { classerRouteA, classerRouteB, consigneRouteB } = await import("./emprunteur-recommandation.server");
+    const decision = routeRecommandation(dos.recueil_besoins ?? null, dos.mode_recommandation ?? "auto");
+    route = decision.route;
+    profils = decision.profils;
 
-  const obj = (brut ?? {}) as Record<string, unknown>;
-  const brutes = Array.isArray(obj["classement"]) ? (obj["classement"] as Record<string, unknown>[]) : [];
-  const ids = new Set(payload.map((p) => p.id));
-  const vues = new Set<string>();
-  const classement: LigneClassement[] = [];
-  for (const l of brutes) {
-    const id = String(l["dossier_devis_id"] ?? "");
-    if (!ids.has(id) || vues.has(id)) continue;
-    vues.add(id);
-    classement.push({
-      dossier_devis_id: id,
-      rang: classement.length + 1,
-      justification: String(l["justification"] ?? "").slice(0, 1500) || "Justification non fournie.",
-    });
-  }
-  // Les devis oubliés par l'IA sont ajoutés en fin de classement, sans jugement inventé.
-  for (const p of payload) {
-    if (vues.has(p.id)) continue;
-    classement.push({
-      dossier_devis_id: p.id,
-      rang: classement.length + 1,
-      justification: "Non classé par l'analyse : informations insuffisantes dans le devis saisi.",
-    });
+    if (decision.route === "A") {
+      // Route A : aucune spécificité déclarée → classement par prix croissant,
+      // déterministe, sans appel IA.
+      classement = classerRouteA(payload);
+      modele = "route-a-prix-croissant";
+    } else {
+      const rep = await appelerIa(
+        consigneRouteB({ profils: decision.profils, devis: payload, recueil: dos.recueil_besoins ?? null }),
+      );
+      modele = rep.modele;
+      const objB = (rep.brut ?? {}) as Record<string, unknown>;
+      const brutesB = Array.isArray(objB["analyses"]) ? (objB["analyses"] as Record<string, unknown>[]) : [];
+      const analyses = brutesB.map((a) => ({
+        dossier_devis_id: String(a["dossier_devis_id"] ?? ""),
+        criteres_valides: Array.isArray(a["criteres_valides"]) ? (a["criteres_valides"] as unknown[]).map(String) : [],
+        commentaire: String(a["commentaire"] ?? "").slice(0, 400),
+      }));
+      const res = classerRouteB(decision.profils, payload, analyses);
+      classement = res.classement;
+      scores = { profils: decision.profils, devis: res.scores };
+    }
+  } else {
+    const rep = await appelerIa(
+      consigne({ branche: dos.type_assurance ?? null, recueil: dos.recueil_besoins ?? null, devis: payload }),
+    );
+    modele = rep.modele;
+    const obj = (rep.brut ?? {}) as Record<string, unknown>;
+    const brutes = Array.isArray(obj["classement"]) ? (obj["classement"] as Record<string, unknown>[]) : [];
+    const ids = new Set(payload.map((p) => p.id));
+    const vues = new Set<string>();
+    for (const l of brutes) {
+      const id = String(l["dossier_devis_id"] ?? "");
+      if (!ids.has(id) || vues.has(id)) continue;
+      vues.add(id);
+      classement.push({
+        dossier_devis_id: id,
+        rang: classement.length + 1,
+        justification: String(l["justification"] ?? "").slice(0, 1500) || "Justification non fournie.",
+      });
+    }
+    // Les devis oubliés par l'IA sont ajoutés en fin de classement, sans jugement inventé.
+    for (const p of payload) {
+      if (vues.has(p.id)) continue;
+      classement.push({
+        dossier_devis_id: p.id,
+        rang: classement.length + 1,
+        justification: "Non classé par l'analyse : informations insuffisantes dans le devis saisi.",
+      });
+    }
   }
 
   // Un nouveau classement remplace l'ancien 'propose' non traité (pas d'accumulation).
@@ -170,9 +226,13 @@ export async function classerDevisDossier(
       statut: "propose",
       created_by: userId,
       genere_le: new Date().toISOString(),
+      route,
+      profils_specifiques: profils.length > 0 ? profils : null,
+      scores,
     })
     .select("id")
     .single();
+
   if (iErr || !inserted) throw new Error(iErr?.message ?? "Enregistrement du classement impossible");
 
   // Agent commercial : sélection automatique dans le TOP 3.
@@ -183,7 +243,8 @@ export async function classerDevisDossier(
   let auto: { devis_id: string; devoir_id: string | null } | null = null;
   const top3 = classement.slice(0, 3);
   const parId = new Map(devis.map((d) => [d.id as string, d]));
-  const branche = String(dos.type_assurance ?? "");
+
+
 
   let choisi: string | null = top3[0]?.dossier_devis_id ?? null;
   let blocage: string | null = null;
@@ -280,6 +341,9 @@ export async function classerDevisDossier(
         client_id: (di?.client_id as string | null) ?? null,
         created_by: userId,
       });
+    } else if (route === "B") {
+      // Route B : le classement est technique, le rang 1 prime sur le tarif.
+      choisi = top3[0]?.dossier_devis_id ?? null;
     } else {
 
       const tarifes = candidats.filter((d) => d.cotisation_mensuelle != null);
@@ -293,6 +357,7 @@ export async function classerDevisDossier(
       });
       choisi = (tri[0]?.id as string | undefined) ?? null;
     }
+
   }
 
   if (choisi) {
