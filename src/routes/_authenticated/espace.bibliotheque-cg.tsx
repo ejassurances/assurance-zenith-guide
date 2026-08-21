@@ -82,6 +82,12 @@ function BibliothequeCgPage() {
   const [edition, setEdition] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const deposerFn = useServerFn(enregistrerCgBibliotheque);
+  const [newCompagnie, setNewCompagnie] = useState("");
+  const [newBranche, setNewBranche] = useState<string>(BRANCHES[0]?.value ?? "emprunteur");
+  const [newEdition, setNewEdition] = useState("");
+  const [newFichier, setNewFichier] = useState<File | null>(null);
+
 
   const charger = useCallback(async () => {
     const res = (await lister({ data: { branche: filtre || null } })) as { entrees: Entree[] };
