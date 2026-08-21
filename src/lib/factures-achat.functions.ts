@@ -73,7 +73,14 @@ export const importerFactureDepuisEmail = createServerFn({ method: "POST" })
       .upload(chemin, octets, { contentType: mime, upsert: false });
     if (upErr) throw new Error(`Archivage du justificatif impossible : ${upErr.message}`);
 
+    const { rapprocherFournisseur } = await import("@/lib/fournisseurs.server");
+    const fiche = await rapprocherFournisseur({
+      nom: lue?.fournisseur ?? data.expediteur_nom ?? null,
+      email: data.expediteur_email ?? null,
+    });
+
     const fournisseur =
+      fiche?.nom ||
       lue?.fournisseur ||
       data.expediteur_nom ||
       (data.expediteur_email ? data.expediteur_email.split("@")[1] || data.expediteur_email : null) ||
