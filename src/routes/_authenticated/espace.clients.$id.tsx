@@ -247,12 +247,7 @@ function ClientDetail() {
             {tab === "dossiers" && <DossiersTab client={client} />}
             {tab === "der" && <DerTab clientId={client.id} clientEmail={client.email} />}
             {tab === "emails" && (
-              <EmailsLiesPanel
-                liens={{ client_id: client.id }}
-                destinataireParDefaut={client.email}
-                titre="Emails du client"
-                canEdit={canEdit}
-              />
+              <EmailsLiesPanel liens={{ client_id: client.id }} titre="Historique des échanges" />
             )}
             {tab === "sinistres" && <SinistresPanel clientId={client.id} mode="staff" canEdit={canEdit} />}
             {tab === "conformite" && (

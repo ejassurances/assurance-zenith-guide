@@ -216,11 +216,7 @@ function FicheSinistre() {
           </ul>
         )}
         <p className="text-xs text-ink-muted">
-          Édition et envoi depuis{" "}
-          <Link to="/espace/emails" className="underline">
-            l'onglet Emails
-          </Link>
-          .
+          Lecture seule. Utilisez le bouton « Envoyer un e-mail » en haut du sinistre pour écrire aux intervenants.
         </p>
       </section>
     </div>
