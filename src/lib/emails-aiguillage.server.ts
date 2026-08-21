@@ -15,9 +15,10 @@ import {
  * Renvoi des mails MAL AIGUILLÉS. Le premier libellé de service est posé
  * manuellement par le staff : l'erreur est donc humaine. Quand le contenu du
  * message ne correspond manifestement pas au thème du service dans lequel il a
- * été posé, l'agent renvoie le mail vers l'adresse réelle du bon service, en
- * REFORMULANT la demande (jamais un transfert brut), avec le client d'origine
- * en copie et le mail d'origine cité en référence.
+ * été posé, l'agent transfère le message d'origine (aucun mail de réponse
+ * rédigé) en mettant en destinataires le bon service ET l'expéditeur initial,
+ * afin qu'il sache où sa demande a été redirigée.
+
  *
  * Garde-fous contre les faux positifs :
  *  - confiance IA minimale de 0,8 et service détecté explicitement différent ;
@@ -172,13 +173,11 @@ function echapper(v: string): string {
 }
 
 function corpsHtml(params: {
-  nomClient: string;
-  emailClient: string | null;
-  resume: string;
   serviceArrivee: DefinitionService;
   serviceCible: DefinitionService;
   sujet: string | null;
   date: string | null;
+  expediteur: string | null;
   texteOrigine: string | null;
   pieces: string[];
   gmailId: string;
@@ -186,15 +185,12 @@ function corpsHtml(params: {
   const origine = (params.texteOrigine ?? "").slice(0, 8000);
   return [
     "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#111\">",
-    "<p>Bonjour,</p>",
-    `<p>${echapper(params.nomClient)}${
-      params.emailClient ? ` (${echapper(params.emailClient)})` : ""
-    } a écrit pour demander : ${echapper(params.resume)}.</p>`,
-    `<p>Ce message avait été rangé dans « ${echapper(params.serviceArrivee.libelle)} » ; il relève du service « ${echapper(
-      params.serviceCible.libelle,
-    )} » et vous est transféré ici pour traitement. Le client est en copie de ce message afin qu'il sache que sa demande a été redirigée.</p>`,
+    `<p style="color:#555;font-size:13px">Message reçu dans « ${echapper(
+      params.serviceArrivee.libelle,
+    )} », transféré à « ${echapper(params.serviceCible.libelle)} » pour traitement.</p>`,
     "<hr style=\"border:none;border-top:1px solid #ddd;margin:18px 0\" />",
-    "<p style=\"color:#555;font-size:13px\"><strong>Message d'origine (référence)</strong><br />",
+    "<p style=\"color:#555;font-size:13px\"><strong>Message d'origine</strong><br />",
+    `De : ${echapper(params.expediteur ?? "non précisé")}<br />`,
     `Objet : ${echapper(params.sujet ?? "(sans objet)")}<br />`,
     `Date : ${echapper(params.date ?? "non précisée")}<br />`,
     `Pièces jointes : ${echapper(params.pieces.join(", ") || "aucune")}<br />`,
@@ -203,10 +199,10 @@ function corpsHtml(params: {
     `<blockquote style="margin:0;padding:10px 14px;border-left:3px solid #ccc;color:#333;white-space:pre-wrap">${echapper(
       origine,
     )}</blockquote>`,
-    "<p style=\"color:#777;font-size:12px\">Message généré automatiquement par le CRM du cabinet (routage interne, sans conseil).</p>",
     "</div>",
   ].join("\n");
 }
+
 
 /**
  * Renvoie les mails mal aiguillés d'un lot vers l'adresse du bon service.
@@ -284,7 +280,6 @@ export async function aiguillerLot(
       const adresseCible = cible?.adresse ?? null;
       if (!cible || !adresseCible || adresseCible === arrivee.adresse) continue;
 
-      const nomClient = detail.expediteur_nom?.trim() || expediteur;
       const resume = analyse.resume || "une demande dont l'objet est précisé dans le message d'origine";
 
       // Groupement (Conseillons Ensemble) : renvoi toujours au dirigeant.
@@ -293,32 +288,34 @@ export async function aiguillerLot(
       const adresseFinale = groupement ? ADRESSE_GROUPEMENT : adresseCible;
 
       // Expéditeur non client (partenaire, plateforme, robot de notification) :
-      // AUCUN envoi, aucune copie — le mail est seulement réétiqueté. Le
-      // groupement reste renvoyé (au dirigeant), sans copie de l'expéditeur.
+      // AUCUN envoi — le mail est seulement réétiqueté. Le groupement reste
+      // renvoyé au dirigeant, sans l'expéditeur en destinataire.
       const sansEnvoi =
         !groupement &&
         (estExpediteurAutomatique(expediteur) || estEmailPartenaire(expediteur, annuairePartenaires));
 
       if (!sansEnvoi) {
+        // Aucun mail de réponse rédigé : simple transfert du message d'origine.
+        // Destinataires = le bon service + l'expéditeur initial.
+        const destinataires = groupement
+          ? adresseFinale
+          : [adresseFinale, expediteur].join(", ");
         await envoyerMessage({
-          to: adresseFinale,
-          ...(groupement ? {} : { cc: expediteur }),
-
+          to: destinataires,
           sujet: `${PREFIXE_SUJET} ${detail.sujet ?? m.sujet ?? "(sans objet)"}`.slice(0, 200),
           html: corpsHtml({
-            nomClient,
-            emailClient: expediteur,
-            resume,
             serviceArrivee: arrivee,
             serviceCible: cible,
             sujet: detail.sujet ?? m.sujet ?? null,
             date: detail.date ?? m.date ?? null,
+            expediteur: `${detail.expediteur_nom ?? ""} <${expediteur}>`.trim(),
             texteOrigine: detail.texte ?? detail.snippet ?? null,
             pieces,
             gmailId: m.id,
           }),
         });
       }
+
 
       // Le mail d'origine quitte la file du service d'arrivée : il est archivé
       // là, et posé en « A_Traiter » du service réellement compétent.
@@ -335,7 +332,7 @@ export async function aiguillerLot(
           recu_le: detail.date ?? m.date ?? null,
           notes: sansEnvoi
             ? `Mal aiguillé (${arrivee.libelle}) — réétiqueté vers ${cible.libelle}, aucun mail envoyé (expéditeur non client)`
-            : `Mal aiguillé (${arrivee.libelle}) — renvoyé à ${cible.adresse}, client en copie`,
+            : `Mal aiguillé (${arrivee.libelle}) — transféré à ${cible.adresse}, expéditeur initial en destinataire`,
           triage_ia: JSON.parse(
             JSON.stringify({
               agent: "aiguillage",
