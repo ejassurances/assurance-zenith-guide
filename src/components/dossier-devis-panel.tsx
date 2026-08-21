@@ -362,8 +362,9 @@ export function DossierDevisPanel({
 
 
 
-  const ajouter = async () => {
+  const ajouter = async (retenirDirect = false) => {
     setErr(null);
+    setIaMsg(null);
     if (!form.compagnie_id || !form.produit_id) {
       setErr("Choisissez une compagnie et un produit.");
       return;
