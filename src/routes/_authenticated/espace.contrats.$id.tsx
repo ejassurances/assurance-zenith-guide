@@ -454,9 +454,13 @@ function ContratDetail() {
             <option value="en_cours">En cours</option>
             <option value="propose">Proposé</option>
             <option value="signe">Signé</option>
+            <option value="contrat_valide">Validé par la compagnie</option>
+            <option value="actif">Actif au portefeuille</option>
             <option value="resilie">Résilié</option>
+            <option value="annule">Annulé</option>
           </select>
         </F>
+
       </section>
 
       {/* Conseil dans la durée */}
