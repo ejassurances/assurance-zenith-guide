@@ -133,7 +133,7 @@ function ConformitePage() {
       />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
-        <div>
+        <div className="min-w-0">
           {section === "mes-documents" && user && (
             <MesDocuments userId={user.id} isAdmin={role === "admin"} />
           )}
