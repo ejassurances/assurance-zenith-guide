@@ -153,13 +153,56 @@ function ContratDetail() {
     return res ? economieColumns(res) : {};
   }
 
+  /** Statuts pour lesquels la compagnie a validé le contrat : données figées. */
+  const STATUTS_VERROUILLES = ["actif", "contrat_actif", "contrat_valide"];
+
   async function save(forceEconomie = false) {
     if (!c) return;
     setSaving(true);
     setErr(null);
+
+    // Contrat validé par la compagnie : la correction passe par l'action tracée
+    // (motif obligatoire, journalisée avec l'avant/après).
+    if (STATUTS_VERROUILLES.includes(c.statut) && correctionMotif !== null) {
+      const { error: rpcErr } = await supabase.rpc("corriger_contrat_actif", {
+        _contrat_id: c.id,
+        _motif: correctionMotif,
+        _champs: {
+          numero: c.numero,
+          assureur: c.assureur,
+          produit: c.produit,
+          compagnie_id: c.compagnie_id,
+          produit_id: c.produit_id,
+          date_effet: c.date_effet,
+          date_echeance: c.date_echeance,
+          duree_mois: c.duree_mois,
+          prime_annuelle: c.prime_annuelle,
+          fractionnement: c.fractionnement,
+          statut: c.statut,
+          notes: c.notes,
+          mandataire_id: c.mandataire_id,
+          prescripteur_id: c.prescripteur_id,
+          mode_commissionnement: c.mode_commissionnement,
+          commission_cabinet_taux: c.commission_cabinet_taux,
+          is_emprunteur: c.is_emprunteur,
+          capital_initial: c.capital_initial,
+          taux_pret: c.taux_pret,
+          taux_assurance_annuel: c.taux_assurance_annuel,
+          quotite: c.quotite,
+          assiette: c.assiette,
+        },
+      } as never);
+      setSaving(false);
+      if (rpcErr) return setErr(rpcErr.message);
+      setCorrectionMotif(null);
+      await load();
+      return;
+    }
+
     const { error } = await supabase
       .from("contrats")
       .update({
+
         numero: c.numero,
         assureur: c.assureur,
         produit: c.produit,
