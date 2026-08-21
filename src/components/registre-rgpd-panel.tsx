@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { revisionAnnuelleDue } from "@/lib/cartographie-risques";
+import { exporterRegistreRgpdPdf } from "@/lib/conformite-registres.functions";
+import { telechargerPdfBase64 } from "@/lib/telecharger-pdf";
 
 /* Registre des traitements RGPD (Art. 30) — consultation cabinet, édition admin. */
 
