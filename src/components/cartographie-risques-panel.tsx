@@ -125,7 +125,7 @@ export function CartographieRisquesPanel({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-line bg-surface-elevated p-6">
+      <div className="crm-card p-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h3 className="font-serif text-lg font-medium">Cartographie des risques LCB-FT</h3>
@@ -159,7 +159,7 @@ export function CartographieRisquesPanel({ isAdmin }: { isAdmin: boolean }) {
         <p className="text-sm text-ink-muted">Aucune ligne de cartographie.</p>
       ) : (
         parCategorie.map(([categorie, items]) => (
-          <div key={categorie} className="rounded-2xl border border-line bg-surface-elevated p-5">
+          <div key={categorie} className="crm-card p-5">
             <h4 className="font-serif text-base font-medium">{categorie}</h4>
             <Table className="mt-3">
               <TableHeader>

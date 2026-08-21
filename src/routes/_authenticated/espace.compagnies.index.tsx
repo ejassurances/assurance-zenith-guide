@@ -3,6 +3,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { StoredImage } from "@/components/image-upload-field";
+import { PageHeader } from "@/components/page-header";
+import { StatCard } from "@/components/stat-card";
+import { IconBuildingBank, IconStar, IconPlugConnected } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/_authenticated/espace/compagnies/")({
   component: CompagniesIndex,
@@ -84,15 +87,22 @@ function CompagniesIndex() {
   }
 
 
+  const favorites = rows.filter((c) => c.tier_favori).length;
+  const connectees = rows.filter((c) => c.api_active).length;
+
   return (
     <div className="space-y-8">
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-3xl">Compagnies partenaires</h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            Référentiel des assureurs, de leurs produits et de leurs documents contractuels.
-          </p>
-        </div>
+      <PageHeader
+        eyebrow="Référentiel"
+        title="Compagnies partenaires"
+        description="Référentiel des assureurs, de leurs produits et de leurs documents contractuels."
+        icon={IconBuildingBank}
+      />
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard label="Compagnies référencées" value={rows.length} icon={IconBuildingBank} accent />
+        <StatCard label="Favorites (top)" value={favorites} icon={IconStar} />
+        <StatCard label="API connectées" value={connectees} icon={IconPlugConnected} />
       </div>
 
       {isAdmin && (
@@ -122,7 +132,7 @@ function CompagniesIndex() {
           <button
             type="submit"
             disabled={creating}
-            className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+            className="rounded-md bg-[#0A192F] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
           >
             {creating ? "Ajout…" : "Ajouter"}
           </button>

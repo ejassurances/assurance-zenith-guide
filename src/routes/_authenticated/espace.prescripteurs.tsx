@@ -1,4 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { PageHeader } from "@/components/page-header";
+import { StatCard } from "@/components/stat-card";
+import { IconUsersGroup, IconCoin } from "@tabler/icons-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
 
@@ -101,19 +104,17 @@ function PrescripteursPage() {
 
   const tabClass = (actif: boolean) =>
     "rounded-full px-4 py-1.5 text-xs font-medium " +
-    (actif ? "bg-[color:var(--crm-navy)] text-white" : "border border-line bg-surface-elevated text-ink-soft");
+    (actif ? "bg-[#0A192F] text-white" : "border border-line bg-surface-elevated text-ink-soft");
 
   return (
     <div>
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="crm-eyebrow">Apport d'affaires</p>
-          <h1 className="font-serif text-2xl font-medium text-ink">Prescripteurs</h1>
-        </div>
-        <p className="text-xs text-ink-muted">
-          Montant dû non versé : <strong className="text-ink">{totalDu.toFixed(0)} €</strong>
-        </p>
-      </header>
+      <PageHeader eyebrow="Apport d'affaires" title="Prescripteurs" icon={IconUsersGroup} />
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+        <StatCard label="Prescripteurs" value={prescripteurs.length} icon={IconUsersGroup} />
+        <StatCard label="Recommandations" value={recos.length} icon={IconCoin} />
+        <StatCard label="Montant dû non versé" value={`${totalDu.toFixed(0)} €`} icon={IconCoin} accent />
+      </div>
 
       <div className="mt-5 flex gap-2">
         <button type="button" className={tabClass(onglet === "prescripteurs")} onClick={() => setOnglet("prescripteurs")}>
@@ -180,7 +181,7 @@ function PrescripteursPage() {
                               "Prescripteur validé — accès envoyé par e-mail.",
                             )
                           }
-                          className="rounded-full border border-line bg-surface-elevated px-3 py-1 text-xs text-ink hover:bg-surface disabled:opacity-50"
+                          className="rounded-full bg-[#0A192F] px-3 py-1 text-xs text-white hover:bg-[#0A192F]/90 disabled:opacity-50"
                         >
                           {busy === `val-${p.id}` ? "…" : "Valider et créer l'espace"}
                         </button>
@@ -298,7 +299,7 @@ function PrescripteursPage() {
                                 "Versement enregistré.",
                               )
                             }
-                            className="rounded-full border border-line bg-surface-elevated px-3 py-1 text-xs text-ink hover:bg-surface disabled:opacity-50"
+                            className="rounded-full bg-[#0A192F] px-3 py-1 text-xs text-white hover:bg-[#0A192F]/90 disabled:opacity-50"
                           >
                             Marquer versé
                           </button>

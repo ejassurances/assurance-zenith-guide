@@ -9,6 +9,9 @@ import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
 import { ProduitDocumentsLink } from "@/components/produit-documents-link";
 import { CommissionContratCard } from "@/components/commission-contrat-card";
 import { ContratDocumentsPanel } from "@/components/contrat-documents-panel";
+import { PageHeader } from "@/components/page-header";
+import { StatCard } from "@/components/stat-card";
+import { IconFileText } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/_authenticated/espace/contrats/$id")({
   component: ContratDetail,
@@ -222,35 +225,38 @@ function ContratDetail() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          {client && (
-            <Link
-              to="/espace/clients/$id"
-              params={{ id: client.id }}
-              className="text-xs text-ink-muted underline underline-offset-4"
-            >
-              ← {client.prenom ? client.prenom + " " : ""}
-              {client.nom} · {client.reference}
-            </Link>
-          )}
-          <h1 className="mt-2 font-serif text-3xl">{c.produit}</h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            {c.assureur} · {c.is_emprunteur ? "Emprunteur" : "Standard"}
-          </p>
-        </div>
-        {canEdit && (
-          <div className="flex gap-2">
-            <button onClick={recalc} className="rounded-md border border-line px-3 py-1.5 text-xs">
-              Recalculer
-            </button>
-            {role === "admin" && (
-              <button onClick={del} className="text-xs text-red-700 underline underline-offset-4">
-                Supprimer
-              </button>
-            )}
-          </div>
+      <PageHeader
+        eyebrow={c.assureur}
+        title={c.produit}
+        description={c.is_emprunteur ? "Contrat d'assurance emprunteur" : "Contrat standard"}
+        icon={IconFileText}
+      >
+        {client && (
+          <Link
+            to="/espace/clients/$id"
+            params={{ id: client.id }}
+            className="text-xs text-white/70 underline underline-offset-4 hover:text-white"
+          >
+            ← {client.prenom ? client.prenom + " " : ""}
+            {client.nom} · {client.reference}
+          </Link>
         )}
+        {canEdit && (
+          <button onClick={recalc} className="rounded-full border border-white/30 px-3 py-1.5 text-xs text-white hover:bg-white/10">
+            Recalculer
+          </button>
+        )}
+        {canEdit && role === "admin" && (
+          <button onClick={del} className="text-xs text-red-300 underline underline-offset-4 hover:text-red-200">
+            Supprimer
+          </button>
+        )}
+      </PageHeader>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard label="Prime annuelle" value={formatEuro(c.prime_annuelle)} icon={IconFileText} accent />
+        <StatCard label="Commission cabinet (cumul)" value={formatEuro(totaux.cabinet)} />
+        <StatCard label="Économie réalisée" value={c.economie_realisee !== null ? formatEuro(c.economie_realisee) : "—"} />
       </div>
 
       {err && <p className="rounded-md bg-red-50 p-3 text-sm text-red-800">{err}</p>}
@@ -264,7 +270,7 @@ function ContratDetail() {
       />
 
       {/* Bloc identité contrat */}
-      <section className="grid gap-4 rounded-lg border border-line bg-surface p-5 md:grid-cols-3">
+      <section className="crm-card grid gap-4 p-5 md:grid-cols-3">
         <F label="Type de contrat" wide>
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -335,7 +341,7 @@ function ContratDetail() {
       </section>
 
       {/* Conseil dans la durée */}
-      <section className="grid gap-4 rounded-lg border border-line bg-surface p-5 md:grid-cols-3">
+      <section className="crm-card grid gap-4 p-5 md:grid-cols-3">
         <div className="md:col-span-3">
           <h3 className="font-serif text-lg">Conseil dans la durée</h3>
           <p className="text-xs text-ink-muted">
@@ -364,7 +370,7 @@ function ContratDetail() {
 
       {/* Bloc emprunteur */}
       {c.is_emprunteur && (
-        <section className="grid gap-4 rounded-lg border border-line bg-surface p-5 md:grid-cols-3">
+        <section className="crm-card grid gap-4 p-5 md:grid-cols-3">
           <div className="md:col-span-3">
             <h3 className="font-serif text-lg">Paramètres du prêt et de l'assurance</h3>
             <p className="text-xs text-ink-muted">
@@ -464,7 +470,7 @@ function ContratDetail() {
       )}
 
       {/* Bloc commissionnement */}
-      <section className="grid gap-4 rounded-lg border border-line bg-surface p-5 md:grid-cols-3">
+      <section className="crm-card grid gap-4 p-5 md:grid-cols-3">
         <div className="md:col-span-3">
           <h3 className="font-serif text-lg">Commissionnement</h3>
           <p className="text-xs text-ink-muted">
@@ -556,7 +562,7 @@ function ContratDetail() {
           <button
             onClick={() => save()}
             disabled={saving}
-            className="rounded-md bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+            className="rounded-full bg-[#0A192F] px-5 py-2 text-sm font-medium text-white disabled:opacity-60"
           >
             {saving ? "Enregistrement…" : "Enregistrer et recalculer"}
           </button>
@@ -662,9 +668,9 @@ function formatEuro(n: number | null | undefined) {
 
 function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div className="rounded-md border border-line bg-surface p-3">
-      <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">{label}</p>
-      <p className={"mt-1 text-lg font-semibold " + (accent ? "text-[color:var(--crm-gold)]" : "text-ink")}>{value}</p>
+    <div className={"crm-card p-3 " + (accent ? "crm-card-accent" : "")}>
+      <p className="crm-eyebrow">{label}</p>
+      <p className={"crm-figure mt-1 text-lg " + (accent ? "text-[color:var(--crm-gold-muted)]" : "text-ink")}>{value}</p>
     </div>
   );
 }

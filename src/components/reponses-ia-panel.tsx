@@ -103,9 +103,9 @@ export function ReponsesIaPanel({ clientId }: { clientId?: string }) {
   if (rows.length === 0) return null;
 
   return (
-    <section className="min-w-0 space-y-4 rounded-lg border border-line bg-surface p-5">
+    <section className="crm-card min-w-0 space-y-4 p-5">
       <div>
-        <h3 className="font-serif text-lg">Réponses à valider ({rows.length})</h3>
+        <p className="crm-eyebrow">Réponses à valider ({rows.length})</p>
         <p className="text-xs text-ink-muted">
           Brouillons préparés par l'agent relation client sur des demandes non automatisables. Rien n'est envoyé sans
           votre validation.
@@ -117,7 +117,7 @@ export function ReponsesIaPanel({ clientId }: { clientId?: string }) {
           const v = champ(r);
           const nom = [r.clients?.prenom, r.clients?.nom].filter(Boolean).join(" ") || "Client";
           return (
-            <li key={r.id} className="space-y-3 rounded-md border border-line bg-background p-4">
+            <li key={r.id} className="crm-card space-y-3 bg-background p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <p className="text-sm font-medium text-ink">
                   {nom}
@@ -161,7 +161,7 @@ export function ReponsesIaPanel({ clientId }: { clientId?: string }) {
                 <button
                   onClick={() => valider(r)}
                   disabled={busy === r.id}
-                  className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                  className="rounded-full bg-[#0A192F] px-4 py-2 text-sm font-medium text-white hover:bg-[#0A192F]/90 disabled:opacity-50"
                 >
                   {busy === r.id ? "…" : "Valider et envoyer"}
                 </button>

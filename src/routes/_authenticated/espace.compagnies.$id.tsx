@@ -9,6 +9,9 @@ import { ProduitFormulesTab } from "@/components/produit-formules-tab";
 import { EmailsLiesPanel } from "@/components/emails-lies-panel";
 import { ImageUploadField, StoredImage } from "@/components/image-upload-field";
 import { CompagnieTauxCommission } from "@/components/compagnie-taux-commission";
+import { PageHeader } from "@/components/page-header";
+import { SectionNav, type SectionNavItem } from "@/components/section-nav";
+import { IconBuildingBank } from "@tabler/icons-react";
 
 type CompagnieDocRow = {
   id: string;
@@ -208,86 +211,80 @@ function CompagnieDetail() {
   if (loading) return <p className="text-sm text-ink-muted">Chargement…</p>;
   if (!c) return <p className="text-sm text-ink-muted">Compagnie introuvable.</p>;
 
+  const TAB_LABEL: Record<Tab, string> = {
+    infos: "Identité",
+    produits: "Produits",
+    partenariats: "Partenariat",
+    emails: "Emails",
+    api: "API compagnie",
+  };
+  const navItems: SectionNavItem<Tab>[] = (["infos", "produits", "partenariats", "emails", "api"] as Tab[]).map((t) => ({
+    key: t,
+    label: TAB_LABEL[t],
+  }));
+
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-4">
-          <StoredImage
-            bucket="compagnies-logos"
-            value={c.logo_url}
-            alt={c.nom}
-            className="size-16 rounded border border-line bg-background object-contain p-1"
-          />
-          <div>
-            <Link to="/espace/compagnies" className="text-xs text-ink-muted underline underline-offset-4">
-              ← Toutes les compagnies
-            </Link>
-            <h1 className="mt-2 font-serif text-3xl">{c.nom}</h1>
-            <p className="mt-1 text-sm text-ink-muted">
-              {produits.length} produit{produits.length > 1 ? "s" : ""} référencé{produits.length > 1 ? "s" : ""}
-            </p>
-          </div>
-        </div>
+      <PageHeader
+        eyebrow="Compagnie partenaire"
+        title={c.nom}
+        description={`${produits.length} produit${produits.length > 1 ? "s" : ""} référencé${produits.length > 1 ? "s" : ""}`}
+        icon={IconBuildingBank}
+      >
+        <Link to="/espace/compagnies" className="text-xs text-white/70 underline underline-offset-4 hover:text-white">
+          ← Toutes les compagnies
+        </Link>
         {isAdmin && (
-          <button onClick={del} className="text-xs text-red-700 underline underline-offset-4">
+          <button onClick={del} className="text-xs text-red-300 underline underline-offset-4 hover:text-red-200">
             Supprimer
           </button>
         )}
-      </div>
+      </PageHeader>
 
-      <div className="flex gap-1 border-b border-line">
-        {(["infos", "produits", "partenariats", "emails", "api"] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={
-              "border-b-2 px-4 py-2 text-sm " +
-              (tab === t ? "border-ink font-medium text-ink" : "border-transparent text-ink-muted hover:text-ink")
-            }
-          >
-            {t === "infos"
-              ? "Identité"
-              : t === "produits"
-                ? "Produits"
-                : t === "partenariats"
-                  ? "Partenariat"
-                  : t === "emails"
-                    ? "Emails"
-                    : "API compagnie"}
-          </button>
-        ))}
+      <div className="flex items-start gap-4">
+        <StoredImage
+          bucket="compagnies-logos"
+          value={c.logo_url}
+          alt={c.nom}
+          className="size-16 rounded border border-line bg-background object-contain p-1"
+        />
       </div>
 
       {error && <p className="rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</p>}
 
-      {tab === "infos" && (
-        <InfosTab c={c} isAdmin={isAdmin} saving={saving} onSave={saveInfos} />
-      )}
-      {tab === "produits" && (
-        <ProduitsTab
-          compagnieId={c.id}
-          produits={produits}
-          familles={familles}
-          isAdmin={isAdmin}
-          selected={selectedProduit}
-          onSelect={setSelectedProduit}
-          onChange={load}
-        />
-      )}
-      {tab === "partenariats" && (
-        <div className="space-y-6">
-          <PartenariatsTab compagnieId={c.id} compagnieNom={c.nom} isAdmin={isAdmin} />
-          <CompagnieTauxCommission compagnieId={c.id} canEdit={isAdmin} />
+      <div className="grid gap-6 lg:grid-cols-[1fr_16rem]">
+        <div className="min-w-0">
+          {tab === "infos" && (
+            <InfosTab c={c} isAdmin={isAdmin} saving={saving} onSave={saveInfos} />
+          )}
+          {tab === "produits" && (
+            <ProduitsTab
+              compagnieId={c.id}
+              produits={produits}
+              familles={familles}
+              isAdmin={isAdmin}
+              selected={selectedProduit}
+              onSelect={setSelectedProduit}
+              onChange={load}
+            />
+          )}
+          {tab === "partenariats" && (
+            <div className="space-y-6">
+              <PartenariatsTab compagnieId={c.id} compagnieNom={c.nom} isAdmin={isAdmin} />
+              <CompagnieTauxCommission compagnieId={c.id} canEdit={isAdmin} />
+            </div>
+          )}
+          {tab === "emails" && (
+            <EmailsLiesPanel
+              liens={{ compagnie_id: c.id }}
+              destinataireParDefaut={c.contact_email}
+              titre="Emails de la compagnie"
+            />
+          )}
+          {tab === "api" && <ApiTab compagnieId={c.id} apiActive={c.api_active} isAdmin={isAdmin} onApiActiveChange={(v) => saveInfos({ api_active: v })} />}
         </div>
-      )}
-      {tab === "emails" && (
-        <EmailsLiesPanel
-          liens={{ compagnie_id: c.id }}
-          destinataireParDefaut={c.contact_email}
-          titre="Emails de la compagnie"
-        />
-      )}
-      {tab === "api" && <ApiTab compagnieId={c.id} apiActive={c.api_active} isAdmin={isAdmin} onApiActiveChange={(v) => saveInfos({ api_active: v })} />}
+        <SectionNav title="Sections" items={navItems} active={tab} onSelect={setTab} />
+      </div>
     </div>
   );
 }
@@ -313,7 +310,7 @@ function InfosTab({
         e.preventDefault();
         onSave(form);
       }}
-      className="grid gap-4 rounded-lg border border-line bg-surface p-6 md:grid-cols-2"
+      className="crm-card grid gap-4 p-6 md:grid-cols-2"
     >
       <Field label="Nom" value={form.nom} onChange={(v) => setForm({ ...form, nom: v })} readOnly={readOnly} />
       <Field label="Site web" value={form.site_web ?? ""} onChange={(v) => setForm({ ...form, site_web: v })} readOnly={readOnly} />
@@ -369,7 +366,7 @@ function InfosTab({
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+            className="rounded-md bg-[#0A192F] px-5 py-2 text-sm font-medium text-white disabled:opacity-60"
           >
             {saving ? "Enregistrement…" : "Enregistrer"}
           </button>
@@ -453,8 +450,8 @@ function ProduitsTab({
     <div className="grid gap-6 md:grid-cols-[280px_1fr]">
       <aside className="space-y-3">
         {isAdmin && (
-          <form onSubmit={create} className="space-y-2 rounded-lg border border-line bg-surface p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Nouveau produit</p>
+          <form onSubmit={create} className="crm-card space-y-2 p-3">
+            <p className="crm-eyebrow">Nouveau produit</p>
             <input
               value={nom}
               onChange={(e) => setNom(e.target.value)}
@@ -476,7 +473,7 @@ function ProduitsTab({
             <button
               type="submit"
               disabled={creating}
-              className="w-full rounded-md bg-ink py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-60"
+              className="w-full rounded-md bg-[#0A192F] py-1.5 text-xs font-medium text-white disabled:opacity-60"
             >
               {creating ? "…" : "Ajouter"}
             </button>
@@ -494,7 +491,7 @@ function ProduitsTab({
                 onClick={() => onSelect(p.id)}
                 className={
                   "w-full rounded-md px-3 py-2 text-left text-sm transition-colors " +
-                  (isActive ? "bg-ink text-primary-foreground" : "hover:bg-surface")
+                  (isActive ? "bg-[#D4AF37]/25 font-semibold text-[#0A192F]" : "hover:bg-surface")
                 }
               >
                 <div className="flex items-center gap-2">
@@ -616,7 +613,7 @@ function ProduitEditor({
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 rounded-lg border border-line bg-surface p-5 md:grid-cols-2">
+      <div className="crm-card grid gap-4 p-5 md:grid-cols-2">
         <Field label="Nom du produit" value={p.nom} onChange={(v) => setP({ ...p, nom: v })} readOnly={readOnly} />
         <Field
           label="Référence interne compagnie"
@@ -702,7 +699,7 @@ function ProduitEditor({
 
       {/* Caractéristiques standardisées */}
       {famille && famille.champs_standards?.length > 0 && (
-        <section className="space-y-3 rounded-lg border border-line bg-surface p-5">
+        <section className="crm-card space-y-3 p-5">
           <div>
             <h3 className="font-serif text-lg">Caractéristiques — {famille.nom}</h3>
             <p className="text-xs text-ink-muted">
@@ -724,7 +721,7 @@ function ProduitEditor({
       )}
 
       {/* Devoir de conseil */}
-      <section className="grid gap-4 rounded-lg border border-line bg-surface p-5 md:grid-cols-2">
+      <section className="crm-card grid gap-4 p-5 md:grid-cols-2">
         <div className="md:col-span-2">
           <h3 className="font-serif text-lg">Devoir de conseil</h3>
           <p className="text-xs text-ink-muted">
@@ -764,7 +761,7 @@ function ProduitEditor({
       </section>
 
       {/* Vente couplée */}
-      <section className="grid gap-4 rounded-lg border border-line bg-surface p-5 md:grid-cols-2">
+      <section className="crm-card grid gap-4 p-5 md:grid-cols-2">
         <div className="md:col-span-2">
           <h3 className="font-serif text-lg">Contrainte de vente couplée</h3>
           <p className="text-xs text-ink-muted">
@@ -817,7 +814,7 @@ function ProduitEditor({
           <button
             onClick={save}
             disabled={saving}
-            className="rounded-md bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+            className="rounded-md bg-[#0A192F] px-5 py-2 text-sm font-medium text-white disabled:opacity-60"
           >
             {saving ? "Enregistrement…" : "Enregistrer le produit"}
           </button>
@@ -919,7 +916,7 @@ function ChampInput({
                 onClick={() => onChange(on ? arr.filter((x) => x !== o) : [...arr, o])}
                 className={
                   "rounded-full border px-3 py-1 text-xs " +
-                  (on ? "border-ink bg-ink text-primary-foreground" : "border-line bg-background text-ink-soft")
+                  (on ? "border-transparent bg-[#0A192F] text-white" : "border-line bg-background text-ink-soft")
                 }
               >
                 {o}
@@ -1030,7 +1027,7 @@ function DocumentsBlock({
   }
 
   return (
-    <section className="space-y-3 rounded-lg border border-line bg-surface p-5">
+    <section className="crm-card space-y-3 p-5">
       <div>
         <h3 className="font-serif text-lg">Documents du produit</h3>
         <p className="text-xs text-ink-muted">
@@ -1077,7 +1074,7 @@ function DocumentsBlock({
           <button
             type="submit"
             disabled={uploading || !file}
-            className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+            className="rounded-md bg-[#0A192F] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
           >
             {uploading ? "Upload…" : "Ajouter"}
           </button>
@@ -1204,14 +1201,14 @@ function ApiTab({
   if (loading) return <p className="text-sm text-ink-muted">Chargement…</p>;
   if (notAllowed || !isAdmin) {
     return (
-      <div className="rounded-lg border border-line bg-surface p-6 text-sm text-ink-muted">
+      <div className="crm-card p-6 text-sm text-ink-muted">
         La configuration API est réservée aux administrateurs.
       </div>
     );
   }
 
   return (
-    <form onSubmit={submit} className="space-y-5 rounded-lg border border-line bg-surface p-6">
+    <form onSubmit={submit} className="crm-card space-y-5 p-6">
       <div className="rounded-md bg-amber-50 p-3 text-xs text-amber-900">
         Les identifiants API (clé, mot de passe, secret OAuth) ne sont jamais stockés en clair dans cette fiche. Créez-les
         dans les secrets du backend, puis renseignez ci-dessous le <strong>nom du secret</strong> (par exemple
@@ -1279,7 +1276,7 @@ function ApiTab({
         <button
           type="submit"
           disabled={saving}
-          className="rounded-md bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+          className="rounded-md bg-[#0A192F] px-5 py-2 text-sm font-medium text-white disabled:opacity-60"
         >
           {saving ? "Enregistrement…" : "Enregistrer l'API"}
         </button>

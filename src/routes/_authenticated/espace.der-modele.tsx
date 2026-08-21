@@ -3,6 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { PageHeader } from "@/components/page-header";
+import { IconFileCertificate } from "@tabler/icons-react";
 import { DER_SECTIONS, type DerContenu } from "@/lib/der-modele";
 import {
   enregistrerBrouillonDer,
@@ -90,12 +92,15 @@ function DerModelePage() {
 
   return (
     <div>
-      <h1 className="font-serif text-3xl font-medium text-ink">DER — Document d'Entrée en Relation</h1>
-      <p className="mt-1 text-sm text-ink-muted">
-        Le DER est généré automatiquement (mentions légales + liste des compagnies et produits
-        actifs). Une validation humaine reste obligatoire avant activation.
-        {!isAdmin && " Lecture seule — seul l'administrateur peut générer et valider une version."}
-      </p>
+      <PageHeader
+        eyebrow="Conformité"
+        title="DER — Document d'Entrée en Relation"
+        description={
+          "Le DER est généré automatiquement (mentions légales + liste des compagnies et produits actifs). Une validation humaine reste obligatoire avant activation." +
+          (!isAdmin ? " Lecture seule — seul l'administrateur peut générer et valider une version." : "")
+        }
+        icon={IconFileCertificate}
+      />
 
       {actif?.obsolete && (
         <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
@@ -109,7 +114,7 @@ function DerModelePage() {
           <button
             onClick={() => run("gen", () => regenerer({ data: undefined }))}
             disabled={busy !== null}
-            className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+            className="rounded-full bg-[#0A192F] px-4 py-2 text-sm font-medium text-white hover:bg-[#0A192F]/90 disabled:opacity-60"
           >
             {busy === "gen" ? "Génération…" : "Régénérer le brouillon"}
           </button>
@@ -117,7 +122,7 @@ function DerModelePage() {
       )}
 
       {isAdmin && brouillon && edition && (
-        <div className="mt-6 rounded-2xl border border-line bg-surface-elevated p-5">
+        <div className="crm-card mt-6 p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-serif text-lg font-medium">
               Brouillon en attente de validation — v{brouillon.version}
@@ -192,7 +197,7 @@ function DerModelePage() {
         </div>
       )}
 
-      <div className="mt-6 overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+      <div className="crm-card mt-6 overflow-x-auto">
         {loading ? (
           <p className="p-4 text-sm text-ink-muted">Chargement…</p>
         ) : items.length === 0 ? (

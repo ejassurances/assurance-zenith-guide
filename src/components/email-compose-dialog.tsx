@@ -82,10 +82,10 @@ export function EmailComposeDialog({
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 sm:p-8">
       <form
         onSubmit={submit}
-        className="w-full max-w-2xl space-y-3 rounded-2xl border border-line bg-surface-elevated p-6 shadow-xl"
+        className="crm-card w-full max-w-2xl space-y-3 p-6 shadow-xl"
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-ink">Nouvel email</h2>
+          <h2 className="crm-eyebrow text-base">Nouvel email</h2>
           <button type="button" onClick={onClose} className="text-sm text-ink-muted hover:underline">
             Fermer
           </button>
@@ -142,7 +142,7 @@ export function EmailComposeDialog({
           </button>
           <button
             disabled={busy}
-            className="rounded-full bg-ink px-5 py-1.5 text-sm text-primary-foreground disabled:opacity-60"
+            className="rounded-full bg-[#0A192F] px-5 py-1.5 text-sm text-white hover:bg-[#0A192F]/90 disabled:opacity-60"
           >
             {busy ? "Envoi…" : "Envoyer"}
           </button>

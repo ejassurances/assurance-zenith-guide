@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { PageHeader } from "@/components/page-header";
+import { IconUsersGroup } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/_authenticated/espace/utilisateurs")({
   component: UsersPage,
@@ -58,13 +60,15 @@ function UsersPage() {
 
   return (
     <div>
-      <h1 className="font-serif text-3xl font-medium text-ink">Utilisateurs</h1>
-      <p className="mt-1 text-sm text-ink-muted">
-        Attribuez à chaque utilisateur son rôle : administrateur, mandataire, prescripteur ou client.
-      </p>
+      <PageHeader
+        eyebrow="Administration"
+        title="Utilisateurs"
+        description="Attribuez à chaque utilisateur son rôle : administrateur, mandataire, prescripteur ou client."
+        icon={IconUsersGroup}
+      />
       {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 
-      <div className="mt-8 overflow-hidden rounded-2xl border border-line bg-surface-elevated">
+      <div className="crm-card mt-8 overflow-hidden">
         {loading ? (
           <p className="p-6 text-sm text-ink-muted">Chargement…</p>
         ) : (

@@ -2,7 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { PageHeader } from "@/components/page-header";
+import { SectionNav } from "@/components/section-nav";
+import { IconReportMoney } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -88,12 +90,16 @@ function ComptabilitePage() {
 
   return (
     <div>
-      <h1 className="font-serif text-3xl font-medium text-ink">Comptabilité</h1>
-      <p className="mt-1 text-sm text-ink-muted">
-        {role === "admin"
-          ? "Pilotage global : prévisionnel, encaissements compagnies et rétrocessions partenaires."
-          : "Votre commissionnement : commissions prévues, émises, encaissées et versements reçus."}
-      </p>
+      <PageHeader
+        eyebrow="Finance"
+        title="Comptabilité"
+        description={
+          role === "admin"
+            ? "Pilotage global : prévisionnel, encaissements compagnies et rétrocessions partenaires."
+            : "Votre commissionnement : commissions prévues, émises, encaissées et versements reçus."
+        }
+        icon={IconReportMoney}
+      />
 
       {role === "admin" ? <AdminView /> : <PartnerView role={role as "mandataire" | "prescripteur"} />}
     </div>
@@ -102,54 +108,77 @@ function ComptabilitePage() {
 
 /* ---------- ADMIN ---------- */
 
-function AdminView() {
-  return (
-    <Tabs defaultValue="overview" className="mt-6">
-      <TabsList className="flex flex-wrap gap-1 bg-surface-elevated">
-        <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
-        <TabsTrigger value="previsionnel">Prévisionnel</TabsTrigger>
-        <TabsTrigger value="encaissements">Encaissements</TabsTrigger>
-        <TabsTrigger value="retrocessions">Rétrocessions</TabsTrigger>
-        <TabsTrigger value="prescripteurs">Prescripteurs</TabsTrigger>
-        <TabsTrigger value="regles">Règles</TabsTrigger>
-        <TabsTrigger value="factures">Factures d'achat</TabsTrigger>
-        <TabsTrigger value="livre-recettes">Livre des recettes</TabsTrigger>
-        <TabsTrigger value="livre-achats">Livre des achats</TabsTrigger>
-        <TabsTrigger value="ecritures">Écritures</TabsTrigger>
-        <TabsTrigger value="grand-livre">Grand livre</TabsTrigger>
-        <TabsTrigger value="balance">Balance</TabsTrigger>
-        <TabsTrigger value="resultat">Résultat</TabsTrigger>
-        <TabsTrigger value="pcg">Plan comptable</TabsTrigger>
-      </TabsList>
+type AdminSection =
+  | "overview"
+  | "previsionnel"
+  | "encaissements"
+  | "retrocessions"
+  | "prescripteurs"
+  | "regles"
+  | "factures"
+  | "livre-recettes"
+  | "livre-achats"
+  | "ecritures"
+  | "grand-livre"
+  | "balance"
+  | "resultat"
+  | "pcg";
 
-      <TabsContent value="overview" className="mt-6"><Overview /></TabsContent>
-      <TabsContent value="previsionnel" className="mt-6">
-        <div className="space-y-6">
-          <TresoreriePrevisionnelle />
-          <Previsionnel />
-        </div>
-      </TabsContent>
-      <TabsContent value="encaissements" className="mt-6"><Encaissements /></TabsContent>
-      <TabsContent value="retrocessions" className="mt-6"><Retrocessions portee="mandataire" /></TabsContent>
-      <TabsContent value="prescripteurs" className="mt-6"><Retrocessions portee="prescripteur" /></TabsContent>
-      <TabsContent value="regles" className="mt-6"><ReglesCommission /></TabsContent>
-      <TabsContent value="factures" className="mt-6"><FacturesAchatTab /></TabsContent>
-      <TabsContent value="livre-recettes" className="mt-6"><LivreRecettesTab /></TabsContent>
-      <TabsContent value="livre-achats" className="mt-6"><LivreAchatsTab /></TabsContent>
-      <TabsContent value="ecritures" className="mt-6"><EcrituresTab /></TabsContent>
-      <TabsContent value="grand-livre" className="mt-6"><GrandLivreTab /></TabsContent>
-      <TabsContent value="balance" className="mt-6"><BalanceTab /></TabsContent>
-      <TabsContent value="resultat" className="mt-6"><ResultatTab /></TabsContent>
-      <TabsContent value="pcg" className="mt-6"><PlanComptableTab /></TabsContent>
-    </Tabs>
+const ADMIN_SECTIONS: { key: AdminSection; label: string }[] = [
+  { key: "overview", label: "Vue d'ensemble" },
+  { key: "previsionnel", label: "Prévisionnel" },
+  { key: "encaissements", label: "Encaissements" },
+  { key: "retrocessions", label: "Rétrocessions" },
+  { key: "prescripteurs", label: "Prescripteurs" },
+  { key: "regles", label: "Règles" },
+  { key: "factures", label: "Factures d'achat" },
+  { key: "livre-recettes", label: "Livre des recettes" },
+  { key: "livre-achats", label: "Livre des achats" },
+  { key: "ecritures", label: "Écritures" },
+  { key: "grand-livre", label: "Grand livre" },
+  { key: "balance", label: "Balance" },
+  { key: "resultat", label: "Résultat" },
+  { key: "pcg", label: "Plan comptable" },
+];
+
+function AdminView() {
+  const [section, setSection] = useState<AdminSection>("overview");
+
+  return (
+    <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_18rem]">
+      <div className="min-w-0">
+        {section === "overview" && <Overview />}
+        {section === "previsionnel" && (
+          <div className="space-y-6">
+            <TresoreriePrevisionnelle />
+            <Previsionnel />
+          </div>
+        )}
+        {section === "encaissements" && <Encaissements />}
+        {section === "retrocessions" && <Retrocessions portee="mandataire" />}
+        {section === "prescripteurs" && <Retrocessions portee="prescripteur" />}
+        {section === "regles" && <ReglesCommission />}
+        {section === "factures" && <FacturesAchatTab />}
+        {section === "livre-recettes" && <LivreRecettesTab />}
+        {section === "livre-achats" && <LivreAchatsTab />}
+        {section === "ecritures" && <EcrituresTab />}
+        {section === "grand-livre" && <GrandLivreTab />}
+        {section === "balance" && <BalanceTab />}
+        {section === "resultat" && <ResultatTab />}
+        {section === "pcg" && <PlanComptableTab />}
+      </div>
+      <div className="order-first lg:order-last">
+        <SectionNav title="Comptabilité" items={ADMIN_SECTIONS} active={section} onSelect={setSection} />
+      </div>
+    </div>
   );
 }
 
 function Card({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-2xl border border-line bg-surface-elevated p-5">
-      <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">{label}</p>
-      <p className="mt-2 font-serif text-2xl font-medium text-ink">{value}</p>
+    <div className="crm-card p-5">
+      <p className="crm-eyebrow">{label}</p>
+      <p className="crm-figure mt-2 text-2xl">{value}</p>
       {hint && <p className="mt-1 text-xs text-ink-muted">{hint}</p>}
     </div>
   );
@@ -201,14 +230,14 @@ function Overview() {
         <Card label="Prévisionnel" value={fmt(stats.previsionnel)} hint="Toutes années" />
         <Card label={`Prévu ${currentYear}`} value={fmt(stats.previsionnelYear)} />
       </div>
-      <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+      <div className="crm-card p-5">
         <h3 className="font-serif text-lg font-medium">Poste « Commissions de courtage »</h3>
         <p className="mt-1 text-xs text-ink-muted">
           Commissions calculées selon le barème cabinet (branche / compagnie) — poste de produit d'exploitation.
         </p>
         <CommissionMoisCard />
       </div>
-      <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+      <div className="crm-card p-5">
         <h3 className="font-serif text-lg font-medium">Commissions cabinet par année</h3>
         <Table>
           <TableHeader>
@@ -324,7 +353,7 @@ function Previsionnel() {
         <Button variant="outline" onClick={exportCsv}>Export CSV</Button>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+      <div className="overflow-x-auto crm-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -405,7 +434,7 @@ function Encaissements() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+      <div className="crm-card p-5">
         <h3 className="font-serif text-lg font-medium">Saisir un bordereau compagnie</h3>
         <div className="mt-3 grid gap-3 sm:grid-cols-5">
           <Input placeholder="Période (2026-01)" value={form.periode} onChange={(e) => setForm({ ...form, periode: e.target.value })} />
@@ -417,7 +446,7 @@ function Encaissements() {
         <Input className="mt-3" placeholder="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+      <div className="overflow-x-auto crm-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -516,7 +545,7 @@ function Retrocessions({ portee }: { portee: "mandataire" | "prescripteur" }) {
 
   return (
     <div className="space-y-6">
-      <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+      <div className="overflow-x-auto crm-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -542,7 +571,7 @@ function Retrocessions({ portee }: { portee: "mandataire" | "prescripteur" }) {
         </Table>
       </div>
 
-      <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+      <div className="crm-card p-5">
         <h3 className="font-serif text-lg font-medium">Enregistrer un versement</h3>
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
           <Select value={form.beneficiaire_id} onValueChange={(v) => setForm({ ...form, beneficiaire_id: v })}>
@@ -563,7 +592,7 @@ function Retrocessions({ portee }: { portee: "mandataire" | "prescripteur" }) {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+      <div className="overflow-x-auto crm-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -643,7 +672,7 @@ function ReglesCommission() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+      <div className="crm-card p-5">
         <h3 className="font-serif text-lg font-medium">Nouvelle règle</h3>
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
           <Select value={form.portee} onValueChange={(v) => setForm({ ...form, portee: v as any })}>
@@ -674,7 +703,7 @@ function ReglesCommission() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+      <div className="overflow-x-auto crm-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -758,31 +787,58 @@ function PartnerView({ role }: { role: "mandataire" | "prescripteur" }) {
   );
 
   if (role === "mandataire") {
-    return (
-      <Tabs defaultValue="commissions" className="mt-6">
-        <TabsList className="flex flex-wrap gap-1 bg-surface-elevated">
-          <TabsTrigger value="commissions">Mes commissions</TabsTrigger>
-          <TabsTrigger value="ndf">Notes de frais</TabsTrigger>
-          <TabsTrigger value="resultat">Mon résultat</TabsTrigger>
-          <TabsTrigger value="grand-livre">Grand livre</TabsTrigger>
-          <TabsTrigger value="pcg">Plan comptable</TabsTrigger>
-        </TabsList>
-        <TabsContent value="commissions" className="mt-6 space-y-6">
-          {kpis}
-          <PartnerCommissionsTables ech={ech} paiements={paiements} regles={regles} commField={commField} />
-        </TabsContent>
-        <TabsContent value="ndf" className="mt-6"><NotesDeFraisTab /></TabsContent>
-        <TabsContent value="resultat" className="mt-6"><ResultatTab mandataireOnly /></TabsContent>
-        <TabsContent value="grand-livre" className="mt-6"><GrandLivreTab mandataireOnly /></TabsContent>
-        <TabsContent value="pcg" className="mt-6"><PlanComptableTab /></TabsContent>
-      </Tabs>
-    );
+    return <MandataireView kpis={kpis} ech={ech} paiements={paiements} regles={regles} commField={commField} />;
   }
 
   return (
     <div className="mt-6 space-y-6">
       {kpis}
       <PartnerCommissionsTables ech={ech} paiements={paiements} regles={regles} commField={commField} />
+    </div>
+  );
+}
+
+type MandataireSection = "commissions" | "ndf" | "resultat" | "grand-livre" | "pcg";
+const MANDATAIRE_SECTIONS: { key: MandataireSection; label: string }[] = [
+  { key: "commissions", label: "Mes commissions" },
+  { key: "ndf", label: "Notes de frais" },
+  { key: "resultat", label: "Mon résultat" },
+  { key: "grand-livre", label: "Grand livre" },
+  { key: "pcg", label: "Plan comptable" },
+];
+
+function MandataireView({
+  kpis,
+  ech,
+  paiements,
+  regles,
+  commField,
+}: {
+  kpis: React.ReactNode;
+  ech: any[];
+  paiements: Paiement[];
+  regles: Regle[];
+  commField: string;
+}) {
+  const [section, setSection] = useState<MandataireSection>("commissions");
+
+  return (
+    <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_18rem]">
+      <div className="min-w-0">
+        {section === "commissions" && (
+          <div className="space-y-6">
+            {kpis}
+            <PartnerCommissionsTables ech={ech} paiements={paiements} regles={regles} commField={commField} />
+          </div>
+        )}
+        {section === "ndf" && <NotesDeFraisTab />}
+        {section === "resultat" && <ResultatTab mandataireOnly />}
+        {section === "grand-livre" && <GrandLivreTab mandataireOnly />}
+        {section === "pcg" && <PlanComptableTab />}
+      </div>
+      <div className="order-first lg:order-last">
+        <SectionNav title="Mon espace" items={MANDATAIRE_SECTIONS} active={section} onSelect={setSection} />
+      </div>
     </div>
   );
 }
@@ -804,7 +860,7 @@ function PartnerCommissionsTables({
 
       <div>
         <h3 className="mb-2 font-serif text-lg font-medium">Mes commissions par contrat</h3>
-        <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+        <div className="overflow-x-auto crm-card">
           <Table>
             <TableHeader>
               <TableRow>
@@ -840,7 +896,7 @@ function PartnerCommissionsTables({
 
       <div>
         <h3 className="mb-2 font-serif text-lg font-medium">Versements reçus</h3>
-        <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+        <div className="overflow-x-auto crm-card">
           <Table>
             <TableHeader>
               <TableRow>
@@ -872,7 +928,7 @@ function PartnerCommissionsTables({
       {regles.length > 0 && (
         <div>
           <h3 className="mb-2 font-serif text-lg font-medium">Mes règles de rétrocession</h3>
-          <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+          <div className="overflow-x-auto crm-card">
             <Table>
               <TableHeader>
                 <TableRow>

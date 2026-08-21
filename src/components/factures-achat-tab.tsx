@@ -225,7 +225,7 @@ export function FacturesAchatTab() {
         <span className="text-sm text-ink-muted">{affichees.length} ligne(s)</span>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+      <div className="overflow-x-auto crm-card">
         <Table>
           <TableHeader>
             <TableRow>

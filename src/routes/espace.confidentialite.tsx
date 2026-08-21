@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PageHeader } from "@/components/page-header";
+import { IconShieldLock } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/espace/confidentialite")({
   head: () => ({
@@ -34,7 +36,12 @@ function Bloc({ titre, children }: { titre: string; children: React.ReactNode })
 function Confidentialite() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-14">
-      <h1 className="font-serif text-3xl font-medium text-ink">Politique de confidentialité</h1>
+      <PageHeader
+        eyebrow="Protection des données"
+        title="Politique de confidentialité"
+        description="Comment nous collectons, utilisons et protégeons vos données personnelles."
+        icon={IconShieldLock}
+      />
 
       <Bloc titre="Responsable de traitement">
         <p>

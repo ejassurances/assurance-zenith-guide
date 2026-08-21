@@ -9,6 +9,9 @@ import { BulletinCommissionsPanel } from "@/components/bulletin-commissions-pane
 import { BordereauxPanel } from "@/components/bordereaux-panel";
 import { getSyntheseAnneeCommissions } from "@/lib/dashboard.functions";
 import type { SyntheseAnnee } from "@/lib/commission-previsions";
+import { PageHeader } from "@/components/page-header";
+import { StatCard } from "@/components/stat-card";
+import { IconCoins } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/_authenticated/espace/commissions")({
   component: CommissionsPage,
@@ -125,39 +128,44 @@ function CommissionsPage() {
 
   return (
     <div>
-      <h1 className="font-serif text-3xl font-medium text-ink">Commissions</h1>
+      <PageHeader
+        eyebrow="Rémunération"
+        title="Commissions"
+        description="Suivi des commissions du cabinet, encaissements et comptabilisation."
+        icon={IconCoins}
+      />
 
       {synthese && (
         <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          <Card label={`Encaissé ${synthese.annee}`} value={synthese.encaisse} />
-          <Card label={`Reste à encaisser ${synthese.annee}`} value={synthese.previsionnelRestant} />
-          <Card label={`Total attendu ${synthese.annee}`} value={synthese.totalAttendu} />
+          <StatCard label={`Encaissé ${synthese.annee}`} value={`${synthese.encaisse.toLocaleString("fr-FR")} €`} accent />
+          <StatCard label={`Reste à encaisser ${synthese.annee}`} value={`${synthese.previsionnelRestant.toLocaleString("fr-FR")} €`} />
+          <StatCard label={`Total attendu ${synthese.annee}`} value={`${synthese.totalAttendu.toLocaleString("fr-FR")} €`} />
         </div>
       )}
 
       <p className="mt-6 crm-eyebrow">Toutes périodes confondues</p>
       <div className="mt-2 grid gap-4 sm:grid-cols-3">
-        <Card label="Total enregistré" value={total} />
-        <Card label="Versées" value={verse} />
-        <Card label="À venir (bordereaux)" value={attente} />
+        <StatCard label="Total enregistré" value={`${total.toLocaleString("fr-FR")} €`} />
+        <StatCard label="Versées" value={`${verse.toLocaleString("fr-FR")} €`} accent />
+        <StatCard label="À venir (bordereaux)" value={`${attente.toLocaleString("fr-FR")} €`} />
       </div>
 
       {role === "admin" && aComptabiliser > 0 && (
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface-elevated p-4">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 crm-card p-4">
           <p className="text-sm text-ink-muted">
             {aComptabiliser} commission(s) versée(s) ne sont pas encore passées en comptabilité.
           </p>
           <button
             type="button"
             onClick={comptabiliserTout}
-            className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-primary-foreground"
+            className="rounded-full bg-[#0A192F] px-4 py-2 text-sm font-medium text-white"
           >
             Tout comptabiliser
           </button>
         </div>
       )}
 
-      <div className="mt-8 overflow-hidden rounded-2xl border border-line bg-surface-elevated">
+      <div className="mt-8 overflow-hidden crm-card">
         {loading ? (
           <p className="p-6 text-sm text-ink-muted">Chargement…</p>
         ) : rows.length === 0 ? (
@@ -252,14 +260,6 @@ function CommissionsPage() {
 }
 
 
-function Card({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-2xl border border-line bg-surface-elevated p-5">
-      <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">{label}</p>
-      <p className="mt-2 font-serif text-2xl font-medium text-ink">{value.toLocaleString("fr-FR")} €</p>
-    </div>
-  );
-}
 
 function AddCommissionForm({ onCreated }: { onCreated: () => void }) {
   const [dossiers, setDossiers] = useState<{ id: string; reference: string; client_nom: string }[]>([]);
@@ -304,7 +304,7 @@ function AddCommissionForm({ onCreated }: { onCreated: () => void }) {
   return (
     <form
       onSubmit={submit}
-      className="mt-8 grid gap-3 rounded-2xl border border-line bg-surface-elevated p-6 sm:grid-cols-4"
+      className="mt-8 grid gap-3 crm-card p-6 sm:grid-cols-4"
     >
       <select
         required
@@ -354,7 +354,7 @@ function AddCommissionForm({ onCreated }: { onCreated: () => void }) {
         <button
           type="submit"
           disabled={saving}
-          className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+          className="rounded-full bg-[#0A192F] px-5 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
           {saving ? "Ajout…" : "Ajouter la commission"}
         </button>

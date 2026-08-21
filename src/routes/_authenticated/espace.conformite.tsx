@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { IconShieldCheck } from "@tabler/icons-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { PageHeader } from "@/components/page-header";
+import { SectionNav, type SectionNavItem } from "@/components/section-nav";
 import { RegistreClientsConformite } from "@/components/registre-clients-conformite";
 import { VeilleReglementairePanel } from "@/components/veille-reglementaire-panel";
 import { ReclamationsPanel } from "@/components/reclamations-panel";
@@ -89,78 +91,78 @@ const STATUT_CLASS: Record<ConfDoc["statut"], string> = {
   refuse: "bg-red-100 text-red-900",
 };
 
+type SectionKey =
+  | "mes-documents"
+  | "equipe"
+  | "partenariats"
+  | "registre-clients"
+  | "reclamations"
+  | "veille"
+  | "controle-interne"
+  | "cartographie"
+  | "registre-rgpd"
+  | "formations";
+
 function ConformitePage() {
   const { user, role, loading } = useAuth();
+  const [section, setSection] = useState<SectionKey>("mes-documents");
 
   if (loading) return <p className="text-sm text-ink-muted">Chargement…</p>;
   if (role === "client") return <p className="text-sm text-ink-muted">Accès réservé.</p>;
 
+  const items: SectionNavItem<SectionKey>[] = [
+    { key: "mes-documents", label: "Mes documents" },
+    ...(role === "admin" ? [{ key: "equipe" as SectionKey, label: "Équipe & mandataires" }] : []),
+    { key: "partenariats", label: "Partenariats compagnies" },
+    { key: "registre-clients", label: "Registre clients" },
+    { key: "reclamations", label: "Réclamations" },
+    { key: "veille", label: "Veille réglementaire" },
+    { key: "controle-interne", label: "Contrôle interne" },
+    { key: "cartographie", label: "Cartographie des risques" },
+    { key: "registre-rgpd", label: "Registre RGPD" },
+    { key: "formations", label: "Formation du personnel" },
+  ];
+
   return (
-    <div>
-      <h1 className="font-serif text-3xl font-medium text-ink">Conformité</h1>
-      <p className="mt-1 text-sm text-ink-muted">
-        Point d'entrée unique en cas de contrôle ACPR : documents obligatoires du cabinet et de ses mandataires,
-        contrats de partenariat compagnies, registre de conformité clients (KYC, risque LCB-FT, vigilance).
-      </p>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Conformité ACPR"
+        title="Conformité"
+        description="Point d'entrée unique en cas de contrôle ACPR : documents obligatoires du cabinet et de ses mandataires, contrats de partenariat compagnies, registre de conformité clients (KYC, risque LCB-FT, vigilance)."
+        icon={IconShieldCheck}
+      />
 
-      <Tabs defaultValue="mes-documents" className="mt-6">
-        <TabsList className="flex flex-wrap gap-1 bg-surface-elevated">
-          <TabsTrigger value="mes-documents">Mes documents</TabsTrigger>
-          {role === "admin" && <TabsTrigger value="equipe">Équipe & mandataires</TabsTrigger>}
-          <TabsTrigger value="partenariats">Partenariats compagnies</TabsTrigger>
-          <TabsTrigger value="registre-clients">Registre clients</TabsTrigger>
-          <TabsTrigger value="reclamations">Réclamations</TabsTrigger>
-          <TabsTrigger value="veille">Veille réglementaire</TabsTrigger>
+      <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
+        <div className="min-w-0">
+          {section === "mes-documents" && user && (
+            <MesDocuments userId={user.id} isAdmin={role === "admin"} />
+          )}
 
-          <TabsTrigger value="controle-interne">Contrôle interne</TabsTrigger>
-          <TabsTrigger value="cartographie">Cartographie des risques</TabsTrigger>
-          <TabsTrigger value="registre-rgpd">Registre RGPD</TabsTrigger>
-          <TabsTrigger value="formations">Formation du personnel</TabsTrigger>
-        </TabsList>
+          {section === "equipe" && role === "admin" && <EquipeConformite />}
 
-        <TabsContent value="mes-documents" className="mt-6">
-          {user && <MesDocuments userId={user.id} isAdmin={role === "admin"} />}
-        </TabsContent>
+          {section === "partenariats" && <Partenariats canManage={role === "admin"} />}
 
-        {role === "admin" && (
-          <TabsContent value="equipe" className="mt-6">
-            <EquipeConformite />
-          </TabsContent>
-        )}
+          {section === "registre-clients" && <RegistreClientsConformite isAdmin={role === "admin"} />}
 
-        <TabsContent value="partenariats" className="mt-6">
-          <Partenariats canManage={role === "admin"} />
-        </TabsContent>
+          {section === "reclamations" && (
+            <ReclamationsPanel canManage={role === "admin" || role === "mandataire"} />
+          )}
 
-        <TabsContent value="registre-clients" className="mt-6">
-          <RegistreClientsConformite isAdmin={role === "admin"} />
-        </TabsContent>
+          {section === "veille" && <VeilleReglementairePanel canManage={role === "admin"} />}
 
-        <TabsContent value="reclamations" className="mt-6">
-          <ReclamationsPanel canManage={role === "admin" || role === "mandataire"} />
-        </TabsContent>
+          {section === "controle-interne" && <ControleInternePanel isAdmin={role === "admin"} />}
 
-        <TabsContent value="veille" className="mt-6">
-          <VeilleReglementairePanel canManage={role === "admin"} />
-        </TabsContent>
+          {section === "cartographie" && <CartographieRisquesPanel isAdmin={role === "admin"} />}
 
+          {section === "registre-rgpd" && <RegistreRgpdPanel isAdmin={role === "admin"} />}
 
-        <TabsContent value="controle-interne" className="mt-6">
-          <ControleInternePanel isAdmin={role === "admin"} />
-        </TabsContent>
+          {section === "formations" && <FormationsPersonnelPanel isAdmin={role === "admin"} />}
+        </div>
 
-        <TabsContent value="cartographie" className="mt-6">
-          <CartographieRisquesPanel isAdmin={role === "admin"} />
-        </TabsContent>
-
-        <TabsContent value="registre-rgpd" className="mt-6">
-          <RegistreRgpdPanel isAdmin={role === "admin"} />
-        </TabsContent>
-
-        <TabsContent value="formations" className="mt-6">
-          <FormationsPersonnelPanel isAdmin={role === "admin"} />
-        </TabsContent>
-      </Tabs>
+        <div className="lg:w-72">
+          <SectionNav title="Sections" items={items} active={section} onSelect={setSection} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -194,7 +196,7 @@ function MesDocuments({ userId, isAdmin }: { userId: string; isAdmin: boolean })
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+      <div className="crm-card p-5">
         <h3 className="font-serif text-lg font-medium">Checklist obligatoire</h3>
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
           {CONF_TYPES.filter((t) => t.obligatoire).map((t) => {
@@ -259,7 +261,7 @@ function UploadConfForm({ userId, onUploaded }: { userId: string; onUploaded: ()
   };
 
   return (
-    <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+    <div className="crm-card p-5">
       <h3 className="font-serif text-lg font-medium">Téléverser un document</h3>
       <div className="mt-3 grid gap-3 sm:grid-cols-3">
         <Select value={type} onValueChange={(v) => setType(v as ConfType)}>
@@ -313,7 +315,7 @@ function DocsList({
     || profiles?.find((p) => p.id === id)?.email || id.slice(0, 8);
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+    <div className="crm-card overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -405,7 +407,7 @@ function EquipeConformite() {
 
   return (
     <div className="space-y-6">
-      <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+      <div className="crm-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -489,7 +491,7 @@ export function CompagnieDocsTable({
     onChanged();
   };
   return (
-    <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated">
+    <div className="crm-card overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -572,7 +574,7 @@ export function UploadCompagnieDocForm({
   };
 
   return (
-    <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+    <div className="crm-card p-5">
       <h3 className="font-serif text-lg font-medium">Ajouter un document compagnie</h3>
       <div className="mt-3 grid gap-3 sm:grid-cols-3">
         {!defaultCompagnieId && (

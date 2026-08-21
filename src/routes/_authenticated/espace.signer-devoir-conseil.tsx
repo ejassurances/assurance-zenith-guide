@@ -11,6 +11,8 @@ import { ouvrirPdf } from "@/lib/ouvrir-pdf";
 
 
 import { SITE } from "@/lib/site";
+import { PageHeader } from "@/components/page-header";
+import { IconFileCheck } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/_authenticated/espace/signer-devoir-conseil")({
   component: SignerDevoirConseil,
@@ -99,12 +101,13 @@ function SignerDevoirConseil() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
+      <PageHeader
+        eyebrow="Document réglementaire"
+        title="Devoir de conseil"
+        description={`${SITE.shortName} · ORIAS ${SITE.orias} · Dossier ${c.dossier?.reference ?? ""} — ${labelForBranche(devoir.type_assurance)}`}
+        icon={IconFileCheck}
+      />
       <div>
-        <h1 className="font-serif text-2xl">Devoir de conseil</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          {SITE.shortName} · ORIAS {SITE.orias} · Dossier {c.dossier?.reference ?? ""} —{" "}
-          {labelForBranche(devoir.type_assurance)}
-        </p>
         <button
           onClick={async () => {
             setError(null);
@@ -249,7 +252,7 @@ function SignerDevoirConseil() {
             <button
               onClick={submitSignature}
               disabled={submitting || !accepte || !signature}
-              className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+              className="rounded-full bg-[#D4AF37] px-5 py-2 text-sm font-semibold text-[#0A192F] transition-colors hover:bg-[#c8a233] disabled:opacity-50"
             >
               {submitting ? "Envoi…" : "Signer le devoir de conseil"}
             </button>
@@ -276,7 +279,7 @@ function SignerDevoirConseil() {
             <button
               onClick={submitRefus}
               disabled={submitting || motifRefus.trim().length < 3}
-              className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+              className="rounded-full bg-[#D4AF37] px-5 py-2 text-sm font-semibold text-[#0A192F] transition-colors hover:bg-[#c8a233] disabled:opacity-50"
             >
               {submitting ? "Envoi…" : "Confirmer le refus"}
             </button>

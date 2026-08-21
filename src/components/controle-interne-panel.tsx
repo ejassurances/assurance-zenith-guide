@@ -196,10 +196,10 @@ export function ControleInternePanel({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-line bg-surface-elevated p-6">
+      <div className="crm-card p-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-wide text-ink-muted">Trimestre en cours</p>
+            <p className="crm-eyebrow">Trimestre en cours</p>
             <h3 className="mt-1 font-serif text-2xl text-ink">{periode}</h3>
             <p className="mt-2 text-sm text-ink-muted">
               {echantillonExiste
@@ -223,7 +223,7 @@ export function ControleInternePanel({ isAdmin }: { isAdmin: boolean }) {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-line bg-surface-elevated p-6">
+      <div className="crm-card p-6">
         <h3 className="font-serif text-lg text-ink">Échantillon {periode}</h3>
         {loading && <p className="mt-3 text-sm text-ink-muted">Chargement…</p>}
         {!loading && enCours.length === 0 && (
@@ -236,7 +236,7 @@ export function ControleInternePanel({ isAdmin }: { isAdmin: boolean }) {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-line bg-surface-elevated p-6">
+      <div className="crm-card p-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <h3 className="font-serif text-lg text-ink">Registre des contrôles</h3>
           <div className="flex flex-wrap gap-3">

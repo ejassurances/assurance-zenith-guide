@@ -1,9 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { IconAlertTriangle } from "@tabler/icons-react";
 
 import { listeSinistres } from "@/lib/sinistres.functions";
+import { PageHeader } from "@/components/page-header";
+import { StatCard } from "@/components/stat-card";
 
 export const Route = createFileRoute("/_authenticated/espace/sinistres")({
   head: () => ({
@@ -73,31 +76,44 @@ function SinistresPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtre]);
 
+  const counts = useMemo(() => {
+    const total = rows.length;
+    const ouverts = rows.filter((r) => r.statut !== "clos" && r.statut !== "refuse").length;
+    const clos = rows.filter((r) => r.statut === "clos").length;
+    return { total, ouverts, clos };
+  }, [rows]);
+
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-serif text-2xl">Sinistres</h1>
-          <p className="text-sm text-ink-muted">
-            Dossiers ouverts par l'agent relation client. L'analyse de couverture est une aide à la décision : aucun
-            email n'est envoyé automatiquement.
-          </p>
-        </div>
+      <PageHeader
+        eyebrow="Suivi des dossiers"
+        title="Sinistres"
+        description="Dossiers ouverts par l'agent relation client. L'analyse de couverture est une aide à la décision : aucun email n'est envoyé automatiquement."
+        icon={IconAlertTriangle}
+      >
         <select
           value={filtre}
           onChange={(e) => setFiltre(e.target.value)}
-          className="rounded-md border border-line bg-surface px-3 py-2 text-sm"
+          className="rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm text-white"
         >
-          <option value="">Tous les statuts</option>
+          <option value="" className="text-ink">Tous les statuts</option>
           {Object.entries(STATUT_LABEL).map(([k, v]) => (
-            <option key={k} value={k}>
+            <option key={k} value={k} className="text-ink">
               {v}
             </option>
           ))}
         </select>
-      </header>
+      </PageHeader>
 
-      <section className="overflow-hidden rounded-lg border border-line bg-surface">
+      {!loading && rows.length > 0 && (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <StatCard label="Dossiers" value={counts.total} />
+          <StatCard label="En cours" value={counts.ouverts} accent />
+          <StatCard label="Clos" value={counts.clos} />
+        </div>
+      )}
+
+      <section className="crm-card overflow-hidden">
         {loading ? (
           <p className="p-5 text-sm text-ink-muted">Chargement…</p>
         ) : rows.length === 0 ? (

@@ -19,6 +19,11 @@ import {
   monDevoirConseilUrl,
 } from "@/lib/espace-client.functions";
 import { ouvrirPdf } from "@/lib/ouvrir-pdf";
+import { ClientPortalHeader } from "@/components/client-portal-header";
+import { StatCard } from "@/components/stat-card";
+import { CompletudeRings } from "@/components/completude-rings";
+import { SectionNav, type SectionNavItem } from "@/components/section-nav";
+import { IconFileCheck, IconFileEuro, IconFolders } from "@tabler/icons-react";
 
 
 export const Route = createFileRoute("/_authenticated/espace/mon-espace")({
@@ -343,26 +348,84 @@ function MonEspace() {
 
   const kycVisible = kyc.filter((k) => estPro || k.type !== "kbis");
 
+  /* Indicateurs d'affichage, calculés à partir des données déjà chargées. */
+  const contrats = comp?.contrats ?? [];
+  const contratsActifs = contrats.filter((c) => (c.statut ?? "") !== "resilie").length;
+  const primeTotale = contrats.reduce((s, c) => s + (c.prime_annuelle ?? 0), 0);
+  const nbDocuments =
+    kycVisible.length +
+    (comp?.documents ?? []).length +
+    (dda?.lettres ?? []).length +
+    (dda?.devoirs ?? []).length +
+    (comp?.der ?? []).length;
+  const signatures = [!derAFaire, !lettreAFaire, !devoirAFaire];
+  const pctSignatures = Math.round((signatures.filter(Boolean).length / signatures.length) * 100);
+  const pctPieces = kycVisible.length === 0 ? 0 : Math.round(
+    (kycVisible.filter((k) => k.statut === "valide").length / kycVisible.length) * 100,
+  );
+  const dossierEnCours = dossiers[0];
+  const items: SectionNavItem<(typeof TABS)[number]["key"]>[] = TABS.map((t) => ({
+    key: t.key,
+    label: t.label,
+  }));
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-3xl">
-            Bonjour {client ? `${client.prenom ?? ""} ${client.nom}`.trim() : (user?.email ?? "")}
-          </h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            Votre espace personnel : contrats, projets, documents et contact conseiller.
-          </p>
-        </div>
+      <ClientPortalHeader
+        prenom={client?.prenom ?? null}
+        nom={client?.nom ?? null}
+        email={user?.email ?? null}
+        contexte={[
+          client?.reference ? `Référence client ${client.reference}` : null,
+          dossierEnCours ? `Dossier ${dossierEnCours.reference}` : null,
+          comp?.conseiller?.nom ? `Conseiller : ${comp.conseiller.nom}` : "Conseiller : EJ Partners Assurances",
+        ]}
+      >
         {client && (
           <button
             onClick={() => setEtudeOuverte((v) => !v)}
-            className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground"
+            className="rounded-full bg-[#D4AF37] px-5 py-2 text-sm font-semibold text-[#0A192F] transition-colors hover:bg-[#c8a233]"
           >
             Demander une nouvelle étude
           </button>
         )}
+      </ClientPortalHeader>
+
+      <div className="grid gap-6 sm:grid-cols-3">
+        <StatCard
+          label="Mes contrats en cours"
+          value={contratsActifs}
+          sub={contrats.length > 1 ? `${contrats.length} contrats au total` : undefined}
+          icon={IconFileCheck}
+        />
+        <StatCard
+          label="Cotisations annuelles"
+          value={euros(primeTotale)}
+          sub="Somme de mes contrats en cours"
+          accent
+          icon={IconFileEuro}
+        />
+        <StatCard
+          label="Mes documents"
+          value={nbDocuments}
+          sub="Pièces, contrats et documents de conseil"
+          icon={IconFolders}
+        />
       </div>
+
+      {(dossiers.length > 0 || kycVisible.length > 0) && (
+        <div className="crm-card p-6">
+          <p className="crm-eyebrow">Avancement de mon dossier</p>
+          <CompletudeRings
+            className="mt-4"
+            items={[
+              { key: "pieces", label: "Mes pièces validées", value: pctPieces },
+              { key: "signatures", label: "Documents signés", value: pctSignatures },
+            ]}
+          />
+        </div>
+      )}
+
 
       {etudeOk && <p className="rounded-lg border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-800">{etudeOk}</p>}
 
@@ -432,20 +495,9 @@ function MonEspace() {
         </div>
       )}
 
-      <div className="flex gap-1 border-b border-line">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={
-              "-mb-px border-b-2 px-4 py-2 text-sm transition-colors " +
-              (tab === t.key ? "border-ink font-medium text-ink" : "border-transparent text-ink-muted hover:text-ink")
-            }
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <div className="grid gap-6 lg:grid-cols-[1fr_16rem]">
+        <div className="min-w-0 space-y-6">
+
 
       {tab === "projet" && (
         <div className="space-y-6">
@@ -863,13 +915,18 @@ function MonEspace() {
           </p>
           <Link
             to="/espace/parametres"
-            className="inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-primary-foreground"
+            className="inline-block rounded-[var(--radius)] bg-[#0A192F] px-4 py-2 text-sm font-medium text-white"
           >
             Gérer mon mot de passe
           </Link>
         </div>
       )}
+        </div>
+
+        <SectionNav title="Mon espace" items={items} active={tab} onSelect={setTab} />
+      </div>
     </div>
+
   );
 }
 

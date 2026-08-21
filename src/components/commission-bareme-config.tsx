@@ -70,7 +70,7 @@ export function CommissionBaremeConfig() {
   if (loading) return <p className="mt-8 text-sm text-ink-muted">Chargement du barème…</p>;
 
   return (
-    <section className="mt-10 rounded-2xl border border-line bg-surface-elevated p-6">
+    <section className="mt-10 crm-card p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="font-serif text-xl font-medium text-ink">Barème de commissions</h2>

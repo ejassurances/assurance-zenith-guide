@@ -140,7 +140,7 @@ export function LivreRecettesTab() {
         <Button variant="outline" onClick={exportCsv}>Export CSV</Button>
       </div>
 
-      <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+      <div className="crm-card p-5">
         <h3 className="font-serif text-lg font-medium">Livre-journal des recettes</h3>
         <p className="mt-1 mb-3 text-xs text-ink-muted">
           Recettes encaissées par ordre chronologique — registre obligatoire à conserver 10 ans.
@@ -173,7 +173,7 @@ export function LivreRecettesTab() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+        <div className="crm-card p-5">
           <h3 className="font-serif text-lg font-medium">Cumul par mois</h3>
           <Table>
             <TableHeader>
@@ -192,7 +192,7 @@ export function LivreRecettesTab() {
             </TableBody>
           </Table>
         </div>
-        <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+        <div className="crm-card p-5">
           <h3 className="font-serif text-lg font-medium">Cumul par année</h3>
           <Table>
             <TableHeader>

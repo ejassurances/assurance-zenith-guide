@@ -10,6 +10,8 @@ import {
   listerClientsRisqueNonEvalues,
 } from "@/lib/risque-lcbft.functions";
 import { useServerFn } from "@tanstack/react-start";
+import { StatCard } from "@/components/stat-card";
+
 
 /* Registre clients de l'onglet Conformité : vue d'ensemble ACPR (score KYC, risque LCB-FT, vigilance, revues). */
 
@@ -169,17 +171,13 @@ export function RegistreClientsConformite({ isAdmin }: { isAdmin: boolean }) {
   return (
     <div className="space-y-6">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Compteur libelle="Clients au registre" valeur={compteurs.total} />
-        <Compteur libelle="Vigilance renforcée" valeur={compteurs.renforcee} alerte={compteurs.renforcee > 0} />
-        <Compteur libelle="Revues en retard" valeur={compteurs.retard} alerte={compteurs.retard > 0} />
-        <Compteur
-          libelle="Validations hiérarchiques en attente"
-          valeur={compteurs.validations}
-          alerte={compteurs.validations > 0}
-        />
+        <StatCard label="Clients au registre" value={compteurs.total} />
+        <StatCard label="Vigilance renforcée" value={compteurs.renforcee} accent={compteurs.renforcee > 0} />
+        <StatCard label="Revues en retard" value={compteurs.retard} accent={compteurs.retard > 0} />
+        <StatCard label="Validations hiérarchiques en attente" value={compteurs.validations} accent={compteurs.validations > 0} />
       </div>
 
-      <div className="rounded-2xl border border-line bg-surface-elevated p-6">
+      <div className="crm-card p-6">
         <div className="flex flex-wrap items-end gap-3">
           <div>
             <label className="text-xs text-ink-muted">Niveau de vigilance</label>
@@ -325,11 +323,3 @@ export function RegistreClientsConformite({ isAdmin }: { isAdmin: boolean }) {
   );
 }
 
-function Compteur({ libelle, valeur, alerte }: { libelle: string; valeur: number; alerte?: boolean }) {
-  return (
-    <div className="rounded-2xl border border-line bg-surface-elevated p-4">
-      <p className="text-xs uppercase tracking-wide text-ink-muted">{libelle}</p>
-      <p className={`mt-1 font-serif text-2xl ${alerte ? "text-red-700" : "text-ink"}`}>{valeur}</p>
-    </div>
-  );
-}

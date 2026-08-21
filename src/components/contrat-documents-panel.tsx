@@ -109,7 +109,7 @@ export function ContratDocumentsPanel({
   };
 
   return (
-    <section className="min-w-0 space-y-3 rounded-lg border border-line bg-surface p-5">
+    <section className="crm-card min-w-0 space-y-3 p-5">
       <div>
         <h3 className="font-serif text-lg">Documents du contrat</h3>
         <p className="text-xs text-ink-muted">
@@ -132,7 +132,7 @@ export function ContratDocumentsPanel({
               </option>
             ))}
           </select>
-          <label className="cursor-pointer rounded-full bg-ink px-4 py-2 text-sm font-medium text-primary-foreground">
+          <label className="cursor-pointer rounded-full bg-[#D4AF37] px-4 py-2 text-sm font-semibold text-[#0A192F] hover:brightness-95">
             {uploading ? "Envoi…" : "Ajouter un document"}
             <input ref={fileRef} type="file" onChange={onUpload} className="hidden" disabled={uploading} />
           </label>

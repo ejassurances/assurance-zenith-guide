@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { PageHeader } from "@/components/page-header";
+import { IconChecklist } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/_authenticated/espace/taches")({
   component: TachesPage,
@@ -49,10 +51,12 @@ function TachesPage() {
 
   return (
     <div>
-      <h1 className="font-serif text-3xl font-medium text-ink">Tâches</h1>
-      <p className="mt-2 text-sm text-ink-muted">
-        Cliquez sur une tâche pour voir l'analyse complète de l'agent IA.
-      </p>
+      <PageHeader
+        eyebrow="Suivi opérationnel"
+        title="Tâches"
+        description="Cliquez sur une tâche pour voir l'analyse complète de l'agent IA."
+        icon={IconChecklist}
+      />
 
       <div className="mt-6 flex gap-2">
         {(
@@ -68,7 +72,7 @@ function TachesPage() {
             onClick={() => setFilter(k)}
             className={
               "rounded-full border px-3 py-1 text-xs " +
-              (filter === k ? "border-ink bg-ink text-primary-foreground" : "border-line text-ink-soft hover:bg-surface")
+              (filter === k ? "border-[#0A192F] bg-[#0A192F] text-white" : "border-line text-ink-soft hover:bg-surface")
             }
           >
             {l}
@@ -85,8 +89,8 @@ function TachesPage() {
               <div
                 key={t.id}
                 className={
-                  "flex items-start gap-3 rounded-xl border bg-surface-elevated p-4 " +
-                  (selected?.id === t.id ? "border-ink" : "border-line")
+                  "crm-card flex items-start gap-3 p-4 " +
+                  (selected?.id === t.id ? "crm-card-accent" : "")
                 }
               >
                 <input
@@ -130,11 +134,11 @@ function TachesPage() {
 
         <aside className="lg:sticky lg:top-6 lg:self-start">
           {!selected ? (
-            <div className="rounded-xl border border-dashed border-line p-6 text-sm text-ink-muted">
+            <div className="crm-card border-dashed p-6 text-sm text-ink-muted">
               Sélectionnez une tâche pour afficher le détail de l'analyse.
             </div>
           ) : (
-            <div className="rounded-xl border border-line bg-surface-elevated p-5">
+            <div className="crm-card p-5">
               <div className="flex items-start justify-between gap-3">
                 <h2 className="text-sm font-medium text-ink">{selected.titre}</h2>
                 <button
@@ -188,7 +192,7 @@ function TachesPage() {
               </dl>
 
               <div className="mt-4 border-t border-line pt-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+                <p className="crm-eyebrow">
                   Analyse de l'agent
                 </p>
                 {selected.description ? (
@@ -217,7 +221,7 @@ function TachesPage() {
                     className={
                       "rounded-full border px-3 py-1 text-xs " +
                       (selected.statut === k
-                        ? "border-ink bg-ink text-primary-foreground"
+                        ? "border-[#0A192F] bg-[#0A192F] text-white"
                         : "border-line text-ink-soft hover:bg-surface")
                     }
                   >
