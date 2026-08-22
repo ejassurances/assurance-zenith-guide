@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { varianteCapital } from "@/lib/variante-capital";
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODELES = ["google/gemini-3.6-flash", "google/gemini-2.5-flash"];
