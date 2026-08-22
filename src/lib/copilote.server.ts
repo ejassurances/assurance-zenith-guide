@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ETAPES } from "@/lib/pipeline-dossier";
+import { phaseClient } from "@/lib/pipeline-client";
 import { labelForBranche } from "@/lib/recueil-besoins-schemas";
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
@@ -96,12 +97,15 @@ export async function contexteDossierCopilote(supabase: Db, dossierId: string) {
   ]);
 
   const etape = ETAPES.find((e) => e.key === d.statut);
+  const phase = phaseClient(d.statut);
 
   return {
     dossier: {
       reference: d.reference,
       branche: labelForBranche(d.type_assurance),
+      grande_etape: phase ? `${phase.label} — ${phase.description}` : "Hors parcours nominal",
       etape: etape ? `${etape.label} (${etape.description})` : d.statut,
+
       client: d.client_nom,
       email: d.client_email,
       capital: d.capital,
