@@ -96,12 +96,15 @@ export async function contexteDossierCopilote(supabase: Db, dossierId: string) {
   ]);
 
   const etape = ETAPES.find((e) => e.key === d.statut);
+  const phase = phaseClient(d.statut);
 
   return {
     dossier: {
       reference: d.reference,
       branche: labelForBranche(d.type_assurance),
+      grande_etape: phase ? `${phase.label} — ${phase.description}` : "Hors parcours nominal",
       etape: etape ? `${etape.label} (${etape.description})` : d.statut,
+
       client: d.client_nom,
       email: d.client_email,
       capital: d.capital,
