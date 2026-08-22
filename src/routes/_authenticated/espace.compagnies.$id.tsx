@@ -580,9 +580,18 @@ function ProduitsTab({
                     className="size-7 shrink-0 rounded bg-background object-contain"
                   />
                   <span className="font-medium">{p.nom}</span>
+                  {varianteCapital(p.nom) && (
+                    <span
+                      className="shrink-0 rounded border border-[#B99B3F]/50 bg-[#B99B3F]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#8a7226]"
+                      title={libelleVariante(varianteCapital(p.nom)!)}
+                    >
+                      {varianteCapital(p.nom)}
+                    </span>
+                  )}
                 </div>
                 <div className={"text-xs " + (isActive ? "text-primary-foreground/70" : "text-ink-muted")}>
                   {f?.nom ?? "—"} · {p.statut}
+                  {varianteCapital(p.nom) ? ` · ${libelleVariante(varianteCapital(p.nom)!)}` : ""}
                 </div>
                 <div className="mt-1">
                   <GrilleBadge etat={etat} />
