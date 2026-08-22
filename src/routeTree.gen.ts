@@ -28,6 +28,7 @@ import { Route as ApiPublicRelancePiecesRouteImport } from './routes/api/public/
 import { Route as ApiPublicReglesAgentRouteImport } from './routes/api/public/regles-agent'
 import { Route as ApiPublicReclamationsAccuseReceptionRouteImport } from './routes/api/public/reclamations-accuse-reception'
 import { Route as ApiPublicRappelsExpirationRouteImport } from './routes/api/public/rappels-expiration'
+import { Route as ApiPublicLettresMissionEnvoisRouteImport } from './routes/api/public/lettres-mission-envois'
 import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
 import { Route as ApiPublicFormationsRappelsRouteImport } from './routes/api/public/formations-rappels'
 import { Route as ApiPublicEnvoisPlanifiesRouteImport } from './routes/api/public/envois-planifies'
@@ -174,6 +175,12 @@ const ApiPublicRappelsExpirationRoute =
   ApiPublicRappelsExpirationRouteImport.update({
     id: '/api/public/rappels-expiration',
     path: '/api/public/rappels-expiration',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicLettresMissionEnvoisRoute =
+  ApiPublicLettresMissionEnvoisRouteImport.update({
+    id: '/api/public/lettres-mission-envois',
+    path: '/api/public/lettres-mission-envois',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicLeadsRoute = ApiPublicLeadsRouteImport.update({
@@ -494,6 +501,7 @@ export interface FileRoutesByFullPath {
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
+  '/api/public/lettres-mission-envois': typeof ApiPublicLettresMissionEnvoisRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/reclamations-accuse-reception': typeof ApiPublicReclamationsAccuseReceptionRoute
   '/api/public/regles-agent': typeof ApiPublicReglesAgentRoute
@@ -560,6 +568,7 @@ export interface FileRoutesByTo {
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
+  '/api/public/lettres-mission-envois': typeof ApiPublicLettresMissionEnvoisRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/reclamations-accuse-reception': typeof ApiPublicReclamationsAccuseReceptionRoute
   '/api/public/regles-agent': typeof ApiPublicReglesAgentRoute
@@ -629,6 +638,7 @@ export interface FileRoutesById {
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
+  '/api/public/lettres-mission-envois': typeof ApiPublicLettresMissionEnvoisRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/reclamations-accuse-reception': typeof ApiPublicReclamationsAccuseReceptionRoute
   '/api/public/regles-agent': typeof ApiPublicReglesAgentRoute
@@ -698,6 +708,7 @@ export interface FileRouteTypes {
     | '/api/public/envois-planifies'
     | '/api/public/formations-rappels'
     | '/api/public/leads'
+    | '/api/public/lettres-mission-envois'
     | '/api/public/rappels-expiration'
     | '/api/public/reclamations-accuse-reception'
     | '/api/public/regles-agent'
@@ -764,6 +775,7 @@ export interface FileRouteTypes {
     | '/api/public/envois-planifies'
     | '/api/public/formations-rappels'
     | '/api/public/leads'
+    | '/api/public/lettres-mission-envois'
     | '/api/public/rappels-expiration'
     | '/api/public/reclamations-accuse-reception'
     | '/api/public/regles-agent'
@@ -832,6 +844,7 @@ export interface FileRouteTypes {
     | '/api/public/envois-planifies'
     | '/api/public/formations-rappels'
     | '/api/public/leads'
+    | '/api/public/lettres-mission-envois'
     | '/api/public/rappels-expiration'
     | '/api/public/reclamations-accuse-reception'
     | '/api/public/regles-agent'
@@ -879,6 +892,7 @@ export interface RootRouteChildren {
   ApiPublicEnvoisPlanifiesRoute: typeof ApiPublicEnvoisPlanifiesRoute
   ApiPublicFormationsRappelsRoute: typeof ApiPublicFormationsRappelsRoute
   ApiPublicLeadsRoute: typeof ApiPublicLeadsRoute
+  ApiPublicLettresMissionEnvoisRoute: typeof ApiPublicLettresMissionEnvoisRoute
   ApiPublicRappelsExpirationRoute: typeof ApiPublicRappelsExpirationRoute
   ApiPublicReclamationsAccuseReceptionRoute: typeof ApiPublicReclamationsAccuseReceptionRoute
   ApiPublicReglesAgentRoute: typeof ApiPublicReglesAgentRoute
@@ -1029,6 +1043,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/rappels-expiration'
       fullPath: '/api/public/rappels-expiration'
       preLoaderRoute: typeof ApiPublicRappelsExpirationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/lettres-mission-envois': {
+      id: '/api/public/lettres-mission-envois'
+      path: '/api/public/lettres-mission-envois'
+      fullPath: '/api/public/lettres-mission-envois'
+      preLoaderRoute: typeof ApiPublicLettresMissionEnvoisRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/leads': {
@@ -1487,6 +1508,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicEnvoisPlanifiesRoute: ApiPublicEnvoisPlanifiesRoute,
   ApiPublicFormationsRappelsRoute: ApiPublicFormationsRappelsRoute,
   ApiPublicLeadsRoute: ApiPublicLeadsRoute,
+  ApiPublicLettresMissionEnvoisRoute: ApiPublicLettresMissionEnvoisRoute,
   ApiPublicRappelsExpirationRoute: ApiPublicRappelsExpirationRoute,
   ApiPublicReclamationsAccuseReceptionRoute:
     ApiPublicReclamationsAccuseReceptionRoute,
