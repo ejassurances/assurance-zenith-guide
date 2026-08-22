@@ -128,6 +128,7 @@ export async function demanderSignatureClient(
           LIEN_ACTION: appUrl(LIEN_SIGNATURE),
         },
         replyTo: SITE.email,
+        liens: { client_id: (client as any).id ?? null },
       });
     } catch (e) {
       // L'invitation reste utilisable dans l'espace client : on trace sans bloquer.

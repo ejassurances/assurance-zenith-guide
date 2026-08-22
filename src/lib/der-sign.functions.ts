@@ -116,6 +116,7 @@ export const envoyerDerEmail = createServerFn({ method: "POST" })
     const result = await sendTemplateEmail("der-envoi", data.email, {
       templateData: { clientName: clientName, cabinetName: SITE.shortName, link: link },
       replyTo: SITE.email,
+      liens: { client_id: data.client_id },
     });
     if (!result.sent) throw new Error("Adresse en liste de suppression - envoi refuse");
     const { data: existing } = await supabase

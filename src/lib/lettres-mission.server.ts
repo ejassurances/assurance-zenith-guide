@@ -112,6 +112,7 @@ export async function envoyerLettreMission(
       link: appUrl("/espace/signer-lettre-mission"),
     },
     replyTo: SITE.email,
+    liens: { client_id: d.client_id ?? null, dossier_id: dossierId },
   });
   if (!result.sent) throw new Error("Adresse en liste de suppression — envoi refusé");
 
