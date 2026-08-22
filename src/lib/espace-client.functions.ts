@@ -578,3 +578,56 @@ export const mesDocumentsProduitContrat = createServerFn({ method: "POST" })
     }
     return { documents: liste };
   });
+
+/**
+ * DER courant du client connecté, signé ou non, avec l'URL du document.
+ *
+ * La lecture passe par le service (comme la lettre de mission et le devoir de
+ * conseil) : la RLS de `client_der_envois` est réservée au cabinet, ce qui
+ * rendait la page « signer-der » systématiquement vide côté client.
+ */
+export const monDerCourant = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin, client } = await maFicheClient(context.userId);
+    if (!client) return { envoi: null };
+
+    const { data } = await supabaseAdmin
+      .from("client_der_envois")
+      .select(
+        "id, statut, signed_at, signed_ip, signature_png, document_hash, created_at, der_modele_id, der_modele(nom, version, storage_path)",
+      )
+      .eq("client_id", client.id)
+      .order("created_at", { ascending: false });
+
+    const liste = (data ?? []) as Record<string, unknown>[];
+    // Priorité au DER en attente de signature ; sinon le dernier signé.
+    const enAttente = liste.find((e) => e["statut"] !== "signe" && !e["signed_at"]);
+    const courant = enAttente ?? liste[0] ?? null;
+    if (!courant) return { envoi: null };
+
+    const modele = courant["der_modele"] as
+      | { nom: string | null; version: string | null; storage_path: string | null }
+      | null;
+    let url: string | null = null;
+    if (modele?.storage_path) {
+      const { data: signed } = await supabaseAdmin.storage
+        .from("conformite-documents")
+        .createSignedUrl(modele.storage_path, 3600);
+      url = signed?.signedUrl ?? null;
+    }
+
+    return {
+      envoi: {
+        id: String(courant["id"]),
+        statut: String(courant["statut"] ?? ""),
+        signed_at: (courant["signed_at"] as string | null) ?? null,
+        signed_ip: (courant["signed_ip"] as string | null) ?? null,
+        signature_png: (courant["signature_png"] as string | null) ?? null,
+        document_hash: (courant["document_hash"] as string | null) ?? null,
+        modele_nom: modele?.nom ?? null,
+        modele_version: modele?.version ?? null,
+        url,
+      },
+    };
+  });
