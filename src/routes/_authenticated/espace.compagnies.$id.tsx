@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { CompagnieDocsTable, UploadCompagnieDocForm } from "./espace.conformite";
 import { ProduitGarantiesTab } from "@/components/produit-garanties-tab";
 import { ProduitFormulesTab } from "@/components/produit-formules-tab";
+import { libelleVariante, varianteCapital } from "@/lib/variante-capital";
 
 import { EmailsLiesPanel } from "@/components/emails-lies-panel";
 import { ImageUploadField, StoredImage } from "@/components/image-upload-field";
