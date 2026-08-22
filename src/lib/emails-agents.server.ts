@@ -163,27 +163,23 @@ export async function executerAgents(
     let facturesCreees = 0;
     let bordereauxCrees = 0;
     let veillesCreees = 0;
-    const { data: dejaTriage } = ids.length
-      ? await admin.from("crm_emails").select("gmail_message_id").in("gmail_message_id", ids).not("triage_ia", "is", null)
-      : { data: [] };
-    const triageFaits = new Set((dejaTriage ?? []).map((r) => r.gmail_message_id));
     const { data: liensApres } = ids.length
       ? await admin.from("crm_emails").select("gmail_message_id, client_id").in("gmail_message_id", ids)
       : { data: [] };
     const avecClient = new Set((liensApres ?? []).filter((l) => l.client_id).map((l) => l.gmail_message_id));
 
+    // Source de vérité du « déjà traité » : les libellés Gmail (« Archives » /
+    // « A valider »), pas `triage_ia`. Un mail resté dans la file sans libellé
+    // d'état est repris, même si un agent avait déjà écrit une ligne en base
+    // (aiguillage, analyse partielle, passage interrompu).
     const candidats = messages.filter(
-      (m) =>
-        !!m.expediteur_email &&
-        !m.etiquettes.includes("SENT") &&
-        !avecClient.has(m.id) &&
-        // Un mail en rattrapage est réanalysé même s'il a déjà été trié.
-        (!triageFaits.has(m.id) || rattrapage.has(m.id)),
+      (m) => !!m.expediteur_email && !m.etiquettes.includes("SENT") && !avecClient.has(m.id),
     );
 
     // Aucune reprise depuis la base : la seule source de mails à traiter est la
-    // file « A_Traiter » du service, posée manuellement par le staff.
+    // file du service, posée manuellement par le staff.
     const aTrier = candidats.slice(0, limite * 10);
+
 
     if (aTrier.length) {
       const { lireMessage } = await import("@/lib/gmail.server");
