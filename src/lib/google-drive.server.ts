@@ -234,6 +234,28 @@ export async function trouverFichierRecursif(
   return null;
 }
 
+/**
+ * Recherche d'un fichier par nom exact dans tout le Drive accessible
+ * (utile quand le cabinet déplace/recrée un document ailleurs).
+ */
+export async function trouverFichierParNomGlobal(
+  nom: string,
+): Promise<{ id: string; name: string; mimeType: string } | null> {
+  const params = new URLSearchParams({
+    q: [`name='${escapeQuery(nom)}'`, "trashed=false"].join(" and "),
+    fields: "files(id,name,mimeType,modifiedTime)",
+    pageSize: "10",
+    orderBy: "modifiedTime desc",
+    supportsAllDrives: "true",
+    includeItemsFromAllDrives: "true",
+  });
+  const data = (await driveFetch(`/drive/v3/files?${params}`)) as {
+    files?: { id: string; name: string; mimeType: string }[];
+  };
+  const fichiers = (data.files ?? []).filter((f) => f.mimeType !== FOLDER_MIME);
+  return fichiers[0] ?? null;
+}
+
 
 /**
  * Contenu texte d'un fichier Drive, qu'il s'agisse d'un fichier texte brut ou
