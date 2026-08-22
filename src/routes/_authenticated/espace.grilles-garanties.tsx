@@ -8,9 +8,11 @@ import { grillePourFamille } from "@/lib/garanties-grille";
 import {
   analyserDocumentsGaranties,
   listerEtatGrillesFamille,
+  synchroniserCgDrive,
   validerGrilleGaranties,
 } from "@/lib/produit-garanties.functions";
 import type { EtatGrilleProduit } from "@/lib/produit-garanties-etat.server";
+
 
 /** Familles disposant d'une trame standardisée produit (la santé passe par les formules). */
 const FAMILLES = [
