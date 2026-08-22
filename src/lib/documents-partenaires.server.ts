@@ -12,11 +12,9 @@ type Client = SupabaseClient<any, any, any>;
 
 /**
  * Règle d'architecture n°2 — les CGV, IPID et notices compagnies ne sont jamais
- * stockées dans le CRM : le fichier vit sur le Drive du cabinet, sous
- * 04_PARTENAIRES_ET_COMPAGNIES/[Compagnie]/[Branche], et le CRM n'en conserve
- * que le lien de consultation.
+ * stockées dans le CRM : le fichier vit dans le dossier Drive des CG du cabinet,
+ * sous [Compagnie]/[Branche], et le CRM n'en conserve que le lien.
  */
-export const DRIVE_RACINE_PARTENAIRES = "04_PARTENAIRES_ET_COMPAGNIES";
 
 /**
  * Dossier Drive officiel des conditions générales / notices compagnies :
