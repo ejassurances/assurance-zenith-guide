@@ -27,8 +27,8 @@ export type ServiceCabinet =
 export interface DefinitionService {
   cle: ServiceCabinet;
   libelle: string;
-  /** Préfixe exact de l'arborescence Gmail du service. */
-  prefixe: string;
+  /** Libellé Gmail de direction (à plat) du service. */
+  label_direction: string;
   /** Adresse réelle de renvoi, ou null si le service n'en a pas. */
   adresse: string | null;
   /** Étiquettes du service (sous-états), clés de LABELS_CABINET. */
@@ -37,6 +37,7 @@ export interface DefinitionService {
   /** Thèmes traités, utilisés pour la classification IA. */
   theme: string;
 }
+
 
 /**
  * Sous-états de chaque service : dépendants du code (clés de LABELS_CABINET),
