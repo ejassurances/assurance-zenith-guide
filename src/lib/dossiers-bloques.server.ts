@@ -84,7 +84,8 @@ async function incoherences(admin: SupabaseClient<any, any, any>, dossier: any):
         .from("produit_garanties")
         .select("id", { count: "exact", head: true })
         .eq("produit_id", dossier.produit_id ?? "00000000-0000-0000-0000-000000000000")
-        .eq("valide", true);
+        .eq("statut", "valide");
+
       if (!dossier.produit_id || !count) {
         out.push(
           "Incohérence : devoir de conseil impossible — aucune grille de garanties validée pour le produit du dossier.",
