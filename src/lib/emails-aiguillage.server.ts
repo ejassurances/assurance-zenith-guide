@@ -330,7 +330,7 @@ export async function aiguillerLot(
           recu_le: detail.date ?? m.date ?? null,
           notes: sansEnvoi
             ? `Mal aiguillé (${arrivee.libelle}) — réétiqueté vers ${cible.libelle}, aucun mail envoyé (expéditeur non client)`
-            : `Mal aiguillé (${arrivee.libelle}) — transféré à ${cible.adresse}, expéditeur initial en destinataire`,
+            : `Mal aiguillé (${arrivee.libelle}) — transféré en interne à ${cible.adresse}, expéditeur non destinataire`,
           triage_ia: JSON.parse(
             JSON.stringify({
               agent: "aiguillage",
