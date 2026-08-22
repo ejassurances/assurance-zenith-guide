@@ -1,4 +1,11 @@
-import { LABELS_CABINET, LABELS_CREABLES, type LabelCabinet } from "@/lib/gmail-labels";
+import {
+  COUPLES_LABELS,
+  LABELS_CABINET,
+  LABELS_CREABLES,
+  LABELS_ETATS,
+  type LabelCabinet,
+} from "@/lib/gmail-labels";
+
 
 /**
  * Accès Gmail (boîte du cabinet) via la passerelle de connecteurs Lovable.
