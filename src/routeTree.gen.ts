@@ -25,6 +25,7 @@ import { Route as ApiPublicReprendreMailsIgnoresRouteImport } from './routes/api
 import { Route as ApiPublicRelanceSouscriptionRouteImport } from './routes/api/public/relance-souscription'
 import { Route as ApiPublicRelanceSinistresRouteImport } from './routes/api/public/relance-sinistres'
 import { Route as ApiPublicRelancePiecesRouteImport } from './routes/api/public/relance-pieces'
+import { Route as ApiPublicReglesAgentRouteImport } from './routes/api/public/regles-agent'
 import { Route as ApiPublicReclamationsAccuseReceptionRouteImport } from './routes/api/public/reclamations-accuse-reception'
 import { Route as ApiPublicRappelsExpirationRouteImport } from './routes/api/public/rappels-expiration'
 import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
@@ -155,6 +156,11 @@ const ApiPublicRelanceSinistresRoute =
 const ApiPublicRelancePiecesRoute = ApiPublicRelancePiecesRouteImport.update({
   id: '/api/public/relance-pieces',
   path: '/api/public/relance-pieces',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicReglesAgentRoute = ApiPublicReglesAgentRouteImport.update({
+  id: '/api/public/regles-agent',
+  path: '/api/public/regles-agent',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicReclamationsAccuseReceptionRoute =
@@ -482,6 +488,7 @@ export interface FileRoutesByFullPath {
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/reclamations-accuse-reception': typeof ApiPublicReclamationsAccuseReceptionRoute
+  '/api/public/regles-agent': typeof ApiPublicReglesAgentRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
@@ -546,6 +553,7 @@ export interface FileRoutesByTo {
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/reclamations-accuse-reception': typeof ApiPublicReclamationsAccuseReceptionRoute
+  '/api/public/regles-agent': typeof ApiPublicReglesAgentRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
@@ -613,6 +621,7 @@ export interface FileRoutesById {
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/reclamations-accuse-reception': typeof ApiPublicReclamationsAccuseReceptionRoute
+  '/api/public/regles-agent': typeof ApiPublicReglesAgentRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
@@ -680,6 +689,7 @@ export interface FileRouteTypes {
     | '/api/public/leads'
     | '/api/public/rappels-expiration'
     | '/api/public/reclamations-accuse-reception'
+    | '/api/public/regles-agent'
     | '/api/public/relance-pieces'
     | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
@@ -744,6 +754,7 @@ export interface FileRouteTypes {
     | '/api/public/leads'
     | '/api/public/rappels-expiration'
     | '/api/public/reclamations-accuse-reception'
+    | '/api/public/regles-agent'
     | '/api/public/relance-pieces'
     | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
@@ -810,6 +821,7 @@ export interface FileRouteTypes {
     | '/api/public/leads'
     | '/api/public/rappels-expiration'
     | '/api/public/reclamations-accuse-reception'
+    | '/api/public/regles-agent'
     | '/api/public/relance-pieces'
     | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
@@ -855,6 +867,7 @@ export interface RootRouteChildren {
   ApiPublicLeadsRoute: typeof ApiPublicLeadsRoute
   ApiPublicRappelsExpirationRoute: typeof ApiPublicRappelsExpirationRoute
   ApiPublicReclamationsAccuseReceptionRoute: typeof ApiPublicReclamationsAccuseReceptionRoute
+  ApiPublicReglesAgentRoute: typeof ApiPublicReglesAgentRoute
   ApiPublicRelancePiecesRoute: typeof ApiPublicRelancePiecesRoute
   ApiPublicRelanceSinistresRoute: typeof ApiPublicRelanceSinistresRoute
   ApiPublicRelanceSouscriptionRoute: typeof ApiPublicRelanceSouscriptionRoute
@@ -981,6 +994,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/relance-pieces'
       fullPath: '/api/public/relance-pieces'
       preLoaderRoute: typeof ApiPublicRelancePiecesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/regles-agent': {
+      id: '/api/public/regles-agent'
+      path: '/api/public/regles-agent'
+      fullPath: '/api/public/regles-agent'
+      preLoaderRoute: typeof ApiPublicReglesAgentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/reclamations-accuse-reception': {
@@ -1448,6 +1468,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicRappelsExpirationRoute: ApiPublicRappelsExpirationRoute,
   ApiPublicReclamationsAccuseReceptionRoute:
     ApiPublicReclamationsAccuseReceptionRoute,
+  ApiPublicReglesAgentRoute: ApiPublicReglesAgentRoute,
   ApiPublicRelancePiecesRoute: ApiPublicRelancePiecesRoute,
   ApiPublicRelanceSinistresRoute: ApiPublicRelanceSinistresRoute,
   ApiPublicRelanceSouscriptionRoute: ApiPublicRelanceSouscriptionRoute,
