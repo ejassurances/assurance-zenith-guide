@@ -1,4 +1,6 @@
 import {
+  ARCHIVE,
+  A_VALIDER,
   COUPLES_LABELS,
   LABELS_CABINET,
   LABELS_CREABLES,
@@ -452,6 +454,22 @@ export async function poserLabelCabinet(
   );
   const retirer = resolus.filter((l): l is string => !!l && !ajouter.includes(l));
   if (options?.sortirDeLInbox) retirer.push("INBOX");
+  await modifierLabels(id, { ajouter, retirer });
+}
+
+/**
+ * Pose UNIQUEMENT un libellé d'état (« Archives » ou « A valider ») sans
+ * toucher au libellé de direction déjà posé par le staff : utilisé par les
+ * agents qui terminent le traitement d'un mail rangé dans n'importe quelle
+ * direction (finance, veille, arbitrage interne, relation client).
+ */
+export async function marquerEtat(id: string, etat: "archives" | "a_valider"): Promise<void> {
+  const cible = etat === "archives" ? ARCHIVE : A_VALIDER;
+  const ajouter = [await resoudreLabel(cible)];
+  const autres = await Promise.all(
+    LABELS_ETATS.filter((e) => e !== cible).map((e) => resoudreLabel(e).catch(() => null)),
+  );
+  const retirer = autres.filter((l): l is string => !!l && !ajouter.includes(l));
   await modifierLabels(id, { ajouter, retirer });
 }
 
