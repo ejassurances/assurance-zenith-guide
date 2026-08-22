@@ -2,16 +2,19 @@
  * Règles évolutives des agents IA, stockées sur le Drive du cabinet.
  *
  * Arborescence : `06_Regles_Agent/`
- *  - `Regles_De_Ton/Regles_De_Ton.txt` : règles de ton et de jugement, lues à
- *    CHAQUE génération de réponse (cache mémoire de 5 minutes). Le cabinet peut
- *    les modifier directement dans le document, sans passer par le code.
+ *  - `Direction_Commerciale/Regles_De_Ton.txt`
+ *  - `Direction_Financiere/Regles_De_Ton.txt`
+ *  - `Direction_Juridique_Conformite/Regles_De_Ton.txt`
+ *    → un document de ton par DIRECTION. Chaque agent lit uniquement le
+ *      document de sa direction (jamais un mélange), relu à chaque réponse
+ *      (cache mémoire de 5 minutes). Le cabinet les remplit lui-même.
  *  - `Regles_Non_Couvertes/Journal_Regles_Non_Couvertes.txt` : journal des cas
  *    rencontrés sans règle applicable. Chaque cas y est ajouté ET signalé par
  *    email à l'administrateur, pour décider ensemble s'il faut créer une règle
  *    (document Drive pour une nuance de ton, code pour une action structurée).
  *
- * Jamais bloquant : si le Drive est indisponible, les agents continuent avec les
- * règles par défaut du code.
+ * Jamais bloquant : si le Drive est indisponible, les agents continuent avec un
+ * comportement par défaut neutre.
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -20,47 +23,61 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 type Admin = SupabaseClient<any, any, any>;
 
 export const DRIVE_RACINE_REGLES = "06_Regles_Agent";
-export const DRIVE_DOSSIER_TON = "Regles_De_Ton";
 export const DRIVE_DOSSIER_NON_COUVERTES = "Regles_Non_Couvertes";
 export const FICHIER_TON = "Regles_De_Ton.txt";
 export const FICHIER_NON_COUVERTES = "Journal_Regles_Non_Couvertes.txt";
 
+/** Directions du cabinet et dossier Drive correspondant. */
+export const DOSSIERS_TON_PAR_DIRECTION = {
+  commerciale: "Direction_Commerciale",
+  financiere: "Direction_Financiere",
+  conformite: "Direction_Juridique_Conformite",
+} as const;
+
+export type DirectionAgent = keyof typeof DOSSIERS_TON_PAR_DIRECTION;
+
 const ADMIN_FALLBACK = "contact@ej-assurances.fr";
 const CACHE_MS = 5 * 60 * 1000;
 
-/** Premier contenu du document de règles de ton (créé s'il n'existe pas). */
-export const REGLES_DE_TON_INITIALES = [
-  "REGLES DE TON ET DE JUGEMENT — agents IA du cabinet EJ Partners Assurances",
-  "(document modifiable librement par le cabinet : il est relu par l'IA à chaque réponse)",
-  "",
-  "1. Tutoiement en miroir : si le client tutoie dans son mail, répondre en le tutoyant aussi.",
-  "   Par défaut (vouvoiement du client, ou premier contact), rester au vouvoiement.",
-  "",
-].join("\n");
+/** Contenu de départ minimal : le cabinet le complète lui-même ensuite. */
+export const REGLES_DE_TON_INITIALES =
+  "Aucune règle spécifique définie pour l'instant — vouvoiement par défaut, ton neutre et factuel.";
 
 type Cache = { texte: string; expire: number };
-let cacheTon: Cache | null = null;
+const cacheTon = new Map<DirectionAgent, Cache>();
 
 async function drive() {
   return await import("@/lib/google-drive.server");
 }
 
-/** Crée si besoin `06_Regles_Agent/...` et renvoie les IDs des deux documents. */
+/** Crée si besoin le document de ton d'une direction et renvoie son ID. */
+export async function assurerDocumentTon(direction: DirectionAgent): Promise<string> {
+  const { assurerDossier, assurerFichierTexte } = await drive();
+  const racine = await assurerDossier(DRIVE_RACINE_REGLES);
+  const dossier = await assurerDossier(DOSSIERS_TON_PAR_DIRECTION[direction], racine);
+  const fichier = await assurerFichierTexte({
+    nom: FICHIER_TON,
+    parentId: dossier,
+    contenuInitial: REGLES_DE_TON_INITIALES,
+  });
+  return fichier.id;
+}
+
+/** Crée si besoin les 3 documents de ton + le journal, et renvoie les IDs. */
 export async function assurerDocumentsRegles(): Promise<{
-  ton_file_id: string;
+  ton_file_ids: Record<DirectionAgent, string>;
   journal_file_id: string;
   racine_url: string;
 }> {
   const { assurerDossier, assurerFichierTexte, urlDossierDrive } = await drive();
   const racine = await assurerDossier(DRIVE_RACINE_REGLES);
-  const dossierTon = await assurerDossier(DRIVE_DOSSIER_TON, racine);
-  const dossierJournal = await assurerDossier(DRIVE_DOSSIER_NON_COUVERTES, racine);
 
-  const ton = await assurerFichierTexte({
-    nom: FICHIER_TON,
-    parentId: dossierTon,
-    contenuInitial: REGLES_DE_TON_INITIALES,
-  });
+  const ton_file_ids = {} as Record<DirectionAgent, string>;
+  for (const direction of Object.keys(DOSSIERS_TON_PAR_DIRECTION) as DirectionAgent[]) {
+    ton_file_ids[direction] = await assurerDocumentTon(direction);
+  }
+
+  const dossierJournal = await assurerDossier(DRIVE_DOSSIER_NON_COUVERTES, racine);
   const journal = await assurerFichierTexte({
     nom: FICHIER_NON_COUVERTES,
     parentId: dossierJournal,
@@ -71,32 +88,55 @@ export async function assurerDocumentsRegles(): Promise<{
     ].join("\n"),
   });
 
-  return { ton_file_id: ton.id, journal_file_id: journal.id, racine_url: urlDossierDrive(racine) };
+  return { ton_file_ids, journal_file_id: journal.id, racine_url: urlDossierDrive(racine) };
+}
+
+/** ID du journal des cas non couverts (créé si besoin). */
+async function assurerJournal(): Promise<string> {
+  const { assurerDossier, assurerFichierTexte } = await drive();
+  const racine = await assurerDossier(DRIVE_RACINE_REGLES);
+  const dossier = await assurerDossier(DRIVE_DOSSIER_NON_COUVERTES, racine);
+  const fichier = await assurerFichierTexte({
+    nom: FICHIER_NON_COUVERTES,
+    parentId: dossier,
+    contenuInitial: [
+      "JOURNAL DES CAS SANS REGLE APPLICABLE",
+      "Chaque entrée = un mail traité par l'IA sans règle connue. À arbitrer avec le cabinet.",
+      "",
+    ].join("\n"),
+  });
+  return fichier.id;
 }
 
 /**
- * Règles de ton en vigueur (texte brut), avec cache de 5 minutes.
- * Retourne les règles par défaut du code si le Drive est indisponible.
+ * Règles de ton en vigueur pour UNE direction (texte brut), cache 5 minutes.
+ * Repli neutre si le Drive est indisponible : jamais bloquant.
  */
-export async function chargerReglesDeTon(): Promise<string> {
-  if (cacheTon && cacheTon.expire > Date.now()) return cacheTon.texte;
+export async function chargerReglesDeTon(direction: DirectionAgent): Promise<string> {
+  const enCache = cacheTon.get(direction);
+  if (enCache && enCache.expire > Date.now()) return enCache.texte;
   try {
-    const { ton_file_id } = await assurerDocumentsRegles();
+    const fileId = await assurerDocumentTon(direction);
     const { lireTexteFichier } = await drive();
-    const texte = (await lireTexteFichier(ton_file_id)).trim() || REGLES_DE_TON_INITIALES;
-    cacheTon = { texte, expire: Date.now() + CACHE_MS };
+    const texte = (await lireTexteFichier(fileId)).trim() || REGLES_DE_TON_INITIALES;
+    cacheTon.set(direction, { texte, expire: Date.now() + CACHE_MS });
     return texte;
   } catch (e) {
-    console.error("[regles-agent] règles de ton illisibles sur le Drive — repli sur le code", e);
-    cacheTon = { texte: REGLES_DE_TON_INITIALES, expire: Date.now() + 60_000 };
+    console.error(
+      `[regles-agent] règles de ton (${direction}) illisibles sur le Drive — repli neutre`,
+      e,
+    );
+    cacheTon.set(direction, { texte: REGLES_DE_TON_INITIALES, expire: Date.now() + 60_000 });
     return REGLES_DE_TON_INITIALES;
   }
 }
 
-/** Vide le cache (utile après une modification volontaire du document). */
-export function invaliderCacheRegles() {
-  cacheTon = null;
+/** Vide le cache (utile après une modification volontaire d'un document). */
+export function invaliderCacheRegles(direction?: DirectionAgent) {
+  if (direction) cacheTon.delete(direction);
+  else cacheTon.clear();
 }
+
 
 /** Adresse email de l'administrateur du cabinet (repli : boîte du cabinet). */
 export async function emailAdminCabinet(admin: Admin): Promise<string> {
