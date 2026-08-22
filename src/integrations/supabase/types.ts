@@ -1606,8 +1606,8 @@ export type Database = {
           actif: boolean
           adresse: string | null
           id: string
+          label_direction: string
           libelle: string
-          prefixe: string
           service_cle: string
           theme: string
           updated_at: string
@@ -1616,8 +1616,8 @@ export type Database = {
           actif?: boolean
           adresse?: string | null
           id?: string
+          label_direction: string
           libelle: string
-          prefixe: string
           service_cle: string
           theme?: string
           updated_at?: string
@@ -1626,8 +1626,8 @@ export type Database = {
           actif?: boolean
           adresse?: string | null
           id?: string
+          label_direction?: string
           libelle?: string
-          prefixe?: string
           service_cle?: string
           theme?: string
           updated_at?: string
