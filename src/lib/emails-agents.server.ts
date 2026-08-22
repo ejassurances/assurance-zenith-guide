@@ -331,6 +331,8 @@ export async function executerAgents(
               },
               { onConflict: "gmail_message_id" },
             );
+            // Facture / bordereau enregistré : « Archives ».
+            await marquerEtat(m.id, "archives");
             if (rattrapage.has(m.id)) {
               await retirerLabelRattrapage(m.id);
               rattrapagesTraites++;
@@ -399,6 +401,8 @@ export async function executerAgents(
               },
               { onConflict: "gmail_message_id" },
             );
+            // Arbitrage humain attendu (tâche créée) : « A valider ».
+            await marquerEtat(m.id, "a_valider");
             if (rattrapage.has(m.id)) {
               await retirerLabelRattrapage(m.id);
               rattrapagesTraites++;
