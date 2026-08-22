@@ -375,6 +375,8 @@ export async function envoyerDevoirConseil(
       NOM_COMPAGNIE_RECOMMANDEE: saisie.compagnie ?? "",
     },
     replyTo: SITE.email,
+    liens: { client_id: (d as { client_id?: string | null }).client_id ?? null, dossier_id: dossierId },
+
   });
   if (!result.sent) throw new Error("Adresse en liste de suppression — envoi refusé");
 
@@ -591,6 +593,7 @@ export async function envoyerDevoirsConseilValidesDus(
           TYPE_ASSURANCE: modele.libelle,
         },
         replyTo: SITE.email,
+        liens: { client_id: dc.client_id ?? null, dossier_id: dc.dossier_id },
         idempotencyKey: `devoir-conseil-${dc.id}`,
       });
       if (!res.sent) {

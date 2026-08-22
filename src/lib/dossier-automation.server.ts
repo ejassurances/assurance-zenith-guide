@@ -270,6 +270,7 @@ export async function envoyerDerAuClient(
         cabinetName: "EJ Partners Assurances",
         link: appUrl("/espace/signer-der"),
       },
+      liens: { client_id: params.client_id },
     });
     if (!res.sent) return { sent: false, error: "Adresse en liste de suppression" };
 
