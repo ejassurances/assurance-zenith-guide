@@ -124,3 +124,83 @@ export async function envoyerLettreMission(
 
   return { id: lettreId };
 }
+
+/**
+ * Date de référence du DER pour le délai fixe de 8 h avant la lettre de
+ * mission : signature du DER si elle existe, sinon date d'envoi.
+ */
+export async function dateReferenceDer(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any, any, any>,
+  clientId: string | null,
+): Promise<string | null> {
+  if (!clientId) return null;
+  const { data } = await supabase
+    .from("client_der_envois")
+    .select("signed_at, envoye_le, created_at")
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const d = data as any;
+  return d ? (d.signed_at ?? d.envoye_le ?? null) : null;
+}
+
+/**
+ * Job planifié : envoie les lettres de mission dont le délai fixe de 8 h après
+ * le DER est écoulé (dossiers encore en amont de la lettre de mission).
+ */
+export async function envoyerLettresMissionDues(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any, any, any>,
+  limite = 30,
+): Promise<{ envoyees: number; reportees: number; echecs: number }> {
+  const { etatDelaiLettreMission } = await import("./lettre-mission-delai");
+  const { identiteTechnique } = await import("./agent-taches.server");
+  const { APP_URL } = await import("./app-url");
+
+  const { data, error } = await supabase
+    .from("dossiers")
+    .select("id, client_id, client_email, reference, statut")
+    .in("statut", ["nouveau", "en_cours"])
+    .not("client_email", "is", null)
+    .order("created_at", { ascending: true })
+    .limit(limite);
+  if (error) throw new Error(error.message);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const identite = await identiteTechnique(supabase as any);
+  let envoyees = 0;
+  let reportees = 0;
+  let echecs = 0;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const d of ((data ?? []) as any[])) {
+    try {
+      // Une lettre déjà vivante (envoyée ou signée) : rien à faire.
+      const { data: lm } = await supabase
+        .from("lettres_mission")
+        .select("id")
+        .eq("dossier_id", d.id)
+        .neq("statut", "annulee")
+        .limit(1)
+        .maybeSingle();
+      if (lm) continue;
+
+      const derLe = await dateReferenceDer(supabase, d.client_id ?? null);
+      const etat = etatDelaiLettreMission(derLe);
+      if (!etat.autorise) {
+        reportees += 1;
+        continue;
+      }
+      await envoyerLettreMission(supabase, d.id, identite?.userId ?? d.created_by ?? "", APP_URL);
+      envoyees += 1;
+    } catch (e) {
+      echecs += 1;
+      console.error("[lettre-mission] envoi différé impossible", d.reference, e);
+    }
+  }
+
+  return { envoyees, reportees, echecs };
+}
