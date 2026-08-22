@@ -18,6 +18,13 @@ type Client = SupabaseClient<any, any, any>;
  */
 export const DRIVE_RACINE_PARTENAIRES = "04_PARTENAIRES_ET_COMPAGNIES";
 
+/**
+ * Dossier Drive officiel des conditions générales / notices compagnies :
+ * https://drive.google.com/drive/folders/1zyEYAYUve-sQRCXqlYpCDoUgaZxisDMS
+ * Les documents y sont rangés par Compagnie puis par Branche.
+ */
+export const DRIVE_DOSSIER_CG_ID = "1zyEYAYUve-sQRCXqlYpCDoUgaZxisDMS";
+
 function segment(valeur: string | null | undefined, defaut: string) {
   const nettoye = (valeur ?? "")
     .normalize("NFD")
@@ -30,13 +37,13 @@ function segment(valeur: string | null | undefined, defaut: string) {
 
 /** Chemin Drive normalisé d'une branche d'une compagnie. */
 export function cheminDrivePartenaire(compagnie: string | null, branche: string | null) {
-  return [DRIVE_RACINE_PARTENAIRES, segment(compagnie, "Compagnie_inconnue"), segment(branche, "Divers")];
+  return [segment(compagnie, "Compagnie_inconnue"), segment(branche, "Divers")];
 }
 
-/** Crée (ou retrouve) le dossier Drive d'une branche de compagnie. */
+/** Crée (ou retrouve) le dossier Drive d'une branche de compagnie, sous le dossier CG officiel. */
 export async function assurerDossierPartenaire(compagnie: string | null, branche: string | null) {
   const chemin = cheminDrivePartenaire(compagnie, branche);
-  const folderId = await assurerChemin(chemin);
+  const folderId = await assurerChemin(chemin, DRIVE_DOSSIER_CG_ID);
   return { folder_id: folderId, chemin: chemin.join("/"), url: urlDossierDrive(folderId) };
 }
 
