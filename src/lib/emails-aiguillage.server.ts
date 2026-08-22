@@ -16,8 +16,10 @@ import {
  * manuellement par le staff : l'erreur est donc humaine. Quand le contenu du
  * message ne correspond manifestement pas au thème du service dans lequel il a
  * été posé, l'agent transfère le message d'origine (aucun mail de réponse
- * rédigé) en mettant en destinataires le bon service ET l'expéditeur initial,
- * afin qu'il sache où sa demande a été redirigée.
+ * rédigé) uniquement à l'adresse du bon service, avec l'explication du
+ * réaiguillage. L'expéditeur initial n'est jamais destinataire ni en copie :
+ * il ne reçoit aucun mail de routage.
+
 
  *
  * Garde-fous contre les faux positifs :
