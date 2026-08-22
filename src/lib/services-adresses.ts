@@ -70,7 +70,7 @@ export async function chargerServices(
 
   const { data, error } = await db
     .from("config_labels_gmail")
-    .select("service_cle, libelle, prefixe, adresse, theme, actif")
+    .select("service_cle, libelle, label_direction, adresse, theme, actif")
     .eq("actif", true);
   if (error) throw new Error(`Configuration des libellés Gmail illisible : ${error.message}`);
 
@@ -85,7 +85,7 @@ export async function chargerServices(
     services.push({
       cle,
       libelle: ligne.libelle,
-      prefixe: ligne.prefixe,
+      label_direction: ligne.label_direction,
       adresse: ligne.adresse?.trim() || null,
       theme: ligne.theme ?? "",
       ...sous,
@@ -112,7 +112,7 @@ export function serviceDeEtiquettes(
 ): DefinitionService | null {
   const bas = etiquettes.map((e) => e.toLowerCase());
   for (const s of services) {
-    const p = s.prefixe.toLowerCase();
+    const p = s.label_direction.toLowerCase();
     if (bas.some((e) => e.startsWith(p))) return s;
   }
   return null;
