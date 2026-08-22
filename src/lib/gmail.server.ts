@@ -412,28 +412,42 @@ export async function resoudreLabel(nom: string): Promise<string> {
 
 
 /**
- * Applique une étiquette du cabinet à un message (et retire éventuellement des
- * étiquettes devenues obsolètes). Aucune erreur n'est avalée : un échec
- * d'étiquetage fait échouer l'étape appelante, qui le journalise et le remonte.
+ * Applique les libellés du cabinet à un message. Structure à plat : on pose le
+ * libellé de DIRECTION et, s'il y en a un, le libellé d'ÉTAT (« A valider » ou
+ * « Archives ») — deux libellés indépendants, jamais un libellé composé. Poser
+ * « Archives » retire « A valider » (et inversement), le libellé de direction
+ * reste toujours en place. Aucune erreur n'est avalée.
  *
  * Règle cabinet : la boîte de réception générale reste gérée manuellement par le
- * dirigeant — l'étiquetage NE retire donc PAS INBOX. Chaque agent travaille dans
- * son étiquette « A_Traiter ». Passer `sortirDeLInbox: true` pour un cas
- * particulier (ex. mise à la corbeille / archivage explicite).
+ * dirigeant — l'étiquetage NE retire donc PAS INBOX. Un mail portant seulement
+ * son libellé de direction est implicitement « à traiter ». Passer
+ * `sortirDeLInbox: true` pour un cas particulier (corbeille / archivage).
  */
 export async function poserLabelCabinet(
   id: string,
   cle: LabelCabinet,
   options?: { retirer?: LabelCabinet[]; sortirDeLInbox?: boolean },
 ): Promise<void> {
-  const ajouter = await resoudreLabel(LABELS_CABINET[cle]);
-  const resolus = await Promise.all((options?.retirer ?? []).map((c) => resoudreLabel(LABELS_CABINET[c])));
-  // Arborescence à plat : plusieurs clés pointent vers la même étiquette. On ne
-  // retire jamais celle que l'on pose (Gmail refuse add + remove du même label).
-  const retirer = [...new Set(resolus)].filter((l) => l !== ajouter);
+  const couple = COUPLES_LABELS[cle];
+  const noms = [couple.direction, couple.etat].filter((n): n is string => !!n);
+  const ajouter = await Promise.all([...new Set(noms)].map((n) => resoudreLabel(n)));
+
+  // États à retirer : l'autre état partagé (un seul état à la fois), plus les
+  // états explicitement demandés par l'appelant. Jamais un libellé de direction.
+  const etatsARetirer = new Set<string>();
+  for (const etat of LABELS_ETATS) if (etat !== couple.etat) etatsARetirer.add(etat);
+  for (const c of options?.retirer ?? []) {
+    const e = COUPLES_LABELS[c].etat;
+    if (e && e !== couple.etat) etatsARetirer.add(e);
+  }
+  const resolus = await Promise.all(
+    [...etatsARetirer].map((n) => resoudreLabel(n).catch(() => null)),
+  );
+  const retirer = resolus.filter((l): l is string => !!l && !ajouter.includes(l));
   if (options?.sortirDeLInbox) retirer.push("INBOX");
-  await modifierLabels(id, { ajouter: [ajouter], retirer });
+  await modifierLabels(id, { ajouter, retirer });
 }
+
 
 
 /**
