@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { changerEtapeDossier } from "@/lib/devoir-conseil.functions";
 import { ETAPES, ETAPES_HORS_PARCOURS, etapeDef, etapeIndex, etapeSuivante, type EtapeKey } from "@/lib/pipeline-dossier";
+import { PHASES_CLIENT, phaseClientIndex } from "@/lib/pipeline-client";
 
 type HistoRow = {
   id: string;
