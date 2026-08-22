@@ -342,10 +342,20 @@ export async function creerDossierDepuisEmail(
     });
   } else {
     try {
-      const { envoyerLettreMission } = await import("@/lib/lettres-mission.server");
+      const { envoyerLettreMission, dateReferenceDer } = await import("@/lib/lettres-mission.server");
+      const { etatDelaiLettreMission } = await import("@/lib/lettre-mission-delai");
       const { APP_URL } = await import("@/lib/app-url");
-      await envoyerLettreMission(admin, dossier.id, params.userId, APP_URL);
-      lettreEnvoyee = true;
+      // Délai fixe de 8 h après le DER : sinon l'envoi est différé et repris
+      // par le job /api/public/lettres-mission-envois.
+      const derLe = await dateReferenceDer(admin, clientId ?? null);
+      const etat = etatDelaiLettreMission(derLe);
+      if (!etat.autorise) {
+        lettreErreur = etat.motif ?? "Envoi de la lettre de mission différé.";
+      } else {
+        await envoyerLettreMission(admin, dossier.id, params.userId, APP_URL);
+        lettreEnvoyee = true;
+      }
+
     } catch (e) {
       lettreErreur = e instanceof Error ? e.message : "Envoi de la lettre de mission impossible";
       await creerTacheAdmin(admin, {
