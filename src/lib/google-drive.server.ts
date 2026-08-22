@@ -165,3 +165,34 @@ export async function telechargerFichier(fileId: string): Promise<Uint8Array> {
 export function urlFichierDrive(fileId: string) {
   return `https://drive.google.com/file/d/${fileId}/view`;
 }
+
+/** Liste les enfants directs d'un dossier Drive (dossiers et fichiers). */
+export async function listerEnfantsDrive(
+  parentId: string,
+): Promise<{ id: string; name: string; mimeType: string }[]> {
+  const resultats: { id: string; name: string; mimeType: string }[] = [];
+  let pageToken: string | undefined;
+  do {
+    const params = new URLSearchParams({
+      q: `'${escapeQuery(parentId)}' in parents and trashed=false`,
+      fields: "nextPageToken, files(id,name,mimeType)",
+      pageSize: "200",
+      orderBy: "name",
+      supportsAllDrives: "true",
+      includeItemsFromAllDrives: "true",
+    });
+    if (pageToken) params.set("pageToken", pageToken);
+    const data = (await driveFetch(`/drive/v3/files?${params}`)) as {
+      files?: { id: string; name: string; mimeType: string }[];
+      nextPageToken?: string;
+    };
+    resultats.push(...(data.files ?? []));
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+  return resultats;
+}
+
+/** Vrai si l'élément Drive est un dossier. */
+export function estDossierDrive(mimeType: string) {
+  return mimeType === FOLDER_MIME;
+}
