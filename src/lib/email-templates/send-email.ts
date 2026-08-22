@@ -143,6 +143,22 @@ export async function sendTemplateEmail(
     `[email] OK template=${templateName} destinataire=${recipient} messageId=${messageId ?? 'n/a'}`
   )
 
+  // Trace de l'envoi dans la boîte Gmail du cabinet (copie dans « Envoyés »,
+  // libellée « Envoyé via Brevo »). N'impacte jamais l'envoi réel.
+  try {
+    const { deposerCopieEnvoyee } = await import('@/lib/gmail.server')
+    await deposerCopieEnvoyee({
+      to: recipient,
+      sujet: subject,
+      html: withHtmlSignature(html),
+      from: `${SITE_NAME} <${FROM_EMAIL}>`,
+      replyTo: options.replyTo ?? null,
+      attachments: options.attachments,
+    })
+  } catch (e) {
+    console.error('[email] copie Gmail de l’envoi Brevo impossible:', e)
+  }
+
   return { sent: true }
 }
 
