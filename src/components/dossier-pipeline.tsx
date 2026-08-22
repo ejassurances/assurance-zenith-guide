@@ -74,64 +74,83 @@ export function DossierPipeline({
         </span>
       </div>
 
-      <div className="-mx-1 mt-5 overflow-x-auto pb-2">
-        <ol className="flex min-w-max items-start gap-0 px-1">
-          {ETAPES.map((e, i) => {
-            const passee = courant >= 0 && i < courant;
-            const current = e.key === statut;
-            const selected = e.key === (selectedStep ?? statut);
-            const cliquable = onStepClick != null && i <= courant;
-            return (
-              <li
-                key={e.key}
-                onClick={() => cliquable && onStepClick(e.key)}
-                className={
-                  "relative flex w-[124px] shrink-0 flex-col items-center text-center " +
-                  (cliquable ? "cursor-pointer hover:opacity-80" : "cursor-default")
-                }
-              >
-                {i > 0 && (
-                  <span
-                    className={
-                      "absolute left-0 top-[13px] h-[2px] w-1/2 -translate-x-1/2 " +
-                      (passee || current ? "bg-ink" : "bg-line")
-                    }
-                  />
-                )}
-                {i < ETAPES.length - 1 && (
-                  <span
-                    className={
-                      "absolute right-0 top-[13px] h-[2px] w-1/2 translate-x-1/2 " + (passee ? "bg-ink" : "bg-line")
-                    }
-                  />
-                )}
+      <div className="mt-5 grid gap-3 md:grid-cols-4">
+        {PHASES_CLIENT.map((phase, pi) => {
+          const phaseCourante = phaseClientIndex(statut);
+          const phasePassee = phaseCourante >= 0 && pi < phaseCourante;
+          const phaseActive = pi === phaseCourante;
+          const sousEtapes = ETAPES.filter((e) => phase.statuts.includes(e.key));
+          return (
+            <div
+              key={phase.key}
+              className={
+                "rounded-xl border p-3 " +
+                (phaseActive
+                  ? "border-ink bg-ink/[0.04]"
+                  : phasePassee
+                    ? "border-ink/40 bg-background"
+                    : "border-line bg-background")
+              }
+            >
+              <div className="flex items-center gap-2">
                 <span
-                  title={e.description}
                   className={
-                    "relative z-10 flex h-7 w-7 items-center justify-center rounded-full border text-[11px] font-medium " +
-                    (current
+                    "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-medium " +
+                    (phasePassee || phaseActive
                       ? "border-ink bg-ink text-primary-foreground"
-                      : passee
-                        ? "border-ink bg-ink text-primary-foreground"
-                        : "border-line bg-background text-ink-muted") +
-                    (selected ? " ring-4 ring-ink/15" : "")
+                      : "border-line bg-background text-ink-muted")
                   }
                 >
-                  {passee ? "✓" : i + 1}
+                  {phasePassee ? "✓" : pi + 1}
                 </span>
                 <p
                   className={
-                    "mt-2 px-1 text-[11px] leading-tight " +
-                    (selected || current ? "font-medium text-ink" : passee ? "text-ink-soft" : "text-ink-muted")
+                    "text-xs font-medium leading-tight " +
+                    (phasePassee || phaseActive ? "text-ink" : "text-ink-muted")
                   }
                 >
-                  {e.label}
+                  {phase.label}
                 </p>
-              </li>
-            );
-          })}
-        </ol>
+              </div>
+
+              <ul className="mt-3 space-y-1">
+                {sousEtapes.map((e) => {
+                  const i = etapeIndex(e.key);
+                  const passee = courant >= 0 && i < courant;
+                  const current = e.key === statut;
+                  const selected = e.key === (selectedStep ?? statut);
+                  const cliquable = onStepClick != null && i <= courant;
+                  return (
+                    <li key={e.key}>
+                      <button
+                        type="button"
+                        title={e.description}
+                        disabled={!cliquable}
+                        onClick={() => cliquable && onStepClick?.(e.key)}
+                        className={
+                          "flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[11px] leading-tight " +
+                          (cliquable ? "cursor-pointer hover:bg-ink/5" : "cursor-default") +
+                          (selected ? " bg-ink/10 font-medium" : "") +
+                          (current ? " text-ink" : passee ? " text-ink-soft" : " text-ink-muted")
+                        }
+                      >
+                        <span
+                          className={
+                            "h-1.5 w-1.5 shrink-0 rounded-full " +
+                            (passee || current ? "bg-ink" : "bg-line")
+                          }
+                        />
+                        {e.label}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
       </div>
+
 
       {def && !def.horsParcours && (
         <p className="mt-1 text-xs text-ink-muted">{def.description}</p>
