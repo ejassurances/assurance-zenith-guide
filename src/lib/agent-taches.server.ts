@@ -12,14 +12,57 @@ type Admin = SupabaseClient<Database>;
 
 /** Premier administrateur du cabinet (destinataire par défaut des tâches). */
 export async function adminParDefaut(admin: Admin): Promise<string | null> {
-  const { data } = await admin
+  const { data, error } = await admin
     .from("user_roles")
     .select("user_id")
     .eq("role", "admin")
     .limit(1)
     .maybeSingle();
+  if (error) console.error("[agent-taches] lecture de user_roles impossible", error.message);
   return (data as { user_id: string } | null)?.user_id ?? null;
 }
+
+/**
+ * Identité technique utilisée par les traitements automatiques (crons, agents).
+ * Ordre de résolution, pour ne JAMAIS échouer sur « aucun administrateur » quand
+ * un compte existe réellement :
+ *  1. un rôle `admin` dans `user_roles` ;
+ *  2. à défaut, un rôle `mandataire` (conseiller du cabinet) ;
+ *  3. à défaut, le plus ancien compte d'authentification du projet.
+ * Retourne aussi le motif, pour la journalisation.
+ */
+export async function identiteTechnique(
+  admin: Admin,
+): Promise<{ userId: string; source: "admin" | "mandataire" | "auth" } | null> {
+  const adminId = await adminParDefaut(admin);
+  if (adminId) return { userId: adminId, source: "admin" };
+
+  const { data: mandataire } = await admin
+    .from("user_roles")
+    .select("user_id")
+    .eq("role", "mandataire")
+    .limit(1)
+    .maybeSingle();
+  const mandataireId = (mandataire as { user_id: string } | null)?.user_id;
+  if (mandataireId) {
+    console.warn("[agent-taches] aucun rôle admin — repli sur un mandataire du cabinet");
+    return { userId: mandataireId, source: "mandataire" };
+  }
+
+  try {
+    const { data, error } = await admin.auth.admin.listUsers({ page: 1, perPage: 1 });
+    if (error) throw new Error(error.message);
+    const premier = data.users[0]?.id;
+    if (premier) {
+      console.warn("[agent-taches] aucun rôle en base — repli sur le premier compte d'authentification");
+      return { userId: premier, source: "auth" };
+    }
+  } catch (e) {
+    console.error("[agent-taches] liste des comptes d'authentification illisible", e);
+  }
+  return null;
+}
+
 
 export async function creerTacheAdmin(
   admin: Admin,
