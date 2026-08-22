@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ETAPES } from "@/lib/pipeline-dossier";
+import { phaseClient } from "@/lib/pipeline-client";
 import { labelForBranche } from "@/lib/recueil-besoins-schemas";
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
