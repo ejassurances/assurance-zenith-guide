@@ -70,14 +70,19 @@ async function drive() {
 export async function localiserDocumentTon(
   direction: DirectionAgent,
 ): Promise<{ id: string; mimeType?: string }> {
-  const { assurerDossier, assurerFichierTexte, trouverFichierRecursif } = await drive();
+  const { assurerDossier, assurerFichierTexte, trouverFichierRecursif, trouverFichierParNomGlobal } =
+    await drive();
   const racine = await assurerDossier(DRIVE_RACINE_REGLES);
   const dossier = await assurerDossier(DOSSIERS_TON_PAR_DIRECTION[direction], racine);
 
   for (const nom of NOMS_TON_PAR_DIRECTION[direction]) {
-    const trouve = await trouverFichierRecursif(nom, dossier);
-    if (trouve) return { id: trouve.id, mimeType: trouve.mimeType };
+    const dansDossier = await trouverFichierRecursif(nom, dossier);
+    if (dansDossier) return { id: dansDossier.id, mimeType: dansDossier.mimeType };
+    // Le document a pu être recréé/déplacé ailleurs par le cabinet.
+    const global = await trouverFichierParNomGlobal(nom);
+    if (global) return { id: global.id, mimeType: global.mimeType };
   }
+
 
   const fichier = await assurerFichierTexte({
     nom: FICHIER_TON,
