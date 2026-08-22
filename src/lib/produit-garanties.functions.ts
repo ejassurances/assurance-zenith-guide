@@ -242,3 +242,15 @@ export const listerEtatGrillesFamille = createServerFn({ method: "POST" })
     const { etatGrillesFamille } = await import("./produit-garanties-etat.server");
     return etatGrillesFamille(context.supabase, data.famille_code);
   });
+
+/**
+ * Remonte dans le CRM les CG déposées à la main dans le Drive officiel
+ * ([Compagnie]/[Branche]). Seul le lien Drive est enregistré.
+ */
+export const synchroniserCgDrive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertStaff(context.supabase, context.userId);
+    const { synchroniserCgDepuisDrive } = await import("./cg-drive-sync.server");
+    return synchroniserCgDepuisDrive(context.supabase, context.userId);
+  });

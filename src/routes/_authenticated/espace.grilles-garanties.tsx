@@ -8,9 +8,11 @@ import { grillePourFamille } from "@/lib/garanties-grille";
 import {
   analyserDocumentsGaranties,
   listerEtatGrillesFamille,
+  synchroniserCgDrive,
   validerGrilleGaranties,
 } from "@/lib/produit-garanties.functions";
 import type { EtatGrilleProduit } from "@/lib/produit-garanties-etat.server";
+
 
 /** Familles disposant d'une trame standardisée produit (la santé passe par les formules). */
 const FAMILLES = [
@@ -50,6 +52,8 @@ function AtelierGrillesPage() {
   const lister = useServerFn(listerEtatGrillesFamille);
   const analyser = useServerFn(analyserDocumentsGaranties);
   const valider = useServerFn(validerGrilleGaranties);
+  const synchroniser = useServerFn(synchroniserCgDrive);
+
 
   const [famille, setFamille] = useState("emprunteur");
   const [produits, setProduits] = useState<EtatGrilleProduit[]>([]);
@@ -118,6 +122,36 @@ function AtelierGrillesPage() {
     );
   };
 
+  /** Remonte les CG déposées à la main dans le Drive officiel du cabinet. */
+  const synchroniserDrive = async () => {
+    setBusy("sync");
+    setMessage(null);
+    try {
+      const r = (await synchroniser({ data: undefined })) as {
+        fichiers_vus: number;
+        liens_crees: number;
+        deja_lies: number;
+        ignores: { fichier: string; chemin: string; raison: string }[];
+      };
+      const details =
+        r.ignores.length > 0
+          ? ` · non rattachés : ${r.ignores
+              .slice(0, 5)
+              .map((i) => `${i.chemin}/${i.fichier} (${i.raison})`)
+              .join(" ; ")}`
+          : "";
+      setMessage({
+        type: r.ignores.length > 0 ? "err" : "ok",
+        texte: `Drive : ${r.fichiers_vus} fichier(s) lu(s), ${r.liens_crees} nouveau(x) lien(s), ${r.deja_lies} déjà rattaché(s)${details}`,
+      });
+      await charger();
+    } catch (e) {
+      setMessage({ type: "err", texte: e instanceof Error ? e.message : "Synchronisation impossible" });
+    } finally {
+      setBusy(null);
+    }
+  };
+
   /** Validation humaine explicite de la proposition, reprise telle quelle. */
   const validerProposition = async (p: EtatGrilleProduit) => {
     if (!p.proposition || !grille) throw new Error("Proposition indisponible");
@@ -178,7 +212,16 @@ function AtelierGrillesPage() {
             ? `Analyse ${(lot?.fait ?? 0) + 1}/${lot?.total ?? 0}…`
             : `Analyser les ${nbAAnalyser} contrat(s) restants`}
         </button>
+        <button
+          type="button"
+          disabled={busy !== null}
+          onClick={() => void synchroniserDrive()}
+          className="rounded-full border border-[#B99B3F] px-4 py-2 text-sm font-medium text-[#0A192F] disabled:opacity-50"
+        >
+          {busy === "sync" ? "Lecture du Drive…" : "Remonter les CG du Drive"}
+        </button>
       </div>
+
 
       {message && (
         <p
