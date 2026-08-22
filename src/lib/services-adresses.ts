@@ -27,8 +27,8 @@ export type ServiceCabinet =
 export interface DefinitionService {
   cle: ServiceCabinet;
   libelle: string;
-  /** Préfixe exact de l'arborescence Gmail du service. */
-  prefixe: string;
+  /** Libellé Gmail de direction (à plat) du service. */
+  label_direction: string;
   /** Adresse réelle de renvoi, ou null si le service n'en a pas. */
   adresse: string | null;
   /** Étiquettes du service (sous-états), clés de LABELS_CABINET. */
@@ -37,6 +37,7 @@ export interface DefinitionService {
   /** Thèmes traités, utilisés pour la classification IA. */
   theme: string;
 }
+
 
 /**
  * Sous-états de chaque service : dépendants du code (clés de LABELS_CABINET),
@@ -69,7 +70,7 @@ export async function chargerServices(
 
   const { data, error } = await db
     .from("config_labels_gmail")
-    .select("service_cle, libelle, prefixe, adresse, theme, actif")
+    .select("service_cle, libelle, label_direction, adresse, theme, actif")
     .eq("actif", true);
   if (error) throw new Error(`Configuration des libellés Gmail illisible : ${error.message}`);
 
@@ -84,7 +85,7 @@ export async function chargerServices(
     services.push({
       cle,
       libelle: ligne.libelle,
-      prefixe: ligne.prefixe,
+      label_direction: ligne.label_direction,
       adresse: ligne.adresse?.trim() || null,
       theme: ligne.theme ?? "",
       ...sous,
@@ -104,18 +105,22 @@ export function serviceParCle(services: DefinitionService[], cle: ServiceCabinet
   return services.find((s) => s.cle === cle) ?? null;
 }
 
-/** Service d'arrivée d'un message d'après les étiquettes réellement posées. */
+/**
+ * Service d'arrivée d'un message d'après les libellés réellement posés :
+ * comparaison exacte sur le libellé de direction (structure à plat).
+ */
 export function serviceDeEtiquettes(
   services: DefinitionService[],
   etiquettes: string[],
 ): DefinitionService | null {
-  const bas = etiquettes.map((e) => e.toLowerCase());
+  const bas = etiquettes.map((e) => e.trim().toLowerCase());
   for (const s of services) {
-    const p = s.prefixe.toLowerCase();
-    if (bas.some((e) => e.startsWith(p))) return s;
+    const d = s.label_direction.trim().toLowerCase();
+    if (bas.includes(d)) return s;
   }
   return null;
 }
+
 
 /** Adresses de service : jamais considérées comme un client à mettre en copie. */
 export function adressesServices(services: DefinitionService[]): string[] {
