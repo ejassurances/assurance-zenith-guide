@@ -601,10 +601,21 @@ export async function executerAgents(
               triage_le: new Date().toISOString(),
             })
             .eq("gmail_message_id", messageId);
+          // Sortie de file OBLIGATOIRE : sans libellé d'état le mail serait
+          // repris au passage suivant (et un accusé de réception renvoyé).
+          {
+            const { marquerEtat: marquerEtatClient } = await import("@/lib/gmail.server");
+            const etat =
+              resultat.action === "reponse_envoyee" || resultat.action === "rien" ? "archives" : "a_valider";
+            await marquerEtatClient(messageId, etat).catch((e) =>
+              console.error("[agent-relation-client] libellé d'état non posé", messageId, e),
+            );
+          }
           if (rattrapage.has(messageId)) {
             await retirerRattrapageClient(messageId);
             rattrapagesTraites++;
           }
+
 
         } catch (e) {
           erreurs++;
