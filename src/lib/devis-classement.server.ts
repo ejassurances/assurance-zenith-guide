@@ -277,9 +277,19 @@ export async function classerDevisDossier(
         .select("id, nom, assureur_porteur, statut, compagnies:compagnie_id(nom)")
         .eq("statut", "actif")
         .ilike("assureur_porteur", porteur);
+      // Variantes d'assiette présentes au comparatif pour ce porteur (CI / CRD).
+      const variantesTop = new Set(
+        candidats
+          .filter((d) => porteurDevis(d) === porteur)
+          .map((d) => varianteCapital((d.produits?.nom as string | null) ?? null)),
+      );
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       for (const a of ((autres ?? []) as any[])) {
         if (produitsTop.has(a.id as string)) continue;
+        // CI et CRD sont deux produits distincts, avec des tarifications distinctes :
+        // une fiche CRD n'est pas une alternative à une fiche CI du même porteur.
+        const va = varianteCapital(a.nom as string);
+        if (va !== null && variantesTop.size > 0 && !variantesTop.has(va)) continue;
         alternatives.push(`${porteur} — ${a.nom}${a.compagnies?.nom ? ` (${a.compagnies.nom})` : ""}`);
         if (a.compagnies?.nom) {
           const set = canauxParPorteur.get(porteur) ?? new Set<string>();
