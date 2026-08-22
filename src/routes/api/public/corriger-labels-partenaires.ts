@@ -21,13 +21,15 @@ export const Route = createFileRoute("/api/public/corriger-labels-partenaires")(
         if (!parToken && !parApiKey) return new Response("Unauthorized", { status: 401 });
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { data: admins } = await supabaseAdmin
-          .from("user_roles")
-          .select("user_id")
-          .eq("role", "admin")
-          .limit(1);
-        const userId = (admins ?? [])[0]?.user_id;
-        if (!userId) return Response.json({ error: "Aucun administrateur configuré." }, { status: 500 });
+        const { identiteTechnique } = await import("@/lib/agent-taches.server");
+        const identite = await identiteTechnique(supabaseAdmin as never);
+        if (!identite) {
+          return Response.json(
+            { error: "Aucun compte utilisable : créez un utilisateur du cabinet (rôle admin)." },
+            { status: 500 },
+          );
+        }
+        const userId = identite.userId;
 
         const mode = new URL(request.url).searchParams.get("mode");
 
