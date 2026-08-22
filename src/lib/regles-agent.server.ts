@@ -203,7 +203,7 @@ export async function journaliserCasNonCouvert(
   ].join("\n");
 
   try {
-    const { journal_file_id } = await assurerDocumentsRegles();
+    const journal_file_id = await assurerJournal();
     const { lireTexteFichier, remplacerTexteFichier } = await drive();
     const actuel = await lireTexteFichier(journal_file_id);
     await remplacerTexteFichier(journal_file_id, `${actuel.trimEnd()}\n\n${entree}`);
