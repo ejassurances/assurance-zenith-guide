@@ -18,6 +18,9 @@ export const creerEtEnvoyerLettreMission = createServerFn({ method: "POST" })
 
 /**
  * Déclenchement automatique après validation du recueil des besoins.
+ * Un délai fixe de 8 h après le DER s'applique : si le délai n'est pas écoulé
+ * (ou hors horaires d'ouverture), l'envoi est différé et repris par le job
+ * quotidien `/api/public/lettres-mission-envois`.
  * Ne lève pas d'erreur bloquante : le dossier reste créé même si l'envoi échoue.
  */
 export const declencherLettreMissionAuto = createServerFn({ method: "POST" })
@@ -27,14 +30,20 @@ export const declencherLettreMissionAuto = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: dossier } = await supabase
       .from("dossiers")
-      .select("client_email")
+      .select("client_email, client_id")
       .eq("id", data.dossier_id)
       .maybeSingle();
     if (!dossier?.client_email) {
       return { ok: false, raison: "Aucun email client : lettre de mission à envoyer manuellement." };
     }
     try {
-      const { envoyerLettreMission } = await import("./lettres-mission.server");
+      const { envoyerLettreMission, dateReferenceDer } = await import("./lettres-mission.server");
+      const { etatDelaiLettreMission } = await import("./lettre-mission-delai");
+      const derLe = await dateReferenceDer(supabase, dossier.client_id ?? null);
+      const etat = etatDelaiLettreMission(derLe);
+      if (!etat.autorise) {
+        return { ok: false, differe: true, raison: etat.motif ?? "Envoi différé." };
+      }
       const origin = new URL(getRequest().url).origin;
       const res = await envoyerLettreMission(supabase, data.dossier_id, userId, origin);
       return { ok: true, id: res.id };
@@ -42,6 +51,7 @@ export const declencherLettreMissionAuto = createServerFn({ method: "POST" })
       return { ok: false, raison: e instanceof Error ? e.message : "Erreur d'envoi" };
     }
   });
+
 
 const signerInput = z.object({
   lettre_id: z.string().uuid(),
