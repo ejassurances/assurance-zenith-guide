@@ -411,13 +411,13 @@ async function envoyerAccuseReception(
   // Jamais d'accusé de réception vers une adresse d'automate, un partenaire ou
   // une adresse interne du cabinet : ces adresses ne sont pas des clients.
   const adresse = client.email.toLowerCase();
-  const { estDomaineInterne } = await import("@/lib/domaines-internes");
+  const { estEmailInterne } = await import("@/lib/domaines-internes");
   const { nomPartenairePourDomaine, extraireDomaine } = await import("@/lib/partenaires-domaines");
   const domaine = extraireDomaine(adresse);
   const automate = /(no[-_.]?reply|nepasrepondre|ne-pas-repondre|donotreply|notification|mailer|postmaster)/i.test(
     adresse,
   );
-  if (automate || estDomaineInterne(adresse) || (domaine && nomPartenairePourDomaine(domaine))) {
+  if (automate || estEmailInterne(adresse) || (domaine && nomPartenairePourDomaine(domaine))) {
     console.info(`[agent-relation-client] accusé de réception non envoyé (adresse non cliente) — ${adresse}`);
     return;
   }
