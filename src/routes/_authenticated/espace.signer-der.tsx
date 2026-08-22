@@ -6,7 +6,7 @@ import { signerDer } from "@/lib/der-sign.functions";
 import { monDerCourant } from "@/lib/espace-client.functions";
 import { SITE } from "@/lib/site";
 import { PageHeader } from "@/components/page-header";
-import { IconFileCertificate } from "@tabler/icons-react";
+import { IconFileCertificate, IconExternalLink } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/_authenticated/espace/signer-der")({
   component: SignerDER,
