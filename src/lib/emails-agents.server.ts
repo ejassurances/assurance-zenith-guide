@@ -192,7 +192,9 @@ export async function executerAgents(
         creerFicheProspectIncertaine,
       } = await import("@/lib/email-triage.server");
       const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
-      const { poserLabelCabinet, mettreCorbeille, retirerLabelRattrapage } = await import("@/lib/gmail.server");
+      const { poserLabelCabinet, mettreCorbeille, retirerLabelRattrapage, marquerEtat } = await import(
+        "@/lib/gmail.server"
+      );
       const { traiterEmailFinance } = await import("@/lib/finance-agent.server");
       const { traiterEmailVeille } = await import("@/lib/veille-reglementaire.server");
       for (const m of aTrier) {
@@ -285,6 +287,9 @@ export async function executerAgents(
               },
               { onConflict: "gmail_message_id" },
             );
+            // Traitement terminé : « Archives » (le libellé de direction posé
+            // par le staff reste en place).
+            await marquerEtat(m.id, "archives");
             if (rattrapage.has(m.id)) {
               await retirerLabelRattrapage(m.id);
               rattrapagesTraites++;
