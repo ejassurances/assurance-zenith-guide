@@ -16,8 +16,10 @@ import {
  * manuellement par le staff : l'erreur est donc humaine. Quand le contenu du
  * message ne correspond manifestement pas au thème du service dans lequel il a
  * été posé, l'agent transfère le message d'origine (aucun mail de réponse
- * rédigé) en mettant en destinataires le bon service ET l'expéditeur initial,
- * afin qu'il sache où sa demande a été redirigée.
+ * rédigé) uniquement à l'adresse du bon service, avec l'explication du
+ * réaiguillage. L'expéditeur initial n'est jamais destinataire ni en copie :
+ * il ne reçoit aucun mail de routage.
+
 
  *
  * Garde-fous contre les faux positifs :
@@ -295,13 +297,10 @@ export async function aiguillerLot(
         (estExpediteurAutomatique(expediteur) || estEmailPartenaire(expediteur, annuairePartenaires));
 
       if (!sansEnvoi) {
-        // Aucun mail de réponse rédigé : simple transfert du message d'origine.
-        // Destinataires = le bon service + l'expéditeur initial.
-        const destinataires = groupement
-          ? adresseFinale
-          : [adresseFinale, expediteur].join(", ");
+        // Transfert interne uniquement : le mail explicatif part à l'adresse du
+        // bon service. L'expéditeur initial n'est JAMAIS destinataire ni en copie.
         await envoyerMessage({
-          to: destinataires,
+          to: adresseFinale,
           sujet: `${PREFIXE_SUJET} ${detail.sujet ?? m.sujet ?? "(sans objet)"}`.slice(0, 200),
           html: corpsHtml({
             serviceArrivee: arrivee,
@@ -315,6 +314,7 @@ export async function aiguillerLot(
           }),
         });
       }
+
 
 
       // Le mail d'origine quitte la file du service d'arrivée : il est archivé
@@ -332,7 +332,7 @@ export async function aiguillerLot(
           recu_le: detail.date ?? m.date ?? null,
           notes: sansEnvoi
             ? `Mal aiguillé (${arrivee.libelle}) — réétiqueté vers ${cible.libelle}, aucun mail envoyé (expéditeur non client)`
-            : `Mal aiguillé (${arrivee.libelle}) — transféré à ${cible.adresse}, expéditeur initial en destinataire`,
+            : `Mal aiguillé (${arrivee.libelle}) — transféré en interne à ${cible.adresse}, expéditeur non destinataire`,
           triage_ia: JSON.parse(
             JSON.stringify({
               agent: "aiguillage",

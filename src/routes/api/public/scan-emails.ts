@@ -56,7 +56,7 @@ export const Route = createFileRoute("/api/public/scan-emails")({
 
           // Correction d'aiguillage AVANT tout traitement métier : un mail rangé
           // dans le mauvais service est renvoyé (reformulé) à l'adresse réelle
-          // du bon service, client en copie, puis retiré du lot de ce passage.
+          // du bon service (sans l'expéditeur), puis retiré du lot de ce passage.
           const aiguillage = await aiguillerLot(supabaseAdmin, {
             messages: tous,
             userId,
