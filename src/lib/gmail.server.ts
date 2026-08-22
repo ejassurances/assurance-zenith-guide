@@ -333,6 +333,102 @@ export async function envoyerMessage(params: {
   });
 }
 
+/** Libellé posé sur les copies Gmail des envois réalisés par Brevo. */
+export const LABEL_COPIE_BREVO = "Envoyé via Brevo";
+
+/**
+ * Dépose dans Gmail (dossier « Envoyés ») une copie d'un message expédié par
+ * Brevo, avec le libellé « Envoyé via Brevo ». Aucun envoi n'est effectué : le
+ * destinataire ne reçoit rien de plus, c'est une simple trace consultable.
+ * N'échoue jamais bruyamment : la visibilité ne doit pas bloquer un envoi.
+ */
+export async function deposerCopieEnvoyee(params: {
+  to: string;
+  sujet: string;
+  html: string;
+  from: string;
+  replyTo?: string | null;
+  attachments?: { name: string; base64: string; mime?: string }[];
+  date?: Date;
+}): Promise<{ id: string } | null> {
+  try {
+    const date = params.date ?? new Date();
+    const entetes = [
+      `From: ${params.from}`,
+      `To: ${params.to}`,
+      ...(params.replyTo ? [`Reply-To: ${params.replyTo}`] : []),
+      `Subject: ${encodeSujet(params.sujet)}`,
+      `Date: ${date.toUTCString().replace("GMT", "+0000")}`,
+      "MIME-Version: 1.0",
+      "X-EJP-Envoi: brevo",
+    ];
+
+    let lignes: string[];
+    if (params.attachments && params.attachments.length > 0) {
+      const frontiere = `ejpcopie_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+      lignes = [
+        ...entetes,
+        `Content-Type: multipart/mixed; boundary="${frontiere}"`,
+        "",
+        `--${frontiere}`,
+        'Content-Type: text/html; charset="UTF-8"',
+        "Content-Transfer-Encoding: 7bit",
+        "",
+        params.html,
+        ...params.attachments.flatMap((a) => [
+          `--${frontiere}`,
+          `Content-Type: ${a.mime ?? "application/pdf"}; name="${a.name}"`,
+          "Content-Transfer-Encoding: base64",
+          `Content-Disposition: attachment; filename="${a.name}"`,
+          "",
+          ...(a.base64.match(/.{1,76}/g) ?? []),
+        ]),
+        `--${frontiere}--`,
+        "",
+      ];
+    } else {
+      lignes = [...entetes, 'Content-Type: text/html; charset="UTF-8"', "", params.html];
+    }
+
+    const labelId = await resoudreLabelCopieBrevo();
+    const insere = await gmailFetch<{ id: string }>(
+      "/users/me/messages/insert?internalDateSource=dateHeader",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          raw: encodeB64Url(lignes.join("\r\n")),
+          labelIds: ["SENT", ...(labelId ? [labelId] : [])],
+        }),
+      },
+    );
+    return insere;
+  } catch (e) {
+    console.error("[gmail] copie de l'envoi Brevo non déposée:", e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+/** Trouve (ou crée) le libellé « Envoyé via Brevo » réservé à ces copies. */
+async function resoudreLabelCopieBrevo(): Promise<string | null> {
+  try {
+    const labels = await listerLabels();
+    const existant = labels.find((l) => l.name.toLowerCase() === LABEL_COPIE_BREVO.toLowerCase());
+    if (existant) return existant.id;
+    const cree = await gmailFetch<GmailLabel>("/users/me/labels", {
+      method: "POST",
+      body: JSON.stringify({
+        name: LABEL_COPIE_BREVO,
+        labelListVisibility: "labelShow",
+        messageListVisibility: "show",
+      }),
+    });
+    return cree.id;
+  } catch (e) {
+    console.error("[gmail] libellé « Envoyé via Brevo » indisponible:", e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
 /** Modifie les étiquettes Gmail d'un message. */
 export async function modifierLabels(
   id: string,
