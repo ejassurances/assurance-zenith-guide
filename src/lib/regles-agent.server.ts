@@ -146,9 +146,10 @@ export async function chargerReglesDeTon(direction: DirectionAgent): Promise<str
   const enCache = cacheTon.get(direction);
   if (enCache && enCache.expire > Date.now()) return enCache.texte;
   try {
-    const fileId = await assurerDocumentTon(direction);
+    const { id, mimeType } = await localiserDocumentTon(direction);
     const { lireTexteFichier } = await drive();
-    const texte = (await lireTexteFichier(fileId)).trim() || REGLES_DE_TON_INITIALES;
+    const texte = (await lireTexteFichier(id, mimeType)).trim() || REGLES_DE_TON_INITIALES;
+
     cacheTon.set(direction, { texte, expire: Date.now() + CACHE_MS });
     return texte;
   } catch (e) {
