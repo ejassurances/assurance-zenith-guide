@@ -80,26 +80,11 @@ export async function sendTemplateEmail(
       ? template.subject(templateData)
       : template.subject
 
-  if (TEMPLATES_DDA.has(templateName)) {
-    const { envoyerMessage } = await import('@/lib/gmail.server')
-    const envoi = await envoyerMessage({
-      to: recipient,
-      sujet: subject,
-      html: withHtmlSignature(html),
-      from: `${SITE_NAME} <${FROM_EMAIL}>`,
-      replyTo: options.replyTo ?? null,
-      attachments: options.attachments,
-    })
-    console.log(
-      `[email] OK (Gmail entreprise) template=${templateName} destinataire=${recipient} messageId=${envoi.id}`
-    )
-    return { sent: true }
-  }
-
   const brevoKey = process.env['BREVO_API_KEY']
   if (!brevoKey) {
     throw new Error('BREVO_API_KEY is not configured')
   }
+
 
 
   const response = await fetch(`${GATEWAY_URL}/smtp/email`, {
