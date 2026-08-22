@@ -52,6 +52,8 @@ function AtelierGrillesPage() {
   const lister = useServerFn(listerEtatGrillesFamille);
   const analyser = useServerFn(analyserDocumentsGaranties);
   const valider = useServerFn(validerGrilleGaranties);
+  const synchroniser = useServerFn(synchroniserCgDrive);
+
 
   const [famille, setFamille] = useState("emprunteur");
   const [produits, setProduits] = useState<EtatGrilleProduit[]>([]);
