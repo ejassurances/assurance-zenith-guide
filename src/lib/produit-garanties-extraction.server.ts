@@ -221,7 +221,7 @@ export async function analyserDocumentsProduit(
 
   const { data: rows, error: dErr } = await supabase
     .from("produit_documents")
-    .select("id, produit_id, nom, type, storage_path, mime_type")
+    .select("id, produit_id, nom, type, storage_path, mime_type, drive_file_id, drive_url")
     .in("id", documentIds);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const docs = ((rows ?? []) as any[]).slice();
