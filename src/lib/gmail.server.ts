@@ -495,15 +495,30 @@ export async function listerFilesATraiter(params?: {
   const maxParFile = Math.max(1, Math.min(params?.maxParFile ?? 25, 100));
   const parId = new Map<string, EmailResume>();
   const noms = [...new Set(FILES_A_TRAITER.map((cle) => LABELS_CABINET[cle]))];
+  const etats = LABELS_ETATS.map((e) => e.toLowerCase());
   for (const nom of noms) {
     const messages = await listerParLabel(nom, maxParFile).catch((e) => {
       console.error(`[files-a-traiter] lecture de « ${nom} » impossible`, e);
       return [] as EmailResume[];
     });
-    for (const m of messages) if (!parId.has(m.id)) parId.set(m.id, m);
+    for (const m of messages) {
+      // Structure à plat : le libellé de direction reste posé après traitement.
+      // La SEULE marque de traitement est un libellé d'état (« Archives » ou
+      // « A valider ») — un mail qui en porte un n'est plus à traiter.
+      const traite = m.etiquettes.some((e) => etats.includes(e.trim().toLowerCase()));
+      if (traite) continue;
+      if (!parId.has(m.id)) parId.set(m.id, m);
+    }
   }
   return [...parId.values()];
 }
+
+/** Un message porte-t-il déjà un libellé d'état (« Archives » / « A valider ») ? */
+export function porteEtatTraitement(etiquettes: string[]): boolean {
+  const etats = LABELS_ETATS.map((e) => e.toLowerCase());
+  return etiquettes.some((e) => etats.includes(e.trim().toLowerCase()));
+}
+
 
 
 
