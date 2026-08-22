@@ -591,6 +591,7 @@ export async function envoyerDevoirsConseilValidesDus(
           TYPE_ASSURANCE: modele.libelle,
         },
         replyTo: SITE.email,
+        liens: { client_id: dc.client_id ?? null, dossier_id: dc.dossier_id },
         idempotencyKey: `devoir-conseil-${dc.id}`,
       });
       if (!res.sent) {
