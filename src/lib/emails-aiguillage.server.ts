@@ -295,13 +295,10 @@ export async function aiguillerLot(
         (estExpediteurAutomatique(expediteur) || estEmailPartenaire(expediteur, annuairePartenaires));
 
       if (!sansEnvoi) {
-        // Aucun mail de réponse rédigé : simple transfert du message d'origine.
-        // Destinataires = le bon service + l'expéditeur initial.
-        const destinataires = groupement
-          ? adresseFinale
-          : [adresseFinale, expediteur].join(", ");
+        // Transfert interne uniquement : le mail explicatif part à l'adresse du
+        // bon service. L'expéditeur initial n'est JAMAIS destinataire ni en copie.
         await envoyerMessage({
-          to: destinataires,
+          to: adresseFinale,
           sujet: `${PREFIXE_SUJET} ${detail.sujet ?? m.sujet ?? "(sans objet)"}`.slice(0, 200),
           html: corpsHtml({
             serviceArrivee: arrivee,
@@ -315,6 +312,7 @@ export async function aiguillerLot(
           }),
         });
       }
+
 
 
       // Le mail d'origine quitte la file du service d'arrivée : il est archivé
