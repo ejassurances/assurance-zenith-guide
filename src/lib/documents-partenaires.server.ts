@@ -18,10 +18,10 @@ type Client = SupabaseClient<any, any, any>;
 
 /**
  * Dossier Drive officiel des conditions générales / notices compagnies :
- * https://drive.google.com/drive/folders/1zyEYAYUve-sQRCXqlYpCDoUgaZxisDMS
+ * https://drive.google.com/drive/folders/108XLOGY9ARGIHHQ2_fxxDqrD4_swCP9W
  * Les documents y sont rangés par Compagnie puis par Branche.
  */
-export const DRIVE_DOSSIER_CG_ID = "1zyEYAYUve-sQRCXqlYpCDoUgaZxisDMS";
+export const DRIVE_DOSSIER_CG_ID = "108XLOGY9ARGIHHQ2_fxxDqrD4_swCP9W";
 
 function segment(valeur: string | null | undefined, defaut: string) {
   const nettoye = (valeur ?? "")
