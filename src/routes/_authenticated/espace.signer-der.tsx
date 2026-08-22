@@ -87,8 +87,22 @@ function SignerDER() {
       />
 
       {envoi.url ? (
-        <div className="overflow-hidden rounded-2xl border border-line">
-          <iframe title="DER" src={envoi.url} className="h-[520px] w-full" />
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-ink-muted">Document d'Entrée en Relation</span>
+            <a
+              href={envoi.url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-sm hover:bg-surface"
+            >
+              <IconExternalLink size={16} />
+              Ouvrir dans un nouvel onglet
+            </a>
+          </div>
+          <div className="overflow-hidden rounded-2xl border border-line">
+            <iframe title="DER" src={envoi.url} className="h-[75vh] min-h-[600px] w-full" />
+          </div>
         </div>
       ) : (
         <p className="rounded-2xl border border-line bg-surface-elevated p-5 text-sm text-amber-800">
