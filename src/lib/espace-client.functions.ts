@@ -645,8 +645,9 @@ export const monDerCourant = createServerFn({ method: "POST" })
         signed_ip: (courant["signed_ip"] as string | null) ?? null,
         signature_png: (courant["signature_png"] as string | null) ?? null,
         document_hash: (courant["document_hash"] as string | null) ?? null,
-        modele_nom: modele?.nom ?? null,
-        modele_version: modele?.version ?? null,
+        modele_nom: nom,
+        modele_version: version,
+
         url,
       },
     };
