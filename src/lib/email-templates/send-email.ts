@@ -26,26 +26,27 @@ export interface SendTemplateEmailOptions {
   replyTo?: string
   /** Pièces jointes (contenu encodé en base64). */
   attachments?: { name: string; base64: string }[]
+  /**
+   * Rattachement de la copie Gmail à la fiche client / au dossier, afin que le
+   * message apparaisse dans « Historique des échanges ».
+   */
+  liens?: {
+    client_id?: string | null
+    dossier_id?: string | null
+    contrat_id?: string | null
+    compagnie_id?: string | null
+  }
 }
 
-
 /**
- * Courriers officiels DDA : ils sont expédiés depuis la boîte Gmail
- * d'entreprise (API Gmail, adresse du cabinet) et non via Brevo, afin que la
- * trace de l'envoi figure dans la messagerie du cabinet (exigence ACPR).
+ * Rend un template enregistré et l'envoie via le connecteur Brevo — y compris
+ * les quatre courriers d'accompagnement DDA (DER, lettre de mission, devoir de
+ * conseil, signature de souscription), dont la traçabilité ACPR est assurée par
+ * la copie automatique déposée dans la boîte Gmail du cabinet. La génération des
+ * PDF reste inchangée : seul le texte du mail passe par Brevo. Toute erreur
+ * d'envoi lève une exception.
  */
-const TEMPLATES_DDA = new Set([
-  'der-envoi',
-  'lettre-mission-envoi',
-  'devoir-conseil-envoi',
-  'souscription-signature-client',
-])
 
-/**
- * Rend un template enregistré et l'envoie : via l'API Gmail du cabinet pour les
- * courriers DDA, via le connecteur Brevo pour le reste. Toute erreur d'envoi
- * lève une exception.
- */
 export async function sendTemplateEmail(
   templateName: string,
   to: string,
