@@ -215,11 +215,69 @@ export async function trouverFichier(nom: string, parentId: string): Promise<str
   return data.files?.[0]?.id ?? null;
 }
 
-/** Contenu texte d'un fichier Drive (UTF-8). */
-export async function lireTexteFichier(fileId: string): Promise<string> {
+const GDOC_MIME = "application/vnd.google-apps.document";
+
+/** Recherche récursive d'un fichier par nom exact dans un dossier et ses sous-dossiers. */
+export async function trouverFichierRecursif(
+  nom: string,
+  parentId: string,
+  profondeurMax = 3,
+): Promise<{ id: string; name: string; mimeType: string } | null> {
+  const enfants = await listerEnfantsDrive(parentId);
+  const direct = enfants.find((e) => !estDossierDrive(e.mimeType) && e.name === nom);
+  if (direct) return direct;
+  if (profondeurMax <= 0) return null;
+  for (const dossier of enfants.filter((e) => estDossierDrive(e.mimeType))) {
+    const trouve = await trouverFichierRecursif(nom, dossier.id, profondeurMax - 1);
+    if (trouve) return trouve;
+  }
+  return null;
+}
+
+/** Export d'un Google Doc natif en texte brut. */
+export async function exporterDocumentTexte(fileId: string): Promise<string> {
+  const data = await driveFetch(
+    `/drive/v3/files/${encodeURIComponent(fileId)}/export?mimeType=text/plain&supportsAllDrives=true`,
+    { headers: { Accept: "text/plain" } },
+  );
+  // driveFetch tente un JSON.parse ; on repasse par un fetch texte pour l'export.
+  return typeof data === "string" ? data : "";
+}
+
+/**
+ * Contenu texte d'un fichier Drive, qu'il s'agisse d'un fichier texte brut ou
+ * d'un Google Doc natif (exporté en text/plain).
+ */
+export async function lireTexteFichier(fileId: string, mimeType?: string): Promise<string> {
+  const mime = mimeType ?? (await mimeDrive(fileId));
+  if (mime === GDOC_MIME) {
+    const res = await fetch(
+      `${GATEWAY}/drive/v3/files/${encodeURIComponent(fileId)}/export?mimeType=text%2Fplain&supportsAllDrives=true`,
+      { headers: headers() },
+    );
+    const texte = await res.text();
+    if (!res.ok) {
+      console.error(`[drive] export ${fileId} → ${res.status} ${texte.slice(0, 300)}`);
+      throw new Error(`Google Drive export ${res.status}`);
+    }
+    return texte.replace(/^\uFEFF/, "");
+  }
   const octets = await telechargerFichier(fileId);
   return new TextDecoder().decode(octets);
 }
+
+/** Type MIME d'un fichier Drive (null si introuvable). */
+export async function mimeDrive(fileId: string): Promise<string | null> {
+  try {
+    const data = (await driveFetch(
+      `/drive/v3/files/${encodeURIComponent(fileId)}?fields=mimeType&supportsAllDrives=true`,
+    )) as { mimeType?: string };
+    return data.mimeType ?? null;
+  } catch {
+    return null;
+  }
+}
+
 
 /** Remplace le contenu texte d'un fichier Drive existant. */
 export async function remplacerTexteFichier(fileId: string, contenu: string): Promise<void> {
