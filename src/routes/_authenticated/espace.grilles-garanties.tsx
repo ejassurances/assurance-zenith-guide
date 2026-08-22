@@ -8,7 +8,9 @@ import { grillePourFamille } from "@/lib/garanties-grille";
 import {
   analyserDocumentsGaranties,
   listerEtatGrillesFamille,
+  creerDossiersCompagniesDrive,
   synchroniserCgDrive,
+  televerserCgVersDrive,
   validerGrilleGaranties,
 } from "@/lib/produit-garanties.functions";
 import type { EtatGrilleProduit } from "@/lib/produit-garanties-etat.server";
@@ -53,6 +55,8 @@ function AtelierGrillesPage() {
   const analyser = useServerFn(analyserDocumentsGaranties);
   const valider = useServerFn(validerGrilleGaranties);
   const synchroniser = useServerFn(synchroniserCgDrive);
+  const creerDossiers = useServerFn(creerDossiersCompagniesDrive);
+  const televerser = useServerFn(televerserCgVersDrive);
 
 
   const [famille, setFamille] = useState("emprunteur");
@@ -152,6 +156,53 @@ function AtelierGrillesPage() {
     }
   };
 
+  /** Crée les dossiers Drive manquants pour les compagnies du catalogue. */
+  const creerDossiersDrive = async () => {
+    setBusy("dossiers");
+    setMessage(null);
+    try {
+      const r = (await creerDossiers({ data: undefined })) as {
+        compagnies: number;
+        dossiers_crees: number;
+        dossiers_existants: number;
+      };
+      setMessage({
+        type: "ok",
+        texte: `Drive : ${r.compagnies} compagnie(s) du CRM · ${r.dossiers_crees} dossier(s) créé(s), ${r.dossiers_existants} déjà présent(s).`,
+      });
+    } catch (e) {
+      setMessage({ type: "err", texte: e instanceof Error ? e.message : "Création impossible" });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  /** Envoie vers le Drive les CG encore stockées dans le CRM. */
+  const envoyerCgVersDrive = async () => {
+    setBusy("televerser");
+    setMessage(null);
+    try {
+      const r = (await televerser({ data: undefined })) as {
+        a_traiter: number;
+        televerses: number;
+        echecs: { document: string; raison: string }[];
+      };
+      const details =
+        r.echecs.length > 0
+          ? ` · échecs : ${r.echecs.slice(0, 5).map((e) => `${e.document} (${e.raison})`).join(" ; ")}`
+          : "";
+      setMessage({
+        type: r.echecs.length > 0 ? "err" : "ok",
+        texte: `${r.televerses}/${r.a_traiter} document(s) transféré(s) sur le Drive et classé(s) par compagnie et branche${details}`,
+      });
+      await charger();
+    } catch (e) {
+      setMessage({ type: "err", texte: e instanceof Error ? e.message : "Transfert impossible" });
+    } finally {
+      setBusy(null);
+    }
+  };
+
   /** Validation humaine explicite de la proposition, reprise telle quelle. */
   const validerProposition = async (p: EtatGrilleProduit) => {
     if (!p.proposition || !grille) throw new Error("Proposition indisponible");
@@ -219,6 +270,22 @@ function AtelierGrillesPage() {
           className="rounded-full border border-[#B99B3F] px-4 py-2 text-sm font-medium text-[#0A192F] disabled:opacity-50"
         >
           {busy === "sync" ? "Lecture du Drive…" : "Remonter les CG du Drive"}
+        </button>
+        <button
+          type="button"
+          disabled={busy !== null}
+          onClick={() => void creerDossiersDrive()}
+          className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink disabled:opacity-50"
+        >
+          {busy === "dossiers" ? "Création des dossiers…" : "Créer les dossiers compagnies"}
+        </button>
+        <button
+          type="button"
+          disabled={busy !== null}
+          onClick={() => void envoyerCgVersDrive()}
+          className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink disabled:opacity-50"
+        >
+          {busy === "televerser" ? "Transfert en cours…" : "Envoyer les CG du CRM vers le Drive"}
         </button>
       </div>
 
