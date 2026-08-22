@@ -30,6 +30,7 @@ import { Route as ApiPublicRappelsExpirationRouteImport } from './routes/api/pub
 import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
 import { Route as ApiPublicFormationsRappelsRouteImport } from './routes/api/public/formations-rappels'
 import { Route as ApiPublicEnvoisPlanifiesRouteImport } from './routes/api/public/envois-planifies'
+import { Route as ApiPublicDocumentsAttendusRouteImport } from './routes/api/public/documents-attendus'
 import { Route as ApiPublicDevoirsConseilEnvoisRouteImport } from './routes/api/public/devoirs-conseil-envois'
 import { Route as ApiPublicDdaPdfRepriseRouteImport } from './routes/api/public/dda-pdf-reprise'
 import { Route as ApiPublicCorrigerLabelsPartenairesRouteImport } from './routes/api/public/corriger-labels-partenaires'
@@ -183,6 +184,12 @@ const ApiPublicEnvoisPlanifiesRoute =
   ApiPublicEnvoisPlanifiesRouteImport.update({
     id: '/api/public/envois-planifies',
     path: '/api/public/envois-planifies',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicDocumentsAttendusRoute =
+  ApiPublicDocumentsAttendusRouteImport.update({
+    id: '/api/public/documents-attendus',
+    path: '/api/public/documents-attendus',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicDevoirsConseilEnvoisRoute =
@@ -469,6 +476,7 @@ export interface FileRoutesByFullPath {
   '/api/public/corriger-labels-partenaires': typeof ApiPublicCorrigerLabelsPartenairesRoute
   '/api/public/dda-pdf-reprise': typeof ApiPublicDdaPdfRepriseRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
+  '/api/public/documents-attendus': typeof ApiPublicDocumentsAttendusRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
@@ -532,6 +540,7 @@ export interface FileRoutesByTo {
   '/api/public/corriger-labels-partenaires': typeof ApiPublicCorrigerLabelsPartenairesRoute
   '/api/public/dda-pdf-reprise': typeof ApiPublicDdaPdfRepriseRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
+  '/api/public/documents-attendus': typeof ApiPublicDocumentsAttendusRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
@@ -598,6 +607,7 @@ export interface FileRoutesById {
   '/api/public/corriger-labels-partenaires': typeof ApiPublicCorrigerLabelsPartenairesRoute
   '/api/public/dda-pdf-reprise': typeof ApiPublicDdaPdfRepriseRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
+  '/api/public/documents-attendus': typeof ApiPublicDocumentsAttendusRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
@@ -664,6 +674,7 @@ export interface FileRouteTypes {
     | '/api/public/corriger-labels-partenaires'
     | '/api/public/dda-pdf-reprise'
     | '/api/public/devoirs-conseil-envois'
+    | '/api/public/documents-attendus'
     | '/api/public/envois-planifies'
     | '/api/public/formations-rappels'
     | '/api/public/leads'
@@ -727,6 +738,7 @@ export interface FileRouteTypes {
     | '/api/public/corriger-labels-partenaires'
     | '/api/public/dda-pdf-reprise'
     | '/api/public/devoirs-conseil-envois'
+    | '/api/public/documents-attendus'
     | '/api/public/envois-planifies'
     | '/api/public/formations-rappels'
     | '/api/public/leads'
@@ -792,6 +804,7 @@ export interface FileRouteTypes {
     | '/api/public/corriger-labels-partenaires'
     | '/api/public/dda-pdf-reprise'
     | '/api/public/devoirs-conseil-envois'
+    | '/api/public/documents-attendus'
     | '/api/public/envois-planifies'
     | '/api/public/formations-rappels'
     | '/api/public/leads'
@@ -836,6 +849,7 @@ export interface RootRouteChildren {
   ApiPublicCorrigerLabelsPartenairesRoute: typeof ApiPublicCorrigerLabelsPartenairesRoute
   ApiPublicDdaPdfRepriseRoute: typeof ApiPublicDdaPdfRepriseRoute
   ApiPublicDevoirsConseilEnvoisRoute: typeof ApiPublicDevoirsConseilEnvoisRoute
+  ApiPublicDocumentsAttendusRoute: typeof ApiPublicDocumentsAttendusRoute
   ApiPublicEnvoisPlanifiesRoute: typeof ApiPublicEnvoisPlanifiesRoute
   ApiPublicFormationsRappelsRoute: typeof ApiPublicFormationsRappelsRoute
   ApiPublicLeadsRoute: typeof ApiPublicLeadsRoute
@@ -1002,6 +1016,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/envois-planifies'
       fullPath: '/api/public/envois-planifies'
       preLoaderRoute: typeof ApiPublicEnvoisPlanifiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/documents-attendus': {
+      id: '/api/public/documents-attendus'
+      path: '/api/public/documents-attendus'
+      fullPath: '/api/public/documents-attendus'
+      preLoaderRoute: typeof ApiPublicDocumentsAttendusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/devoirs-conseil-envois': {
@@ -1420,6 +1441,7 @@ const rootRouteChildren: RootRouteChildren = {
     ApiPublicCorrigerLabelsPartenairesRoute,
   ApiPublicDdaPdfRepriseRoute: ApiPublicDdaPdfRepriseRoute,
   ApiPublicDevoirsConseilEnvoisRoute: ApiPublicDevoirsConseilEnvoisRoute,
+  ApiPublicDocumentsAttendusRoute: ApiPublicDocumentsAttendusRoute,
   ApiPublicEnvoisPlanifiesRoute: ApiPublicEnvoisPlanifiesRoute,
   ApiPublicFormationsRappelsRoute: ApiPublicFormationsRappelsRoute,
   ApiPublicLeadsRoute: ApiPublicLeadsRoute,

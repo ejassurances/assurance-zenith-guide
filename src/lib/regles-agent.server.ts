@@ -1,0 +1,194 @@
+/**
+ * Règles évolutives des agents IA, stockées sur le Drive du cabinet.
+ *
+ * Arborescence : `06_Regles_Agent/`
+ *  - `Regles_De_Ton/Regles_De_Ton.txt` : règles de ton et de jugement, lues à
+ *    CHAQUE génération de réponse (cache mémoire de 5 minutes). Le cabinet peut
+ *    les modifier directement dans le document, sans passer par le code.
+ *  - `Regles_Non_Couvertes/Journal_Regles_Non_Couvertes.txt` : journal des cas
+ *    rencontrés sans règle applicable. Chaque cas y est ajouté ET signalé par
+ *    email à l'administrateur, pour décider ensemble s'il faut créer une règle
+ *    (document Drive pour une nuance de ton, code pour une action structurée).
+ *
+ * Jamais bloquant : si le Drive est indisponible, les agents continuent avec les
+ * règles par défaut du code.
+ */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+type Admin = SupabaseClient<any, any, any>;
+
+export const DRIVE_RACINE_REGLES = "06_Regles_Agent";
+export const DRIVE_DOSSIER_TON = "Regles_De_Ton";
+export const DRIVE_DOSSIER_NON_COUVERTES = "Regles_Non_Couvertes";
+export const FICHIER_TON = "Regles_De_Ton.txt";
+export const FICHIER_NON_COUVERTES = "Journal_Regles_Non_Couvertes.txt";
+
+const ADMIN_FALLBACK = "contact@ej-assurances.fr";
+const CACHE_MS = 5 * 60 * 1000;
+
+/** Premier contenu du document de règles de ton (créé s'il n'existe pas). */
+export const REGLES_DE_TON_INITIALES = [
+  "REGLES DE TON ET DE JUGEMENT — agents IA du cabinet EJ Partners Assurances",
+  "(document modifiable librement par le cabinet : il est relu par l'IA à chaque réponse)",
+  "",
+  "1. Tutoiement en miroir : si le client tutoie dans son mail, répondre en le tutoyant aussi.",
+  "   Par défaut (vouvoiement du client, ou premier contact), rester au vouvoiement.",
+  "",
+].join("\n");
+
+type Cache = { texte: string; expire: number };
+let cacheTon: Cache | null = null;
+
+async function drive() {
+  return await import("@/lib/google-drive.server");
+}
+
+/** Crée si besoin `06_Regles_Agent/...` et renvoie les IDs des deux documents. */
+export async function assurerDocumentsRegles(): Promise<{
+  ton_file_id: string;
+  journal_file_id: string;
+  racine_url: string;
+}> {
+  const { assurerDossier, assurerFichierTexte, urlDossierDrive } = await drive();
+  const racine = await assurerDossier(DRIVE_RACINE_REGLES);
+  const dossierTon = await assurerDossier(DRIVE_DOSSIER_TON, racine);
+  const dossierJournal = await assurerDossier(DRIVE_DOSSIER_NON_COUVERTES, racine);
+
+  const ton = await assurerFichierTexte({
+    nom: FICHIER_TON,
+    parentId: dossierTon,
+    contenuInitial: REGLES_DE_TON_INITIALES,
+  });
+  const journal = await assurerFichierTexte({
+    nom: FICHIER_NON_COUVERTES,
+    parentId: dossierJournal,
+    contenuInitial: [
+      "JOURNAL DES CAS SANS REGLE APPLICABLE",
+      "Chaque entrée = un mail traité par l'IA sans règle connue. À arbitrer avec le cabinet.",
+      "",
+    ].join("\n"),
+  });
+
+  return { ton_file_id: ton.id, journal_file_id: journal.id, racine_url: urlDossierDrive(racine) };
+}
+
+/**
+ * Règles de ton en vigueur (texte brut), avec cache de 5 minutes.
+ * Retourne les règles par défaut du code si le Drive est indisponible.
+ */
+export async function chargerReglesDeTon(): Promise<string> {
+  if (cacheTon && cacheTon.expire > Date.now()) return cacheTon.texte;
+  try {
+    const { ton_file_id } = await assurerDocumentsRegles();
+    const { lireTexteFichier } = await drive();
+    const texte = (await lireTexteFichier(ton_file_id)).trim() || REGLES_DE_TON_INITIALES;
+    cacheTon = { texte, expire: Date.now() + CACHE_MS };
+    return texte;
+  } catch (e) {
+    console.error("[regles-agent] règles de ton illisibles sur le Drive — repli sur le code", e);
+    cacheTon = { texte: REGLES_DE_TON_INITIALES, expire: Date.now() + 60_000 };
+    return REGLES_DE_TON_INITIALES;
+  }
+}
+
+/** Vide le cache (utile après une modification volontaire du document). */
+export function invaliderCacheRegles() {
+  cacheTon = null;
+}
+
+/** Adresse email de l'administrateur du cabinet (repli : boîte du cabinet). */
+export async function emailAdminCabinet(admin: Admin): Promise<string> {
+  try {
+    const { adminParDefaut } = await import("@/lib/agent-taches.server");
+    const adminId = await adminParDefaut(admin as never);
+    if (!adminId) return ADMIN_FALLBACK;
+    const { data } = await admin.from("profiles").select("email").eq("id", adminId).maybeSingle();
+    const email = (data as { email: string | null } | null)?.email;
+    return email && email.includes("@") ? email : ADMIN_FALLBACK;
+  } catch {
+    return ADMIN_FALLBACK;
+  }
+}
+
+/** Email interne d'information à l'administrateur (jamais au client). */
+export async function informerAdmin(
+  admin: Admin,
+  params: { titre: string; paragraphes: string[]; lignes?: { libelle: string; valeur: string }[] },
+): Promise<void> {
+  try {
+    const destinataire = await emailAdminCabinet(admin);
+    const { sendTemplateEmail } = await import("@/lib/email-templates/send-email");
+    await sendTemplateEmail("relation-client-reponse", destinataire, {
+      templateData: {
+        clientName: "Administrateur",
+        cabinetName: "EJ Partners Assurances",
+        titre: params.titre,
+        paragraphes: params.paragraphes,
+        ...(params.lignes ? { lignes: params.lignes } : {}),
+      },
+    });
+  } catch (e) {
+    console.error("[regles-agent] information admin non envoyée", e);
+  }
+}
+
+/**
+ * Cas significatif sans règle applicable : consigné au journal Drive, signalé
+ * par email à l'admin. La réponse au client reste, elle, en « A valider ».
+ */
+export async function journaliserCasNonCouvert(
+  admin: Admin,
+  params: {
+    client?: string | null;
+    sujet?: string | null;
+    gmail_message_id?: string | null;
+    situation: string;
+    pourquoi_non_couvert: string;
+  },
+): Promise<void> {
+  const horodatage = new Date().toISOString();
+  const entree = [
+    `--- ${horodatage}`,
+    `Client : ${params.client ?? "inconnu"}`,
+    `Objet du mail : ${params.sujet ?? "(sans objet)"}`,
+    params.gmail_message_id
+      ? `Mail : https://mail.google.com/mail/u/0/#all/${params.gmail_message_id}`
+      : "Mail : (référence absente)",
+    `Situation : ${params.situation}`,
+    `Aucune règle applicable car : ${params.pourquoi_non_couvert}`,
+    "Décision du cabinet : [à compléter — règle de ton (document Drive) ou règle d'action (code) ?]",
+    "",
+  ].join("\n");
+
+  try {
+    const { journal_file_id } = await assurerDocumentsRegles();
+    const { lireTexteFichier, remplacerTexteFichier } = await drive();
+    const actuel = await lireTexteFichier(journal_file_id);
+    await remplacerTexteFichier(journal_file_id, `${actuel.trimEnd()}\n\n${entree}`);
+  } catch (e) {
+    console.error("[regles-agent] journal des cas non couverts non mis à jour", e);
+  }
+
+  await informerAdmin(admin, {
+    titre: "Cas sans règle applicable — arbitrage demandé",
+    paragraphes: [
+      "L'agent IA a rencontré une situation pour laquelle aucune règle connue ne s'appliquait (ni dans le code, ni dans le document Drive des règles de ton).",
+      "La réponse au client a été laissée en « A valider » : rien n'a été envoyé automatiquement.",
+      "Le cas est également consigné dans le journal Drive « 06_Regles_Agent/Regles_Non_Couvertes ».",
+    ],
+    lignes: [
+      { libelle: "Client", valeur: params.client ?? "inconnu" },
+      { libelle: "Objet du mail", valeur: params.sujet ?? "(sans objet)" },
+      { libelle: "Situation", valeur: params.situation },
+      { libelle: "Pourquoi aucune règle", valeur: params.pourquoi_non_couvert },
+      {
+        libelle: "Mail",
+        valeur: params.gmail_message_id
+          ? `https://mail.google.com/mail/u/0/#all/${params.gmail_message_id}`
+          : "—",
+      },
+    ],
+  });
+}

@@ -73,21 +73,33 @@ export async function creerTacheAdmin(
     priorite?: Database["public"]["Enums"]["tache_priorite"];
     assignee_id?: string | null;
     created_by?: string | null;
+    /** Décalage de l'échéance en jours (0 = aujourd'hui, par défaut). */
+    echeance_jours?: number;
   },
-): Promise<void> {
+): Promise<string | null> {
   try {
     const assignee = params.assignee_id ?? (await adminParDefaut(admin));
-    await admin.from("taches").insert({
-      titre: params.titre.slice(0, 300),
-      description: params.description?.slice(0, 4000) ?? null,
-      client_id: params.client_id ?? null,
-      priorite: params.priorite ?? "haute",
-      statut: "a_faire",
-      assignee_id: assignee,
-      created_by: params.created_by ?? assignee,
-      echeance: new Date().toISOString().slice(0, 10),
-    });
+    const echeance = new Date();
+    echeance.setDate(echeance.getDate() + Math.max(0, Math.min(180, params.echeance_jours ?? 0)));
+    const { data, error } = await admin
+      .from("taches")
+      .insert({
+        titre: params.titre.slice(0, 300),
+        description: params.description?.slice(0, 4000) ?? null,
+        client_id: params.client_id ?? null,
+        priorite: params.priorite ?? "haute",
+        statut: "a_faire",
+        assignee_id: assignee,
+        created_by: params.created_by ?? assignee,
+        echeance: echeance.toISOString().slice(0, 10),
+      })
+      .select("id")
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return (data as { id: string } | null)?.id ?? null;
   } catch (e) {
     console.error("[agent-commercial] création de tâche impossible", e);
+    return null;
   }
 }
+

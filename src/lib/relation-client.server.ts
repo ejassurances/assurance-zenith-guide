@@ -52,10 +52,19 @@ export interface ClassificationRelation {
   pieces_kyc: { nom: string; type: "cni" | "justificatif_domicile" | "rib" | "kbis" }[];
   /** Pièces jointes reconnues comme document de prêt (tableau d'amortissement, offre de prêt). */
   pieces_pret: { nom: string }[];
+  /** Autres pièces jointes reconnues, avec le contexte de classement. */
+  pieces_documents: { nom: string; contexte: "contrat" | "sinistre" | "reclamation" | "autre" }[];
+  /** Le client annonce explicitement l'envoi du reste des pièces plus tard. */
+  complement_annonce: boolean;
+  /** Le client tutoie : la réponse peut le tutoyer en miroir (règles de ton Drive). */
+  tutoiement: boolean;
+  /** Cas jugé significatif pour lequel aucune règle connue ne s'applique. */
+  cas_non_couvert: { situation: string; pourquoi: string } | null;
   confiance: number;
   resume: string;
   modele: string | null;
 }
+
 
 
 
@@ -78,10 +87,14 @@ function texteOuNull(v: unknown, max = 400): string | null {
   return t.slice(0, max);
 }
 
-function consigne(email: EmailClient): string {
+function consigne(email: EmailClient, reglesTon: string): string {
   return [
     "Tu es assistant relation client dans un cabinet de courtage en assurances français.",
     "On te transmet un email entrant provenant d'un CLIENT DÉJÀ CONNU du cabinet.",
+    "",
+    "RÈGLES DE TON ET DE JUGEMENT EN VIGUEUR (document du cabinet, prioritaires) :",
+    reglesTon.slice(0, 4000),
+    "",
     "Classe la demande dans un seul niveau :",
     '- "niveau_0" : sinistre, déclaration de dommage, réclamation, mécontentement, résiliation,',
     "  sujet de santé (maladie, hospitalisation, arrêt de travail, remboursement de soins),",
@@ -108,8 +121,18 @@ function consigne(email: EmailClient): string {
     "domicile, RIB, Kbis) d'après les noms de fichiers. Cela se cumule avec le niveau.",
     'Liste séparément dans "pieces_pret" les pièces jointes qui ressemblent à un document de prêt',
     "(tableau d'amortissement, offre de prêt, échéancier de crédit) d'après leur nom de fichier.",
-    "Classe chaque pièce jointe dans une seule liste au maximum ; laisse hors des listes les pièces dont",
-    "tu ne reconnais pas la nature.",
+    'Liste dans "pieces_documents" les AUTRES pièces jointes, avec le contexte de classement le plus',
+    'probable d\'après le mail : "contrat" (document contractuel, avenant, attestation, échéancier de',
+    'cotisation), "sinistre" (constat, facture de réparation, devis, rapport médical lié à un sinistre),',
+    '"reclamation" (pièce à l\'appui d\'une plainte), ou "autre" si tu ne sais pas rattacher.',
+    "Classe chaque pièce jointe dans une seule liste au maximum.",
+    'Renseigne "complement_annonce" à true si le client indique explicitement qu\'il enverra le reste des',
+    "pièces / documents plus tard.",
+    'Renseigne "tutoiement" à true si le client te tutoie dans son message, en appliquant les règles de ton',
+    "ci-dessus. Par défaut : false (vouvoiement).",
+    'Renseigne "cas_non_couvert" (sinon null) UNIQUEMENT si la situation est significative et qu\'AUCUNE',
+    "règle ci-dessus ni règle de ton ne permet de décider quoi faire : décris alors la situation et",
+    "pourquoi aucune règle ne s'applique. N'utilise pas ce champ pour une simple demande floue habituelle.",
     "En cas de doute, réponds toujours niveau_2. N'invente rien.",
     "",
     `Expéditeur : ${email.expediteur_nom ?? ""} <${email.expediteur_email ?? ""}>`,
@@ -123,10 +146,14 @@ function consigne(email: EmailClient): string {
     '"intention":"info_contrat|info_garanties|attestation|null","piece_jointe_kyc":false,',
     '"pieces_kyc":[{"nom":"fichier.pdf","type":"cni|justificatif_domicile|rib|kbis"}],',
     '"pieces_pret":[{"nom":"fichier.pdf"}],',
+    '"pieces_documents":[{"nom":"fichier.pdf","contexte":"contrat|sinistre|reclamation|autre"}],',
+    '"complement_annonce":false,"tutoiement":false,',
+    '"cas_non_couvert":{"situation":"...","pourquoi":"..."}|null,',
     '"confiance":0.0,"resume":"une phrase"}',
 
   ].join("\n");
 }
+
 
 
 /** Analyse IA d'un email client. Toute incertitude retombe en niveau_2. */
@@ -134,13 +161,21 @@ export async function analyserEmailClient(email: EmailClient): Promise<Classific
   const cle = process.env["LOVABLE_API_KEY"];
   if (!cle) throw new Error("Analyse indisponible : clé IA absente du projet.");
 
+  // Règles de ton du cabinet (document Drive, cache 5 min) relues à chaque analyse.
+  const { chargerReglesDeTon } = await import("@/lib/regles-agent.server");
+  const reglesTon = await chargerReglesDeTon();
+
   let derniere = "";
   for (const modele of MODELES) {
     const res = await fetch(GATEWAY, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${cle}` },
-      body: JSON.stringify({ model: modele, messages: [{ role: "user", content: consigne(email) }] }),
+      body: JSON.stringify({
+        model: modele,
+        messages: [{ role: "user", content: consigne(email, reglesTon) }],
+      }),
     });
+
     if (res.ok) {
       const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
       const contenu = json.choices?.[0]?.message?.content ?? "";
@@ -176,6 +211,27 @@ export async function analyserEmailClient(email: EmailClient): Promise<Classific
         .map((p) => ({ nom: texteOuNull(typeof p === "string" ? p : p?.nom, 250) ?? "" }))
         .filter((p) => !!p.nom);
 
+      const docsBrut = Array.isArray(brut["pieces_documents"]) ? (brut["pieces_documents"] as any[]) : [];
+      const contextes = ["contrat", "sinistre", "reclamation", "autre"] as const;
+      const pieces_documents = docsBrut
+        .map((p) => {
+          const contexte = String(p?.contexte ?? "autre").toLowerCase();
+          return {
+            nom: texteOuNull(typeof p === "string" ? p : p?.nom, 250) ?? "",
+            contexte: (contextes as readonly string[]).includes(contexte)
+              ? (contexte as (typeof contextes)[number])
+              : ("autre" as const),
+          };
+        })
+        .filter((p) => !!p.nom);
+
+      const casBrut = brut["cas_non_couvert"] as { situation?: unknown; pourquoi?: unknown } | null;
+      const situationCas = casBrut ? texteOuNull(casBrut.situation, 600) : null;
+      const cas_non_couvert = situationCas
+        ? { situation: situationCas, pourquoi: texteOuNull(casBrut?.pourquoi, 600) ?? "non précisé" }
+        : null;
+
+
       const sousTypeBrut = texteOuNull(brut["sous_type"], 30)?.toLowerCase() ?? null;
       const sous_type: SousTypeNiveau0 =
         niveau === "niveau_0" &&
@@ -195,10 +251,15 @@ export async function analyserEmailClient(email: EmailClient): Promise<Classific
         piece_jointe_kyc: brut["piece_jointe_kyc"] === true || pieces_kyc.length > 0,
         pieces_kyc,
         pieces_pret,
+        pieces_documents,
+        complement_annonce: brut["complement_annonce"] === true,
+        tutoiement: brut["tutoiement"] === true,
+        cas_non_couvert,
         confiance,
         resume: texteOuNull(brut["resume"], 400) ?? "",
         modele,
       };
+
 
     }
     derniere = `${res.status} ${await res.text()}`;
@@ -398,6 +459,26 @@ async function routerPiecesKyc(
 }
 
 /**
+ * Vrai si l'adresse est bien celle d'un client à qui l'on peut écrire.
+ * Jamais d'envoi vers un automate, un partenaire ou une adresse interne.
+ */
+async function adresseClientEnvoyable(adresseBrute: string | null): Promise<boolean> {
+  if (!adresseBrute) return false;
+  const adresse = adresseBrute.toLowerCase();
+  const { estEmailInterne } = await import("@/lib/domaines-internes");
+  const { nomPartenairePourDomaine, extraireDomaine } = await import("@/lib/partenaires-domaines");
+  const domaine = extraireDomaine(adresse);
+  const automate = /(no[-_.]?reply|nepasrepondre|ne-pas-repondre|donotreply|notification|mailer|postmaster)/i.test(
+    adresse,
+  );
+  if (automate || estEmailInterne(adresse) || (domaine && nomPartenairePourDomaine(domaine))) {
+    console.info(`[agent-relation-client] envoi bloqué (adresse non cliente) — ${adresse}`);
+    return false;
+  }
+  return true;
+}
+
+/**
  * Accusé de réception générique envoyé immédiatement en niveau 2.
  * Strictement neutre : aucun conseil, aucune donnée de dossier.
  */
@@ -407,20 +488,8 @@ async function envoyerAccuseReception(
   gmailMessageId: string | null,
 ): Promise<void> {
   if (!client.email) return;
+  if (!(await adresseClientEnvoyable(client.email))) return;
 
-  // Jamais d'accusé de réception vers une adresse d'automate, un partenaire ou
-  // une adresse interne du cabinet : ces adresses ne sont pas des clients.
-  const adresse = client.email.toLowerCase();
-  const { estEmailInterne } = await import("@/lib/domaines-internes");
-  const { nomPartenairePourDomaine, extraireDomaine } = await import("@/lib/partenaires-domaines");
-  const domaine = extraireDomaine(adresse);
-  const automate = /(no[-_.]?reply|nepasrepondre|ne-pas-repondre|donotreply|notification|mailer|postmaster)/i.test(
-    adresse,
-  );
-  if (automate || estEmailInterne(adresse) || (domaine && nomPartenairePourDomaine(domaine))) {
-    console.info(`[agent-relation-client] accusé de réception non envoyé (adresse non cliente) — ${adresse}`);
-    return;
-  }
 
   // Anti-doublon : un seul accusé de réception par message Gmail.
   if (gmailMessageId) {
@@ -460,9 +529,51 @@ async function envoyerAccuseReception(
 }
 
 
+/** Dernier sinistre / dernière réclamation ouverte du client (rattachement des pièces). */
+async function dernierObjet(
+  admin: Admin,
+  table: "sinistres" | "reclamations",
+  clientId: string,
+): Promise<{ id: string; reference: string | null } | null> {
+  const { data } = await admin
+    .from(table)
+    .select("id, reference")
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data as { id: string; reference: string | null } | null) ?? null;
+}
+
+/** Dépose une pièce jointe dans le stockage du cabinet. */
+async function deposerPieceJointe(
+  admin: Admin,
+  params: {
+    clientId: string;
+    gmail_message_id: string;
+    piece: { nom: string; mime: string | null; attachment_id: string | null };
+    sousDossier: string;
+  },
+): Promise<{ chemin: string; taille: number } | null> {
+  if (!params.piece.attachment_id) return null;
+  const { telechargerPieceJointe } = await import("@/lib/gmail.server");
+  const { base64 } = await telechargerPieceJointe(params.gmail_message_id, params.piece.attachment_id);
+  const octets = Buffer.from(base64, "base64");
+  const chemin = `${params.clientId}/${params.sousDossier}/${Date.now()}-${params.piece.nom}`;
+  const { error } = await admin.storage
+    .from(BUCKET)
+    .upload(chemin, octets, { contentType: params.piece.mime ?? "application/octet-stream" });
+  if (error) throw new Error(error.message);
+  return { chemin, taille: octets.byteLength };
+}
+
 /**
- * Classification pièce par pièce des pièces jointes NON KYC : document de prêt
- * reconnu, ou pièce non reconnue. Aucune pièce ne doit être ignorée en silence.
+ * Classification pièce par pièce des pièces jointes NON KYC :
+ *  - document de prêt reconnu → tâche de vérification du dossier emprunteur ;
+ *  - pièce rattachable (contrat, sinistre, réclamation) → dépôt réel au bon
+ *    endroit (documents du contrat, pièces du sinistre, pièces de la réclamation) ;
+ *  - pièce non reconnue → dépôt sur la fiche client + tâche de classement.
+ * Aucune pièce ne doit être ignorée en silence.
  */
 async function routerAutresPieces(
   admin: Admin,
@@ -473,14 +584,16 @@ async function routerAutresPieces(
     gmail_message_id: string;
     userId: string;
   },
-): Promise<{ pret: number; non_classees: number }> {
+): Promise<{ pret: number; non_classees: number; classees: number }> {
   const { client, email, classification } = params;
   const clef = (n: string) => n.trim().toLowerCase();
   const kyc = new Set(classification.pieces_kyc.map((p) => clef(p.nom)));
   const pret = new Set(classification.pieces_pret.map((p) => clef(p.nom)));
+  const contextes = new Map(classification.pieces_documents.map((p) => [clef(p.nom), p.contexte]));
 
   let nbPret = 0;
   let nbNonClassees = 0;
+  let nbClassees = 0;
 
   for (const piece of email.pieces_jointes) {
     const nom = clef(piece.nom);
@@ -510,23 +623,190 @@ async function routerAutresPieces(
       continue;
     }
 
-    nbNonClassees += 1;
-    await creerTacheAdmin(admin as never, {
-      titre: `Pièce jointe non classée reçue — ${piece.nom}`.slice(0, 200),
-      description: [
-        `Client : ${nomComplet(client)}`,
-        `Fichier : ${piece.nom}${piece.mime ? ` (${piece.mime})` : ""}`,
-        `Objet du mail : ${email.sujet ?? "(sans objet)"}`,
+    const contexte = contextes.get(nom) ?? "autre";
+    try {
+      const depot = await deposerPieceJointe(admin, {
+        clientId: client.id,
+        gmail_message_id: params.gmail_message_id,
+        piece,
+        sousDossier: `emails/${contexte}`,
+      });
+      if (!depot) throw new Error("pièce jointe illisible (identifiant absent)");
+
+      let rattachement = "fiche client";
+
+      if (contexte === "sinistre" || contexte === "reclamation") {
+        const objet = await dernierObjet(admin, contexte === "sinistre" ? "sinistres" : "reclamations", client.id);
+        if (contexte === "sinistre" && objet) {
+          const { error } = await admin.from("sinistre_pieces").insert({
+            sinistre_id: objet.id,
+            code: "piece_email",
+            libelle: piece.nom.slice(0, 200),
+            nom_fichier: piece.nom.slice(0, 250),
+            storage_path: depot.chemin,
+            mime_type: piece.mime,
+            taille: depot.taille,
+            obligatoire: false,
+            statut: "recue",
+            commentaire: `Reçue par email — ${lienMail(params.gmail_message_id)}`,
+            uploaded_by: params.userId,
+          });
+          if (error) throw new Error(error.message);
+          rattachement = `sinistre ${objet.reference ?? objet.id}`;
+        } else {
+          const { error } = await admin.from("documents").insert({
+            client_id: client.id,
+            file_name: piece.nom.slice(0, 250),
+            storage_path: depot.chemin,
+            mime_type: piece.mime,
+            file_size: depot.taille,
+            categorie: contexte,
+            type_document: "piece_client_email",
+            uploader_id: params.userId,
+          });
+          if (error) throw new Error(error.message);
+          rattachement = objet
+            ? `${contexte} ${objet.reference ?? objet.id} (pièce sur la fiche client)`
+            : `fiche client (aucun dossier ${contexte} ouvert)`;
+        }
+      } else {
+        const contrat = contexte === "contrat" ? await contratActif(admin, client.id) : null;
+        const { error } = await admin.from("documents").insert({
+          client_id: client.id,
+          contrat_id: contrat?.id ?? null,
+          file_name: piece.nom.slice(0, 250),
+          storage_path: depot.chemin,
+          mime_type: piece.mime,
+          file_size: depot.taille,
+          categorie: contexte === "contrat" ? "contrat" : "a_classer",
+          type_document: "piece_client_email",
+          uploader_id: params.userId,
+        });
+        if (error) throw new Error(error.message);
+        rattachement = contrat ? `contrat ${contrat.numero ?? contrat.id}` : "fiche client";
+      }
+
+      nbClassees += 1;
+      await journaliser(
+        admin,
+        client.id,
+        "Pièce jointe reçue et classée automatiquement",
+        [
+          `Fichier : ${piece.nom}`,
+          `Contexte retenu : ${contexte}`,
+          `Rattachement : ${rattachement}`,
+          `Email : ${lienMail(params.gmail_message_id)}`,
+        ].join("\n"),
+        "systeme",
+      );
+
+      if (contexte === "autre") {
+        nbNonClassees += 1;
+        await creerTacheAdmin(admin as never, {
+          titre: `Pièce jointe à classer — ${piece.nom}`.slice(0, 200),
+          description: [
+            `Client : ${nomComplet(client)}`,
+            `Fichier : ${piece.nom}${piece.mime ? ` (${piece.mime})` : ""}`,
+            `Objet du mail : ${email.sujet ?? "(sans objet)"}`,
+            `Email : ${lienMail(params.gmail_message_id)}`,
+            "La pièce est déposée sur la fiche client (catégorie « à classer ») : rattachez-la au bon dossier.",
+          ].join("\n"),
+          client_id: client.id,
+          created_by: params.userId,
+        });
+      }
+    } catch (e) {
+      nbNonClassees += 1;
+      await creerTacheAdmin(admin as never, {
+        titre: `Pièce jointe non classée reçue — ${piece.nom}`.slice(0, 200),
+        description: [
+          `Client : ${nomComplet(client)}`,
+          `Fichier : ${piece.nom}${piece.mime ? ` (${piece.mime})` : ""}`,
+          `Objet du mail : ${email.sujet ?? "(sans objet)"}`,
+          `Erreur : ${e instanceof Error ? e.message : "erreur inconnue"}`,
+          `Email : ${lienMail(params.gmail_message_id)}`,
+          "Action : récupérer la pièce dans Gmail et la déposer manuellement.",
+        ].join("\n"),
+        client_id: client.id,
+        created_by: params.userId,
+      });
+    }
+  }
+
+  return { pret: nbPret, non_classees: nbNonClassees, classees: nbClassees };
+}
+
+/**
+ * Accusé de réception des pièces jointes reçues, avec remerciement.
+ * Si le client annonce l'envoi du reste plus tard : on le lui confirme et une
+ * tâche de relance est créée à J+5.
+ */
+async function accuserReceptionPieces(
+  admin: Admin,
+  params: {
+    client: ClientMini;
+    classification: ClassificationRelation;
+    nb_pieces: number;
+    gmail_message_id: string;
+    userId: string;
+  },
+): Promise<void> {
+  const { client, classification } = params;
+  if (!client.email || params.nb_pieces === 0) return;
+  if (!(await adresseClientEnvoyable(client.email))) return;
+  const tu = classification.tutoiement;
+
+  try {
+    await envoyerReponse(client.email, {
+      clientName: nomComplet(client),
+      titre: tu ? "Merci, on a bien reçu tes documents" : "Nous avons bien reçu vos documents",
+      paragraphes: [
+        tu
+          ? `Merci pour ${params.nb_pieces > 1 ? "tes documents" : "ton document"} : nous ${params.nb_pieces > 1 ? "les avons bien reçus" : "l'avons bien reçu"} et ${params.nb_pieces > 1 ? "enregistrés" : "enregistré"} dans ton dossier.`
+          : `Nous vous remercions pour ${params.nb_pieces > 1 ? "vos documents" : "votre document"} : ${params.nb_pieces > 1 ? "ils ont bien été reçus et enregistrés" : "il a bien été reçu et enregistré"} dans votre dossier.`,
+        ...(classification.complement_annonce
+          ? [
+              tu
+                ? "Nous restons en attente du complément que tu nous annonces ; pas d'inquiétude, nous te relancerons si besoin."
+                : "Nous restons en attente du complément que vous nous annoncez ; nous reviendrons vers vous si nécessaire.",
+            ]
+          : []),
+        `L'équipe ${CABINET}`,
+      ],
+    });
+    await journaliser(
+      admin,
+      client.id,
+      "Accusé de réception des pièces jointes envoyé au client",
+      [
+        `${params.nb_pieces} pièce(s) reçue(s).`,
+        classification.complement_annonce ? "Complément annoncé par le client : relance programmée à J+5." : "",
         `Email : ${lienMail(params.gmail_message_id)}`,
-        "Action : la classification automatique n'a pas reconnu ce document — traitement manuel requis.",
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    );
+  } catch (e) {
+    console.error("[agent-relation-client] accusé de réception des pièces non envoyé", e);
+  }
+
+  if (classification.complement_annonce) {
+    await creerTacheAdmin(admin as never, {
+      titre: `Relancer ${nomComplet(client)} — complément de pièces annoncé`.slice(0, 200),
+      description: [
+        `Le client a indiqué qu'il enverrait le reste des pièces plus tard.`,
+        `Pièces déjà reçues : ${params.nb_pieces}`,
+        `Email : ${lienMail(params.gmail_message_id)}`,
+        "Action : si rien n'est arrivé, relancer le client pour le complément.",
       ].join("\n"),
       client_id: client.id,
+      priorite: "normale",
+      echeance_jours: 5,
       created_by: params.userId,
     });
   }
-
-  return { pret: nbPret, non_classees: nbNonClassees };
 }
+
 
 export interface ResultatRelationClient {
   niveau: NiveauRelation;
@@ -653,6 +933,8 @@ async function traiterEmailClientInterne(
     : 0;
 
   // Autres pièces jointes : document de prêt ou pièce non reconnue → tâche admin.
+  // Accusé de réception des pièces jointes : envoyé une seule fois par message.
+  let accuseEnvoye = false;
   if (email.pieces_jointes.length) {
     const compte = await routerAutresPieces(admin, {
       client,
@@ -663,9 +945,16 @@ async function traiterEmailClientInterne(
     });
     pieces.pret = compte.pret;
     pieces.non_classees = compte.non_classees;
+
+    await accuserReceptionPieces(admin, {
+      client,
+      classification,
+      nb_pieces: email.pieces_jointes.length,
+      gmail_message_id,
+      userId: params.userId,
+    });
+    accuseEnvoye = true;
   }
-
-
 
   const brouillon = async (motif: string, objet: string, corps: string): Promise<ResultatRelationClient> => {
     await enregistrerReponse(admin, {
@@ -682,7 +971,20 @@ async function traiterEmailClientInterne(
       "Réponse préparée en brouillon (à valider)",
       `${motif}\nEmail : ${lienMail(gmail_message_id)}\n\n${corps}`,
     );
-    await envoyerAccuseReception(admin, client, gmail_message_id);
+    if (!accuseEnvoye) await envoyerAccuseReception(admin, client, gmail_message_id);
+
+    // Cas significatif sans règle applicable : journal Drive + email à l'admin,
+    // pour décider ensemble s'il faut créer une nouvelle règle (ton ou action).
+    if (classification.cas_non_couvert) {
+      const { journaliserCasNonCouvert } = await import("@/lib/regles-agent.server");
+      await journaliserCasNonCouvert(admin, {
+        client: nomComplet(client),
+        sujet: email.sujet,
+        gmail_message_id,
+        situation: classification.cas_non_couvert.situation,
+        pourquoi_non_couvert: classification.cas_non_couvert.pourquoi,
+      });
+    }
     return {
       niveau: "niveau_2",
       intention: classification.intention,
@@ -691,6 +993,65 @@ async function traiterEmailClientInterne(
       motif,
     };
   };
+
+  /**
+   * Document demandé par le client mais absent du CRM : tâche urgente + email au
+   * gestionnaire. Aucune réponse au client tant que la tâche n'est pas close ;
+   * l'envoi reprend via /api/public/documents-attendus une fois la tâche fermée.
+   */
+  const attendreDocument = async (motif: string, objet: string, corps: string): Promise<ResultatRelationClient> => {
+    const tacheId = await creerTacheAdmin(admin as never, {
+      titre: `Document demandé par ${nomComplet(client)} — indisponible dans le CRM`.slice(0, 200),
+      description: [
+        `Objet du mail : ${email.sujet ?? "(sans objet)"}`,
+        `Demande : ${classification.resume || "document demandé par le client"}`,
+        `Manque : ${motif}`,
+        `Email : ${lienMail(gmail_message_id)}`,
+        "Action : ajouter le document au CRM puis clôturer cette tâche — la réponse au client partira automatiquement.",
+        "Aucune réponse n'a été envoyée au client à ce stade.",
+      ].join("\n"),
+      client_id: client.id,
+      priorite: "urgente",
+      created_by: params.userId,
+    });
+
+    await enregistrerReponse(admin, {
+      ...base,
+      statut: "attente_document",
+      motif: `${motif}${tacheId ? ` (tâche ${tacheId})` : ""}`,
+      objet,
+      corps,
+    });
+    const { informerAdmin } = await import("@/lib/regles-agent.server");
+    await informerAdmin(admin, {
+      titre: "Document demandé par un client — indisponible dans le CRM",
+      paragraphes: [
+        `${nomComplet(client)} demande un document qui n'est pas disponible dans le CRM.`,
+        "Aucune réponse n'a été envoyée au client : elle partira automatiquement une fois la tâche clôturée (donc le document ajouté).",
+      ],
+      lignes: [
+        { libelle: "Client", valeur: nomComplet(client) },
+        { libelle: "Objet du mail", valeur: email.sujet ?? "(sans objet)" },
+        { libelle: "Manque", valeur: motif },
+        { libelle: "Mail", valeur: lienMail(gmail_message_id) || "—" },
+      ],
+    });
+    await journaliser(
+      admin,
+      client.id,
+      "Document demandé indisponible — réponse suspendue",
+      `${motif}\nEmail : ${lienMail(gmail_message_id)}`,
+      "systeme",
+    );
+    return {
+      niveau: "niveau_2",
+      intention: classification.intention,
+      action: "tache_urgente",
+      pieces_kyc: piecesKyc,
+      motif,
+    };
+  };
+
 
   // ---- Niveau 0 : aucune automatisation, tâche urgente.
   if (classification.niveau === "niveau_0") {
@@ -893,8 +1254,8 @@ async function traiterEmailClientInterne(
         | undefined;
 
       if (!doc) {
-        return brouillon(
-          "Aucune attestation trouvée sur le contrat, à fournir manuellement.",
+        return attendreDocument(
+          "Aucune attestation d'assurance n'est archivée sur le contrat.",
           objetReponse,
           `Bonjour ${nomComplet(client)},\n\nVous trouverez ci-joint votre attestation d'assurance pour le contrat ${contrat.numero ?? ""}.\n\n[À compléter : aucune attestation n'est archivée sur le contrat — la demander à la compagnie puis la joindre.]\n\nCordialement,\nL'équipe ${CABINET}`,
         );
@@ -902,8 +1263,8 @@ async function traiterEmailClientInterne(
 
       const { data: fichier, error: dlErr } = await admin.storage.from(BUCKET).download(doc.storage_path);
       if (dlErr || !fichier) {
-        return brouillon(
-          "Attestation référencée mais fichier illisible dans le stockage : à joindre manuellement.",
+        return attendreDocument(
+          "Attestation référencée sur le contrat mais fichier illisible dans le stockage.",
           objetReponse,
           `Bonjour ${nomComplet(client)},\n\nVous trouverez ci-joint votre attestation d'assurance.\n\n[À compléter : fichier introuvable dans le stockage.]\n\nCordialement,\nL'équipe ${CABINET}`,
         );
