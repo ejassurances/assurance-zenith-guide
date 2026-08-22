@@ -130,10 +130,14 @@ export async function sendTemplateEmail(
   )
 
   // Trace de l'envoi dans la boîte Gmail du cabinet (copie dans « Envoyés »,
-  // libellée « Envoyé via Brevo »). N'impacte jamais l'envoi réel.
+  // libellée « Envoyé via Brevo »), puis rattachement de cette copie à la fiche
+  // client / au dossier. Aucun échec silencieux : si la copie n'a pas pu être
+  // déposée, une tâche admin de vérification est créée.
+  let copieId: string | null = null
+  let copieErreur: string | null = null
   try {
     const { deposerCopieEnvoyee } = await import('@/lib/gmail.server')
-    await deposerCopieEnvoyee({
+    const copie = await deposerCopieEnvoyee({
       to: recipient,
       sujet: subject,
       html: withHtmlSignature(html),
@@ -141,9 +145,48 @@ export async function sendTemplateEmail(
       replyTo: options.replyTo ?? null,
       attachments: options.attachments,
     })
+    copieId = copie?.id ?? null
+    if (!copieId) copieErreur = 'dépôt de la copie refusé par Gmail'
   } catch (e) {
-    console.error('[email] copie Gmail de l’envoi Brevo impossible:', e)
+    copieErreur = e instanceof Error ? e.message : 'erreur inconnue'
   }
+
+  try {
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+    if (copieId) {
+      const liens = options.liens
+      if (liens && (liens.client_id || liens.dossier_id || liens.contrat_id || liens.compagnie_id)) {
+        await supabaseAdmin.from('crm_emails').upsert(
+          {
+            gmail_message_id: copieId,
+            direction: 'sortant',
+            recu_le: new Date().toISOString(),
+            client_id: liens.client_id ?? null,
+            dossier_id: liens.dossier_id ?? null,
+            contrat_id: liens.contrat_id ?? null,
+            compagnie_id: liens.compagnie_id ?? null,
+            notes: `Envoi automatique (Brevo) — modèle ${templateName}`,
+          },
+          { onConflict: 'gmail_message_id' }
+        )
+      }
+    } else {
+      console.error(`[email] copie Gmail de l’envoi Brevo impossible: ${copieErreur}`)
+      const { creerTacheAdmin } = await import('@/lib/agent-taches.server')
+      await creerTacheAdmin(supabaseAdmin, {
+        titre: `Vérifier la trace Gmail d'un envoi (${templateName})`,
+        description:
+          `L'e-mail « ${subject} » a bien été envoyé à ${recipient} via Brevo, mais la copie dans la boîte Gmail ` +
+          `du cabinet n'a pas pu être déposée (${copieErreur ?? 'raison inconnue'}). ` +
+          `Vérifier la connexion Gmail et déposer la trace manuellement si nécessaire (exigence ACPR).`,
+        client_id: options.liens?.client_id ?? null,
+        priorite: 'haute',
+      })
+    }
+  } catch (e) {
+    console.error('[email] suivi de la copie Gmail impossible:', e)
+  }
+
 
   return { sent: true }
 }
