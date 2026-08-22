@@ -36,6 +36,18 @@ export const DOSSIERS_TON_PAR_DIRECTION = {
 
 export type DirectionAgent = keyof typeof DOSSIERS_TON_PAR_DIRECTION;
 
+/**
+ * Noms de documents recherchés (dans l'ordre) sous le dossier de la direction,
+ * y compris ses sous-dossiers. Le cabinet peut utiliser un Google Doc natif
+ * (ex. « Direction_Commerciale_Gestion_des_mails ») ou un fichier texte.
+ */
+export const NOMS_TON_PAR_DIRECTION: Record<DirectionAgent, string[]> = {
+  commerciale: ["Direction_Commerciale_Gestion_des_mails", FICHIER_TON],
+  financiere: ["Direction_Financiere_Gestion_des_mails", FICHIER_TON],
+  conformite: ["Direction_Juridique_Conformite_Gestion_des_mails", FICHIER_TON],
+};
+
+
 const ADMIN_FALLBACK = "contact@ej-assurances.fr";
 const CACHE_MS = 5 * 60 * 1000;
 
