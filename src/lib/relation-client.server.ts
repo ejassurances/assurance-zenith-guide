@@ -161,9 +161,9 @@ export async function analyserEmailClient(email: EmailClient): Promise<Classific
   const cle = process.env["LOVABLE_API_KEY"];
   if (!cle) throw new Error("Analyse indisponible : clé IA absente du projet.");
 
-  // Règles de ton du cabinet (document Drive, cache 5 min) relues à chaque analyse.
+  // Règles de ton de la Direction Commerciale (document Drive, cache 5 min).
   const { chargerReglesDeTon } = await import("@/lib/regles-agent.server");
-  const reglesTon = await chargerReglesDeTon();
+  const reglesTon = await chargerReglesDeTon("commerciale");
 
   let derniere = "";
   for (const modele of MODELES) {

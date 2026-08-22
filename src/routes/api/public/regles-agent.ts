@@ -24,8 +24,12 @@ export const Route = createFileRoute("/api/public/regles-agent")({
           );
           invaliderCacheRegles();
           const ids = await assurerDocumentsRegles();
-          const regles = await chargerReglesDeTon();
-          return Response.json({ ok: true, ...ids, regles_de_ton: regles });
+          const regles_de_ton = {
+            commerciale: await chargerReglesDeTon("commerciale"),
+            financiere: await chargerReglesDeTon("financiere"),
+            conformite: await chargerReglesDeTon("conformite"),
+          };
+          return Response.json({ ok: true, ...ids, regles_de_ton });
         } catch (e) {
           const message = e instanceof Error ? e.message : "erreur inconnue";
           console.error("[regles-agent] initialisation impossible", e);
