@@ -65,7 +65,9 @@ export async function deposerDocumentProduitSurDrive(
 ) {
   const { data: produit, error } = await supabase
     .from("produits")
-    .select("id, nom, compagnies!produits_compagnie_id_fkey(nom), produit_familles!produits_famille_id_fkey(nom)")
+    .select(
+      "id, nom, compagnies!produits_compagnie_id_fkey(nom), produit_familles!produits_famille_id_fkey(nom)",
+    )
     .eq("id", params.produit_id)
     .maybeSingle();
   if (error || !produit) throw new Error(error?.message ?? "Produit introuvable ou accès refusé");
@@ -112,7 +114,9 @@ export async function deposerDocumentProduitSurDrive(
 /** Extrait l'identifiant Drive d'une URL de partage (/file/d/<id>/… ou ?id=<id>). */
 export function idFichierDepuisUrlDrive(url: string | null | undefined): string | null {
   if (!url) return null;
-  const m = url.match(/\/(?:file|d)\/(?:d\/)?([A-Za-z0-9_-]{10,})/) ?? url.match(/[?&]id=([A-Za-z0-9_-]{10,})/);
+  const m =
+    url.match(/\/(?:file|d)\/(?:d\/)?([A-Za-z0-9_-]{10,})/) ??
+    url.match(/[?&]id=([A-Za-z0-9_-]{10,})/);
   return m?.[1] ?? null;
 }
 
@@ -139,7 +143,9 @@ export async function contenuDocumentProduit(
   if (!doc.storage_path) {
     throw new Error(`Aucun fichier rattaché : ${doc.nom ?? "document"}`);
   }
-  const { data: blob, error } = await supabase.storage.from("produits-documents").download(doc.storage_path);
+  const { data: blob, error } = await supabase.storage
+    .from("produits-documents")
+    .download(doc.storage_path);
   if (error || !blob) throw new Error(`Téléchargement impossible : ${doc.nom ?? "document"}`);
   return Buffer.from(await blob.arrayBuffer());
 }
