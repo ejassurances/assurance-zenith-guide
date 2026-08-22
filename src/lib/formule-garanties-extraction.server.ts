@@ -122,7 +122,7 @@ export async function analyserTableauGarantiesFormules(
 ) {
   const { data: doc, error: dErr } = await supabase
     .from("produit_documents")
-    .select("id, produit_id, nom, type, storage_path, mime_type")
+    .select("id, produit_id, nom, type, storage_path, mime_type, drive_file_id, drive_url")
     .eq("id", documentId)
     .maybeSingle();
   if (dErr || !doc) throw new Error("Document introuvable ou accès refusé");
