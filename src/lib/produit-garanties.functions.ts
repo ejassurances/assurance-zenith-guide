@@ -254,3 +254,21 @@ export const synchroniserCgDrive = createServerFn({ method: "POST" })
     const { synchroniserCgDepuisDrive } = await import("./cg-drive-sync.server");
     return synchroniserCgDepuisDrive(context.supabase, context.userId);
   });
+
+/** Crée dans le Drive des CG un dossier par compagnie/branche du CRM (sans doublon). */
+export const creerDossiersCompagniesDrive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertStaff(context.supabase, context.userId);
+    const { creerDossiersCompagniesSurDrive } = await import("./cg-drive-sync.server");
+    return creerDossiersCompagniesSurDrive(context.supabase);
+  });
+
+/** Téléverse vers le Drive les CG encore stockées dans le CRM, correctement classées. */
+export const televerserCgVersDrive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertStaff(context.supabase, context.userId);
+    const { televerserDocumentsCrmVersDrive } = await import("./cg-drive-sync.server");
+    return televerserDocumentsCrmVersDrive(context.supabase);
+  });

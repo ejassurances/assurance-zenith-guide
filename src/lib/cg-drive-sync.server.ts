@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { estDossierDrive, listerEnfantsDrive, urlFichierDrive } from "@/lib/google-drive.server";
-import { DRIVE_DOSSIER_CG_ID } from "@/lib/documents-partenaires.server";
+import {
+  deposerFichier,
+  estDossierDrive,
+  listerEnfantsDrive,
+  urlFichierDrive,
+} from "@/lib/google-drive.server";
+import { DRIVE_DOSSIER_CG_ID, assurerDossierPartenaire } from "@/lib/documents-partenaires.server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Client = SupabaseClient<any, any, any>;
@@ -170,6 +175,157 @@ export async function synchroniserCgDepuisDrive(
           rapport.crees.push({ fichier: fichier.name, produit: produit.nom, type });
         }
       }
+    }
+  }
+
+  return rapport;
+}
+
+export type RapportDossiersCompagnies = {
+  compagnies: number;
+  dossiers_crees: number;
+  dossiers_existants: number;
+  details: { compagnie: string; chemin: string; cree: boolean; url: string }[];
+};
+
+/**
+ * Crée dans le Drive des CG un dossier par compagnie du CRM (et un sous-dossier
+ * par branche réellement présente au catalogue). Un dossier déjà existant est
+ * réutilisé tel quel, jamais dupliqué.
+ */
+export async function creerDossiersCompagniesSurDrive(
+  supabase: Client,
+): Promise<RapportDossiersCompagnies> {
+  const rapport: RapportDossiersCompagnies = {
+    compagnies: 0,
+    dossiers_crees: 0,
+    dossiers_existants: 0,
+    details: [],
+  };
+
+  const [{ data: compagnies }, { data: produits }, { data: familles }] = await Promise.all([
+    supabase.from("compagnies").select("id, nom").order("nom"),
+    supabase.from("produits").select("compagnie_id, famille_id, statut"),
+    supabase.from("produit_familles").select("id, nom"),
+  ]);
+
+  const nomFamille = new Map<string, string>();
+  for (const f of (familles ?? []) as any[]) nomFamille.set(f.id, f.nom);
+
+  const branchesParCompagnie = new Map<string, Set<string>>();
+  for (const p of (produits ?? []) as any[]) {
+    if (!p.compagnie_id || !p.famille_id || p.statut === "supprime") continue;
+    const nom = nomFamille.get(p.famille_id);
+    if (!nom) continue;
+    if (!branchesParCompagnie.has(p.compagnie_id)) branchesParCompagnie.set(p.compagnie_id, new Set());
+    branchesParCompagnie.get(p.compagnie_id)!.add(nom);
+  }
+
+  const existants = new Map<string, string>();
+  for (const e of await listerEnfantsDrive(DRIVE_DOSSIER_CG_ID)) {
+    if (estDossierDrive(e.mimeType)) existants.set(cle(e.name), e.id);
+  }
+
+  for (const compagnie of (compagnies ?? []) as any[]) {
+    rapport.compagnies += 1;
+    const dejaLa = existants.get(cle(compagnie.nom));
+    const branches = [...(branchesParCompagnie.get(compagnie.id) ?? new Set<string>())];
+
+    if (branches.length === 0) {
+      const dossier = await assurerDossierPartenaire(compagnie.nom, null);
+      if (dejaLa) rapport.dossiers_existants += 1;
+      else rapport.dossiers_crees += 1;
+      rapport.details.push({
+        compagnie: compagnie.nom,
+        chemin: dossier.chemin,
+        cree: !dejaLa,
+        url: dossier.url,
+      });
+      continue;
+    }
+
+    for (const branche of branches) {
+      const dossier = await assurerDossierPartenaire(compagnie.nom, branche);
+      if (dejaLa) rapport.dossiers_existants += 1;
+      else rapport.dossiers_crees += 1;
+      rapport.details.push({
+        compagnie: compagnie.nom,
+        chemin: dossier.chemin,
+        cree: !dejaLa,
+        url: dossier.url,
+      });
+    }
+  }
+
+  return rapport;
+}
+
+export type RapportRemonteeDrive = {
+  a_traiter: number;
+  televerses: number;
+  echecs: { document: string; raison: string }[];
+  details: { document: string; chemin: string }[];
+};
+
+/**
+ * Téléverse sur le Drive les CG encore stockées dans le CRM, rangées sous
+ * [Compagnie]/[Branche], puis ne conserve en base que le lien Drive.
+ */
+export async function televerserDocumentsCrmVersDrive(
+  supabase: Client,
+): Promise<RapportRemonteeDrive> {
+  const rapport: RapportRemonteeDrive = { a_traiter: 0, televerses: 0, echecs: [], details: [] };
+
+  const { data, error } = await supabase
+    .from("produit_documents")
+    .select(
+      "id, nom, type, mime_type, storage_path, drive_file_id, produit_id, produits!produit_documents_produit_id_fkey(nom, compagnies!produits_compagnie_id_fkey(nom), produit_familles!produits_famille_id_fkey(nom))",
+    )
+    .is("drive_file_id", null)
+    .not("storage_path", "is", null);
+  if (error) throw new Error(error.message);
+
+  const lignes = (data ?? []) as any[];
+  rapport.a_traiter = lignes.length;
+
+  for (const doc of lignes) {
+    const compagnie: string | null = doc.produits?.compagnies?.nom ?? null;
+    const branche: string | null = doc.produits?.produit_familles?.nom ?? null;
+    try {
+      const { data: blob, error: dlErr } = await supabase.storage
+        .from("produits-documents")
+        .download(doc.storage_path as string);
+      if (dlErr || !blob) throw new Error(dlErr?.message ?? "fichier introuvable dans le CRM");
+
+      const dossier = await assurerDossierPartenaire(compagnie, branche);
+      const depot = await deposerFichier({
+        folderId: dossier.folder_id,
+        nom: doc.nom as string,
+        contenu: new Uint8Array(await blob.arrayBuffer()),
+        mimeType: (doc.mime_type as string | null) ?? "application/pdf",
+      });
+
+      const { error: upErr } = await supabase
+        .from("produit_documents")
+        .update({
+          drive_file_id: depot.id,
+          drive_url: depot.webViewLink ?? urlFichierDrive(depot.id),
+          drive_chemin: dossier.chemin,
+          storage_path: null,
+        })
+        .eq("id", doc.id);
+      if (upErr) throw new Error(upErr.message);
+
+      // Le Drive devient la seule copie : le fichier CRM est supprimé.
+      await supabase.storage.from("produits-documents").remove([doc.storage_path as string]);
+
+      rapport.televerses += 1;
+      rapport.details.push({ document: doc.nom as string, chemin: dossier.chemin });
+    } catch (e) {
+      rapport.echecs.push({
+        document: (doc.nom as string) ?? doc.id,
+        raison: e instanceof Error ? e.message : "téléversement impossible",
+      });
     }
   }
 
