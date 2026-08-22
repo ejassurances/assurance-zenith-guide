@@ -163,27 +163,23 @@ export async function executerAgents(
     let facturesCreees = 0;
     let bordereauxCrees = 0;
     let veillesCreees = 0;
-    const { data: dejaTriage } = ids.length
-      ? await admin.from("crm_emails").select("gmail_message_id").in("gmail_message_id", ids).not("triage_ia", "is", null)
-      : { data: [] };
-    const triageFaits = new Set((dejaTriage ?? []).map((r) => r.gmail_message_id));
     const { data: liensApres } = ids.length
       ? await admin.from("crm_emails").select("gmail_message_id, client_id").in("gmail_message_id", ids)
       : { data: [] };
     const avecClient = new Set((liensApres ?? []).filter((l) => l.client_id).map((l) => l.gmail_message_id));
 
+    // Source de vérité du « déjà traité » : les libellés Gmail (« Archives » /
+    // « A valider »), pas `triage_ia`. Un mail resté dans la file sans libellé
+    // d'état est repris, même si un agent avait déjà écrit une ligne en base
+    // (aiguillage, analyse partielle, passage interrompu).
     const candidats = messages.filter(
-      (m) =>
-        !!m.expediteur_email &&
-        !m.etiquettes.includes("SENT") &&
-        !avecClient.has(m.id) &&
-        // Un mail en rattrapage est réanalysé même s'il a déjà été trié.
-        (!triageFaits.has(m.id) || rattrapage.has(m.id)),
+      (m) => !!m.expediteur_email && !m.etiquettes.includes("SENT") && !avecClient.has(m.id),
     );
 
     // Aucune reprise depuis la base : la seule source de mails à traiter est la
-    // file « A_Traiter » du service, posée manuellement par le staff.
+    // file du service, posée manuellement par le staff.
     const aTrier = candidats.slice(0, limite * 10);
+
 
     if (aTrier.length) {
       const { lireMessage } = await import("@/lib/gmail.server");
@@ -196,7 +192,9 @@ export async function executerAgents(
         creerFicheProspectIncertaine,
       } = await import("@/lib/email-triage.server");
       const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
-      const { poserLabelCabinet, mettreCorbeille, retirerLabelRattrapage } = await import("@/lib/gmail.server");
+      const { poserLabelCabinet, mettreCorbeille, retirerLabelRattrapage, marquerEtat } = await import(
+        "@/lib/gmail.server"
+      );
       const { traiterEmailFinance } = await import("@/lib/finance-agent.server");
       const { traiterEmailVeille } = await import("@/lib/veille-reglementaire.server");
       for (const m of aTrier) {
@@ -289,6 +287,9 @@ export async function executerAgents(
               },
               { onConflict: "gmail_message_id" },
             );
+            // Traitement terminé : « Archives » (le libellé de direction posé
+            // par le staff reste en place).
+            await marquerEtat(m.id, "archives");
             if (rattrapage.has(m.id)) {
               await retirerLabelRattrapage(m.id);
               rattrapagesTraites++;
@@ -330,6 +331,8 @@ export async function executerAgents(
               },
               { onConflict: "gmail_message_id" },
             );
+            // Facture / bordereau enregistré : « Archives ».
+            await marquerEtat(m.id, "archives");
             if (rattrapage.has(m.id)) {
               await retirerLabelRattrapage(m.id);
               rattrapagesTraites++;
@@ -398,6 +401,8 @@ export async function executerAgents(
               },
               { onConflict: "gmail_message_id" },
             );
+            // Arbitrage humain attendu (tâche créée) : « A valider ».
+            await marquerEtat(m.id, "a_valider");
             if (rattrapage.has(m.id)) {
               await retirerLabelRattrapage(m.id);
               rattrapagesTraites++;
@@ -515,8 +520,15 @@ export async function executerAgents(
     };
 
 
+    // Un mail encore présent dans la file du service (donc sans libellé d'état)
+    // est repris même si `triage_ia` porte déjà une analyse : les libellés Gmail
+    // sont la source de vérité du traitement.
+    const dansLaFile = new Set(messages.map((m) => m.id));
     const aRepondre = ((liensClients ?? []) as unknown as LienClient[])
-      .filter((l) => !analyseFaite(l) || rattrapage.has(l.gmail_message_id))
+      .filter(
+        (l) =>
+          !analyseFaite(l) || rattrapage.has(l.gmail_message_id) || dansLaFile.has(l.gmail_message_id),
+      )
       .filter((l) => {
         // Un mail sortant du lot courant est exclu ; les mails hors lot sont
         // repris (leur direction en base a déjà été filtrée).
@@ -589,10 +601,21 @@ export async function executerAgents(
               triage_le: new Date().toISOString(),
             })
             .eq("gmail_message_id", messageId);
+          // Sortie de file OBLIGATOIRE : sans libellé d'état le mail serait
+          // repris au passage suivant (et un accusé de réception renvoyé).
+          {
+            const { marquerEtat: marquerEtatClient } = await import("@/lib/gmail.server");
+            const etat =
+              resultat.action === "reponse_envoyee" || resultat.action === "rien" ? "archives" : "a_valider";
+            await marquerEtatClient(messageId, etat).catch((e) =>
+              console.error("[agent-relation-client] libellé d'état non posé", messageId, e),
+            );
+          }
           if (rattrapage.has(messageId)) {
             await retirerRattrapageClient(messageId);
             rattrapagesTraites++;
           }
+
 
         } catch (e) {
           erreurs++;

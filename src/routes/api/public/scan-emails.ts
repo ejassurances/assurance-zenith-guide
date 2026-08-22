@@ -25,14 +25,18 @@ export const Route = createFileRoute("/api/public/scan-emails")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-        // Les écritures du CRM sont tracées au nom d'un administrateur.
-        const { data: admins } = await supabaseAdmin
-          .from("user_roles")
-          .select("user_id")
-          .eq("role", "admin")
-          .limit(1);
-        const userId = (admins ?? [])[0]?.user_id;
-        if (!userId) return Response.json({ error: "Aucun administrateur configuré." }, { status: 500 });
+        // Les écritures du CRM sont tracées au nom d'un administrateur (repli
+        // documenté sur un mandataire ou le premier compte du projet).
+        const { identiteTechnique } = await import("@/lib/agent-taches.server");
+        const identite = await identiteTechnique(supabaseAdmin as never);
+        if (!identite) {
+          console.error("[scan-emails] aucun compte utilisable pour tracer les écritures");
+          return Response.json(
+            { error: "Aucun compte utilisable : créez un utilisateur du cabinet (rôle admin)." },
+            { status: 500 },
+          );
+        }
+        const userId = identite.userId;
 
         // Corps optionnel : { limite, maxResults } pour rattraper un retard.
         const corps = (await request.json().catch(() => null)) as

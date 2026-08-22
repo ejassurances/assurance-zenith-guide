@@ -1,4 +1,6 @@
 import {
+  ARCHIVE,
+  A_VALIDER,
   COUPLES_LABELS,
   LABELS_CABINET,
   LABELS_CREABLES,
@@ -455,6 +457,22 @@ export async function poserLabelCabinet(
   await modifierLabels(id, { ajouter, retirer });
 }
 
+/**
+ * Pose UNIQUEMENT un libellé d'état (« Archives » ou « A valider ») sans
+ * toucher au libellé de direction déjà posé par le staff : utilisé par les
+ * agents qui terminent le traitement d'un mail rangé dans n'importe quelle
+ * direction (finance, veille, arbitrage interne, relation client).
+ */
+export async function marquerEtat(id: string, etat: "archives" | "a_valider"): Promise<void> {
+  const cible = etat === "archives" ? ARCHIVE : A_VALIDER;
+  const ajouter = [await resoudreLabel(cible)];
+  const autres = await Promise.all(
+    LABELS_ETATS.filter((e) => e !== cible).map((e) => resoudreLabel(e).catch(() => null)),
+  );
+  const retirer = autres.filter((l): l is string => !!l && !ajouter.includes(l));
+  await modifierLabels(id, { ajouter, retirer });
+}
+
 
 
 /**
@@ -495,15 +513,30 @@ export async function listerFilesATraiter(params?: {
   const maxParFile = Math.max(1, Math.min(params?.maxParFile ?? 25, 100));
   const parId = new Map<string, EmailResume>();
   const noms = [...new Set(FILES_A_TRAITER.map((cle) => LABELS_CABINET[cle]))];
+  const etats = LABELS_ETATS.map((e) => e.toLowerCase());
   for (const nom of noms) {
     const messages = await listerParLabel(nom, maxParFile).catch((e) => {
       console.error(`[files-a-traiter] lecture de « ${nom} » impossible`, e);
       return [] as EmailResume[];
     });
-    for (const m of messages) if (!parId.has(m.id)) parId.set(m.id, m);
+    for (const m of messages) {
+      // Structure à plat : le libellé de direction reste posé après traitement.
+      // La SEULE marque de traitement est un libellé d'état (« Archives » ou
+      // « A valider ») — un mail qui en porte un n'est plus à traiter.
+      const traite = m.etiquettes.some((e) => etats.includes(e.trim().toLowerCase()));
+      if (traite) continue;
+      if (!parId.has(m.id)) parId.set(m.id, m);
+    }
   }
   return [...parId.values()];
 }
+
+/** Un message porte-t-il déjà un libellé d'état (« Archives » / « A valider ») ? */
+export function porteEtatTraitement(etiquettes: string[]): boolean {
+  const etats = LABELS_ETATS.map((e) => e.toLowerCase());
+  return etiquettes.some((e) => etats.includes(e.trim().toLowerCase()));
+}
+
 
 
 

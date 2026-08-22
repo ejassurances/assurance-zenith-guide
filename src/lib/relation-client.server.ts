@@ -407,6 +407,37 @@ async function envoyerAccuseReception(
   gmailMessageId: string | null,
 ): Promise<void> {
   if (!client.email) return;
+
+  // Jamais d'accusé de réception vers une adresse d'automate, un partenaire ou
+  // une adresse interne du cabinet : ces adresses ne sont pas des clients.
+  const adresse = client.email.toLowerCase();
+  const { estEmailInterne } = await import("@/lib/domaines-internes");
+  const { nomPartenairePourDomaine, extraireDomaine } = await import("@/lib/partenaires-domaines");
+  const domaine = extraireDomaine(adresse);
+  const automate = /(no[-_.]?reply|nepasrepondre|ne-pas-repondre|donotreply|notification|mailer|postmaster)/i.test(
+    adresse,
+  );
+  if (automate || estEmailInterne(adresse) || (domaine && nomPartenairePourDomaine(domaine))) {
+    console.info(`[agent-relation-client] accusé de réception non envoyé (adresse non cliente) — ${adresse}`);
+    return;
+  }
+
+  // Anti-doublon : un seul accusé de réception par message Gmail.
+  if (gmailMessageId) {
+    const { data: deja } = await admin
+      .from("activites")
+      .select("id")
+      .eq("client_id", client.id)
+      .eq("titre", "Accusé de réception automatique envoyé au client")
+      .ilike("description", `%${gmailMessageId}%`)
+      .limit(1)
+      .maybeSingle();
+    if (deja) {
+      console.info(`[agent-relation-client] accusé de réception déjà envoyé pour ${gmailMessageId}`);
+      return;
+    }
+  }
+
   try {
     await envoyerReponse(client.email, {
       clientName: nomComplet(client),
