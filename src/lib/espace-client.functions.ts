@@ -609,13 +609,33 @@ export const monDerCourant = createServerFn({ method: "POST" })
     const modele = courant["der_modele"] as
       | { nom: string | null; version: string | null; storage_path: string | null }
       | null;
+    // Certains envois anciens n'ont pas de modèle rattaché : on retombe alors
+    // sur le modèle DER actif du cabinet pour rester consultable.
+    let chemin = modele?.storage_path ?? null;
+    let nom = modele?.nom ?? null;
+    let version = modele?.version ?? null;
+    if (!chemin) {
+      const { data: actif } = await supabaseAdmin
+        .from("der_modele")
+        .select("nom, version, storage_path")
+        .eq("actif", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const a = actif as { nom: string | null; version: string | null; storage_path: string | null } | null;
+      chemin = a?.storage_path ?? null;
+      nom = nom ?? a?.nom ?? null;
+      version = version ?? a?.version ?? null;
+    }
+
     let url: string | null = null;
-    if (modele?.storage_path) {
+    if (chemin) {
       const { data: signed } = await supabaseAdmin.storage
         .from("conformite-documents")
-        .createSignedUrl(modele.storage_path, 3600);
+        .createSignedUrl(chemin, 3600);
       url = signed?.signedUrl ?? null;
     }
+
 
     return {
       envoi: {
@@ -625,8 +645,9 @@ export const monDerCourant = createServerFn({ method: "POST" })
         signed_ip: (courant["signed_ip"] as string | null) ?? null,
         signature_png: (courant["signature_png"] as string | null) ?? null,
         document_hash: (courant["document_hash"] as string | null) ?? null,
-        modele_nom: modele?.nom ?? null,
-        modele_version: modele?.version ?? null,
+        modele_nom: nom,
+        modele_version: version,
+
         url,
       },
     };
