@@ -36,6 +36,18 @@ export const DOSSIERS_TON_PAR_DIRECTION = {
 
 export type DirectionAgent = keyof typeof DOSSIERS_TON_PAR_DIRECTION;
 
+/**
+ * Noms de documents recherchés (dans l'ordre) sous le dossier de la direction,
+ * y compris ses sous-dossiers. Le cabinet peut utiliser un Google Doc natif
+ * (ex. « Direction_Commerciale_Gestion_des_mails ») ou un fichier texte.
+ */
+export const NOMS_TON_PAR_DIRECTION: Record<DirectionAgent, string[]> = {
+  commerciale: ["Direction_Commerciale_Gestion_des_mails", FICHIER_TON],
+  financiere: ["Direction_Financiere_Gestion_des_mails", FICHIER_TON],
+  conformite: ["Direction_Juridique_Conformite_Gestion_des_mails", FICHIER_TON],
+};
+
+
 const ADMIN_FALLBACK = "contact@ej-assurances.fr";
 const CACHE_MS = 5 * 60 * 1000;
 
@@ -50,18 +62,41 @@ async function drive() {
   return await import("@/lib/google-drive.server");
 }
 
-/** Crée si besoin le document de ton d'une direction et renvoie son ID. */
-export async function assurerDocumentTon(direction: DirectionAgent): Promise<string> {
-  const { assurerDossier, assurerFichierTexte } = await drive();
+/**
+ * Localise le document de ton d'une direction : recherche récursive dans
+ * `06_Regles_Agent/<Direction>/` (sous-dossiers inclus) des noms attendus,
+ * Google Doc natif ou fichier texte. Créé en .txt seulement si rien n'existe.
+ */
+export async function localiserDocumentTon(
+  direction: DirectionAgent,
+): Promise<{ id: string; mimeType?: string }> {
+  const { assurerDossier, assurerFichierTexte, trouverFichierRecursif, trouverFichierParNomGlobal } =
+    await drive();
   const racine = await assurerDossier(DRIVE_RACINE_REGLES);
   const dossier = await assurerDossier(DOSSIERS_TON_PAR_DIRECTION[direction], racine);
+
+  for (const nom of NOMS_TON_PAR_DIRECTION[direction]) {
+    const dansDossier = await trouverFichierRecursif(nom, dossier);
+    if (dansDossier) return { id: dansDossier.id, mimeType: dansDossier.mimeType };
+    // Le document a pu être recréé/déplacé ailleurs par le cabinet.
+    const global = await trouverFichierParNomGlobal(nom);
+    if (global) return { id: global.id, mimeType: global.mimeType };
+  }
+
+
   const fichier = await assurerFichierTexte({
     nom: FICHIER_TON,
     parentId: dossier,
     contenuInitial: REGLES_DE_TON_INITIALES,
   });
-  return fichier.id;
+  return { id: fichier.id, mimeType: "text/plain" };
 }
+
+/** Crée si besoin le document de ton d'une direction et renvoie son ID. */
+export async function assurerDocumentTon(direction: DirectionAgent): Promise<string> {
+  return (await localiserDocumentTon(direction)).id;
+}
+
 
 /** Crée si besoin les 3 documents de ton + le journal, et renvoie les IDs. */
 export async function assurerDocumentsRegles(): Promise<{
@@ -116,9 +151,10 @@ export async function chargerReglesDeTon(direction: DirectionAgent): Promise<str
   const enCache = cacheTon.get(direction);
   if (enCache && enCache.expire > Date.now()) return enCache.texte;
   try {
-    const fileId = await assurerDocumentTon(direction);
+    const { id, mimeType } = await localiserDocumentTon(direction);
     const { lireTexteFichier } = await drive();
-    const texte = (await lireTexteFichier(fileId)).trim() || REGLES_DE_TON_INITIALES;
+    const texte = (await lireTexteFichier(id, mimeType)).trim() || REGLES_DE_TON_INITIALES;
+
     cacheTon.set(direction, { texte, expire: Date.now() + CACHE_MS });
     return texte;
   } catch (e) {
