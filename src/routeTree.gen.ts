@@ -25,11 +25,13 @@ import { Route as ApiPublicReprendreMailsIgnoresRouteImport } from './routes/api
 import { Route as ApiPublicRelanceSouscriptionRouteImport } from './routes/api/public/relance-souscription'
 import { Route as ApiPublicRelanceSinistresRouteImport } from './routes/api/public/relance-sinistres'
 import { Route as ApiPublicRelancePiecesRouteImport } from './routes/api/public/relance-pieces'
+import { Route as ApiPublicReglesAgentRouteImport } from './routes/api/public/regles-agent'
 import { Route as ApiPublicReclamationsAccuseReceptionRouteImport } from './routes/api/public/reclamations-accuse-reception'
 import { Route as ApiPublicRappelsExpirationRouteImport } from './routes/api/public/rappels-expiration'
 import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
 import { Route as ApiPublicFormationsRappelsRouteImport } from './routes/api/public/formations-rappels'
 import { Route as ApiPublicEnvoisPlanifiesRouteImport } from './routes/api/public/envois-planifies'
+import { Route as ApiPublicDocumentsAttendusRouteImport } from './routes/api/public/documents-attendus'
 import { Route as ApiPublicDevoirsConseilEnvoisRouteImport } from './routes/api/public/devoirs-conseil-envois'
 import { Route as ApiPublicDdaPdfRepriseRouteImport } from './routes/api/public/dda-pdf-reprise'
 import { Route as ApiPublicCorrigerLabelsPartenairesRouteImport } from './routes/api/public/corriger-labels-partenaires'
@@ -156,6 +158,11 @@ const ApiPublicRelancePiecesRoute = ApiPublicRelancePiecesRouteImport.update({
   path: '/api/public/relance-pieces',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicReglesAgentRoute = ApiPublicReglesAgentRouteImport.update({
+  id: '/api/public/regles-agent',
+  path: '/api/public/regles-agent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicReclamationsAccuseReceptionRoute =
   ApiPublicReclamationsAccuseReceptionRouteImport.update({
     id: '/api/public/reclamations-accuse-reception',
@@ -183,6 +190,12 @@ const ApiPublicEnvoisPlanifiesRoute =
   ApiPublicEnvoisPlanifiesRouteImport.update({
     id: '/api/public/envois-planifies',
     path: '/api/public/envois-planifies',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicDocumentsAttendusRoute =
+  ApiPublicDocumentsAttendusRouteImport.update({
+    id: '/api/public/documents-attendus',
+    path: '/api/public/documents-attendus',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicDevoirsConseilEnvoisRoute =
@@ -469,11 +482,13 @@ export interface FileRoutesByFullPath {
   '/api/public/corriger-labels-partenaires': typeof ApiPublicCorrigerLabelsPartenairesRoute
   '/api/public/dda-pdf-reprise': typeof ApiPublicDdaPdfRepriseRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
+  '/api/public/documents-attendus': typeof ApiPublicDocumentsAttendusRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/reclamations-accuse-reception': typeof ApiPublicReclamationsAccuseReceptionRoute
+  '/api/public/regles-agent': typeof ApiPublicReglesAgentRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
@@ -532,11 +547,13 @@ export interface FileRoutesByTo {
   '/api/public/corriger-labels-partenaires': typeof ApiPublicCorrigerLabelsPartenairesRoute
   '/api/public/dda-pdf-reprise': typeof ApiPublicDdaPdfRepriseRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
+  '/api/public/documents-attendus': typeof ApiPublicDocumentsAttendusRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/reclamations-accuse-reception': typeof ApiPublicReclamationsAccuseReceptionRoute
+  '/api/public/regles-agent': typeof ApiPublicReglesAgentRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
@@ -598,11 +615,13 @@ export interface FileRoutesById {
   '/api/public/corriger-labels-partenaires': typeof ApiPublicCorrigerLabelsPartenairesRoute
   '/api/public/dda-pdf-reprise': typeof ApiPublicDdaPdfRepriseRoute
   '/api/public/devoirs-conseil-envois': typeof ApiPublicDevoirsConseilEnvoisRoute
+  '/api/public/documents-attendus': typeof ApiPublicDocumentsAttendusRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/reclamations-accuse-reception': typeof ApiPublicReclamationsAccuseReceptionRoute
+  '/api/public/regles-agent': typeof ApiPublicReglesAgentRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
@@ -664,11 +683,13 @@ export interface FileRouteTypes {
     | '/api/public/corriger-labels-partenaires'
     | '/api/public/dda-pdf-reprise'
     | '/api/public/devoirs-conseil-envois'
+    | '/api/public/documents-attendus'
     | '/api/public/envois-planifies'
     | '/api/public/formations-rappels'
     | '/api/public/leads'
     | '/api/public/rappels-expiration'
     | '/api/public/reclamations-accuse-reception'
+    | '/api/public/regles-agent'
     | '/api/public/relance-pieces'
     | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
@@ -727,11 +748,13 @@ export interface FileRouteTypes {
     | '/api/public/corriger-labels-partenaires'
     | '/api/public/dda-pdf-reprise'
     | '/api/public/devoirs-conseil-envois'
+    | '/api/public/documents-attendus'
     | '/api/public/envois-planifies'
     | '/api/public/formations-rappels'
     | '/api/public/leads'
     | '/api/public/rappels-expiration'
     | '/api/public/reclamations-accuse-reception'
+    | '/api/public/regles-agent'
     | '/api/public/relance-pieces'
     | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
@@ -792,11 +815,13 @@ export interface FileRouteTypes {
     | '/api/public/corriger-labels-partenaires'
     | '/api/public/dda-pdf-reprise'
     | '/api/public/devoirs-conseil-envois'
+    | '/api/public/documents-attendus'
     | '/api/public/envois-planifies'
     | '/api/public/formations-rappels'
     | '/api/public/leads'
     | '/api/public/rappels-expiration'
     | '/api/public/reclamations-accuse-reception'
+    | '/api/public/regles-agent'
     | '/api/public/relance-pieces'
     | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
@@ -836,11 +861,13 @@ export interface RootRouteChildren {
   ApiPublicCorrigerLabelsPartenairesRoute: typeof ApiPublicCorrigerLabelsPartenairesRoute
   ApiPublicDdaPdfRepriseRoute: typeof ApiPublicDdaPdfRepriseRoute
   ApiPublicDevoirsConseilEnvoisRoute: typeof ApiPublicDevoirsConseilEnvoisRoute
+  ApiPublicDocumentsAttendusRoute: typeof ApiPublicDocumentsAttendusRoute
   ApiPublicEnvoisPlanifiesRoute: typeof ApiPublicEnvoisPlanifiesRoute
   ApiPublicFormationsRappelsRoute: typeof ApiPublicFormationsRappelsRoute
   ApiPublicLeadsRoute: typeof ApiPublicLeadsRoute
   ApiPublicRappelsExpirationRoute: typeof ApiPublicRappelsExpirationRoute
   ApiPublicReclamationsAccuseReceptionRoute: typeof ApiPublicReclamationsAccuseReceptionRoute
+  ApiPublicReglesAgentRoute: typeof ApiPublicReglesAgentRoute
   ApiPublicRelancePiecesRoute: typeof ApiPublicRelancePiecesRoute
   ApiPublicRelanceSinistresRoute: typeof ApiPublicRelanceSinistresRoute
   ApiPublicRelanceSouscriptionRoute: typeof ApiPublicRelanceSouscriptionRoute
@@ -969,6 +996,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicRelancePiecesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/regles-agent': {
+      id: '/api/public/regles-agent'
+      path: '/api/public/regles-agent'
+      fullPath: '/api/public/regles-agent'
+      preLoaderRoute: typeof ApiPublicReglesAgentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/reclamations-accuse-reception': {
       id: '/api/public/reclamations-accuse-reception'
       path: '/api/public/reclamations-accuse-reception'
@@ -1002,6 +1036,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/envois-planifies'
       fullPath: '/api/public/envois-planifies'
       preLoaderRoute: typeof ApiPublicEnvoisPlanifiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/documents-attendus': {
+      id: '/api/public/documents-attendus'
+      path: '/api/public/documents-attendus'
+      fullPath: '/api/public/documents-attendus'
+      preLoaderRoute: typeof ApiPublicDocumentsAttendusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/devoirs-conseil-envois': {
@@ -1420,12 +1461,14 @@ const rootRouteChildren: RootRouteChildren = {
     ApiPublicCorrigerLabelsPartenairesRoute,
   ApiPublicDdaPdfRepriseRoute: ApiPublicDdaPdfRepriseRoute,
   ApiPublicDevoirsConseilEnvoisRoute: ApiPublicDevoirsConseilEnvoisRoute,
+  ApiPublicDocumentsAttendusRoute: ApiPublicDocumentsAttendusRoute,
   ApiPublicEnvoisPlanifiesRoute: ApiPublicEnvoisPlanifiesRoute,
   ApiPublicFormationsRappelsRoute: ApiPublicFormationsRappelsRoute,
   ApiPublicLeadsRoute: ApiPublicLeadsRoute,
   ApiPublicRappelsExpirationRoute: ApiPublicRappelsExpirationRoute,
   ApiPublicReclamationsAccuseReceptionRoute:
     ApiPublicReclamationsAccuseReceptionRoute,
+  ApiPublicReglesAgentRoute: ApiPublicReglesAgentRoute,
   ApiPublicRelancePiecesRoute: ApiPublicRelancePiecesRoute,
   ApiPublicRelanceSinistresRoute: ApiPublicRelanceSinistresRoute,
   ApiPublicRelanceSouscriptionRoute: ApiPublicRelanceSouscriptionRoute,

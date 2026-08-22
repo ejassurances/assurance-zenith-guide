@@ -196,3 +196,65 @@ export async function listerEnfantsDrive(
 export function estDossierDrive(mimeType: string) {
   return mimeType === FOLDER_MIME;
 }
+
+/** Recherche un fichier (non dossier) par nom exact dans un dossier parent. */
+export async function trouverFichier(nom: string, parentId: string): Promise<string | null> {
+  const params = new URLSearchParams({
+    q: [
+      `name='${escapeQuery(nom)}'`,
+      `mimeType!='${FOLDER_MIME}'`,
+      "trashed=false",
+      `'${escapeQuery(parentId)}' in parents`,
+    ].join(" and "),
+    fields: "files(id,name)",
+    pageSize: "10",
+    supportsAllDrives: "true",
+    includeItemsFromAllDrives: "true",
+  });
+  const data = (await driveFetch(`/drive/v3/files?${params}`)) as { files?: { id: string }[] };
+  return data.files?.[0]?.id ?? null;
+}
+
+/** Contenu texte d'un fichier Drive (UTF-8). */
+export async function lireTexteFichier(fileId: string): Promise<string> {
+  const octets = await telechargerFichier(fileId);
+  return new TextDecoder().decode(octets);
+}
+
+/** Remplace le contenu texte d'un fichier Drive existant. */
+export async function remplacerTexteFichier(fileId: string, contenu: string): Promise<void> {
+  const res = await fetch(
+    `${GATEWAY}/upload/drive/v3/files/${encodeURIComponent(fileId)}?uploadType=media&supportsAllDrives=true&fields=id`,
+    {
+      method: "PATCH",
+      headers: { ...headers(), "Content-Type": "text/plain; charset=UTF-8" },
+      body: contenu,
+    },
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    console.error(`[drive] maj texte ${fileId} → ${res.status} ${text.slice(0, 300)}`);
+    throw new Error(`Google Drive maj ${res.status}`);
+  }
+}
+
+/**
+ * Retourne l'ID d'un fichier texte, en le créant avec un contenu initial s'il
+ * n'existe pas encore dans le dossier cible.
+ */
+export async function assurerFichierTexte(params: {
+  nom: string;
+  parentId: string;
+  contenuInitial: string;
+}): Promise<{ id: string; cree: boolean }> {
+  const existant = await trouverFichier(params.nom, params.parentId);
+  if (existant) return { id: existant, cree: false };
+  const depot = await deposerFichier({
+    folderId: params.parentId,
+    nom: params.nom,
+    contenu: new TextEncoder().encode(params.contenuInitial),
+    mimeType: "text/plain",
+  });
+  return { id: depot.id, cree: true };
+}
+
