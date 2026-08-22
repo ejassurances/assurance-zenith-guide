@@ -104,16 +104,31 @@ export async function deposerDocumentProduitSurDrive(
   };
 }
 
+/** Extrait l'identifiant Drive d'une URL de partage (/file/d/<id>/… ou ?id=<id>). */
+export function idFichierDepuisUrlDrive(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const m = url.match(/\/(?:file|d)\/(?:d\/)?([A-Za-z0-9_-]{10,})/) ?? url.match(/[?&]id=([A-Za-z0-9_-]{10,})/);
+  return m?.[1] ?? null;
+}
+
 /**
  * Contenu binaire d'un document produit, quelle que soit sa source :
  * Drive (nouveau standard) ou stockage CRM historique.
  */
 export async function contenuDocumentProduit(
   supabase: Client,
-  doc: { nom?: string | null; storage_path?: string | null; drive_file_id?: string | null },
+  doc: {
+    nom?: string | null;
+    storage_path?: string | null;
+    drive_file_id?: string | null;
+    drive_url?: string | null;
+  },
 ): Promise<Buffer> {
-  if (doc.drive_file_id) {
-    const bytes = await telechargerFichier(doc.drive_file_id);
+  // Le Drive est la source officielle : on accepte aussi une simple URL de partage
+  // (documents rattachés à la main), d'où l'on déduit l'identifiant du fichier.
+  const fileId = doc.drive_file_id ?? idFichierDepuisUrlDrive(doc.drive_url);
+  if (fileId) {
+    const bytes = await telechargerFichier(fileId);
     return Buffer.from(bytes);
   }
   if (!doc.storage_path) {
