@@ -62,18 +62,36 @@ async function drive() {
   return await import("@/lib/google-drive.server");
 }
 
-/** Crée si besoin le document de ton d'une direction et renvoie son ID. */
-export async function assurerDocumentTon(direction: DirectionAgent): Promise<string> {
-  const { assurerDossier, assurerFichierTexte } = await drive();
+/**
+ * Localise le document de ton d'une direction : recherche récursive dans
+ * `06_Regles_Agent/<Direction>/` (sous-dossiers inclus) des noms attendus,
+ * Google Doc natif ou fichier texte. Créé en .txt seulement si rien n'existe.
+ */
+export async function localiserDocumentTon(
+  direction: DirectionAgent,
+): Promise<{ id: string; mimeType?: string }> {
+  const { assurerDossier, assurerFichierTexte, trouverFichierRecursif } = await drive();
   const racine = await assurerDossier(DRIVE_RACINE_REGLES);
   const dossier = await assurerDossier(DOSSIERS_TON_PAR_DIRECTION[direction], racine);
+
+  for (const nom of NOMS_TON_PAR_DIRECTION[direction]) {
+    const trouve = await trouverFichierRecursif(nom, dossier);
+    if (trouve) return { id: trouve.id, mimeType: trouve.mimeType };
+  }
+
   const fichier = await assurerFichierTexte({
     nom: FICHIER_TON,
     parentId: dossier,
     contenuInitial: REGLES_DE_TON_INITIALES,
   });
-  return fichier.id;
+  return { id: fichier.id, mimeType: "text/plain" };
 }
+
+/** Crée si besoin le document de ton d'une direction et renvoie son ID. */
+export async function assurerDocumentTon(direction: DirectionAgent): Promise<string> {
+  return (await localiserDocumentTon(direction)).id;
+}
+
 
 /** Crée si besoin les 3 documents de ton + le journal, et renvoie les IDs. */
 export async function assurerDocumentsRegles(): Promise<{
