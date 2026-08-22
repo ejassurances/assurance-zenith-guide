@@ -234,15 +234,6 @@ export async function trouverFichierRecursif(
   return null;
 }
 
-/** Export d'un Google Doc natif en texte brut. */
-export async function exporterDocumentTexte(fileId: string): Promise<string> {
-  const data = await driveFetch(
-    `/drive/v3/files/${encodeURIComponent(fileId)}/export?mimeType=text/plain&supportsAllDrives=true`,
-    { headers: { Accept: "text/plain" } },
-  );
-  // driveFetch tente un JSON.parse ; on repasse par un fetch texte pour l'export.
-  return typeof data === "string" ? data : "";
-}
 
 /**
  * Contenu texte d'un fichier Drive, qu'il s'agisse d'un fichier texte brut ou
