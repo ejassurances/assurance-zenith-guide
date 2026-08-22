@@ -105,18 +105,22 @@ export function serviceParCle(services: DefinitionService[], cle: ServiceCabinet
   return services.find((s) => s.cle === cle) ?? null;
 }
 
-/** Service d'arrivée d'un message d'après les étiquettes réellement posées. */
+/**
+ * Service d'arrivée d'un message d'après les libellés réellement posés :
+ * comparaison exacte sur le libellé de direction (structure à plat).
+ */
 export function serviceDeEtiquettes(
   services: DefinitionService[],
   etiquettes: string[],
 ): DefinitionService | null {
-  const bas = etiquettes.map((e) => e.toLowerCase());
+  const bas = etiquettes.map((e) => e.trim().toLowerCase());
   for (const s of services) {
-    const p = s.label_direction.toLowerCase();
-    if (bas.some((e) => e.startsWith(p))) return s;
+    const d = s.label_direction.trim().toLowerCase();
+    if (bas.includes(d)) return s;
   }
   return null;
 }
+
 
 /** Adresses de service : jamais considérées comme un client à mettre en copie. */
 export function adressesServices(services: DefinitionService[]): string[] {
