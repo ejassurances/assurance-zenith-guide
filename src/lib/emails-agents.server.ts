@@ -520,8 +520,15 @@ export async function executerAgents(
     };
 
 
+    // Un mail encore présent dans la file du service (donc sans libellé d'état)
+    // est repris même si `triage_ia` porte déjà une analyse : les libellés Gmail
+    // sont la source de vérité du traitement.
+    const dansLaFile = new Set(messages.map((m) => m.id));
     const aRepondre = ((liensClients ?? []) as unknown as LienClient[])
-      .filter((l) => !analyseFaite(l) || rattrapage.has(l.gmail_message_id))
+      .filter(
+        (l) =>
+          !analyseFaite(l) || rattrapage.has(l.gmail_message_id) || dansLaFile.has(l.gmail_message_id),
+      )
       .filter((l) => {
         // Un mail sortant du lot courant est exclu ; les mails hors lot sont
         // repris (leur direction en base a déjà été filtrée).
