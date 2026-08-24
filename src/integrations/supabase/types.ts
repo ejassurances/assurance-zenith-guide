@@ -2391,6 +2391,8 @@ export type Database = {
         Row: {
           archive_le: string | null
           categorie: string
+          classification_ia: Json | null
+          classification_le: string | null
           client_id: string | null
           contrat_id: string | null
           created_at: string
@@ -2408,6 +2410,8 @@ export type Database = {
         Insert: {
           archive_le?: string | null
           categorie?: string
+          classification_ia?: Json | null
+          classification_le?: string | null
           client_id?: string | null
           contrat_id?: string | null
           created_at?: string
@@ -2425,6 +2429,8 @@ export type Database = {
         Update: {
           archive_le?: string | null
           categorie?: string
+          classification_ia?: Json | null
+          classification_le?: string | null
           client_id?: string | null
           contrat_id?: string | null
           created_at?: string
