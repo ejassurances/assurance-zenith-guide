@@ -2387,6 +2387,56 @@ export type Database = {
           },
         ]
       }
+      doc_extractions: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          document_id: string
+          erreur: string | null
+          extracted_data: Json | null
+          id: string
+          model: string | null
+          raw_text: string | null
+          statut: string
+          type_document: string | null
+          updated_at: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          document_id: string
+          erreur?: string | null
+          extracted_data?: Json | null
+          id?: string
+          model?: string | null
+          raw_text?: string | null
+          statut?: string
+          type_document?: string | null
+          updated_at?: string
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          document_id?: string
+          erreur?: string | null
+          extracted_data?: Json | null
+          id?: string
+          model?: string | null
+          raw_text?: string | null
+          statut?: string
+          type_document?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doc_extractions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           archive_le: string | null
