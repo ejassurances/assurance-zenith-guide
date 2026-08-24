@@ -201,6 +201,13 @@ export function DossierPiecesPanel({
   async function setStatut(piece: Piece, statut: string) {
     setBusy(piece.id);
     await supabase.from("dossier_pieces_requises").update({ statut } as never).eq("id", piece.id);
+    // LOT 2D — recalcul de la complétude après validation / refus d'une pièce.
+    try {
+      const { recalculerCompletudeDossier } = await import("@/lib/completude-documentaire.functions");
+      await recalculerCompletudeDossier({ data: { dossier_id: dossierId } });
+    } catch (e) {
+      console.error("[Lot2D] recalcul de complétude impossible", e);
+    }
     setBusy(null);
     await load();
   }

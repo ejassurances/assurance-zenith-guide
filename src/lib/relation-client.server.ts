@@ -638,6 +638,7 @@ async function routerAutresPieces(
       let classificationTrace: string | null = null;
       let rattachementTrace: string | null = null;
       let extractionTrace: string | null = null;
+      let completudeTrace: string | null = null;
 
 
       if (contexte === "sinistre" || contexte === "reclamation") {
@@ -765,6 +766,29 @@ async function routerAutresPieces(
         }
       }
 
+      // LOT 2D — complétude documentaire : recalcul du dossier réellement
+      // rattaché au document (jamais un dossier déduit du seul client).
+      // Lecture seule des pièces ; aucune relance ni e-mail automatique.
+      if (documentId) {
+        try {
+          const { data: docDossier } = await admin
+            .from("documents")
+            .select("dossier_id")
+            .eq("id", documentId)
+            .maybeSingle();
+          const dossierId = (docDossier as { dossier_id: string | null } | null)?.dossier_id ?? null;
+          if (dossierId) {
+            const { recalculerCompletude } = await import("@/lib/completude-documentaire.server");
+            const c = await recalculerCompletude(admin, dossierId, { userId: params.userId });
+            completudeTrace = `Complétude documentaire : ${c.resultat.etat} — ${c.resultat.prochaine_action}`;
+          }
+        } catch (e) {
+          console.error("[Lot2D] complétude non recalculée", e);
+        }
+      }
+
+
+
 
 
       nbClassees += 1;
@@ -779,6 +803,7 @@ async function routerAutresPieces(
           ...(classificationTrace ? [classificationTrace] : []),
           ...(rattachementTrace ? [rattachementTrace] : []),
           ...(extractionTrace ? [extractionTrace] : []),
+          ...(completudeTrace ? [completudeTrace] : []),
 
 
 
