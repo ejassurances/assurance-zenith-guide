@@ -27,7 +27,6 @@ import { Route as ApiPublicRelanceSinistresRouteImport } from './routes/api/publ
 import { Route as ApiPublicRelancePiecesRouteImport } from './routes/api/public/relance-pieces'
 import { Route as ApiPublicReglesAgentRouteImport } from './routes/api/public/regles-agent'
 import { Route as ApiPublicReclamationsAccuseReceptionRouteImport } from './routes/api/public/reclamations-accuse-reception'
-import { Route as ApiPublicRecette2dRouteImport } from './routes/api/public/recette-2d'
 import { Route as ApiPublicRappelsExpirationRouteImport } from './routes/api/public/rappels-expiration'
 import { Route as ApiPublicLettresMissionEnvoisRouteImport } from './routes/api/public/lettres-mission-envois'
 import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
@@ -172,11 +171,6 @@ const ApiPublicReclamationsAccuseReceptionRoute =
     path: '/api/public/reclamations-accuse-reception',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicRecette2dRoute = ApiPublicRecette2dRouteImport.update({
-  id: '/api/public/recette-2d',
-  path: '/api/public/recette-2d',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiPublicRappelsExpirationRoute =
   ApiPublicRappelsExpirationRouteImport.update({
     id: '/api/public/rappels-expiration',
@@ -509,7 +503,6 @@ export interface FileRoutesByFullPath {
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/lettres-mission-envois': typeof ApiPublicLettresMissionEnvoisRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
-  '/api/public/recette-2d': typeof ApiPublicRecette2dRoute
   '/api/public/reclamations-accuse-reception': typeof ApiPublicReclamationsAccuseReceptionRoute
   '/api/public/regles-agent': typeof ApiPublicReglesAgentRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
@@ -577,7 +570,6 @@ export interface FileRoutesByTo {
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/lettres-mission-envois': typeof ApiPublicLettresMissionEnvoisRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
-  '/api/public/recette-2d': typeof ApiPublicRecette2dRoute
   '/api/public/reclamations-accuse-reception': typeof ApiPublicReclamationsAccuseReceptionRoute
   '/api/public/regles-agent': typeof ApiPublicReglesAgentRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
@@ -648,7 +640,6 @@ export interface FileRoutesById {
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/lettres-mission-envois': typeof ApiPublicLettresMissionEnvoisRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
-  '/api/public/recette-2d': typeof ApiPublicRecette2dRoute
   '/api/public/reclamations-accuse-reception': typeof ApiPublicReclamationsAccuseReceptionRoute
   '/api/public/regles-agent': typeof ApiPublicReglesAgentRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
@@ -719,7 +710,6 @@ export interface FileRouteTypes {
     | '/api/public/leads'
     | '/api/public/lettres-mission-envois'
     | '/api/public/rappels-expiration'
-    | '/api/public/recette-2d'
     | '/api/public/reclamations-accuse-reception'
     | '/api/public/regles-agent'
     | '/api/public/relance-pieces'
@@ -787,7 +777,6 @@ export interface FileRouteTypes {
     | '/api/public/leads'
     | '/api/public/lettres-mission-envois'
     | '/api/public/rappels-expiration'
-    | '/api/public/recette-2d'
     | '/api/public/reclamations-accuse-reception'
     | '/api/public/regles-agent'
     | '/api/public/relance-pieces'
@@ -857,7 +846,6 @@ export interface FileRouteTypes {
     | '/api/public/leads'
     | '/api/public/lettres-mission-envois'
     | '/api/public/rappels-expiration'
-    | '/api/public/recette-2d'
     | '/api/public/reclamations-accuse-reception'
     | '/api/public/regles-agent'
     | '/api/public/relance-pieces'
@@ -906,7 +894,6 @@ export interface RootRouteChildren {
   ApiPublicLeadsRoute: typeof ApiPublicLeadsRoute
   ApiPublicLettresMissionEnvoisRoute: typeof ApiPublicLettresMissionEnvoisRoute
   ApiPublicRappelsExpirationRoute: typeof ApiPublicRappelsExpirationRoute
-  ApiPublicRecette2dRoute: typeof ApiPublicRecette2dRoute
   ApiPublicReclamationsAccuseReceptionRoute: typeof ApiPublicReclamationsAccuseReceptionRoute
   ApiPublicReglesAgentRoute: typeof ApiPublicReglesAgentRoute
   ApiPublicRelancePiecesRoute: typeof ApiPublicRelancePiecesRoute
@@ -1049,13 +1036,6 @@ declare module '@tanstack/react-router' {
       path: '/api/public/reclamations-accuse-reception'
       fullPath: '/api/public/reclamations-accuse-reception'
       preLoaderRoute: typeof ApiPublicReclamationsAccuseReceptionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/recette-2d': {
-      id: '/api/public/recette-2d'
-      path: '/api/public/recette-2d'
-      fullPath: '/api/public/recette-2d'
-      preLoaderRoute: typeof ApiPublicRecette2dRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/rappels-expiration': {
@@ -1530,7 +1510,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicLeadsRoute: ApiPublicLeadsRoute,
   ApiPublicLettresMissionEnvoisRoute: ApiPublicLettresMissionEnvoisRoute,
   ApiPublicRappelsExpirationRoute: ApiPublicRappelsExpirationRoute,
-  ApiPublicRecette2dRoute: ApiPublicRecette2dRoute,
   ApiPublicReclamationsAccuseReceptionRoute:
     ApiPublicReclamationsAccuseReceptionRoute,
   ApiPublicReglesAgentRoute: ApiPublicReglesAgentRoute,
