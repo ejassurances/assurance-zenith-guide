@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { messageComplet } from "@/lib/emails.functions";
+import { lireTriageAffichage, type TriageAffichage } from "@/lib/email-triage-affichage";
 
 export interface EmailLiens {
   client_id?: string | null;
