@@ -470,8 +470,34 @@ export async function executerAgents(
               recu_le: m.date ?? null,
               userId: userId,
             });
-            // Qualification humaine attendue : à relancer.
-            await poserLabelCabinet(m.id, "gc_archive", { retirer: ["gc_a_traiter"] });
+            // Qualification humaine attendue : décision prise par le moteur CRM
+            // (expéditeur non identifié ou analyse incertaine → « A valider »).
+            const { deciderStatutEmail } = await import("@/lib/email-decision");
+            const decision = deciderStatutEmail({
+              analyse: analyseGemini,
+              client_id: null,
+              action_executee: false,
+            });
+            await marquerEtat(m.id, decision.etat);
+            await admin
+              .from("crm_emails")
+              .update({
+                triage_ia: JSON.parse(
+                  JSON.stringify({
+                    agent: "commercial",
+                    triage,
+                    analyse_gemini: analyseGemini,
+                    decision_crm: decision,
+                  }),
+                ),
+                triage_le: new Date().toISOString(),
+              })
+              .eq("gmail_message_id", m.id);
+            console.info(
+              `[decision-crm] ${m.id} · intention=${analyseGemini?.intention ?? "indisponible"} · statut=${
+                decision.statut_metier
+              } · etat=${decision.etat} · source=${decision.source}`,
+            );
           }
           if (rattrapage.has(m.id)) {
             await retirerLabelRattrapage(m.id);
