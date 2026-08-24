@@ -636,6 +636,8 @@ async function routerAutresPieces(
       let rattachement = "fiche client";
       let documentId: string | null = null;
       let classificationTrace: string | null = null;
+      let rattachementTrace: string | null = null;
+
 
       if (contexte === "sinistre" || contexte === "reclamation") {
         const objet = await dernierObjet(admin, contexte === "sinistre" ? "sinistres" : "reclamations", client.id);
