@@ -574,6 +574,18 @@ export async function executerAgents(
             continue;
           }
 
+          // LOT 1 — ANALYSE AVANT DÉCISION : Gemini analyse le contenu du mail
+          // (intention, confiance, éléments détectés) avant que le CRM ne
+          // choisisse le statut. Gemini n'exécute rien et ne décide rien.
+          const entreeIntention = {
+            sujet: detail.sujet ?? null,
+            expediteur_nom: detail.expediteur_nom ?? null,
+            expediteur_email: detail.expediteur_email ?? null,
+            texte: detail.texte ?? detail.snippet ?? null,
+            pieces_jointes: detail.pieces_jointes.map((p) => ({ nom: p.nom })),
+          };
+          const analyseGemini = await analyserIntentionEmail(entreeIntention);
+
           const resultat = await traiterEmailClient(admin, {
 
             client_id: lien.client_id,
@@ -594,10 +606,28 @@ export async function executerAgents(
           });
           if (resultat.action === "reponse_envoyee") reponsesAuto++;
           if (resultat.action === "brouillon") brouillons++;
+
+          // MOTEUR DE DÉCISION CRM : sécurité → intention → identification →
+          // règles métier → libellé Gmail en simple repli. Le libellé
+          // « Direction Commerciale » ne provoque plus « A valider » à lui seul.
+          const decision = deciderStatutEmail({
+            analyse: analyseGemini,
+            client_id: lien.client_id,
+            contrat_id: null,
+            action_executee: resultat.action === "reponse_envoyee" || resultat.action === "rien",
+          });
+
           await admin
             .from("crm_emails")
             .update({
-              triage_ia: JSON.parse(JSON.stringify({ agent: "relation_client", ...resultat })),
+              triage_ia: JSON.parse(
+                JSON.stringify({
+                  agent: "relation_client",
+                  ...resultat,
+                  analyse_gemini: analyseGemini,
+                  decision_crm: decision,
+                }),
+              ),
               triage_le: new Date().toISOString(),
             })
             .eq("gmail_message_id", messageId);
@@ -605,12 +635,16 @@ export async function executerAgents(
           // repris au passage suivant (et un accusé de réception renvoyé).
           {
             const { marquerEtat: marquerEtatClient } = await import("@/lib/gmail.server");
-            const etat =
-              resultat.action === "reponse_envoyee" || resultat.action === "rien" ? "archives" : "a_valider";
-            await marquerEtatClient(messageId, etat).catch((e) =>
+            await marquerEtatClient(messageId, decision.etat).catch((e) =>
               console.error("[agent-relation-client] libellé d'état non posé", messageId, e),
             );
+            console.info(
+              `[decision-crm] ${messageId} · intention=${analyseGemini?.intention ?? "indisponible"} · statut=${
+                decision.statut_metier
+              } · etat=${decision.etat} · source=${decision.source}`,
+            );
           }
+
           if (rattrapage.has(messageId)) {
             await retirerRattrapageClient(messageId);
             rattrapagesTraites++;
