@@ -88,7 +88,7 @@ export function EmailsLiesPanel({
       setLoading(true);
       let query = supabase
         .from("crm_emails")
-        .select("id, gmail_message_id, direction, recu_le, notes, created_at")
+        .select("id, gmail_message_id, direction, recu_le, notes, created_at, triage_ia")
         .order("recu_le", { ascending: false, nullsFirst: false });
       if (liens.client_id) query = query.eq("client_id", liens.client_id);
       if (liens.dossier_id) query = query.eq("dossier_id", liens.dossier_id);
