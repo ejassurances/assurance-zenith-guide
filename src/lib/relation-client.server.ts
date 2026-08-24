@@ -725,6 +725,7 @@ async function routerAutresPieces(
           `Fichier : ${piece.nom}`,
           `Contexte retenu : ${contexte}`,
           `Rattachement : ${rattachement}`,
+          ...(classificationTrace ? [classificationTrace] : []),
           `Email : ${lienMail(params.gmail_message_id)}`,
         ].join("\n"),
         "systeme",
