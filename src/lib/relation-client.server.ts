@@ -752,6 +752,8 @@ async function routerAutresPieces(
           `Contexte retenu : ${contexte}`,
           `Rattachement : ${rattachement}`,
           ...(classificationTrace ? [classificationTrace] : []),
+          ...(rattachementTrace ? [rattachementTrace] : []),
+
           `Email : ${lienMail(params.gmail_message_id)}`,
         ].join("\n"),
         "systeme",
