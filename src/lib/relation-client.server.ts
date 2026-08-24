@@ -636,6 +636,8 @@ async function routerAutresPieces(
       let rattachement = "fiche client";
       let documentId: string | null = null;
       let classificationTrace: string | null = null;
+      let rattachementTrace: string | null = null;
+
 
       if (contexte === "sinistre" || contexte === "reclamation") {
         const objet = await dernierObjet(admin, contexte === "sinistre" ? "sinistres" : "reclamations", client.id);
@@ -677,12 +679,10 @@ async function routerAutresPieces(
             : `fiche client (aucun dossier ${contexte} ouvert)`;
         }
       } else {
-        const contrat = contexte === "contrat" ? await contratActif(admin, client.id) : null;
         const { data: cree, error } = await admin
           .from("documents")
           .insert({
             client_id: client.id,
-            contrat_id: contrat?.id ?? null,
             file_name: piece.nom.slice(0, 250),
             storage_path: depot.chemin,
             mime_type: piece.mime,
@@ -695,8 +695,9 @@ async function routerAutresPieces(
           .maybeSingle();
         if (error) throw new Error(error.message);
         documentId = (cree as { id: string } | null)?.id ?? null;
-        rattachement = contrat ? `contrat ${contrat.numero ?? contrat.id}` : "fiche client";
+        rattachement = "fiche client";
       }
+
 
       // LOT 2A — classification documentaire : lecture réelle du fichier par l'IA
       // puis enregistrement du résultat sur le document. Sans effet sur le
@@ -715,6 +716,31 @@ async function routerAutresPieces(
         }
       }
 
+      // LOT 2B — rattachement documentaire : décision indépendante de la
+      // classification. Aucun client, dossier, contrat ni référence n'est créé ;
+      // en cas de doute le document reste sur la fiche client et une
+      // qualification humaine est demandée.
+      if (documentId) {
+        try {
+          const { rattacherDocument } = await import("@/lib/rattachement-documentaire.server");
+          const d = await rattacherDocument(admin, {
+            documentId,
+            clientId: client.id,
+            sujet: email.sujet,
+            texte: email.texte,
+            lienEmail: lienMail(params.gmail_message_id),
+            userId: params.userId,
+          });
+          rattachementTrace = d.qualification_humaine
+            ? `Rattachement : qualification humaine requise (${d.source})`
+            : `Rattachement automatique : dossier ${d.dossier_reference ?? d.dossier_id}${
+                d.contrat_numero || d.contrat_id ? ` · contrat ${d.contrat_numero ?? d.contrat_id}` : ""
+              } (preuve ${d.niveau_preuve}, confiance ${d.confiance_rattachement.toFixed(2)})`;
+        } catch (e) {
+          console.error("[Lot2B] rattachement non effectué", e);
+        }
+      }
+
 
       nbClassees += 1;
       await journaliser(
@@ -726,6 +752,8 @@ async function routerAutresPieces(
           `Contexte retenu : ${contexte}`,
           `Rattachement : ${rattachement}`,
           ...(classificationTrace ? [classificationTrace] : []),
+          ...(rattachementTrace ? [rattachementTrace] : []),
+
           `Email : ${lienMail(params.gmail_message_id)}`,
         ].join("\n"),
         "systeme",
