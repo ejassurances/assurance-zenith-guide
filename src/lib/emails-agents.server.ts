@@ -410,6 +410,16 @@ export async function executerAgents(
             continue;
           }
 
+          // LOT 1 — analyse d'intention AVANT toute décision de statut.
+          const { analyserIntentionEmail } = await import("@/lib/email-intention.server");
+          const analyseGemini = await analyserIntentionEmail({
+            sujet: entree.sujet,
+            expediteur_nom: entree.expediteur_nom,
+            expediteur_email: entree.expediteur_email,
+            texte: entree.texte,
+            pieces_jointes: detail.pieces_jointes.map((p) => ({ nom: p.nom })),
+          });
+
           const triage = await analyserEmailProspect(entree);
 
           // Le libellé de service a déjà été posé manuellement par le staff :
