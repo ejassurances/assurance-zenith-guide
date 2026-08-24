@@ -637,6 +637,7 @@ async function routerAutresPieces(
       let documentId: string | null = null;
       let classificationTrace: string | null = null;
       let rattachementTrace: string | null = null;
+      let extractionTrace: string | null = null;
 
 
       if (contexte === "sinistre" || contexte === "reclamation") {
@@ -741,6 +742,30 @@ async function routerAutresPieces(
         }
       }
 
+      // LOT 2C — extraction documentaire : lecture du contenu réel et relevé des
+      // données prévues par le type documentaire retenu au Lot 2A. Résultat
+      // strictement documentaire (table `doc_extractions`) : aucune table métier
+      // n'est alimentée, aucun document médical n'est interprété.
+      if (documentId) {
+        try {
+          const { extraireDocument } = await import("@/lib/extraction-documentaire.server");
+          const x = await extraireDocument(admin, documentId);
+          if (x.statut === "extrait") {
+            const renseignes = Object.entries(x.donnees).filter(([, v]) => v !== null).length;
+            extractionTrace = `Extraction IA (${x.type_document}) : ${renseignes} donnée(s) relevée(s), confiance ${x.confidence.toFixed(2)}${
+              x.fiable ? "" : " — à qualifier"
+            }`;
+          } else if (x.statut === "hors_perimetre") {
+            extractionTrace = `Extraction IA non applicable (${x.raison})`;
+          } else if (x.statut === "indisponible") {
+            extractionTrace = `Extraction IA non disponible (${x.raison}) — aucune donnée retenue`;
+          }
+        } catch (e) {
+          console.error("[Lot2C] extraction non effectuée", e);
+        }
+      }
+
+
 
       nbClassees += 1;
       await journaliser(
@@ -753,6 +778,9 @@ async function routerAutresPieces(
           `Rattachement : ${rattachement}`,
           ...(classificationTrace ? [classificationTrace] : []),
           ...(rattachementTrace ? [rattachementTrace] : []),
+          ...(extractionTrace ? [extractionTrace] : []),
+
+
 
           `Email : ${lienMail(params.gmail_message_id)}`,
         ].join("\n"),
