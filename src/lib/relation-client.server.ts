@@ -654,37 +654,65 @@ async function routerAutresPieces(
           if (error) throw new Error(error.message);
           rattachement = `sinistre ${objet.reference ?? objet.id}`;
         } else {
-          const { error } = await admin.from("documents").insert({
-            client_id: client.id,
-            file_name: piece.nom.slice(0, 250),
-            storage_path: depot.chemin,
-            mime_type: piece.mime,
-            file_size: depot.taille,
-            categorie: contexte,
-            type_document: "piece_client_email",
-            uploader_id: params.userId,
-          });
+          const { data: cree, error } = await admin
+            .from("documents")
+            .insert({
+              client_id: client.id,
+              file_name: piece.nom.slice(0, 250),
+              storage_path: depot.chemin,
+              mime_type: piece.mime,
+              file_size: depot.taille,
+              categorie: contexte,
+              type_document: "piece_client_email",
+              uploader_id: params.userId,
+            })
+            .select("id")
+            .maybeSingle();
           if (error) throw new Error(error.message);
+          documentId = (cree as { id: string } | null)?.id ?? null;
           rattachement = objet
             ? `${contexte} ${objet.reference ?? objet.id} (pièce sur la fiche client)`
             : `fiche client (aucun dossier ${contexte} ouvert)`;
         }
       } else {
         const contrat = contexte === "contrat" ? await contratActif(admin, client.id) : null;
-        const { error } = await admin.from("documents").insert({
-          client_id: client.id,
-          contrat_id: contrat?.id ?? null,
-          file_name: piece.nom.slice(0, 250),
-          storage_path: depot.chemin,
-          mime_type: piece.mime,
-          file_size: depot.taille,
-          categorie: contexte === "contrat" ? "contrat" : "a_classer",
-          type_document: "piece_client_email",
-          uploader_id: params.userId,
-        });
+        const { data: cree, error } = await admin
+          .from("documents")
+          .insert({
+            client_id: client.id,
+            contrat_id: contrat?.id ?? null,
+            file_name: piece.nom.slice(0, 250),
+            storage_path: depot.chemin,
+            mime_type: piece.mime,
+            file_size: depot.taille,
+            categorie: contexte === "contrat" ? "contrat" : "a_classer",
+            type_document: "piece_client_email",
+            uploader_id: params.userId,
+          })
+          .select("id")
+          .maybeSingle();
         if (error) throw new Error(error.message);
+        documentId = (cree as { id: string } | null)?.id ?? null;
         rattachement = contrat ? `contrat ${contrat.numero ?? contrat.id}` : "fiche client";
       }
+
+      // LOT 2A — classification documentaire : lecture réelle du fichier par l'IA
+      // puis enregistrement du résultat sur le document. Sans effet sur le
+      // classement déjà réalisé ci-dessus ; une panne IA n'interrompt rien.
+      if (documentId) {
+        try {
+          const { classifierDocument } = await import("@/lib/classification-documentaire.server");
+          const res = await classifierDocument(admin, documentId);
+          if (res.statut === "classe") {
+            classificationTrace = `Classification IA : ${res.classification.type_document} (confiance ${res.classification.confidence}, ${res.classification.traitement})`;
+          } else if (res.statut === "indisponible") {
+            classificationTrace = `Classification IA non disponible (${res.raison}) — qualification humaine`;
+          }
+        } catch (e) {
+          console.error("[Lot2A] classification non effectuée", e);
+        }
+      }
+
 
       nbClassees += 1;
       await journaliser(
