@@ -634,6 +634,8 @@ async function routerAutresPieces(
       if (!depot) throw new Error("pièce jointe illisible (identifiant absent)");
 
       let rattachement = "fiche client";
+      let documentId: string | null = null;
+      let classificationTrace: string | null = null;
 
       if (contexte === "sinistre" || contexte === "reclamation") {
         const objet = await dernierObjet(admin, contexte === "sinistre" ? "sinistres" : "reclamations", client.id);
