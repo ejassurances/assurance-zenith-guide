@@ -677,12 +677,10 @@ async function routerAutresPieces(
             : `fiche client (aucun dossier ${contexte} ouvert)`;
         }
       } else {
-        const contrat = contexte === "contrat" ? await contratActif(admin, client.id) : null;
         const { data: cree, error } = await admin
           .from("documents")
           .insert({
             client_id: client.id,
-            contrat_id: contrat?.id ?? null,
             file_name: piece.nom.slice(0, 250),
             storage_path: depot.chemin,
             mime_type: piece.mime,
@@ -695,8 +693,9 @@ async function routerAutresPieces(
           .maybeSingle();
         if (error) throw new Error(error.message);
         documentId = (cree as { id: string } | null)?.id ?? null;
-        rattachement = contrat ? `contrat ${contrat.numero ?? contrat.id}` : "fiche client";
+        rattachement = "fiche client";
       }
+
 
       // LOT 2A — classification documentaire : lecture réelle du fichier par l'IA
       // puis enregistrement du résultat sur le document. Sans effet sur le
