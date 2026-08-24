@@ -714,6 +714,31 @@ async function routerAutresPieces(
         }
       }
 
+      // LOT 2B — rattachement documentaire : décision indépendante de la
+      // classification. Aucun client, dossier, contrat ni référence n'est créé ;
+      // en cas de doute le document reste sur la fiche client et une
+      // qualification humaine est demandée.
+      if (documentId) {
+        try {
+          const { rattacherDocument } = await import("@/lib/rattachement-documentaire.server");
+          const d = await rattacherDocument(admin, {
+            documentId,
+            clientId: client.id,
+            sujet: email.sujet,
+            texte: email.texte,
+            lienEmail: lienMail(params.gmail_message_id),
+            userId: params.userId,
+          });
+          rattachementTrace = d.qualification_humaine
+            ? `Rattachement : qualification humaine requise (${d.source})`
+            : `Rattachement automatique : dossier ${d.dossier_reference ?? d.dossier_id}${
+                d.contrat_numero || d.contrat_id ? ` · contrat ${d.contrat_numero ?? d.contrat_id}` : ""
+              } (preuve ${d.niveau_preuve}, confiance ${d.confiance_rattachement.toFixed(2)})`;
+        } catch (e) {
+          console.error("[Lot2B] rattachement non effectué", e);
+        }
+      }
+
 
       nbClassees += 1;
       await journaliser(
