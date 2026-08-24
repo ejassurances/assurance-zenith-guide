@@ -254,13 +254,15 @@ export async function recalculerCompletude(
   const clientId = (clientRow as { client_id: string | null } | null)?.client_id ?? null;
 
   // Idempotence : comparaison au dernier état journalisé pour ce dossier.
-  const { data: dernieres } = await admin
+  let requeteTraces = admin
     .from("activites")
     .select("id, contenu")
     .eq("type", "systeme")
     .eq("titre", TITRE)
     .order("created_at", { ascending: false })
-    .limit(20);
+    .limit(200);
+  if (clientId) requeteTraces = requeteTraces.eq("client_id", clientId);
+  const { data: dernieres } = await requeteTraces;
   const ligneDossier = `Dossier : ${resultat.dossier_reference ?? resultat.dossier_id}`;
   const precedente = ((dernieres ?? []) as { contenu: string | null }[]).find((a) =>
     (a.contenu ?? "").startsWith(ligneDossier),
