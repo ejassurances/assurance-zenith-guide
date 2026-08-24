@@ -170,6 +170,10 @@ export function EmailsLiesPanel({
               {m.extrait && <p className="mt-2 whitespace-pre-wrap text-sm text-ink-soft">{m.extrait}</p>}
               {m.erreur && <p className="mt-2 text-xs italic text-ink-muted">{m.erreur}</p>}
               {m.notes && <p className="mt-2 text-xs italic text-ink-muted">{m.notes}</p>}
+              {(() => {
+                const t = lireTriageAffichage(m.triage_ia);
+                return t ? <TriageBadge t={t} /> : null;
+              })()}
               <a
                 href={`https://mail.google.com/mail/u/0/#all/${m.gmail_message_id}`}
                 target="_blank"
