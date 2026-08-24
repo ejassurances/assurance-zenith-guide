@@ -541,6 +541,8 @@ export async function executerAgents(
     if (aRepondre.length) {
       const { lireMessage, retirerLabelRattrapage: retirerRattrapageClient } = await import("@/lib/gmail.server");
       const { traiterEmailClient } = await import("@/lib/relation-client.server");
+      const { analyserIntentionEmail } = await import("@/lib/email-intention.server");
+      const { deciderStatutEmail } = await import("@/lib/email-decision");
       const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
 
       for (const lien of aRepondre) {
