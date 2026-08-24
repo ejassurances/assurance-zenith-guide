@@ -410,6 +410,16 @@ export async function executerAgents(
             continue;
           }
 
+          // LOT 1 — analyse d'intention AVANT toute décision de statut.
+          const { analyserIntentionEmail } = await import("@/lib/email-intention.server");
+          const analyseGemini = await analyserIntentionEmail({
+            sujet: entree.sujet,
+            expediteur_nom: entree.expediteur_nom,
+            expediteur_email: entree.expediteur_email,
+            texte: entree.texte,
+            pieces_jointes: detail.pieces_jointes.map((p) => ({ nom: p.nom })),
+          });
+
           const triage = await analyserEmailProspect(entree);
 
           // Le libellé de service a déjà été posé manuellement par le staff :
@@ -460,8 +470,34 @@ export async function executerAgents(
               recu_le: m.date ?? null,
               userId: userId,
             });
-            // Qualification humaine attendue : à relancer.
-            await poserLabelCabinet(m.id, "gc_archive", { retirer: ["gc_a_traiter"] });
+            // Qualification humaine attendue : décision prise par le moteur CRM
+            // (expéditeur non identifié ou analyse incertaine → « A valider »).
+            const { deciderStatutEmail } = await import("@/lib/email-decision");
+            const decision = deciderStatutEmail({
+              analyse: analyseGemini,
+              client_id: null,
+              action_executee: false,
+            });
+            await marquerEtat(m.id, decision.etat);
+            await admin
+              .from("crm_emails")
+              .update({
+                triage_ia: JSON.parse(
+                  JSON.stringify({
+                    agent: "commercial",
+                    triage,
+                    analyse_gemini: analyseGemini,
+                    decision_crm: decision,
+                  }),
+                ),
+                triage_le: new Date().toISOString(),
+              })
+              .eq("gmail_message_id", m.id);
+            console.info(
+              `[decision-crm] ${m.id} · intention=${analyseGemini?.intention ?? "indisponible"} · statut=${
+                decision.statut_metier
+              } · etat=${decision.etat} · source=${decision.source}`,
+            );
           }
           if (rattrapage.has(m.id)) {
             await retirerLabelRattrapage(m.id);
@@ -541,6 +577,8 @@ export async function executerAgents(
     if (aRepondre.length) {
       const { lireMessage, retirerLabelRattrapage: retirerRattrapageClient } = await import("@/lib/gmail.server");
       const { traiterEmailClient } = await import("@/lib/relation-client.server");
+      const { analyserIntentionEmail } = await import("@/lib/email-intention.server");
+      const { deciderStatutEmail } = await import("@/lib/email-decision");
       const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
 
       for (const lien of aRepondre) {
@@ -574,6 +612,18 @@ export async function executerAgents(
             continue;
           }
 
+          // LOT 1 — ANALYSE AVANT DÉCISION : Gemini analyse le contenu du mail
+          // (intention, confiance, éléments détectés) avant que le CRM ne
+          // choisisse le statut. Gemini n'exécute rien et ne décide rien.
+          const entreeIntention = {
+            sujet: detail.sujet ?? null,
+            expediteur_nom: detail.expediteur_nom ?? null,
+            expediteur_email: detail.expediteur_email ?? null,
+            texte: detail.texte ?? detail.snippet ?? null,
+            pieces_jointes: detail.pieces_jointes.map((p) => ({ nom: p.nom })),
+          };
+          const analyseGemini = await analyserIntentionEmail(entreeIntention);
+
           const resultat = await traiterEmailClient(admin, {
 
             client_id: lien.client_id,
@@ -594,10 +644,28 @@ export async function executerAgents(
           });
           if (resultat.action === "reponse_envoyee") reponsesAuto++;
           if (resultat.action === "brouillon") brouillons++;
+
+          // MOTEUR DE DÉCISION CRM : sécurité → intention → identification →
+          // règles métier → libellé Gmail en simple repli. Le libellé
+          // « Direction Commerciale » ne provoque plus « A valider » à lui seul.
+          const decision = deciderStatutEmail({
+            analyse: analyseGemini,
+            client_id: lien.client_id,
+            contrat_id: null,
+            action_executee: resultat.action === "reponse_envoyee" || resultat.action === "rien",
+          });
+
           await admin
             .from("crm_emails")
             .update({
-              triage_ia: JSON.parse(JSON.stringify({ agent: "relation_client", ...resultat })),
+              triage_ia: JSON.parse(
+                JSON.stringify({
+                  agent: "relation_client",
+                  ...resultat,
+                  analyse_gemini: analyseGemini,
+                  decision_crm: decision,
+                }),
+              ),
               triage_le: new Date().toISOString(),
             })
             .eq("gmail_message_id", messageId);
@@ -605,12 +673,16 @@ export async function executerAgents(
           // repris au passage suivant (et un accusé de réception renvoyé).
           {
             const { marquerEtat: marquerEtatClient } = await import("@/lib/gmail.server");
-            const etat =
-              resultat.action === "reponse_envoyee" || resultat.action === "rien" ? "archives" : "a_valider";
-            await marquerEtatClient(messageId, etat).catch((e) =>
+            await marquerEtatClient(messageId, decision.etat).catch((e) =>
               console.error("[agent-relation-client] libellé d'état non posé", messageId, e),
             );
+            console.info(
+              `[decision-crm] ${messageId} · intention=${analyseGemini?.intention ?? "indisponible"} · statut=${
+                decision.statut_metier
+              } · etat=${decision.etat} · source=${decision.source}`,
+            );
           }
+
           if (rattrapage.has(messageId)) {
             await retirerRattrapageClient(messageId);
             rattrapagesTraites++;
