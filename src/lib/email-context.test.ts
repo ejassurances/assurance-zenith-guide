@@ -3,7 +3,7 @@
  * Les tests de schéma base de données (TESTS 1 à 6, 11, 12) sont vérifiés par
  * introspection SQL, hors runner.
  */
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 
 import { estContexteEmailValide, lireContexteEmail } from "./email-context-schema";
 import { contexteEmailVide, EMAIL_CONTEXT_SCHEMA_VERSION } from "./email-context-types";
