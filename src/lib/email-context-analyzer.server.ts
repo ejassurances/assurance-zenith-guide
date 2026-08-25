@@ -219,7 +219,7 @@ export async function persisterContexteEmail(
 
   const { error: erreurEcriture } = await supabaseAdmin
     .from("crm_emails")
-    .update({ ai_context: contexte as unknown as Record<string, unknown> })
+    .update({ ai_context: contexte as unknown as never })
     .eq("id", emailId);
   if (erreurEcriture) return { ecrit: false, raison: erreurEcriture.message };
 
