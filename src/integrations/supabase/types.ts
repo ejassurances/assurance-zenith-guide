@@ -2062,6 +2062,7 @@ export type Database = {
       }
       crm_emails: {
         Row: {
+          ai_context: Json
           client_id: string | null
           compagnie_id: string | null
           contrat_id: string | null
@@ -2079,6 +2080,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_context?: Json
           client_id?: string | null
           compagnie_id?: string | null
           contrat_id?: string | null
@@ -2096,6 +2098,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_context?: Json
           client_id?: string | null
           compagnie_id?: string | null
           contrat_id?: string | null

@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ej-assurances.fr/schemas/email-context-v1.2.json",
+  "title": "CD-SI-001-B — Contexte relationnel d'un email (TECH V1.2)",
+  "description": "Graphe relationnel/contextuel proposé par l'IA pour un email du CRM. Toute donnée est une PROPOSITION : elle ne devient une FK métier qu'après validation humaine selon les règles CD-SI-001-B. Stocké dans public.crm_emails.ai_context.",
+  "type": "object",
+  "required": ["schema_version"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "1.1.0" },
+    "correspondant": { "$ref": "#/$defs/correspondant" },
+    "personnes_detectees": { "type": "array", "items": { "$ref": "#/$defs/detectedPerson" } },
+    "dossiers_detectes": { "type": "array", "items": { "$ref": "#/$defs/detectedDossier" } },
+    "contrats_detectes": { "type": "array", "items": { "$ref": "#/$defs/detectedContract" } },
+    "produits_cites": { "type": "array", "items": { "$ref": "#/$defs/citedProduct" } },
+    "documents_associes": { "type": "array", "items": { "$ref": "#/$defs/associatedDocument" } },
+    "preuves": { "type": "array", "items": { "$ref": "#/$defs/evidence" } },
+    "ambiguities": { "type": "array", "items": { "$ref": "#/$defs/ambiguity" } },
+    "analyse": { "$ref": "#/$defs/analysis" }
+  },
+  "$defs": {
+    "status": {
+      "type": "string",
+      "enum": ["DETECTED", "PROPOSED", "CONFIRMED", "AMBIGUOUS", "A_QUALIFIER"]
+    },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "uuidOrNull": { "type": ["string", "null"], "format": "uuid" },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": ["gemini", "regle_deterministe", "humain", "import", "inconnu"]
+        },
+        "champ": { "type": ["string", "null"] },
+        "modele": { "type": ["string", "null"] },
+        "detecte_le": { "type": ["string", "null"], "format": "date-time" },
+        "preuve_ids": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "correspondant": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "email": { "type": ["string", "null"] },
+        "nom_affiche": { "type": ["string", "null"] },
+        "role_suppose": {
+          "type": ["string", "null"],
+          "enum": ["client", "prospect", "compagnie", "partenaire", "interne", "inconnu", null]
+        },
+        "client_id": { "$ref": "#/$defs/uuidOrNull" },
+        "compagnie_id": { "$ref": "#/$defs/uuidOrNull" },
+        "statut": { "$ref": "#/$defs/status" },
+        "confiance": { "$ref": "#/$defs/confidence" },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "detectedPerson": {
+      "type": "object",
+      "required": ["statut"],
+      "additionalProperties": false,
+      "properties": {
+        "nom": { "type": ["string", "null"] },
+        "prenom": { "type": ["string", "null"] },
+        "email": { "type": ["string", "null"] },
+        "telephone": { "type": ["string", "null"] },
+        "date_naissance": { "type": ["string", "null"] },
+        "role": {
+          "type": ["string", "null"],
+          "enum": ["souscripteur", "co_emprunteur", "conjoint", "enfant", "tiers", "inconnu", null]
+        },
+        "client_id_propose": { "$ref": "#/$defs/uuidOrNull" },
+        "statut": { "$ref": "#/$defs/status" },
+        "confiance": { "$ref": "#/$defs/confidence" },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "detectedDossier": {
+      "type": "object",
+      "required": ["statut"],
+      "additionalProperties": false,
+      "properties": {
+        "reference_citee": { "type": ["string", "null"] },
+        "dossier_id_propose": { "$ref": "#/$defs/uuidOrNull" },
+        "branche": { "type": ["string", "null"] },
+        "statut": { "$ref": "#/$defs/status" },
+        "confiance": { "$ref": "#/$defs/confidence" },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "detectedContract": {
+      "type": "object",
+      "required": ["statut"],
+      "additionalProperties": false,
+      "properties": {
+        "numero_police": { "type": ["string", "null"] },
+        "contrat_id_propose": { "$ref": "#/$defs/uuidOrNull" },
+        "compagnie_citee": { "type": ["string", "null"] },
+        "statut": { "$ref": "#/$defs/status" },
+        "confiance": { "$ref": "#/$defs/confidence" },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "citedProduct": {
+      "type": "object",
+      "required": ["statut"],
+      "additionalProperties": false,
+      "properties": {
+        "libelle": { "type": ["string", "null"] },
+        "produit_id_propose": { "$ref": "#/$defs/uuidOrNull" },
+        "famille": { "type": ["string", "null"] },
+        "statut": { "$ref": "#/$defs/status" },
+        "confiance": { "$ref": "#/$defs/confidence" },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "associatedDocument": {
+      "type": "object",
+      "required": ["statut"],
+      "additionalProperties": false,
+      "properties": {
+        "nom_fichier": { "type": ["string", "null"] },
+        "type_detecte": { "type": ["string", "null"] },
+        "gmail_attachment_id": { "type": ["string", "null"] },
+        "document_id_propose": { "$ref": "#/$defs/uuidOrNull" },
+        "statut": { "$ref": "#/$defs/status" },
+        "confiance": { "$ref": "#/$defs/confidence" },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["id", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": [
+            "email_expediteur",
+            "email_corps",
+            "objet",
+            "signature",
+            "piece_jointe",
+            "reference_explicite",
+            "thread",
+            "autre"
+          ]
+        },
+        "extrait": { "type": ["string", "null"] },
+        "cible": { "type": ["string", "null"] },
+        "poids": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "ambiguity": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "client_multiple",
+            "dossier_multiple",
+            "contrat_multiple",
+            "personne_inconnue",
+            "confiance_insuffisante",
+            "donnees_contradictoires",
+            "autre"
+          ]
+        },
+        "description": { "type": ["string", "null"] },
+        "candidats": { "type": "array", "items": { "type": "string" } },
+        "resolution_requise": { "type": "boolean" }
+      }
+    },
+    "analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "statut": { "$ref": "#/$defs/status" },
+        "confiance_globale": { "$ref": "#/$defs/confidence" },
+        "modele": { "type": ["string", "null"] },
+        "analyse_le": { "type": ["string", "null"], "format": "date-time" },
+        "validation_humaine_requise": { "type": "boolean" },
+        "validated_by": { "$ref": "#/$defs/uuidOrNull" },
+        "validated_at": { "type": ["string", "null"], "format": "date-time" },
+        "modifications_apportees": { "type": "array", "items": { "type": "string" } },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    }
+  }
+}
