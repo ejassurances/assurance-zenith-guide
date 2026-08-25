@@ -60,7 +60,7 @@ export interface ExtractionBruteGemini {
     prenom: string | null;
     email: string | null;
     telephone: string | null;
-    role: string | null;
+    role: PersonRole | null;
     extrait: string | null;
   }[];
   dossiers: { reference_citee: string | null; branche: string | null; extrait: string | null }[];
