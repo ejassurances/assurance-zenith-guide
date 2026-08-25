@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS public.idx_crm_emails_contrat_id;
