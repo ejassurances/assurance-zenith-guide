@@ -17,7 +17,7 @@ import {
 
 const statut = z.enum(EMAIL_CONTEXT_STATUSES);
 const confiance = z.number().min(0).max(1);
-const uuidOrNull = z.string().uuid().nullable();
+const uuidOrNull = z.guid().nullable();
 const texte = z.string().nullable();
 
 const provenance = z
