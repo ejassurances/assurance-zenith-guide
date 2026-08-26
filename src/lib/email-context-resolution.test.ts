@@ -9,9 +9,15 @@ import {
   collecterPreuves,
   croiserContexteEmail,
   referentielVide,
+  type ClientRef,
   type ReferentielCroisement,
 } from "./email-context-resolution";
-import { croiserEtEnregistrerContexteEmail, peutCroiserContexte } from "./email-context-resolver.server";
+import {
+  croiserEtEnregistrerContexteEmail,
+  peutCroiserContexte,
+  type LecteurLot3,
+  type LectureBornee,
+} from "./email-context-resolver.server";
 import { estContexteEmailValide } from "./email-context-schema";
 import { EMAIL_CONTEXT_SCHEMA_VERSION, type EmailContext } from "./email-context-types";
 
