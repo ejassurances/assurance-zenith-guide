@@ -267,7 +267,7 @@ Exemples de rattachement doctrinal :
 |---|---|---|
 | Contrat trouvé par numéro de police unique, avec `contrats.compagnie_id` | N3 | la compagnie est dérivée du contrat identifié par N3, pas d'un niveau local inventé |
 | Domaine professionnel de l'expéditeur correspondant à une compagnie unique | N4 | uniquement si le domaine est professionnel et unique |
-| Nom de compagnie cité dans le texte ou par Gemini | N7 ou signal textuel équivalent | signal faible tant qu'il n'est pas corroboré |
+| Nom de compagnie cité dans le texte ou par Gemini | N7 (nom cité seul) | signal faible tant qu'il n'est pas corroboré |
 | Document/OCR mentionnant une compagnie cohérente | N6 | seulement via données CD-SI-002 déjà existantes |
 | Rattachement historique faible à une compagnie | N8 | contexte faible |
 
@@ -276,7 +276,12 @@ Interdictions explicites :
 - ne pas écrire « nom exact = N1 » ;
 - ne pas écrire « contact_email = N3 » ;
 - ne pas créer de niveau spécifique compagnie en dehors de N1 à N9 ;
+- ne pas utiliser `compagnie_id_propose` : ce champ n'existe pas dans le schéma 1.1.0 ;
 - ne pas écrire `crm_emails.compagnie_id`.
+
+La seule représentation autorisée d'une proposition de compagnie est `correspondant.compagnie_id`
+dans `ai_context`, avec le statut approprié. Elle reste une proposition contextuelle et ne doit jamais
+être confondue avec la FK `crm_emails.compagnie_id`, qui n'est jamais écrite par le Lot 3.
 
 ### 6.5 Dossier
 
