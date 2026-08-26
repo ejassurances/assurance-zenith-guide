@@ -141,6 +141,16 @@ export interface ReferentielCroisement {
   referentielsTronques?: string[];
 }
 
+/** Table réelle adossée à chaque entité résolue (§5 du DESIGN V1.2). */
+export const TABLE_PAR_ENTITE: Record<EntiteResolue, string> = {
+  client: "clients",
+  dossier: "dossiers",
+  contrat: "contrats",
+  compagnie: "compagnies",
+  produit: "produits",
+  document: "documents",
+};
+
 export function referentielVide(): ReferentielCroisement {
   return { clients: [], dossiers: [], contrats: [], compagnies: [], produits: [], documents: [] };
 }
