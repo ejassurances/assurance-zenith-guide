@@ -404,7 +404,7 @@ export async function lireReferentiel(
 
   // documents — corrélation CD-SI-002 en lecture seule
   if (nomsFichier.size > 0) {
-    const lecture = await db.documentsParFiltre(ou(["nom"], nomsFichier));
+    const lecture = await db.documentsParFiltre(ou(["file_name"], nomsFichier));
     referentiel.documents = lecture.lignes;
     if (lecture.tronquee) tronques.add("documents");
   }
