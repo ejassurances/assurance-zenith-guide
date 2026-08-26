@@ -247,8 +247,12 @@ Le dépôt ne contient pas de table `organisations` ni de colonne `organisation_
 Règles :
 
 - une organisation citée peut rester une donnée textuelle dans `ai_context` ;
-- lorsqu'elle correspond à une compagnie réelle, le moteur peut proposer `compagnie_id_propose` selon
-  les règles de compagnie ;
+- lorsqu'elle correspond à une compagnie réelle de `public.compagnies`, le moteur peut renseigner
+  `correspondant.compagnie_id` dans `ai_context` comme proposition contextuelle, avec le statut
+  approprié (`PROPOSED` ou `AMBIGUOUS`). Le champ `compagnie_id_propose` n'existe pas au schéma et
+  n'est jamais utilisé ;
+- `correspondant.compagnie_id` est une information de contexte/proposition interne à `ai_context` :
+  ce n'est pas la FK `crm_emails.compagnie_id`, que le Lot 3 n'écrit jamais ;
 - aucune `organisation_id` n'est écrite ou inventée ;
 - aucune organisation n'est créée.
 
