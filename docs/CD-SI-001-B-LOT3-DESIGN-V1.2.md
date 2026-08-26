@@ -5,8 +5,11 @@ Moteur de résolution contextuelle des emails (DETECTED → PROPOSED / AMBIGUOUS
 - Version : V1.2 corrective après audit DG NO-GO V1.1
 - Statut : soumis à audit DG
 - Corrige : `docs/CD-SI-001-B-LOT3-DESIGN-V1.1.md`
-- Références : CD-SI-001-B-TECH-V1.2, CD-SI-001-B-DESIGN-V1.2,
-  Lot 1 validé, Lot 2 validé, CD-SI-001-A existant, Audit technique Lot 3
+- Référentiel doctrinal : CD-SI-001-B-TECH-V1.2 et CD-SI-001-B-DESIGN-V1.1,
+  complété par `docs/CD-SI-001-B-DESIGN-V1.1-erratum-modele.md` (modèle Gemini Flash générique)
+- Autres références : Lot 1 validé, Lot 2 validé, CD-SI-001-A existant, Audit technique Lot 3
+- Le présent document est la conception spécifique du Lot 3 (CD-SI-001-B-LOT3-DESIGN-V1.2) ;
+  aucune nouvelle version documentaire n'est créée
 - Nature : document de conception uniquement
 - Aucun code, aucune migration, aucune modification BDD, aucun branchement Gmail dans ce document
 
@@ -159,10 +162,10 @@ ne la renumérote pas et ne crée aucun niveau local.
 | N1 | Tag Regex Objet `[DOS-XXXXXX]` ou UUID direct | recherche d'un dossier ou objet CRM correspondant à la référence explicite |
 | N2 | Correspondance unique de l'email expéditeur | rapprochement exact d'un expéditeur avec un client connu, selon les données disponibles |
 | N3 | Numéro de police / numéro de souscription exact unique | rapprochement exact avec `contrats.numero` |
-| N4 | Domaine d'email unique d'une organisation professionnelle | rapprochement avec une organisation professionnelle représentée techniquement par compagnie / partenaire disponible dans le dépôt |
+| N4 | Domaine d'email unique d'une organisation professionnelle | rapprochement en lecture seule avec `public.compagnies` (`contact_email`, `site_web`) ; pour les partenaires, uniquement la logique applicative partenaire déjà existante dans le dépôt. Aucune table `organisations` n'existe et aucune n'est créée |
 | N5 | Personne citée avec email/téléphone correspondant | rapprochement d'une personne détectée avec `clients.email`, `clients.email2` ou `clients.telephone` |
 | N6 | Données OCR de CD-SI-002 cohérentes | cohérence avec `documents` / `doc_extractions` lorsque l'information existe déjà |
-| N7 | Nom/prénom seul ou signal faible équivalent | rapprochement faible sur identité textuelle non suffisante seule en cas de risque d'homonymie |
+| N7 | Nom/prénom cité seul | rapprochement faible sur identité textuelle, jamais suffisant seul en cas de risque d'homonymie. Aucune extension implicite : tout autre signal faible relève de N8 ou N9 |
 | N8 | Historique relationnel / contexte faible | contexte faible issu des rattachements déjà connus ou d'interactions passées disponibles |
 | N9 | Facteur contextuel, notamment unique dossier actif | facteur contextuel uniquement, jamais promu en preuve forte |
 
@@ -208,7 +211,7 @@ Sources doctrinales possibles :
 - N2 : email expéditeur correspondant de façon unique à `clients.email` ou `clients.email2` ;
 - N5 : personne citée avec email ou téléphone correspondant à un client ;
 - N6 : OCR CD-SI-002 cohérent pointant vers un client déjà existant ;
-- N7 : nom/prénom seul ou signal faible équivalent ;
+- N7 : nom/prénom cité seul ;
 - N8 : historique relationnel faible ;
 - N9 : dossier unique actif du client, uniquement comme facteur contextuel.
 
@@ -244,8 +247,12 @@ Le dépôt ne contient pas de table `organisations` ni de colonne `organisation_
 Règles :
 
 - une organisation citée peut rester une donnée textuelle dans `ai_context` ;
-- lorsqu'elle correspond à une compagnie réelle, le moteur peut proposer `compagnie_id_propose` selon
-  les règles de compagnie ;
+- lorsqu'elle correspond à une compagnie réelle de `public.compagnies`, le moteur peut renseigner
+  `correspondant.compagnie_id` dans `ai_context` comme proposition contextuelle, avec le statut
+  approprié (`PROPOSED` ou `AMBIGUOUS`). Le champ `compagnie_id_propose` n'existe pas au schéma et
+  n'est jamais utilisé ;
+- `correspondant.compagnie_id` est une information de contexte/proposition interne à `ai_context` :
+  ce n'est pas la FK `crm_emails.compagnie_id`, que le Lot 3 n'écrit jamais ;
 - aucune `organisation_id` n'est écrite ou inventée ;
 - aucune organisation n'est créée.
 
@@ -260,7 +267,7 @@ Exemples de rattachement doctrinal :
 |---|---|---|
 | Contrat trouvé par numéro de police unique, avec `contrats.compagnie_id` | N3 | la compagnie est dérivée du contrat identifié par N3, pas d'un niveau local inventé |
 | Domaine professionnel de l'expéditeur correspondant à une compagnie unique | N4 | uniquement si le domaine est professionnel et unique |
-| Nom de compagnie cité dans le texte ou par Gemini | N7 ou signal textuel équivalent | signal faible tant qu'il n'est pas corroboré |
+| Nom de compagnie cité dans le texte ou par Gemini | N7 (nom cité seul) | signal faible tant qu'il n'est pas corroboré |
 | Document/OCR mentionnant une compagnie cohérente | N6 | seulement via données CD-SI-002 déjà existantes |
 | Rattachement historique faible à une compagnie | N8 | contexte faible |
 
@@ -269,7 +276,12 @@ Interdictions explicites :
 - ne pas écrire « nom exact = N1 » ;
 - ne pas écrire « contact_email = N3 » ;
 - ne pas créer de niveau spécifique compagnie en dehors de N1 à N9 ;
+- ne pas utiliser `compagnie_id_propose` : ce champ n'existe pas dans le schéma 1.1.0 ;
 - ne pas écrire `crm_emails.compagnie_id`.
+
+La seule représentation autorisée d'une proposition de compagnie est `correspondant.compagnie_id`
+dans `ai_context`, avec le statut approprié. Elle reste une proposition contextuelle et ne doit jamais
+être confondue avec la FK `crm_emails.compagnie_id`, qui n'est jamais écrite par le Lot 3.
 
 ### 6.5 Dossier
 
@@ -432,8 +444,9 @@ Le Lot 3 peut enrichir uniquement les zones existantes du contexte validé :
   `null` ;
 - `documents_associes[]` : proposition documentaire si cohérente avec les données CD-SI-002 déjà
   présentes ;
-- `preuves[]` : ajout de preuves de rapprochement nommées par type et niveau doctrinal, sans poids
-  numérique décisionnel ;
+- `preuves[]` : ajout de preuves de rapprochement en utilisant uniquement les champs existants
+  (`id`, `type`, `extrait`, `cible`). Le Lot 3 n'écrit jamais `preuves[].poids` et ne le lit jamais
+  pour décider ; aucun champ `niveau` n'est ajouté ;
 - `ambiguities[]` : ajout des ambiguïtés multi-candidats, contradictions ou données insuffisantes ;
 - `analyse` : statut global autorisé, horodatage d'analyse, provenance et obligation de validation
   humaine si nécessaire.
@@ -444,28 +457,61 @@ Chaque proposition doit indiquer :
 
 - la source `regle_deterministe` ou équivalent déjà admis par le schéma ;
 - le champ ou l'indice utilisé ;
-- le niveau doctrinal N1 à N9 ;
-- les identifiants de preuves associés lorsque le schéma le permet ;
+- la traçabilité du niveau doctrinal N1 à N9 exclusivement au moyen des champs réellement
+  disponibles : `preuves[].cible`, `preuves[].extrait` et, le cas échéant,
+  `ambiguities[].description`. Aucun champ `niveau` n'est créé dans `preuves[]` ; la hiérarchie
+  doctrinale reste néanmoins normative dans le comportement du moteur ;
+- les identifiants de preuves associés via `provenance.preuve_ids` ;
 - l'absence de validation humaine (`validated_by` et `validated_at` non renseignés par le Lot 3).
 
 La provenance sert à l'audit et à la qualification ultérieure, pas à transformer la proposition en
 rattachement définitif.
 
-### 10.3 Multi-candidats avec le schéma 1.1.0
+### 10.3 Multi-candidats : contournement assumé du schéma 1.1.0
 
-Le schéma `ai_context` 1.1.0 permet une représentation limitée des multi-candidats. La convention
-Lot 3 est donc :
+Le schéma `ai_context` version `1.1.0` **ne possède aucune structure native** permettant de
+représenter plusieurs candidats structurés pour une même entité (pas de tableau de candidats typés,
+pas de preuves détaillées par candidat).
 
-1. ne pas choisir arbitrairement entre plusieurs candidats ;
-2. renseigner `*_id_propose = null` pour l'entité à arbitrer lorsqu'une sélection unique serait
+La convention retenue pour le Lot 3 est :
+
+> « une entrée par candidat + `ambiguities` »
+
+Cette convention constitue un **CONTOURNEMENT du schéma actuel** et **non une capacité native** du
+schéma. Elle ne doit jamais être présentée ni interprétée comme une évolution du JSON Schema. Aucun
+champ JSON nouveau n'est introduit.
+
+Mise en œuvre imposée :
+
+1. ne jamais choisir arbitrairement entre plusieurs candidats ;
+2. conserver chaque candidat comme une entrée distincte du tableau approprié déjà prévu par le schéma
+   (`personnes_detectees[]`, `dossiers_detectes[]`, `contrats_detectes[]`, `produits_cites[]`,
+   `documents_associes[]`) ;
+3. conserver le `statut` de chaque entrée dans les valeurs autorisées du Lot 3 ;
+4. conserver les éléments de preuve disponibles uniquement dans les champs réellement prévus
+   (`extrait`, `cible`, `provenance.champ`, `provenance.preuve_ids`) ;
+5. renseigner `*_id_propose = null` pour l'entité à arbitrer lorsqu'une sélection unique serait
    trompeuse ;
-3. enregistrer `analyse.statut = "AMBIGUOUS"` ;
-4. inscrire une entrée `ambiguities[]` avec type explicite, candidats textuels disponibles,
-   description et `resolution_requise: true` ;
-5. conserver les preuves dans `preuves[]` afin que le Lot 6 ou un lot ultérieur puisse arbitrer.
+6. enregistrer `analyse.statut = "AMBIGUOUS"` ;
+7. inscrire une entrée `ambiguities[]` explicitant que plusieurs entrées représentent des candidats
+   concurrents pour une même résolution : `type` explicite, `candidats` textuels disponibles,
+   `description` et `resolution_requise: true`.
 
-Écart résiduel assumé : le schéma 1.1.0 ne fournit pas une structure riche de candidats typés avec
-preuves détaillées par candidat. Aucune évolution de schéma n'est proposée dans le Lot 3.
+Écart résiduel assumé : la richesse de représentation par candidat reste limitée. Aucune évolution de
+schéma n'est proposée ni requise par le Lot 3.
+
+### 10.4 Interdiction absolue de tout scoring numérique
+
+- le Lot 3 **n'écrit jamais** `preuves[].poids` ;
+- le Lot 3 **ne lit jamais** `preuves[].poids` pour prendre une décision ;
+- `preuves[].poids` appartient au schéma existant du Lot 1 et reste **hors usage décisionnel du
+  Lot 3** ; le JSON Schema n'est pas modifié ;
+- aucune formule de score ;
+- aucune pondération ;
+- aucune addition ou moyenne de confiance ;
+- aucune conversion de plusieurs signaux faibles en preuve forte par calcul ;
+- `confiance`, `confiance_globale` et `poids` sont des informations de contexte non décisionnelles ;
+  seule la hiérarchie doctrinale N1 à N9, l'unicité et la convergence déterminent le statut.
 
 ---
 
@@ -577,9 +623,10 @@ T-03 — Email expéditeur exact N2
 
 T-04 — Domaine professionnel unique N4
 
-- Donnée : domaine d'email professionnel correspondant à une compagnie ou organisation
-  professionnelle représentée dans les données existantes.
-- Attendu : preuve N4, proposition ou contexte compagnie selon convergence ; aucune FK écrite.
+- Donnée : domaine d'email professionnel correspondant de façon unique à une ligne de
+  `public.compagnies`, ou à un partenaire reconnu par la logique applicative partenaire existante.
+- Attendu : preuve N4 ; proposition portée par `correspondant.compagnie_id` selon convergence ;
+  aucune FK `crm_emails.compagnie_id` écrite ; aucune table `organisations` supposée.
 
 T-05 — Personne citée avec email ou téléphone N5
 
@@ -657,8 +704,13 @@ T-18 — Validation finale Lot 1
 
 T-19 — Absence de scoring cumulatif
 
-- Attendu : aucune formule de somme, poids, majoration ou transformation de signaux faibles en preuve
-  forte par addition.
+- Attendu : aucune formule de somme, pondération, majoration ou transformation de signaux faibles en
+  preuve forte par calcul ; `preuves[].poids` jamais écrit et jamais lu pour décider.
+
+T-19 bis — Convention multi-candidats
+
+- Attendu : plusieurs candidats représentés par plusieurs entrées du tableau existant + entrée
+  `ambiguities[]` ; aucun champ JSON nouveau ; aucun champ `niveau` dans `preuves[]`.
 
 T-20 — Absence d'écritures hors `ai_context`
 
@@ -745,6 +797,28 @@ La V1.2 corrective ne demande aucune modification de :
 - migrations existantes ;
 - tables ou colonnes existantes ;
 - workflow Gmail.
+
+---
+
+## 20. Contrôle documentaire final (post-corrections E-01 à E-06)
+
+| # | Point de contrôle | État |
+|---|---|---|
+| 1 | Le Lot 3 ne produit jamais `CONFIRMED` | conforme (§2.1, §9, T-16) |
+| 2 | Le Lot 3 n'écrit aucune FK CRM | conforme (§1.1, §13) |
+| 3 | Le Lot 3 n'écrit jamais `preuves[].poids` | conforme (§10.1, §10.4) |
+| 4 | Le Lot 3 ne lit jamais `preuves[].poids` pour décider | conforme (§10.4, T-19) |
+| 5 | Aucun scoring numérique | conforme (§3, §8.3, §10.4) |
+| 6 | Multi-candidats = « une entrée par candidat + `ambiguities` », qualifié de contournement | conforme (§10.3) |
+| 7 | Aucun champ JSON nouveau | conforme (§10.3, §10.4, §19) |
+| 8 | `compagnie_id_propose` totalement supprimé | conforme (§6.3, §6.4) |
+| 9 | `correspondant.compagnie_id` utilisé comme proposition uniquement | conforme (§6.3, §6.4, T-04) |
+| 10 | Aucun champ `niveau` ajouté dans `preuves[]` | conforme (§10.1, §10.2) |
+| 11 | N7 strictement = nom/prénom cité seul | conforme (§4, §6.1, §6.4) |
+| 12 | N4 référence les objets réellement existants (`public.compagnies`, logique partenaire existante) | conforme (§4, T-04) |
+| 13 | `schema_version = "1.1.0"` inchangé | conforme (§10) |
+| 14 | Lot 1 inchangé | conforme (§19) |
+| 15 | Lot 2 inchangé | conforme (§19) |
 
 ---
 
