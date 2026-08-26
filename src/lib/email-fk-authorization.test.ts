@@ -685,7 +685,7 @@ describe("Lot 4 — traçabilité et étanchéité", () => {
     expect(niveauIndicatifPreuve("L3-N3-2")).toBe("N3");
   });
 
-  it("étanchéité : aucun INSERT/UPSERT/DELETE/RPC, aucun Gemini, aucun Gmail, aucune tâche", () => {
+  it("étanchéité : aucun INSERT/UPSERT/DELETE/RPC, aucun appel IA, aucun Gmail, aucune tâche", () => {
     const sources = [
       readFileSync("src/lib/email-fk-authorization.ts", "utf8"),
       readFileSync("src/lib/email-fk-authorization.server.ts", "utf8"),
@@ -695,11 +695,19 @@ describe("Lot 4 — traçabilité et étanchéité", () => {
       ".upsert(",
       ".delete(",
       ".rpc(",
-      "gemini",
-      "gmail",
+      "fetch(",
+      "generativelanguage",
+      "ai.gateway",
+      "googleapis",
+      "gmail.server",
+      "gemini.server",
+      "email-intention",
       'from("taches")',
       'from("clients")',
       'from("contrats")',
+      'from("compagnies")',
+      'from("dossiers")',
+      'from("documents")',
       "as any",
       "as unknown as",
       "@ts-ignore",
@@ -709,5 +717,7 @@ describe("Lot 4 — traçabilité et étanchéité", () => {
     }
     // Unique table mutée : `crm_emails`, via un seul `.update(`.
     expect(sources.split(".update(").length - 1).toBe(1);
+    expect(sources.split('from("crm_emails")').length - 1).toBe(2);
   });
 });
+
