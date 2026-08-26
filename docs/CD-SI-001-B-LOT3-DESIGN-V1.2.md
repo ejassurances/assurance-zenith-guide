@@ -623,9 +623,10 @@ T-03 — Email expéditeur exact N2
 
 T-04 — Domaine professionnel unique N4
 
-- Donnée : domaine d'email professionnel correspondant à une compagnie ou organisation
-  professionnelle représentée dans les données existantes.
-- Attendu : preuve N4, proposition ou contexte compagnie selon convergence ; aucune FK écrite.
+- Donnée : domaine d'email professionnel correspondant de façon unique à une ligne de
+  `public.compagnies`, ou à un partenaire reconnu par la logique applicative partenaire existante.
+- Attendu : preuve N4 ; proposition portée par `correspondant.compagnie_id` selon convergence ;
+  aucune FK `crm_emails.compagnie_id` écrite ; aucune table `organisations` supposée.
 
 T-05 — Personne citée avec email ou téléphone N5
 
