@@ -131,6 +131,14 @@ export interface ReferentielCroisement {
   };
   /** Dossiers considérés actifs, par client — facteur contextuel N9 uniquement. */
   dossiersActifsParClient?: Record<string, string[]>;
+  /**
+   * Référentiels dont l'exhaustivité de lecture N'EST PAS garantie (liste
+   * potentiellement tronquée). Toute entité adossée à un tel référentiel est
+   * traitée comme ambiguë : aucune proposition ne peut en découler.
+   * Valeurs attendues : noms de tables réelles (`clients`, `dossiers`,
+   * `contrats`, `compagnies`, `produits`, `documents`).
+   */
+  referentielsTronques?: string[];
 }
 
 export function referentielVide(): ReferentielCroisement {
