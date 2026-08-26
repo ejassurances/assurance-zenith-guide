@@ -15,14 +15,22 @@
  * Gemini, aucun branchement Gmail, aucune modification de `triage_ia` / `triage_le`,
  * jamais `CONFIRMED`, aucun scoring, `preuves[].poids` ni lu ni écrit.
  */
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   croiserContexteEmail,
   referentielVide,
+  type ClientRef,
+  type CompagnieRef,
+  type ContratRef,
+  type DocumentRef,
+  type DossierRef,
+  type ProduitRef,
   type ReferentielCroisement,
   type ResultatCroisement,
 } from "./email-context-resolution";
 import { lireContexteEmail } from "./email-context-schema";
 import type { EmailContext } from "./email-context-types";
+import type { Database, Json } from "@/integrations/supabase/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const STATUTS_DOSSIER_ACTIFS = new Set([
