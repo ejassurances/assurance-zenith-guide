@@ -298,18 +298,30 @@ describe("invariants d'étanchéité", () => {
     );
   });
 
-  test("ni Gemini ni Gmail dans le code du Lot 3", async () => {
+  test("ni Gemini ni Gmail ni mutation hors ai_context dans le code du Lot 3", async () => {
     const fs = await import("node:fs/promises");
     for (const f of ["src/lib/email-context-resolution.ts", "src/lib/email-context-resolver.server.ts"]) {
       const src = await fs.readFile(f, "utf8");
+      // Aucun appel à la passerelle IA, aucun module Gmail, aucune API Google.
       expect(src).not.toContain("ai.gateway.lovable.dev");
-      expect(src).not.toContain("gmail");
-      expect(src).not.toContain("triage_ia");
-      expect(src).not.toContain("triage_le");
-      expect(src.includes("insert(")).toBe(false);
-      expect(src.includes("upsert(")).toBe(false);
-      expect(src.includes("delete(")).toBe(false);
-      expect(src.includes(".rpc(")).toBe(false);
+      expect(src).not.toContain("gmail.server");
+      expect(src).not.toContain("googleapis");
+      expect(src).not.toContain("MODELES_EXTRACTION");
+      // Aucune écriture des colonnes de triage ni des FK CRM.
+      const code = src
+        .split("\n")
+        .filter((l) => !l.trimStart().startsWith("*") && !l.trimStart().startsWith("//"))
+        .join("\n");
+      expect(code).not.toContain("triage_ia");
+      expect(code).not.toContain("triage_le");
+      expect(code.includes(".insert(")).toBe(false);
+      expect(code.includes(".upsert(")).toBe(false);
+      expect(code.includes(".delete(")).toBe(false);
+      expect(code.includes(".rpc(")).toBe(false);
+      // La seule mutation présente est l'update de `ai_context`.
+      const updates = code.match(/\.update\(\{[^}]*\}/g) ?? [];
+      expect(updates).toHaveLength(1);
+      expect(updates[0]).toContain("ai_context");
     }
   });
 });
