@@ -258,12 +258,21 @@ export function lecteurSupabase(client: SupabaseClient<Database>): LecteurLot3 {
       return borne(data, PLAFOND_LIE);
     },
     async documentsParFiltre(filtre) {
+      // Le typage généré révèle que la colonne réelle est `file_name` (et non `nom`).
+      // La lecture reste strictement en SELECT ; `nom` est la clé logique de `DocumentRef`.
       const { data } = await client
         .from("documents")
-        .select("id, nom, client_id, dossier_id, contrat_id")
+        .select("id, file_name, client_id, dossier_id, contrat_id")
         .or(filtre)
         .limit(PLAFOND_CIBLE + 1);
-      return borne(data, PLAFOND_CIBLE);
+      const lignes: DocumentRef[] = (data ?? []).map((d) => ({
+        id: d.id,
+        nom: d.file_name,
+        client_id: d.client_id,
+        dossier_id: d.dossier_id,
+        contrat_id: d.contrat_id,
+      }));
+      return borne(lignes, PLAFOND_CIBLE);
     },
     async ecrireAiContext(emailId, contexte) {
       // UNIQUE MUTATION AUTORISÉE DU LOT 3.
