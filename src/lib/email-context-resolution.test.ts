@@ -320,8 +320,8 @@ describe("invariants d'étanchéité", () => {
       expect(code.includes(".rpc(")).toBe(false);
       // La seule mutation présente est l'update de `ai_context`.
       const updates = code.match(/\.update\(\{[^}]*\}/g) ?? [];
-      expect(updates).toHaveLength(1);
-      expect(updates[0]).toContain("ai_context");
+      expect(updates).toHaveLength(f.endsWith(".server.ts") ? 1 : 0);
+      if (updates[0]) expect(updates[0]).toContain("ai_context");
     }
   });
 });
