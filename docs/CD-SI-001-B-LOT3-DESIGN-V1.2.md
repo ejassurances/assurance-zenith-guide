@@ -165,7 +165,7 @@ ne la renumérote pas et ne crée aucun niveau local.
 | N4 | Domaine d'email unique d'une organisation professionnelle | rapprochement en lecture seule avec `public.compagnies` (`contact_email`, `site_web`) ; pour les partenaires, uniquement la logique applicative partenaire déjà existante dans le dépôt. Aucune table `organisations` n'existe et aucune n'est créée |
 | N5 | Personne citée avec email/téléphone correspondant | rapprochement d'une personne détectée avec `clients.email`, `clients.email2` ou `clients.telephone` |
 | N6 | Données OCR de CD-SI-002 cohérentes | cohérence avec `documents` / `doc_extractions` lorsque l'information existe déjà |
-| N7 | Nom/prénom seul ou signal faible équivalent | rapprochement faible sur identité textuelle non suffisante seule en cas de risque d'homonymie |
+| N7 | Nom/prénom cité seul | rapprochement faible sur identité textuelle, jamais suffisant seul en cas de risque d'homonymie. Aucune extension implicite : tout autre signal faible relève de N8 ou N9 |
 | N8 | Historique relationnel / contexte faible | contexte faible issu des rattachements déjà connus ou d'interactions passées disponibles |
 | N9 | Facteur contextuel, notamment unique dossier actif | facteur contextuel uniquement, jamais promu en preuve forte |
 
