@@ -467,21 +467,51 @@ Chaque proposition doit indiquer :
 La provenance sert à l'audit et à la qualification ultérieure, pas à transformer la proposition en
 rattachement définitif.
 
-### 10.3 Multi-candidats avec le schéma 1.1.0
+### 10.3 Multi-candidats : contournement assumé du schéma 1.1.0
 
-Le schéma `ai_context` 1.1.0 permet une représentation limitée des multi-candidats. La convention
-Lot 3 est donc :
+Le schéma `ai_context` version `1.1.0` **ne possède aucune structure native** permettant de
+représenter plusieurs candidats structurés pour une même entité (pas de tableau de candidats typés,
+pas de preuves détaillées par candidat).
 
-1. ne pas choisir arbitrairement entre plusieurs candidats ;
-2. renseigner `*_id_propose = null` pour l'entité à arbitrer lorsqu'une sélection unique serait
+La convention retenue pour le Lot 3 est :
+
+> « une entrée par candidat + `ambiguities` »
+
+Cette convention constitue un **CONTOURNEMENT du schéma actuel** et **non une capacité native** du
+schéma. Elle ne doit jamais être présentée ni interprétée comme une évolution du JSON Schema. Aucun
+champ JSON nouveau n'est introduit.
+
+Mise en œuvre imposée :
+
+1. ne jamais choisir arbitrairement entre plusieurs candidats ;
+2. conserver chaque candidat comme une entrée distincte du tableau approprié déjà prévu par le schéma
+   (`personnes_detectees[]`, `dossiers_detectes[]`, `contrats_detectes[]`, `produits_cites[]`,
+   `documents_associes[]`) ;
+3. conserver le `statut` de chaque entrée dans les valeurs autorisées du Lot 3 ;
+4. conserver les éléments de preuve disponibles uniquement dans les champs réellement prévus
+   (`extrait`, `cible`, `provenance.champ`, `provenance.preuve_ids`) ;
+5. renseigner `*_id_propose = null` pour l'entité à arbitrer lorsqu'une sélection unique serait
    trompeuse ;
-3. enregistrer `analyse.statut = "AMBIGUOUS"` ;
-4. inscrire une entrée `ambiguities[]` avec type explicite, candidats textuels disponibles,
-   description et `resolution_requise: true` ;
-5. conserver les preuves dans `preuves[]` afin que le Lot 6 ou un lot ultérieur puisse arbitrer.
+6. enregistrer `analyse.statut = "AMBIGUOUS"` ;
+7. inscrire une entrée `ambiguities[]` explicitant que plusieurs entrées représentent des candidats
+   concurrents pour une même résolution : `type` explicite, `candidats` textuels disponibles,
+   `description` et `resolution_requise: true`.
 
-Écart résiduel assumé : le schéma 1.1.0 ne fournit pas une structure riche de candidats typés avec
-preuves détaillées par candidat. Aucune évolution de schéma n'est proposée dans le Lot 3.
+Écart résiduel assumé : la richesse de représentation par candidat reste limitée. Aucune évolution de
+schéma n'est proposée ni requise par le Lot 3.
+
+### 10.4 Interdiction absolue de tout scoring numérique
+
+- le Lot 3 **n'écrit jamais** `preuves[].poids` ;
+- le Lot 3 **ne lit jamais** `preuves[].poids` pour prendre une décision ;
+- `preuves[].poids` appartient au schéma existant du Lot 1 et reste **hors usage décisionnel du
+  Lot 3** ; le JSON Schema n'est pas modifié ;
+- aucune formule de score ;
+- aucune pondération ;
+- aucune addition ou moyenne de confiance ;
+- aucune conversion de plusieurs signaux faibles en preuve forte par calcul ;
+- `confiance`, `confiance_globale` et `poids` sont des informations de contexte non décisionnelles ;
+  seule la hiérarchie doctrinale N1 à N9, l'unicité et la convergence déterminent le statut.
 
 ---
 
