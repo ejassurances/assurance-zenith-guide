@@ -704,8 +704,13 @@ T-18 — Validation finale Lot 1
 
 T-19 — Absence de scoring cumulatif
 
-- Attendu : aucune formule de somme, poids, majoration ou transformation de signaux faibles en preuve
-  forte par addition.
+- Attendu : aucune formule de somme, pondération, majoration ou transformation de signaux faibles en
+  preuve forte par calcul ; `preuves[].poids` jamais écrit et jamais lu pour décider.
+
+T-19 bis — Convention multi-candidats
+
+- Attendu : plusieurs candidats représentés par plusieurs entrées du tableau existant + entrée
+  `ambiguities[]` ; aucun champ JSON nouveau ; aucun champ `niveau` dans `preuves[]`.
 
 T-20 — Absence d'écritures hors `ai_context`
 
