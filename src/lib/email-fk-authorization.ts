@@ -489,7 +489,12 @@ export function evaluerAutorisationFk(
     if (!UUID.test(candidat.valeur)) {
       return refuser([{ champ: candidat.champ, motif: "uuid_invalide" }]);
     }
-    if (!existePar[candidat.champ](candidat.valeur)) {
+    // Existence : contrôlée dans le référentiel lu pour une preuve directe.
+    // Pour un rebond, la valeur provient d'une FK réelle de la ligne source lue en base
+    // (`contrats.client_id`, `contrats.dossier_id`, `contrats.compagnie_id`,
+    // `dossiers.client_id`) : son existence est garantie par la contrainte FK PostgreSQL,
+    // et toute violation résiduelle provoque de toute façon un rejet global (M.5).
+    if (candidat.mode === "preuve_directe" && !existePar[candidat.champ](candidat.valeur)) {
       return refuser([
         {
           champ: candidat.champ,
@@ -498,6 +503,7 @@ export function evaluerAutorisationFk(
         },
       ]);
     }
+
     const actuel = etat[candidat.champ];
     if (actuel) {
       if (actuel !== candidat.valeur) {
