@@ -457,8 +457,11 @@ Chaque proposition doit indiquer :
 
 - la source `regle_deterministe` ou équivalent déjà admis par le schéma ;
 - le champ ou l'indice utilisé ;
-- le niveau doctrinal N1 à N9 ;
-- les identifiants de preuves associés lorsque le schéma le permet ;
+- la traçabilité du niveau doctrinal N1 à N9 exclusivement au moyen des champs réellement
+  disponibles : `preuves[].cible`, `preuves[].extrait` et, le cas échéant,
+  `ambiguities[].description`. Aucun champ `niveau` n'est créé dans `preuves[]` ; la hiérarchie
+  doctrinale reste néanmoins normative dans le comportement du moteur ;
+- les identifiants de preuves associés via `provenance.preuve_ids` ;
 - l'absence de validation humaine (`validated_by` et `validated_at` non renseignés par le Lot 3).
 
 La provenance sert à l'audit et à la qualification ultérieure, pas à transformer la proposition en
