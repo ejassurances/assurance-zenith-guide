@@ -800,4 +800,26 @@ La V1.2 corrective ne demande aucune modification de :
 
 ---
 
+## 20. Contrôle documentaire final (post-corrections E-01 à E-06)
+
+| # | Point de contrôle | État |
+|---|---|---|
+| 1 | Le Lot 3 ne produit jamais `CONFIRMED` | conforme (§2.1, §9, T-16) |
+| 2 | Le Lot 3 n'écrit aucune FK CRM | conforme (§1.1, §13) |
+| 3 | Le Lot 3 n'écrit jamais `preuves[].poids` | conforme (§10.1, §10.4) |
+| 4 | Le Lot 3 ne lit jamais `preuves[].poids` pour décider | conforme (§10.4, T-19) |
+| 5 | Aucun scoring numérique | conforme (§3, §8.3, §10.4) |
+| 6 | Multi-candidats = « une entrée par candidat + `ambiguities` », qualifié de contournement | conforme (§10.3) |
+| 7 | Aucun champ JSON nouveau | conforme (§10.3, §10.4, §19) |
+| 8 | `compagnie_id_propose` totalement supprimé | conforme (§6.3, §6.4) |
+| 9 | `correspondant.compagnie_id` utilisé comme proposition uniquement | conforme (§6.3, §6.4, T-04) |
+| 10 | Aucun champ `niveau` ajouté dans `preuves[]` | conforme (§10.1, §10.2) |
+| 11 | N7 strictement = nom/prénom cité seul | conforme (§4, §6.1, §6.4) |
+| 12 | N4 référence les objets réellement existants (`public.compagnies`, logique partenaire existante) | conforme (§4, T-04) |
+| 13 | `schema_version = "1.1.0"` inchangé | conforme (§10) |
+| 14 | Lot 1 inchangé | conforme (§19) |
+| 15 | Lot 2 inchangé | conforme (§19) |
+
+---
+
 🟡 LOT 3 — DESIGN V1.2 CORRIGÉ — PRÊT POUR AUDIT
