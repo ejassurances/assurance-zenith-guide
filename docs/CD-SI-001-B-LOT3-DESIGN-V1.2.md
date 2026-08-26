@@ -162,7 +162,7 @@ ne la renumérote pas et ne crée aucun niveau local.
 | N1 | Tag Regex Objet `[DOS-XXXXXX]` ou UUID direct | recherche d'un dossier ou objet CRM correspondant à la référence explicite |
 | N2 | Correspondance unique de l'email expéditeur | rapprochement exact d'un expéditeur avec un client connu, selon les données disponibles |
 | N3 | Numéro de police / numéro de souscription exact unique | rapprochement exact avec `contrats.numero` |
-| N4 | Domaine d'email unique d'une organisation professionnelle | rapprochement avec une organisation professionnelle représentée techniquement par compagnie / partenaire disponible dans le dépôt |
+| N4 | Domaine d'email unique d'une organisation professionnelle | rapprochement en lecture seule avec `public.compagnies` (`contact_email`, `site_web`) ; pour les partenaires, uniquement la logique applicative partenaire déjà existante dans le dépôt. Aucune table `organisations` n'existe et aucune n'est créée |
 | N5 | Personne citée avec email/téléphone correspondant | rapprochement d'une personne détectée avec `clients.email`, `clients.email2` ou `clients.telephone` |
 | N6 | Données OCR de CD-SI-002 cohérentes | cohérence avec `documents` / `doc_extractions` lorsque l'information existe déjà |
 | N7 | Nom/prénom seul ou signal faible équivalent | rapprochement faible sur identité textuelle non suffisante seule en cas de risque d'homonymie |
