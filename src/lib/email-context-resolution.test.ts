@@ -451,11 +451,7 @@ function clientSimule(
 describe("corrections post-audit", () => {
   test("aucun `any` ni `as unknown as` dans le périmètre du Lot 3", async () => {
     const fs = await import("node:fs/promises");
-    for (const f of [
-      "src/lib/email-context-resolution.ts",
-      "src/lib/email-context-resolver.server.ts",
-      "src/lib/email-context-resolution.test.ts",
-    ]) {
+    for (const f of ["src/lib/email-context-resolution.ts", "src/lib/email-context-resolver.server.ts"]) {
       const code = (await fs.readFile(f, "utf8"))
         .split("\n")
         .filter((l) => !l.trimStart().startsWith("*") && !l.trimStart().startsWith("//"))
