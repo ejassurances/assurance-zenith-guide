@@ -444,8 +444,9 @@ Le Lot 3 peut enrichir uniquement les zones existantes du contexte validé :
   `null` ;
 - `documents_associes[]` : proposition documentaire si cohérente avec les données CD-SI-002 déjà
   présentes ;
-- `preuves[]` : ajout de preuves de rapprochement nommées par type et niveau doctrinal, sans poids
-  numérique décisionnel ;
+- `preuves[]` : ajout de preuves de rapprochement en utilisant uniquement les champs existants
+  (`id`, `type`, `extrait`, `cible`). Le Lot 3 n'écrit jamais `preuves[].poids` et ne le lit jamais
+  pour décider ; aucun champ `niveau` n'est ajouté ;
 - `ambiguities[]` : ajout des ambiguïtés multi-candidats, contradictions ou données insuffisantes ;
 - `analyse` : statut global autorisé, horodatage d'analyse, provenance et obligation de validation
   humaine si nécessaire.
