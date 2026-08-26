@@ -565,6 +565,24 @@ export function croiserContexteEmail(
     resolutions[entite] = resoudreEntite(entite, preuves);
   }
 
+  // Sécurité relationnelle : une liste de candidats potentiellement tronquée ne peut
+  // jamais être considérée comme exhaustive. L'entité concernée devient ambiguë et
+  // aucune proposition n'est produite sur cette base (aucun scoring, aucun arbitrage).
+  const tronques = new Set(referentiel.referentielsTronques ?? []);
+  if (tronques.size > 0) {
+    for (const entite of Object.keys(resolutions) as EntiteResolue[]) {
+      if (!tronques.has(TABLE_PAR_ENTITE[entite])) continue;
+      const r = resolutions[entite];
+      if (!r.propose && r.candidats.length === 0) continue;
+      resolutions[entite] = {
+        ...r,
+        propose: null,
+        ambigu: true,
+        motif: "exhaustivité du référentiel non garantie (lecture potentiellement tronquée)",
+      };
+    }
+  }
+
   const ambiguites: Ambiguity[] = [...(contexte.ambiguities ?? [])];
   const provenance = (p: PreuveCroisement[]) => ({
     source: "regle_deterministe" as const,
