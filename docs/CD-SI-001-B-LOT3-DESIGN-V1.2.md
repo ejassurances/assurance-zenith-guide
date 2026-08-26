@@ -5,8 +5,11 @@ Moteur de résolution contextuelle des emails (DETECTED → PROPOSED / AMBIGUOUS
 - Version : V1.2 corrective après audit DG NO-GO V1.1
 - Statut : soumis à audit DG
 - Corrige : `docs/CD-SI-001-B-LOT3-DESIGN-V1.1.md`
-- Références : CD-SI-001-B-TECH-V1.2, CD-SI-001-B-DESIGN-V1.2,
-  Lot 1 validé, Lot 2 validé, CD-SI-001-A existant, Audit technique Lot 3
+- Référentiel doctrinal : CD-SI-001-B-TECH-V1.2 et CD-SI-001-B-DESIGN-V1.1,
+  complété par `docs/CD-SI-001-B-DESIGN-V1.1-erratum-modele.md` (modèle Gemini Flash générique)
+- Autres références : Lot 1 validé, Lot 2 validé, CD-SI-001-A existant, Audit technique Lot 3
+- Le présent document est la conception spécifique du Lot 3 (CD-SI-001-B-LOT3-DESIGN-V1.2) ;
+  aucune nouvelle version documentaire n'est créée
 - Nature : document de conception uniquement
 - Aucun code, aucune migration, aucune modification BDD, aucun branchement Gmail dans ce document
 
