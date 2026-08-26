@@ -131,7 +131,25 @@ export interface ReferentielCroisement {
   };
   /** Dossiers considérés actifs, par client — facteur contextuel N9 uniquement. */
   dossiersActifsParClient?: Record<string, string[]>;
+  /**
+   * Référentiels dont l'exhaustivité de lecture N'EST PAS garantie (liste
+   * potentiellement tronquée). Toute entité adossée à un tel référentiel est
+   * traitée comme ambiguë : aucune proposition ne peut en découler.
+   * Valeurs attendues : noms de tables réelles (`clients`, `dossiers`,
+   * `contrats`, `compagnies`, `produits`, `documents`).
+   */
+  referentielsTronques?: string[];
 }
+
+/** Table réelle adossée à chaque entité résolue (§5 du DESIGN V1.2). */
+export const TABLE_PAR_ENTITE: Record<EntiteResolue, string> = {
+  client: "clients",
+  dossier: "dossiers",
+  contrat: "contrats",
+  compagnie: "compagnies",
+  produit: "produits",
+  document: "documents",
+};
 
 export function referentielVide(): ReferentielCroisement {
   return { clients: [], dossiers: [], contrats: [], compagnies: [], produits: [], documents: [] };
@@ -555,6 +573,24 @@ export function croiserContexteEmail(
     "document",
   ] as EntiteResolue[]) {
     resolutions[entite] = resoudreEntite(entite, preuves);
+  }
+
+  // Sécurité relationnelle : une liste de candidats potentiellement tronquée ne peut
+  // jamais être considérée comme exhaustive. L'entité concernée devient ambiguë et
+  // aucune proposition n'est produite sur cette base (aucun scoring, aucun arbitrage).
+  const tronques = new Set(referentiel.referentielsTronques ?? []);
+  if (tronques.size > 0) {
+    for (const entite of Object.keys(resolutions) as EntiteResolue[]) {
+      if (!tronques.has(TABLE_PAR_ENTITE[entite])) continue;
+      const r = resolutions[entite];
+      if (!r.propose && r.candidats.length === 0) continue;
+      resolutions[entite] = {
+        ...r,
+        propose: null,
+        ambigu: true,
+        motif: "exhaustivité du référentiel non garantie (lecture potentiellement tronquée)",
+      };
+    }
   }
 
   const ambiguites: Ambiguity[] = [...(contexte.ambiguities ?? [])];

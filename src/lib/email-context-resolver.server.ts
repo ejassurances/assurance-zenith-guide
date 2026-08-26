@@ -15,14 +15,22 @@
  * Gemini, aucun branchement Gmail, aucune modification de `triage_ia` / `triage_le`,
  * jamais `CONFIRMED`, aucun scoring, `preuves[].poids` ni lu ni écrit.
  */
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   croiserContexteEmail,
   referentielVide,
+  type ClientRef,
+  type CompagnieRef,
+  type ContratRef,
+  type DocumentRef,
+  type DossierRef,
+  type ProduitRef,
   type ReferentielCroisement,
   type ResultatCroisement,
 } from "./email-context-resolution";
 import { lireContexteEmail } from "./email-context-schema";
 import type { EmailContext } from "./email-context-types";
+import type { Database, Json } from "@/integrations/supabase/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const STATUTS_DOSSIER_ACTIFS = new Set([
@@ -92,20 +100,204 @@ export function peutCroiserContexte(
 /* Lecture seule des référentiels métier (§5)                          */
 /* ------------------------------------------------------------------ */
 
-interface ClientSupabase {
-  from: (table: string) => any;
+/**
+ * Abstraction de lecture strictement typée, locale au Lot 3.
+ * Aucun `any`, aucun cast : chaque méthode expose exactement la lecture
+ * autorisée par le §5 du DESIGN V1.2, plus l'unique mutation `ai_context`.
+ */
+export interface LectureBornee<L> {
+  /** Lignes lues. */
+  lignes: L[];
+  /** `true` si la lecture a pu être tronquée : la liste n'est PAS exhaustive. */
+  tronquee: boolean;
+}
+
+export interface LigneEmailLot3 {
+  id: string;
+  ai_context: unknown;
+  client_id: string | null;
+  dossier_id: string | null;
+  contrat_id: string | null;
+  compagnie_id: string | null;
+}
+
+export interface LecteurLot3 {
+  lireEmail(emailId: string): Promise<LigneEmailLot3 | null>;
+  clientsParIdentite(filtre: string): Promise<LectureBornee<ClientRef>>;
+  dossiersParFiltre(filtre: string): Promise<LectureBornee<DossierRef>>;
+  dossiersParClients(clientIds: readonly string[]): Promise<LectureBornee<DossierRef>>;
+  contratsParFiltre(filtre: string): Promise<LectureBornee<ContratRef>>;
+  contratsParClients(clientIds: readonly string[]): Promise<LectureBornee<ContratRef>>;
+  compagniesToutes(): Promise<LectureBornee<CompagnieRef>>;
+  produitsParFiltre(filtre: string): Promise<LectureBornee<ProduitRef>>;
+  produitsParIds(ids: readonly string[]): Promise<LectureBornee<ProduitRef>>;
+  documentsParFiltre(filtre: string): Promise<LectureBornee<DocumentRef>>;
+  /** Unique mutation autorisée du Lot 3. Retourne un message d'erreur ou `null`. */
+  ecrireAiContext(emailId: string, contexte: EmailContext): Promise<string | null>;
+}
+
+/** Plafonds de lecture ; `PAGE` sert à la pagination exhaustive des compagnies. */
+const PLAFOND_CIBLE = 50;
+const PLAFOND_LIE = 200;
+const PAGE = 1000;
+const PAGES_MAX = 50;
+
+/** Conversion sûre vers `Json` (aucun cast, aucun `any`). */
+function enJson(valeur: unknown): Json {
+  if (valeur === null || valeur === undefined) return null;
+  if (typeof valeur === "string" || typeof valeur === "number" || typeof valeur === "boolean") return valeur;
+  if (Array.isArray(valeur)) return valeur.map((v) => enJson(v));
+  if (typeof valeur === "object") {
+    const objet: { [cle: string]: Json } = {};
+    for (const [cle, v] of Object.entries(valeur)) {
+      if (v !== undefined) objet[cle] = enJson(v);
+    }
+    return objet;
+  }
+  return null;
+}
+
+const borne = <L>(lignes: L[] | null, plafond: number): LectureBornee<L> => {
+  const tout = lignes ?? [];
+  return { lignes: tout.slice(0, plafond), tronquee: tout.length > plafond };
+};
+
+/**
+ * Adaptateur du client Supabase serveur (typé via les types générés).
+ * Les colonnes sélectionnées et les filtres sont identiques à l'implémentation auditée ;
+ * seul le plafond est augmenté de 1 afin de DÉTECTER une troncature éventuelle.
+ */
+export function lecteurSupabase(client: SupabaseClient<Database>): LecteurLot3 {
+  return {
+    async lireEmail(emailId) {
+      const { data, error } = await client
+        .from("crm_emails")
+        .select("id, ai_context, client_id, dossier_id, contrat_id, compagnie_id")
+        .eq("id", emailId)
+        .maybeSingle();
+      if (error || !data) return null;
+      return {
+        id: data.id,
+        ai_context: data.ai_context,
+        client_id: data.client_id,
+        dossier_id: data.dossier_id,
+        contrat_id: data.contrat_id,
+        compagnie_id: data.compagnie_id,
+      };
+    },
+    async clientsParIdentite(filtre) {
+      const { data } = await client
+        .from("clients")
+        .select("id, nom, prenom, email, email2, telephone, statut")
+        .or(filtre)
+        .limit(PLAFOND_CIBLE + 1);
+      return borne(data, PLAFOND_CIBLE);
+    },
+    async dossiersParFiltre(filtre) {
+      const { data } = await client
+        .from("dossiers")
+        .select("id, reference, client_id, statut")
+        .or(filtre)
+        .limit(PLAFOND_CIBLE + 1);
+      return borne(data, PLAFOND_CIBLE);
+    },
+    async dossiersParClients(clientIds) {
+      const { data } = await client
+        .from("dossiers")
+        .select("id, reference, client_id, statut")
+        .in("client_id", [...clientIds])
+        .limit(PLAFOND_LIE + 1);
+      return borne(data, PLAFOND_LIE);
+    },
+    async contratsParFiltre(filtre) {
+      const { data } = await client
+        .from("contrats")
+        .select("id, numero, client_id, dossier_id, compagnie_id, produit_id, statut")
+        .or(filtre)
+        .limit(PLAFOND_CIBLE + 1);
+      return borne(data, PLAFOND_CIBLE);
+    },
+    async contratsParClients(clientIds) {
+      const { data } = await client
+        .from("contrats")
+        .select("id, numero, client_id, dossier_id, compagnie_id, produit_id, statut")
+        .in("client_id", [...clientIds])
+        .limit(PLAFOND_LIE + 1);
+      return borne(data, PLAFOND_LIE);
+    },
+    async compagniesToutes() {
+      // Pagination complète : le référentiel compagnies est un facteur N4 et doit
+      // être exhaustif. À défaut (dépassement de PAGES_MAX), la lecture est déclarée tronquée.
+      const lignes: CompagnieRef[] = [];
+      for (let page = 0; page < PAGES_MAX; page += 1) {
+        const debut = page * PAGE;
+        const { data } = await client
+          .from("compagnies")
+          .select("id, nom, contact_email, site_web")
+          .range(debut, debut + PAGE - 1);
+        const lot = data ?? [];
+        lignes.push(...lot);
+        if (lot.length < PAGE) return { lignes, tronquee: false };
+      }
+      return { lignes, tronquee: true };
+    },
+    async produitsParFiltre(filtre) {
+      const { data } = await client
+        .from("produits")
+        .select("id, nom, code_produit, compagnie_id")
+        .or(filtre)
+        .limit(PLAFOND_CIBLE + 1);
+      return borne(data, PLAFOND_CIBLE);
+    },
+    async produitsParIds(ids) {
+      const { data } = await client
+        .from("produits")
+        .select("id, nom, code_produit, compagnie_id")
+        .in("id", [...ids])
+        .limit(PLAFOND_LIE + 1);
+      return borne(data, PLAFOND_LIE);
+    },
+    async documentsParFiltre(filtre) {
+      // Le typage généré révèle que la colonne réelle est `file_name` (et non `nom`).
+      // La lecture reste strictement en SELECT ; `nom` est la clé logique de `DocumentRef`.
+      const { data } = await client
+        .from("documents")
+        .select("id, file_name, client_id, dossier_id, contrat_id")
+        .or(filtre)
+        .limit(PLAFOND_CIBLE + 1);
+      const lignes: DocumentRef[] = (data ?? []).map((d) => ({
+        id: d.id,
+        nom: d.file_name,
+        client_id: d.client_id,
+        dossier_id: d.dossier_id,
+        contrat_id: d.contrat_id,
+      }));
+      return borne(lignes, PLAFOND_CIBLE);
+    },
+    async ecrireAiContext(emailId, contexte) {
+      // UNIQUE MUTATION AUTORISÉE DU LOT 3.
+      const { error } = await client
+        .from("crm_emails")
+        .update({ ai_context: enJson(contexte) })
+        .eq("id", emailId);
+      return error ? error.message : null;
+    },
+  };
 }
 
 /**
  * Construit le référentiel de candidats par requêtes SELECT strictement ciblées.
  * Aucune écriture, aucune RPC, aucune table hors §5 du DESIGN V1.2.
+ * Toute lecture potentiellement tronquée est signalée dans `referentielsTronques`
+ * afin qu'aucune proposition ne soit produite sur une liste non exhaustive.
  */
 export async function lireReferentiel(
-  db: ClientSupabase,
+  db: LecteurLot3,
   contexte: EmailContext,
   rattachementsExistants: ReferentielCroisement["rattachementsExistants"] = {},
 ): Promise<ReferentielCroisement> {
   const referentiel: ReferentielCroisement = { ...referentielVide(), rattachementsExistants };
+  const tronques = new Set<string>();
 
   const emails = new Set<string>();
   const telephones = new Set<string>();
@@ -140,12 +332,9 @@ export async function lireReferentiel(
     ]
       .filter(Boolean)
       .join(",");
-    const { data } = await db
-      .from("clients")
-      .select("id, nom, prenom, email, email2, telephone, statut")
-      .or(filtres)
-      .limit(50);
-    referentiel.clients = data ?? [];
+    const lecture = await db.clientsParIdentite(filtres);
+    referentiel.clients = lecture.lignes;
+    if (lecture.tronquee) tronques.add("clients");
   }
 
   // dossiers — par référence citée, puis dossiers des clients candidats (contexte N9)
@@ -154,24 +343,18 @@ export async function lireReferentiel(
   if (refsDossier.size > 0 || clientIds.length > 0) {
     const dossiers: ReferentielCroisement["dossiers"] = [];
     if (refsDossier.size > 0) {
-      const { data } = await db
-        .from("dossiers")
-        .select("id, reference, client_id, statut")
-        .or(
-          [ou(["reference"], refsDossier), refsUuid.length > 0 ? `id.in.(${refsUuid.join(",")})` : ""]
-            .filter(Boolean)
-            .join(","),
-        )
-        .limit(50);
-      dossiers.push(...(data ?? []));
+      const lecture = await db.dossiersParFiltre(
+        [ou(["reference"], refsDossier), refsUuid.length > 0 ? `id.in.(${refsUuid.join(",")})` : ""]
+          .filter(Boolean)
+          .join(","),
+      );
+      dossiers.push(...lecture.lignes);
+      if (lecture.tronquee) tronques.add("dossiers");
     }
     if (clientIds.length > 0) {
-      const { data } = await db
-        .from("dossiers")
-        .select("id, reference, client_id, statut")
-        .in("client_id", clientIds)
-        .limit(200);
-      dossiers.push(...(data ?? []));
+      const lecture = await db.dossiersParClients(clientIds);
+      dossiers.push(...lecture.lignes);
+      if (lecture.tronquee) tronques.add("dossiers");
     }
     const vus = new Set<string>();
     referentiel.dossiers = dossiers.filter((d) => (vus.has(d.id) ? false : (vus.add(d.id), true)));
@@ -181,20 +364,14 @@ export async function lireReferentiel(
   if (numerosContrat.size > 0 || clientIds.length > 0) {
     const contrats: ReferentielCroisement["contrats"] = [];
     if (numerosContrat.size > 0) {
-      const { data } = await db
-        .from("contrats")
-        .select("id, numero, client_id, dossier_id, compagnie_id, produit_id, statut")
-        .or(ou(["numero"], numerosContrat))
-        .limit(50);
-      contrats.push(...(data ?? []));
+      const lecture = await db.contratsParFiltre(ou(["numero"], numerosContrat));
+      contrats.push(...lecture.lignes);
+      if (lecture.tronquee) tronques.add("contrats");
     }
     if (clientIds.length > 0) {
-      const { data } = await db
-        .from("contrats")
-        .select("id, numero, client_id, dossier_id, compagnie_id, produit_id, statut")
-        .in("client_id", clientIds)
-        .limit(200);
-      contrats.push(...(data ?? []));
+      const lecture = await db.contratsParClients(clientIds);
+      contrats.push(...lecture.lignes);
+      if (lecture.tronquee) tronques.add("contrats");
     }
     const vus = new Set<string>();
     referentiel.contrats = contrats.filter((c) => (vus.has(c.id) ? false : (vus.add(c.id), true)));
@@ -202,8 +379,9 @@ export async function lireReferentiel(
 
   // compagnies — N4 (domaine professionnel) et compagnies dérivées des contrats
   {
-    const { data } = await db.from("compagnies").select("id, nom, contact_email, site_web").limit(500);
-    referentiel.compagnies = data ?? [];
+    const lecture = await db.compagniesToutes();
+    referentiel.compagnies = lecture.lignes;
+    if (lecture.tronquee) tronques.add("compagnies");
   }
 
   // produits
@@ -211,20 +389,14 @@ export async function lireReferentiel(
   if (libellesProduit.size > 0 || produitIds.length > 0) {
     const produits: ReferentielCroisement["produits"] = [];
     if (libellesProduit.size > 0) {
-      const { data } = await db
-        .from("produits")
-        .select("id, nom, code_produit, compagnie_id")
-        .or(ou(["nom", "code_produit"], libellesProduit))
-        .limit(50);
-      produits.push(...(data ?? []));
+      const lecture = await db.produitsParFiltre(ou(["nom", "code_produit"], libellesProduit));
+      produits.push(...lecture.lignes);
+      if (lecture.tronquee) tronques.add("produits");
     }
     if (produitIds.length > 0) {
-      const { data } = await db
-        .from("produits")
-        .select("id, nom, code_produit, compagnie_id")
-        .in("id", produitIds)
-        .limit(200);
-      produits.push(...(data ?? []));
+      const lecture = await db.produitsParIds(produitIds);
+      produits.push(...lecture.lignes);
+      if (lecture.tronquee) tronques.add("produits");
     }
     const vus = new Set<string>();
     referentiel.produits = produits.filter((p) => (vus.has(p.id) ? false : (vus.add(p.id), true)));
@@ -232,12 +404,9 @@ export async function lireReferentiel(
 
   // documents — corrélation CD-SI-002 en lecture seule
   if (nomsFichier.size > 0) {
-    const { data } = await db
-      .from("documents")
-      .select("id, nom, client_id, dossier_id, contrat_id")
-      .or(ou(["nom"], nomsFichier))
-      .limit(50);
-    referentiel.documents = data ?? [];
+    const lecture = await db.documentsParFiltre(ou(["file_name"], nomsFichier));
+    referentiel.documents = lecture.lignes;
+    if (lecture.tronquee) tronques.add("documents");
   }
 
   // Facteur contextuel N9 : dossier unique actif par client
@@ -248,6 +417,7 @@ export async function lireReferentiel(
     (actifs[cid] ??= []).push(d.id);
   }
   referentiel.dossiersActifsParClient = actifs;
+  referentiel.referentielsTronques = [...tronques];
 
   return referentiel;
 }
@@ -258,32 +428,28 @@ export async function lireReferentiel(
 
 export async function croiserEtEnregistrerContexteEmail(
   emailId: string,
-  options: { force?: boolean; analyseLe?: string; db?: ClientSupabase } = {},
+  options: { force?: boolean; analyseLe?: string; db?: LecteurLot3 } = {},
 ): Promise<ResultatResolutionEmail> {
   const db =
     options.db ??
-    (await import("@/integrations/supabase/client.server")).supabaseAdmin as unknown as ClientSupabase;
+    lecteurSupabase((await import("@/integrations/supabase/client.server")).supabaseAdmin);
 
-  const { data, error } = await db
-    .from("crm_emails")
-    .select("id, ai_context, client_id, dossier_id, contrat_id, compagnie_id")
-    .eq("id", emailId)
-    .maybeSingle();
-  if (error || !data) return { ecrit: false, motif: "email_introuvable" };
+  const ligne = await db.lireEmail(emailId);
+  if (!ligne) return { ecrit: false, motif: "email_introuvable" };
 
-  const garde = peutCroiserContexte(data.ai_context, { force: options.force });
+  const garde = peutCroiserContexte(ligne.ai_context, { force: options.force });
   if (!garde.autorise) return { ecrit: false, motif: garde.raison };
 
-  const contexte = lireContexteEmail(data.ai_context);
+  const contexte = lireContexteEmail(ligne.ai_context);
   if (!contexte) return { ecrit: false, motif: "contexte_non_conforme" };
 
   let referentiel: ReferentielCroisement;
   try {
     referentiel = await lireReferentiel(db, contexte, {
-      client_id: data.client_id ?? null,
-      dossier_id: data.dossier_id ?? null,
-      contrat_id: data.contrat_id ?? null,
-      compagnie_id: data.compagnie_id ?? null,
+      client_id: ligne.client_id,
+      dossier_id: ligne.dossier_id,
+      contrat_id: ligne.contrat_id,
+      compagnie_id: ligne.compagnie_id,
     });
   } catch (e) {
     console.error("[email-context/lot3] référentiel indisponible", e);
@@ -296,12 +462,8 @@ export async function croiserEtEnregistrerContexteEmail(
   const valide = lireContexteEmail(resultat.contexte);
   if (!valide) return { ecrit: false, motif: "sortie_non_conforme" };
 
-  // UNIQUE MUTATION AUTORISÉE DU LOT 3.
-  const { error: erreurEcriture } = await db
-    .from("crm_emails")
-    .update({ ai_context: valide as unknown as never })
-    .eq("id", emailId);
-  if (erreurEcriture) return { ecrit: false, motif: erreurEcriture.message };
+  const erreur = await db.ecrireAiContext(emailId, valide);
+  if (erreur) return { ecrit: false, motif: erreur };
 
   return {
     ecrit: true,

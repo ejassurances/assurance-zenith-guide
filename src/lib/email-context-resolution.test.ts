@@ -9,9 +9,15 @@ import {
   collecterPreuves,
   croiserContexteEmail,
   referentielVide,
+  type ClientRef,
   type ReferentielCroisement,
 } from "./email-context-resolution";
-import { croiserEtEnregistrerContexteEmail, peutCroiserContexte } from "./email-context-resolver.server";
+import {
+  croiserEtEnregistrerContexteEmail,
+  peutCroiserContexte,
+  type LecteurLot3,
+  type LectureBornee,
+} from "./email-context-resolver.server";
 import { estContexteEmailValide } from "./email-context-schema";
 import { EMAIL_CONTEXT_SCHEMA_VERSION, type EmailContext } from "./email-context-types";
 
@@ -396,43 +402,106 @@ describe("non-régression", () => {
   });
 });
 
-/* ---------------------- Client Supabase simulé ---------------------- */
+/* ---------------------- Lecteur Lot 3 simulé (strictement typé) ---------------------- */
 
-function clientSimule(mutations: { table: string; op: string }[], contexte: EmailContext | null) {
-  const requete = (table: string): any => {
-    const chaine: any = {
-      select: () => chaine,
-      or: () => chaine,
-      in: () => chaine,
-      eq: () => chaine,
-      limit: () => Promise.resolve({ data: [], error: null }),
-      maybeSingle: () =>
-        Promise.resolve(
-          contexte
-            ? {
-                data: {
-                  id: "email-1",
-                  ai_context: contexte,
-                  client_id: null,
-                  dossier_id: null,
-                  contrat_id: null,
-                  compagnie_id: null,
-                },
-                error: null,
-              }
-            : { data: null, error: null },
-        ),
-      update: (valeurs: Record<string, unknown>) => {
-        mutations.push({ table, op: `update:${Object.keys(valeurs).join(",")}` });
-        return { eq: () => Promise.resolve({ error: null }) };
-      },
-      insert: (v: unknown) => {
-        mutations.push({ table, op: "insert" });
-        return Promise.resolve({ error: null, data: v });
-      },
-      then: undefined,
-    };
-    return chaine;
-  };
-  return { from: (table: string) => requete(table) };
+interface OptionsSimule {
+  clients?: ClientRef[];
+  clientsTronque?: boolean;
 }
+
+function clientSimule(
+  mutations: { table: string; op: string }[],
+  contexte: EmailContext | null,
+  options: OptionsSimule = {},
+): LecteurLot3 {
+  const vide = <L>(): Promise<LectureBornee<L>> => Promise.resolve({ lignes: [], tronquee: false });
+  return {
+    lireEmail: () =>
+      Promise.resolve(
+        contexte
+          ? {
+              id: "email-1",
+              ai_context: contexte,
+              client_id: null,
+              dossier_id: null,
+              contrat_id: null,
+              compagnie_id: null,
+            }
+          : null,
+      ),
+    clientsParIdentite: () =>
+      Promise.resolve({ lignes: options.clients ?? [], tronquee: options.clientsTronque ?? false }),
+    dossiersParFiltre: () => vide(),
+    dossiersParClients: () => vide(),
+    contratsParFiltre: () => vide(),
+    contratsParClients: () => vide(),
+    compagniesToutes: () => vide(),
+    produitsParFiltre: () => vide(),
+    produitsParIds: () => vide(),
+    documentsParFiltre: () => vide(),
+    ecrireAiContext: () => {
+      mutations.push({ table: "crm_emails", op: "update:ai_context" });
+      return Promise.resolve(null);
+    },
+  };
+}
+
+/* ---------------------- Corrections post-audit : type safety & plafonds ---------------------- */
+
+describe("corrections post-audit", () => {
+  test("aucun `any` ni `as unknown as` dans le périmètre du Lot 3", async () => {
+    const fs = await import("node:fs/promises");
+    for (const f of ["src/lib/email-context-resolution.ts", "src/lib/email-context-resolver.server.ts"]) {
+      const code = (await fs.readFile(f, "utf8"))
+        .split("\n")
+        .filter((l) => !l.trimStart().startsWith("*") && !l.trimStart().startsWith("//"))
+        .join("\n");
+      expect(code).not.toContain("as unknown as");
+      expect(code).not.toMatch(/:\s*any\b/);
+      expect(code).not.toMatch(/<any>/);
+      expect(code).not.toMatch(/\bas any\b/);
+    }
+  });
+
+  test("référentiel sous la limite : comportement inchangé (proposition possible)", async () => {
+    const mutations: { table: string; op: string }[] = [];
+    const db = clientSimule(mutations, detecte(), {
+      clients: [{ id: CLI_A, email: "jean.dupont@example.com" }],
+    });
+    const r = await croiserEtEnregistrerContexteEmail("email-1", { db });
+    expect(r.ecrit).toBe(true);
+    expect(r.statut).toBe("PROPOSED");
+    expect(r.resolutions?.client.propose).toBe(CLI_A);
+    expect(mutations).toEqual([{ table: "crm_emails", op: "update:ai_context" }]);
+  });
+
+  test("référentiel potentiellement tronqué : aucune proposition, bascule AMBIGUOUS", async () => {
+    const mutations: { table: string; op: string }[] = [];
+    const db = clientSimule(mutations, detecte(), {
+      clients: [{ id: CLI_A, email: "jean.dupont@example.com" }],
+      clientsTronque: true,
+    });
+    const r = await croiserEtEnregistrerContexteEmail("email-1", { db });
+    expect(r.ecrit).toBe(true);
+    expect(r.statut).toBe("AMBIGUOUS");
+    expect(r.resolutions?.client.propose).toBeNull();
+    expect(r.contexte?.correspondant?.client_id).toBeNull();
+    expect(mutations).toEqual([{ table: "crm_emails", op: "update:ai_context" }]);
+  });
+
+  test("liste non exhaustive sans candidat : aucune proposition et statut sans FK", () => {
+    const ref = referentiel({ clients: [{ id: CLI_A, email: "jean.dupont@example.com" }] });
+    const r = croiserContexteEmail(detecte(), { ...ref, referentielsTronques: ["clients"] });
+    expect(r.statut).toBe("AMBIGUOUS");
+    expect(r.contexte.correspondant?.client_id).toBeNull();
+    expect(r.contexte.analyse?.statut).not.toBe("CONFIRMED");
+    expect(estContexteEmailValide(r.contexte)).toBe(true);
+  });
+
+  test("un référentiel tronqué non concerné ne dégrade pas les autres entités", () => {
+    const ref = referentiel({ clients: [{ id: CLI_A, email: "jean.dupont@example.com" }] });
+    const r = croiserContexteEmail(detecte(), { ...ref, referentielsTronques: ["produits"] });
+    expect(r.statut).toBe("PROPOSED");
+    expect(r.contexte.correspondant?.client_id).toBe(CLI_A);
+  });
+});
