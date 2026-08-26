@@ -211,7 +211,7 @@ Sources doctrinales possibles :
 - N2 : email expéditeur correspondant de façon unique à `clients.email` ou `clients.email2` ;
 - N5 : personne citée avec email ou téléphone correspondant à un client ;
 - N6 : OCR CD-SI-002 cohérent pointant vers un client déjà existant ;
-- N7 : nom/prénom seul ou signal faible équivalent ;
+- N7 : nom/prénom cité seul ;
 - N8 : historique relationnel faible ;
 - N9 : dossier unique actif du client, uniquement comme facteur contextuel.
 
