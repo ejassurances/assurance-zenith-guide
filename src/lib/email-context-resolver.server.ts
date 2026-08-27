@@ -53,11 +53,17 @@ export type MotifNonTraitement =
   | "referentiel_indisponible"
   | "sortie_non_conforme"
   | "validation_humaine_existante"
-  | "contexte_saisi_par_humain";
+  | "contexte_saisi_par_humain"
+  /** Q.11 : état modifié entre la lecture (T0) et l'écriture gardée (T2). */
+  | "garde_optimiste"
+  /** Q.11 : échec BDD lors de l'unique UPDATE gardé. */
+  | "erreur_base";
 
 export interface ResultatResolutionEmail {
   ecrit: boolean;
   motif?: MotifNonTraitement | string;
+  /** Q.11 : détail non structurant (message BDD). Aucune donnée personnelle. */
+  detail?: string;
   statut?: ResultatCroisement["statut"];
   contexte?: EmailContext;
   resolutions?: ResultatCroisement["resolutions"];
@@ -119,6 +125,26 @@ export interface LigneEmailLot3 {
   dossier_id: string | null;
   contrat_id: string | null;
   compagnie_id: string | null;
+  /**
+   * Q.11 / R-UA-1 : jeton de version transporté de manière OPAQUE.
+   * Jamais parsé, jamais reformaté, jamais tronqué, jamais `toISOString()`.
+   */
+  updated_at: string;
+}
+
+/** Q.11 : paramètres de l'unique mutation gardée du Lot 3 (état observé unique). */
+export interface ParamsEcritureAiContext {
+  emailId: string;
+  /** UNIQUE état observé à T0, porteur de la garde optimiste. */
+  observe: LigneEmailLot3;
+  /** Contexte à écrire. */
+  contexte: EmailContext;
+}
+
+/** Q.11 : résultat discriminant de l'unique mutation gardée. */
+export interface ResultatEcritureAiContext {
+  lignesAffectees: number;
+  erreur: string | null;
 }
 
 export interface LecteurLot3 {
@@ -132,8 +158,97 @@ export interface LecteurLot3 {
   produitsParFiltre(filtre: string): Promise<LectureBornee<ProduitRef>>;
   produitsParIds(ids: readonly string[]): Promise<LectureBornee<ProduitRef>>;
   documentsParFiltre(filtre: string): Promise<LectureBornee<DocumentRef>>;
-  /** Unique mutation autorisée du Lot 3. Retourne un message d'erreur ou `null`. */
-  ecrireAiContext(emailId: string, contexte: EmailContext): Promise<string | null>;
+  /**
+   * Unique mutation autorisée du Lot 3, GARDÉE (Q.11 — option C).
+   * Aucune signature ne permet d'écrire `ai_context` sans état observé.
+   */
+  ecrireAiContext(params: ParamsEcritureAiContext): Promise<ResultatEcritureAiContext>;
+}
+
+/* ------------------------------------------------------------------ */
+/* Q.11 — composition de la garde optimiste (fonction pure, testable)  */
+/* ------------------------------------------------------------------ */
+
+export interface PredicatGarde {
+  colonne: string;
+  operateur: "eq" | "is";
+  valeur: string | null;
+}
+
+/** Sentinelles humaines détectées dans un état observé (défense en profondeur). */
+export function sentinellesHumaines(aiContext: unknown): {
+  presente: boolean;
+  validated_by: string | null;
+  validated_at: string | null;
+  source: string | null;
+  statut: string | null;
+} {
+  const contexte = lireContexteEmail(aiContext);
+  const analyse = contexte?.analyse;
+  const validated_by = analyse?.validated_by ?? null;
+  const validated_at = analyse?.validated_at ?? null;
+  const source = analyse?.provenance?.source ?? null;
+  const statut = analyse?.statut ?? null;
+  return {
+    presente: Boolean(validated_by || validated_at || source === "humain" || statut === "CONFIRMED"),
+    validated_by,
+    validated_at,
+    source,
+    statut,
+  };
+}
+
+/**
+ * Prédicats de la garde optimiste Q.11 (option C) :
+ * `ai_context` complet observé + `analyse.statut` + les trois sentinelles JSON
+ * + `updated_at` observé (transmis de manière opaque, R-UA-1).
+ * Les 4 FK sont volontairement EXCLUES (Q.3) : le Lot 3 ne mute aucune FK.
+ */
+export function composerGardeQ11(observe: LigneEmailLot3): PredicatGarde[] {
+  const s = sentinellesHumaines(observe.ai_context);
+  return [
+    { colonne: "ai_context", operateur: "eq", valeur: JSON.stringify(enJson(observe.ai_context)) },
+    { colonne: "ai_context->analyse->>statut", operateur: "eq", valeur: s.statut ?? "" },
+    {
+      colonne: "ai_context->analyse->>validated_by",
+      operateur: s.validated_by ? "eq" : "is",
+      valeur: s.validated_by,
+    },
+    {
+      colonne: "ai_context->analyse->>validated_at",
+      operateur: s.validated_at ? "eq" : "is",
+      valeur: s.validated_at,
+    },
+    {
+      colonne: "ai_context->analyse->provenance->>source",
+      operateur: s.source ? "eq" : "is",
+      valeur: s.source,
+    },
+    // R-UA-1 : valeur brute, ni parsée ni normalisée. R-UA-3 : composante de la garde.
+    { colonne: "updated_at", operateur: "eq", valeur: observe.updated_at },
+  ];
+}
+
+/** R-UA-2 : `updated_at` absent, vide ou non exploitable → refus sûr, aucune écriture. */
+export function updatedAtExploitable(valeur: unknown): boolean {
+  return typeof valeur === "string" && valeur.trim().length > 0;
+}
+
+/**
+ * Option B (défense en profondeur) : le Lot 3 ne doit jamais effacer une sentinelle
+ * humaine présente dans l'état entrant. Aucun champ JSON créé.
+ */
+export function preserverSentinellesHumaines(entrant: EmailContext, sortant: EmailContext): EmailContext {
+  const a = entrant.analyse;
+  if (!a?.validated_by && !a?.validated_at && a?.provenance?.source !== "humain") return sortant;
+  const analyseSortie = { ...(sortant.analyse ?? {}) };
+  if (a?.validated_by) analyseSortie.validated_by = a.validated_by;
+  if (a?.validated_at) analyseSortie.validated_at = a.validated_at;
+  if (a?.validated_by || a?.validated_at) analyseSortie.validation_humaine_requise = false;
+  if (a?.provenance?.source === "humain") {
+    analyseSortie.provenance = { ...(analyseSortie.provenance ?? {}), source: "humain" };
+  }
+  return { ...sortant, analyse: analyseSortie };
 }
 
 /** Plafonds de lecture ; `PAGE` sert à la pagination exhaustive des compagnies. */
@@ -172,7 +287,7 @@ export function lecteurSupabase(client: SupabaseClient<Database>): LecteurLot3 {
     async lireEmail(emailId) {
       const { data, error } = await client
         .from("crm_emails")
-        .select("id, ai_context, client_id, dossier_id, contrat_id, compagnie_id")
+        .select("id, ai_context, client_id, dossier_id, contrat_id, compagnie_id, updated_at")
         .eq("id", emailId)
         .maybeSingle();
       if (error || !data) return null;
@@ -183,6 +298,8 @@ export function lecteurSupabase(client: SupabaseClient<Database>): LecteurLot3 {
         dossier_id: data.dossier_id,
         contrat_id: data.contrat_id,
         compagnie_id: data.compagnie_id,
+        // R-UA-1 : chaîne brute telle que renvoyée par la couche d'accès.
+        updated_at: data.updated_at,
       };
     },
     async clientsParIdentite(filtre) {
@@ -274,13 +391,19 @@ export function lecteurSupabase(client: SupabaseClient<Database>): LecteurLot3 {
       }));
       return borne(lignes, PLAFOND_CIBLE);
     },
-    async ecrireAiContext(emailId, contexte) {
-      // UNIQUE MUTATION AUTORISÉE DU LOT 3.
-      const { error } = await client
+    async ecrireAiContext({ emailId, observe, contexte }) {
+      // UNIQUE MUTATION AUTORISÉE DU LOT 3, portée par la garde optimiste Q.11.
+      // Aucun retry, aucun second UPDATE, aucune FK mutée.
+      let requete = client
         .from("crm_emails")
         .update({ ai_context: enJson(contexte) })
         .eq("id", emailId);
-      return error ? error.message : null;
+      for (const p of composerGardeQ11(observe)) {
+        requete = requete.filter(p.colonne, p.operateur, p.valeur);
+      }
+      const { data, error } = await requete.select("id");
+      if (error) return { lignesAffectees: 0, erreur: error.message };
+      return { lignesAffectees: (data ?? []).length, erreur: null };
     },
   };
 }
@@ -440,8 +563,14 @@ export async function croiserEtEnregistrerContexteEmail(
   const garde = peutCroiserContexte(ligne.ai_context, { force: options.force });
   if (!garde.autorise) return { ecrit: false, motif: garde.raison };
 
+  // R-UA-2 : jeton de version inexploitable -> refus sûr, aucune écriture tentée.
+  if (!updatedAtExploitable(ligne.updated_at)) {
+    return { ecrit: false, motif: "garde_optimiste", detail: "updated_at_inexploitable" };
+  }
+
   const contexte = lireContexteEmail(ligne.ai_context);
   if (!contexte) return { ecrit: false, motif: "contexte_non_conforme" };
+
 
   let referentiel: ReferentielCroisement;
   try {
@@ -458,12 +587,20 @@ export async function croiserEtEnregistrerContexteEmail(
 
   const resultat = croiserContexteEmail(contexte, referentiel, { analyseLe: options.analyseLe });
 
+  // Option B (défense en profondeur) : jamais d'effacement d'une sentinelle humaine entrante.
+  const preserve = preserverSentinellesHumaines(contexte, resultat.contexte);
+
   // Validation runtime Lot 1 — rejet avant persistance si non conforme.
-  const valide = lireContexteEmail(resultat.contexte);
+  const valide = lireContexteEmail(preserve);
   if (!valide) return { ecrit: false, motif: "sortie_non_conforme" };
 
-  const erreur = await db.ecrireAiContext(emailId, valide);
-  if (erreur) return { ecrit: false, motif: erreur };
+  // Unique UPDATE gardé. Aucun retry, aucune seconde tentative, quel que soit le résultat.
+  const ecriture = await db.ecrireAiContext({ emailId, observe: ligne, contexte: valide });
+  if (ecriture.erreur) return { ecrit: false, motif: "erreur_base", detail: ecriture.erreur };
+  if (ecriture.lignesAffectees !== 1) {
+    console.warn("[email-context/lot3] garde optimiste : état modifié entre lecture et écriture", emailId);
+    return { ecrit: false, motif: "garde_optimiste" };
+  }
 
   return {
     ecrit: true,
