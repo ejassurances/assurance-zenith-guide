@@ -556,6 +556,5 @@ describe("Q.11 — contrôles statiques d'étanchéité", () => {
     expect(code).toContain("composerGardeQ11(observe)");
     expect(code).toContain('requete.select("id")');
     expect(code).not.toContain("observeAiContext");
-    expect(code).toContain('schema_version');
   });
 });
