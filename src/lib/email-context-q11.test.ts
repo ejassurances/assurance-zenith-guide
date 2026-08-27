@@ -558,3 +558,128 @@ describe("Q.11 — contrôles statiques d'étanchéité", () => {
     expect(code).not.toContain("observeAiContext");
   });
 });
+
+/* ------------------------------------------------------------------ */
+/* Q11-23 → Q11-27 — M-1 : garde NULL-SAFE sur `analyse.statut`        */
+/* ------------------------------------------------------------------ */
+
+describe("Q.11 V1.2 — M-1 : prédicat NULL-SAFE sur analyse.statut", () => {
+  /** Contexte DETECTED valide dont `analyse` ne porte AUCUN statut (schéma 1.1.0 : optionnel). */
+  const sansStatut = () =>
+    detecte({ analyse: { validation_humaine_requise: true, provenance: { source: "gemini" } } });
+
+  const predicatStatut = (contexte: EmailContext): PredicatGarde => {
+    const p = composerGardeQ11({
+      id: "email-1",
+      ai_context: contexte,
+      client_id: null,
+      dossier_id: null,
+      contrat_id: null,
+      compagnie_id: null,
+      updated_at: UPDATED_AT,
+    }).find((x) => x.colonne === "ai_context->analyse->>statut");
+    if (!p) throw new Error("prédicat statut absent de la garde");
+    return p;
+  };
+
+  test("Q11-23. statut présent → comparaison exacte `eq.<valeur>`", async () => {
+    const p = predicatStatut(detecte({ analyse: { statut: "PROPOSED", provenance: { source: "gemini" } } }));
+    expect(p.operateur).toBe("eq");
+    expect(p.valeur).toBe("PROPOSED");
+
+    const base = etat();
+    const j = journalVide();
+    const r = await croiserEtEnregistrerContexteEmail("email-1", { db: doubleLot3(base, j) });
+    expect(r.ecrit).toBe(true);
+    expect(j.lignesParUpdate).toEqual([1]);
+  });
+
+  test("Q11-24. statut absent → `is.null`, jamais `eq.\"\"`", async () => {
+    const p = predicatStatut(sansStatut());
+    expect(p.operateur).toBe("is");
+    expect(p.valeur).toBeNull();
+    expect(p.valeur).not.toBe("");
+
+    const base = etat(sansStatut());
+    const j = journalVide();
+    const r = await croiserEtEnregistrerContexteEmail("email-1", { db: doubleLot3(base, j) });
+    expect(r.ecrit).toBe(true);
+    expect(j.updates).toBe(1);
+    expect(j.lignesParUpdate).toEqual([1]);
+  });
+
+  test("Q11-25. statut absent à T0 puis ajouté avant T2 → refus garde_optimiste", async () => {
+    const base = etat(sansStatut());
+    const j = journalVide();
+    const r = await croiserEtEnregistrerContexteEmail("email-1", {
+      db: doubleLot3(base, j, {
+        concurrence: (b) => {
+          b.ai_context = {
+            ...b.ai_context,
+            analyse: { ...(b.ai_context.analyse ?? {}), statut: "PROPOSED" },
+          };
+        },
+      }),
+    });
+    expect(r.ecrit).toBe(false);
+    expect(r.motif).toBe("garde_optimiste");
+    expect(j.updates).toBe(1);
+    expect(j.lignesParUpdate).toEqual([0]);
+    expect(base.ai_context.analyse?.statut).toBe("PROPOSED");
+  });
+
+  test("Q11-26. statut présent à T0 puis supprimé avant T2 → refus garde_optimiste", async () => {
+    const base = etat();
+    const j = journalVide();
+    const r = await croiserEtEnregistrerContexteEmail("email-1", {
+      db: doubleLot3(base, j, {
+        concurrence: (b) => {
+          const { statut: _retire, ...reste } = b.ai_context.analyse ?? {};
+          b.ai_context = { ...b.ai_context, analyse: reste };
+        },
+      }),
+    });
+    expect(r.ecrit).toBe(false);
+    expect(r.motif).toBe("garde_optimiste");
+    expect(j.updates).toBe(1);
+    expect(j.lignesParUpdate).toEqual([0]);
+    expect(base.ai_context.analyse?.statut).toBeUndefined();
+  });
+
+  test("Q11-27. statut absent + sentinelles et updated_at inchangés → aucun faux refus", async () => {
+    const base = etat(sansStatut());
+    const j = journalVide();
+    const predicats = composerGardeQ11({
+      id: "email-1",
+      ai_context: base.ai_context,
+      client_id: null,
+      dossier_id: null,
+      contrat_id: null,
+      compagnie_id: null,
+      updated_at: base.updated_at,
+    });
+    // Aucune FK dans la garde, aucune valeur convertie en chaîne vide.
+    for (const fk of ["client_id", "dossier_id", "contrat_id", "compagnie_id"]) {
+      expect(predicats.some((p) => p.colonne === fk)).toBe(false);
+    }
+    expect(predicats.some((p) => p.valeur === "")).toBe(false);
+    expect(evaluerGarde(base, predicats)).toBe(1);
+
+    const r = await croiserEtEnregistrerContexteEmail("email-1", { db: doubleLot3(base, j) });
+    expect(r.ecrit).toBe(true);
+    expect(j.lignesParUpdate).toEqual([1]);
+    expect(base.ai_context.analyse?.statut).not.toBe("CONFIRMED");
+  });
+
+  test("contrôle statique : plus de `statut ?? \"\"` ni de garde `eq.\"\"`", async () => {
+    const fs = await import("node:fs/promises");
+    const code = await fs.readFile("src/lib/email-context-resolver.server.ts", "utf8");
+    const utile = code
+      .split("\n")
+      .filter((l) => !l.trimStart().startsWith("*") && !l.trimStart().startsWith("//"))
+      .join("\n");
+    expect(utile).not.toMatch(/statut\s*\?\?\s*""/);
+    expect(utile).not.toMatch(/operateur:\s*"eq",\s*valeur:\s*""/);
+    expect(utile).toContain('s.statut === null ? "is" : "eq"');
+  });
+});
