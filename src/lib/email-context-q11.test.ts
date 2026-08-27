@@ -196,7 +196,7 @@ describe("Q.11 — garde optimiste sur l'unique UPDATE", () => {
     const r = await croiserEtEnregistrerContexteEmail("email-1", {
       db: doubleLot3(base, j, {
         concurrence: (b) => {
-          b.ai_context = { ...b.ai_context, ambiguities: [{ type: "PLUSIEURS_CLIENTS_POSSIBLES" }] };
+          b.ai_context = { ...b.ai_context, ambiguities: [{ type: "client_multiple" }] };
         },
       }),
     });
