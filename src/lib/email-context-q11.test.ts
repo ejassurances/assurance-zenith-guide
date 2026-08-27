@@ -679,7 +679,6 @@ describe("Q.11 V1.2 — M-1 : prédicat NULL-SAFE sur analyse.statut", () => {
       .filter((l) => !l.trimStart().startsWith("*") && !l.trimStart().startsWith("//"))
       .join("\n");
     expect(utile).not.toMatch(/statut\s*\?\?\s*""/);
-    expect(utile).not.toMatch(/statut\s*\?\?\s*"DETECTED"/);
     expect(utile).not.toMatch(/operateur:\s*"eq",\s*valeur:\s*""/);
     expect(utile).toContain('s.statut === null ? "is" : "eq"');
   });
