@@ -208,7 +208,13 @@ export function composerGardeQ11(observe: LigneEmailLot3): PredicatGarde[] {
   const s = sentinellesHumaines(observe.ai_context);
   return [
     { colonne: "ai_context", operateur: "eq", valeur: JSON.stringify(enJson(observe.ai_context)) },
-    { colonne: "ai_context->analyse->>statut", operateur: "eq", valeur: s.statut ?? "" },
+    // M-1 (V1.2) — NULL-SAFE : statut présent → `eq.<valeur>` ; statut absent → `is.null`.
+    // Aucune conversion en chaîne vide, aucune valeur artificielle (`DETECTED`).
+    {
+      colonne: "ai_context->analyse->>statut",
+      operateur: s.statut === null ? "is" : "eq",
+      valeur: s.statut,
+    },
     {
       colonne: "ai_context->analyse->>validated_by",
       operateur: s.validated_by ? "eq" : "is",
