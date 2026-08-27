@@ -515,9 +515,10 @@ function lecteurSimule(journal: Journal, sur: Partial<ReferentielLot4> = {}): Le
     produitsParFiltre: async () => trace("produits", b([])),
     produitsParIds: async () => trace("produits", b([])),
     documentsParFiltre: async () => trace("documents", b(r.documents)),
+    // Signature Q.11 (état observé obligatoire) ; le Lot 4 ne doit jamais l'appeler.
     ecrireAiContext: async () => {
       journal.lectures.push("INTERDIT_ecrireAiContext");
-      return null;
+      return { lignesAffectees: 0, erreur: null };
     },
   };
 }

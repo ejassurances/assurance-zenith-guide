@@ -407,7 +407,15 @@ describe("non-régression", () => {
 interface OptionsSimule {
   clients?: ClientRef[];
   clientsTronque?: boolean;
+  /** Q.11 : jeton de version observé (chaîne brute, jamais reformatée). */
+  updatedAt?: string;
+  /** Q.11 : nombre de lignes affectées simulé par l'UPDATE gardé. */
+  lignesAffectees?: number;
+  /** Q.11 : erreur BDD simulée. */
+  erreurBase?: string;
 }
+
+const UPDATED_AT_DEFAUT = "2026-02-01T10:00:00.123456+00:00";
 
 function clientSimule(
   mutations: { table: string; op: string }[],
@@ -426,6 +434,7 @@ function clientSimule(
               dossier_id: null,
               contrat_id: null,
               compagnie_id: null,
+              updated_at: options.updatedAt ?? UPDATED_AT_DEFAUT,
             }
           : null,
       ),
@@ -439,9 +448,11 @@ function clientSimule(
     produitsParFiltre: () => vide(),
     produitsParIds: () => vide(),
     documentsParFiltre: () => vide(),
-    ecrireAiContext: () => {
+    ecrireAiContext: ({ observe }) => {
       mutations.push({ table: "crm_emails", op: "update:ai_context" });
-      return Promise.resolve(null);
+      if (!observe.updated_at) throw new Error("état observé manquant");
+      if (options.erreurBase) return Promise.resolve({ lignesAffectees: 0, erreur: options.erreurBase });
+      return Promise.resolve({ lignesAffectees: options.lignesAffectees ?? 1, erreur: null });
     },
   };
 }
