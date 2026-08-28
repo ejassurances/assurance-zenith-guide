@@ -18,7 +18,7 @@ describe("ACTION 36 — correctifs mineurs IHM qualification", () => {
   });
 
   it("UI-18 — envoyer présente un message générique en cas d'erreur inattendue", () => {
-    expect(ihm).toMatch(/catch\s*\(\s*\)\s*\{[\s\S]*?setMessage\s*\(\s*\{\s*ton:\s*"ko"/);
+    expect(ihm).toMatch(/catch\s*(?:\(\s*\))?\s*\{[\s\S]*?setMessage\s*\(\s*\{\s*ton:\s*"ko"/);
     expect(ihm).toContain("Une erreur inattendue est survenue lors de l'enregistrement.");
     expect(ihm).toContain("Veuillez réessayer ou contacter le support.");
   });
