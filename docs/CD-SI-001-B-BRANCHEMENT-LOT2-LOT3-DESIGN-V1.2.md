@@ -204,6 +204,14 @@ Section dédiée, règles strictes :
 4. Le branchement **ne crée jamais** de ligne `crm_emails` : **aucun `INSERT`, aucun `UPSERT`**.
    La persistance de la ligne reste l'affaire exclusif de l'ingestion existante.
 5. **Aucune migration** : aucune colonne, index, table ou contrainte nouvelle n'est requise.
+6. **Lecture préalable `SELECT ai_context` (INFO-1 V1.2)** : la sélection des candidats (§3.2)
+   peut effectuer un `SELECT ai_context FROM public.crm_emails WHERE id = :id` **strictement non
+   mutateur** pour déterminer si un contexte est déjà présent et alimenter la ventilation du taux
+   de couverture (§7). Cette lecture préalable **ne remplace jamais la garde finale en BDD** :
+   l'autorisation d'écriture reste décidée par `peutEcrireContexte`, les sentinelles humaines et la
+   garde optimiste Q.11 NULL-SAFE appliquée au moment de l'`UPDATE`. Toute divergence entre la
+   lecture préalable et l'état réel au moment de l'écriture est tranchée par la garde BDD, jamais
+   par la lecture.
 
 ---
 
