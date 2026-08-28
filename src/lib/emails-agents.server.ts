@@ -2,6 +2,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import type { EmailResume } from "@/lib/gmail.server";
 import { estEmailInterne } from "@/lib/domaines-internes";
+import {
+  brancherContexteEmail,
+  creerMetriquesContexte,
+  finaliserMetriquesContexte,
+  type MetriquesContexte,
+} from "@/lib/email-context-branchement.server";
 
 
 /**
@@ -33,6 +39,11 @@ export interface ResultatAgents {
   compagnies_creees: number;
   /** Produits créés automatiquement (statut en test). */
   produits_crees: number;
+  /**
+   * CD-SI-001-B ACTION 43 — métriques STRICTEMENT ADDITIVES du branchement
+   * Lot 2 → Lot 3 (dry-run). Aucun champ historique n'est modifié.
+   */
+  contexte: MetriquesContexte;
 
 
 
@@ -148,6 +159,9 @@ export async function executerAgents(
     let compagniesCreees = 0;
     let produitsCrees = 0;
 
+    // ACTION 43 — compteurs additifs du greffon de branchement (dry-run).
+    const metriquesContexte = creerMetriquesContexte();
+
     // Annuaire des domaines de compagnies / partenaires : sert de garde-fou en
     // amont de toute classification IA prospect ou relation client.
     const { chargerAnnuairePartenaires, compagnieDeExpediteur, routerEmailPartenaire } = await import(
@@ -207,6 +221,33 @@ export async function executerAgents(
             texte: detail.texte ?? detail.snippet ?? null,
             pieces_jointes: detail.pieces_jointes.map((p) => ({ nom: p.nom, mime: p.mime })),
           };
+
+          // ── CD-SI-001-B ACTION 43 — POINT D'INSERTION UNIQUE DU BRANCHEMENT
+          // Lot 2 → Lot 3 (dry-run strict). Placé après `lireMessage(m.id)`
+          // (corps complet disponible, AUCUN appel Gmail supplémentaire) et
+          // AVANT tout `continue` métier, de sorte que chaque message du lot
+          // passe exactement une fois devant le greffon. `try/catch` DÉDIÉ :
+          // une erreur du greffon n'atteint jamais le catch historique, ne crée
+          // aucune tâche administrative et n'incrémente jamais `erreurs`.
+          try {
+            await brancherContexteEmail({
+              gmailMessageId: m.id,
+              email: {
+                sujet: entree.sujet,
+                expediteur_nom: entree.expediteur_nom,
+                expediteur_email: entree.expediteur_email,
+                texte: entree.texte,
+                pieces_jointes: entree.pieces_jointes.map((p) => ({ nom: p.nom })),
+              },
+              estSortant: m.etiquettes.includes("SENT"),
+              metriques: metriquesContexte,
+            });
+          } catch (e) {
+            metriquesContexte.contexte_erreurs++;
+            console.error("[branchement-contexte] erreur non capturée", m.id, e);
+          }
+
+
 
           // Contrôle du domaine expéditeur AVANT toute classification IA : un
           // email de compagnie / partenaire connu n'est ni un prospect ni une
@@ -720,6 +761,7 @@ export async function executerAgents(
     offres_partenaires: offresPartenaires,
     compagnies_creees: compagniesCreees,
     produits_crees: produitsCrees,
+    contexte: finaliserMetriquesContexte(metriquesContexte),
 
 
 
