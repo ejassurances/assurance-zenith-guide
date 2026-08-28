@@ -7,7 +7,6 @@ import {
   cloturerContexteEmail,
 
   creerMetriquesContexte,
-  finaliserMetriquesContexte,
   type MetriquesContexte,
 } from "@/lib/email-context-branchement.server";
 
@@ -779,7 +778,7 @@ export async function executerAgents(
     offres_partenaires: offresPartenaires,
     compagnies_creees: compagniesCreees,
     produits_crees: produitsCrees,
-    contexte: finaliserMetriquesContexte(metriquesContexte),
+    contexte: metriquesContexte,
 
 
 
