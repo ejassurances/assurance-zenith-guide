@@ -58,15 +58,23 @@ function EspaceLayout() {
   const domaines = useMemo(() => domainesVisibles(roleNav), [roleNav]);
   const reglages = useMemo(() => filtrerDomaine(NAV_SETTINGS, roleNav), [roleNav]);
 
-  // Le domaine affiché suit la route ; un clic dans le rail peut le forcer.
+  // Le domaine choisi dans le rail prime s'il contient la route courante
+  // (une même page peut apparaître dans deux domaines), sinon on suit la route.
   const domaineDeLaRoute = useMemo(() => domaineActif(pathname, roleNav), [pathname, roleNav]);
   const tous = useMemo(() => [...domaines, ...(reglages ? [reglages] : [])], [domaines, reglages]);
+  const contientRoute = (d: NavDomain) =>
+    d.modules.some((m) =>
+      m.items.some((i) => i.to && (i.exact ? pathname === i.to : pathname === i.to || pathname.startsWith(i.to + "/"))),
+    );
+  const choisi = tous.find((d) => d.key === domaineChoisi);
   const domaine =
-    tous.find((d) => d.key === (domaineDeLaRoute?.key ?? domaineChoisi)) ??
-    tous.find((d) => d.key === domaineChoisi) ??
+    (choisi && contientRoute(choisi) ? choisi : null) ??
+    tous.find((d) => d.key === domaineDeLaRoute?.key) ??
+    choisi ??
     domaines[0] ??
     reglages ??
     null;
+
 
   const sousModuleActif = useMemo(() => {
     if (!domaine) return null;
