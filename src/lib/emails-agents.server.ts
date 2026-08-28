@@ -561,9 +561,22 @@ export async function executerAgents(
             ].join("\n"),
             created_by: userId,
           });
+        } finally {
+          // ── CD-SI-001-B ACTION 56 §13.3-4/§13.7 — CLÔTURE DU GREFFON.
+          // Dernière étape LOGIQUE DU GREFFON, exécutée même après un `continue`
+          // métier. Une seule seconde LECTURE `SELECT crm_emails`, réutilisation
+          // du même detail Gmail (jamais de second `lireMessage`), aucune
+          // écriture. `try/catch` dédié : jamais le catch historique.
+          try {
+            await cloturerContexteEmail(resultatContexte, metriquesContexte);
+          } catch (e) {
+            metriquesContexte.contexte_erreurs++;
+            console.error("[branchement-contexte] erreur non capturée (clôture)", m.id, e);
+          }
         }
 
       }
+
     }
 
     // Agent relation client : emails rattachés à un client existant et pas
