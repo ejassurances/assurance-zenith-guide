@@ -212,6 +212,8 @@ export async function executerAgents(
       const { traiterEmailFinance } = await import("@/lib/finance-agent.server");
       const { traiterEmailVeille } = await import("@/lib/veille-reglementaire.server");
       for (const m of aTrier) {
+        // ACTION 56 §13.3 : état mémoire d'itération du greffon (jamais persisté).
+        let resultatContexte: Awaited<ReturnType<typeof brancherContexteEmail>> | null = null;
         try {
           const detail = await lireMessage(m.id);
           const entree = {
@@ -230,7 +232,7 @@ export async function executerAgents(
           // une erreur du greffon n'atteint jamais le catch historique, ne crée
           // aucune tâche administrative et n'incrémente jamais `erreurs`.
           try {
-            await brancherContexteEmail({
+            resultatContexte = await brancherContexteEmail({
               gmailMessageId: m.id,
               email: {
                 sujet: entree.sujet,
@@ -246,6 +248,7 @@ export async function executerAgents(
             metriquesContexte.contexte_erreurs++;
             console.error("[branchement-contexte] erreur non capturée", m.id, e);
           }
+
 
 
 
