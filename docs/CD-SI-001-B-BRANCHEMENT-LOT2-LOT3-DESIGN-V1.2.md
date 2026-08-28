@@ -254,17 +254,35 @@ Portée par l'état lui-même, pas par un journal externe : `ai_context.analyse.
 d'idempotence. `DETECTED` ⇒ Lot 2 refusé ; `PROPOSED`/`AMBIGUOUS`/`A_QUALIFIER`/`CONFIRMED` ⇒
 Lot 3 refusé. Aucune table ni colonne supplémentaire n'est nécessaire.
 
-### 6.2 Dry-run (MINEUR-1)
+### 6.2 Dry-run (MAJEUR-2 V1.2 — refonte)
 Le dry-run est une propriété du **greffon**, pas du cron existant. **Aucun paramètre du cron
 `scan-emails` ne permet actuellement de le piloter**, et ce design ne prétend pas qu'une bascule
 opérationnelle à chaud du cron existe.
+
+**Règle fondamentale (V1.2)** : en dry-run, le greffon **n'appelle PAS les orchestrateurs de
+production** `extraireEtEnregistrerContexteEmail` ni `croiserEtEnregistrerContexteEmail`, car ces
+orchestrateurs persistent `ai_context`. Le dry-run suit un chemin dédié, sans aucune persistance :
+
+1. **Sélection** : application des conditions de candidature §3.2, incluant la lecture préalable
+   non mutatrice `SELECT ai_context` (§3.4-6) ;
+2. **Résolution CRM** : `SELECT id FROM public.crm_emails WHERE gmail_message_id = :id` (§3.4),
+   avec SKIP et métrique `contexte_sans_ligne_crm` si absent ;
+3. **Extraction Lot 2 sans persistance** : appel de l'analyse Gemini (`analyserContexteEmail`)
+   et validation Zod du contexte produit, **sans** appeler `persisterContexteEmail` ;
+4. **Simulation du résultat** : **journalisation** du contexte `DETECTED` qui *aurait* été écrit
+   (sans contenu du mail, sans donnée personnelle — §6.5) et comptabilisation dans les métriques ;
+5. **Simulation du croisement** : le croisement Lot 3 est simulé via les **fonctions pures**
+   (`croiserContexteEmail` et `lireReferentiel` en lecture seule) **lorsque techniquement
+   possible** sur le contexte simulé, sans aucune écriture. Le **Lot 3 de production n'est PAS
+   exécuté en dry-run**, puisqu'il exige un `DETECTED` réellement persisté en base ; sa simulation
+   est donc nécessairement approchée et le design l'assume explicitement.
 
 Modalités exactes d'activation dans l'implémentation :
 1. Le mode dry-run est matérialisé par une **constante de configuration du module du greffon**
    (par exemple `BRANCHEMENT_CONTEXTE_DRY_RUN = true`), avec `true` comme valeur **au premier
    déploiement**.
-2. En dry-run, la chaîne exécute sélection, extraction et croisement, **journalise** le contexte
-   qui *aurait* été écrit, et n'appelle ni `persisterContexteEmail` ni `ecrireAiContext`.
+2. En dry-run, aucun appel à `persisterContexteEmail` ni `ecrireAiContext` n'est possible :
+   `ai_context` reste à `{}` pendant toute la durée du dry-run (contrôle §8-2).
 3. Le passage en écriture réelle est un **changement de code déployé** (constante passée à
    `false`), soumis à validation DG préalable — jamais une déduction, jamais un paramètre
    d'exécution du cron.
