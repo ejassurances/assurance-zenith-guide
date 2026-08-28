@@ -9,6 +9,7 @@ import {
   BRANCHEMENT_CONTEXTE_DRY_RUN,
   PLAFOND_LOT_CONTEXTE,
   brancherContexteEmail,
+  cloturerContexteEmail,
   creerMetriquesContexte,
   finaliserMetriquesContexte,
   type DependancesBranchement,
@@ -116,6 +117,11 @@ describe("ACTION 43 — résolution CRM (§3.4)", () => {
       m,
     );
     expect(r.statut).toBe("sans_ligne_crm");
+    expect(r.etat).toBe("EN_ATTENTE_LIGNE_CRM");
+    expect(m.contexte_sans_ligne_crm_initial).toBe(1);
+    expect(m.contexte_sans_ligne_crm).toBe(0);
+    const c = await cloturerContexteEmail(r, m);
+    expect(c?.etat).toBe("SANS_LIGNE_CRM_DEFINITIF");
     expect(m.contexte_sans_ligne_crm).toBe(1);
     expect(analyses).toBe(0);
   });
@@ -209,7 +215,8 @@ describe("ACTION 43 — métriques et couverture", () => {
   it("calcule la couverture éligibles traités / éligibles identifiés", async () => {
     const m = creerMetriquesContexte();
     await lancer({}, m);
-    await lancer({ resoudreEmail: async () => null }, m);
+    const enAttente = await lancer({ resoudreEmail: async () => null }, m);
+    await cloturerContexteEmail(enAttente, m);
     finaliserMetriquesContexte(m);
     expect(m.contexte_selectionnes).toBe(2);
     expect(m.contexte_traites).toBe(1);
@@ -221,6 +228,7 @@ describe("ACTION 43 — métriques et couverture", () => {
     expect(Object.keys(m).sort()).toEqual(
       [
         "contexte_couverture",
+        "contexte_couverture_hors_post_traitement",
         "contexte_dry_run",
         "contexte_erreurs",
         "contexte_ignores_contexte_present",
@@ -230,6 +238,9 @@ describe("ACTION 43 — métriques et couverture", () => {
         "contexte_simules_ambigus",
         "contexte_simules_proposes",
         "contexte_sans_ligne_crm",
+        "contexte_sans_ligne_crm_initial",
+        "contexte_recuperes_post_traitement",
+        "contexte_post_traitements_tentes",
         "contexte_traites",
       ].sort(),
     );
@@ -256,5 +267,164 @@ describe("ACTION 43 — métriques et couverture", () => {
     }
     // Le greffon n'incrémente jamais le compteur historique `erreurs`.
     expect(SOURCE_AGENTS).not.toMatch(/contexte_erreurs\+\+;\s*erreurs\+\+/);
+  });
+});
+
+describe("ACTION 56 — post-traitement CRM (option B §13, dry-run strict)", () => {
+  const attente = async (m: MetriquesContexte, analyser?: DependancesBranchement["analyser"]) =>
+    lancer({ resoudreEmail: async () => null, ...(analyser ? { analyser } : {}) }, m);
+
+  it("CRM absent puis toujours absent → sans_ligne_crm définitif, sans erreur", async () => {
+    const m = creerMetriquesContexte();
+    const r = await attente(m);
+    const c = await cloturerContexteEmail(r, m);
+    expect(c?.etat).toBe("SANS_LIGNE_CRM_DEFINITIF");
+    expect(m.contexte_sans_ligne_crm).toBe(1);
+    expect(m.contexte_recuperes_post_traitement).toBe(0);
+    expect(m.contexte_post_traitements_tentes).toBe(1);
+    expect(m.contexte_erreurs).toBe(0);
+    expect(m.contexte_traites).toBe(0);
+  });
+
+  it("CRM absent puis créé ensuite → post-traitement exécuté une seule fois", async () => {
+    const m = creerMetriquesContexte();
+    let lectures = 0;
+    let analyses = 0;
+    const r = await brancherContexteEmail({
+      gmailMessageId: "g1",
+      email,
+      estSortant: false,
+      metriques: m,
+      deps: {
+        resoudreEmail: async () => {
+          lectures++;
+          return lectures === 1 ? null : { id: "e1", ai_context: {} };
+        },
+        analyser: async () => {
+          analyses++;
+          return { ok: true, contexte: contexteDetecte(), modele: "google/gemini-3.6-flash" };
+        },
+      },
+    });
+    expect(r.etat).toBe("EN_ATTENTE_LIGNE_CRM");
+    expect(analyses).toBe(0);
+
+    const c = await cloturerContexteEmail(r, m);
+    expect(c?.etat).toBe("TRAITEE_POST");
+    expect(c?.statut).toBe("traite");
+    // Lot 2 et Lot 3 exécutés exactement une fois pour ce message.
+    expect(analyses).toBe(1);
+    expect(m.contexte_traites).toBe(1);
+    expect(m.contexte_simules_proposes + m.contexte_simules_ambigus).toBe(1);
+    // Aucun double comptage : un seul jeton de sélection, aucun SKIP définitif.
+    expect(m.contexte_selectionnes).toBe(1);
+    expect(m.contexte_sans_ligne_crm_initial).toBe(1);
+    expect(m.contexte_sans_ligne_crm).toBe(0);
+    expect(m.contexte_recuperes_post_traitement).toBe(1);
+    expect(m.contexte_post_traitements_tentes).toBe(1);
+    expect(m.contexte_motifs["recupere_post_traitement"]).toBe(1);
+
+    // Seconde tentative interdite (I2) : aucun effet, aucun compteur touché.
+    const deuxieme = await cloturerContexteEmail(r, m);
+    expect(deuxieme).toBeNull();
+    expect(analyses).toBe(1);
+    expect(lectures).toBe(2);
+    expect(m.contexte_traites).toBe(1);
+    expect(m.contexte_post_traitements_tentes).toBe(1);
+  });
+
+  it("relation d'audit : initial = récupérés + définitifs", async () => {
+    const m = creerMetriquesContexte();
+    let lectures = 0;
+    const r1 = await brancherContexteEmail({
+      gmailMessageId: "g1",
+      email,
+      estSortant: false,
+      metriques: m,
+      deps: deps({
+        resoudreEmail: async () => {
+          lectures++;
+          return lectures === 1 ? null : { id: "e1", ai_context: {} };
+        },
+      }),
+    });
+    const r2 = await attente(m);
+    await cloturerContexteEmail(r1, m);
+    await cloturerContexteEmail(r2, m);
+    expect(m.contexte_sans_ligne_crm_initial).toBe(
+      m.contexte_recuperes_post_traitement + m.contexte_sans_ligne_crm,
+    );
+  });
+
+  it("publie les deux lectures de couverture (§13.6-4)", async () => {
+    const m = creerMetriquesContexte();
+    let lectures = 0;
+    const r = await brancherContexteEmail({
+      gmailMessageId: "g1",
+      email,
+      estSortant: false,
+      metriques: m,
+      deps: deps({
+        resoudreEmail: async () => {
+          lectures++;
+          return lectures === 1 ? null : { id: "e1", ai_context: {} };
+        },
+      }),
+    });
+    await cloturerContexteEmail(r, m);
+    finaliserMetriquesContexte(m);
+    expect(m.contexte_couverture).toBe(1);
+    expect(m.contexte_couverture_hors_post_traitement).toBe(0);
+  });
+
+  it("n'ouvre le post-traitement pour aucun autre état terminal (I1)", async () => {
+    const m = creerMetriquesContexte();
+    for (const r of [
+      await lancer({}, m),
+      await lancer({ resoudreEmail: async () => ({ id: "e1", ai_context: contexteDetecte() }) }, m),
+      await lancer({ analyser: async () => ({ ok: false, contexte: contexteDetecte(), motif: "x" }) }, m),
+      await lancer({}, m, true),
+    ]) {
+      expect(await cloturerContexteEmail(r, m)).toBeNull();
+    }
+    expect(m.contexte_post_traitements_tentes).toBe(0);
+  });
+
+  it("isole les erreurs du post-traitement sans lever ni créer de tâche", async () => {
+    const m = creerMetriquesContexte();
+    let lectures = 0;
+    const r = await brancherContexteEmail({
+      gmailMessageId: "g1",
+      email,
+      estSortant: false,
+      metriques: m,
+      deps: deps({
+        resoudreEmail: async () => {
+          lectures++;
+          if (lectures === 1) return null;
+          throw new Error("base indisponible");
+        },
+      }),
+    });
+    const c = await cloturerContexteEmail(r, m);
+    expect(c?.statut).toBe("erreur");
+    expect(m.contexte_erreurs).toBe(1);
+    expect(m.contexte_traites).toBe(0);
+  });
+
+  it("le post-traitement reste étanche : aucune écriture, aucun Gmail, aucun Lot 4/5", () => {
+    expect(CODE_GREFFON).not.toMatch(/\.insert\(|\.upsert\(|\.delete\(|\.update\(|\.rpc\(/);
+    expect(CODE_GREFFON).not.toMatch(/lireMessage|gmail\.server|marquerEtat/);
+    expect(CODE_GREFFON).not.toMatch(/force\s*:\s*true/);
+    expect(CODE_GREFFON).not.toMatch(/client_id|dossier_id|contrat_id|compagnie_id/);
+    expect(BRANCHEMENT_CONTEXTE_DRY_RUN).toBe(true);
+  });
+
+  it("la clôture est branchée dans executerAgents en finally, hors catch historique", () => {
+    expect(SOURCE_AGENTS).toContain("cloturerContexteEmail(resultatContexte, metriquesContexte)");
+    expect(SOURCE_AGENTS.split("cloturerContexteEmail(resultatContexte").length - 1).toBe(1);
+    expect(SOURCE_AGENTS).toContain("[branchement-contexte] erreur non capturée (clôture)");
+    // Un seul `lireMessage` dans la boucle de triage général (aucun second appel).
+    expect(SOURCE_AGENTS.split("await lireMessage(m.id)").length - 1).toBe(1);
   });
 });
