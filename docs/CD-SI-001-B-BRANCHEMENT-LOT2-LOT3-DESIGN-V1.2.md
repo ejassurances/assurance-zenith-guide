@@ -314,10 +314,17 @@ Modalités exactes d'activation dans l'implémentation :
   l'email reste candidat au passage suivant.
 - Plafond par passage (`plafondLot`, valeur cible 5) pour borner toute dérive.
 
-### 6.5 Métriques et logs nécessaires
-Réponse JSON de l'endpoint enrichie (champs additifs, aucun champ existant modifié) :
+### 6.5 Métriques et logs nécessaires (MINEUR-2 V1.2)
+Réponse JSON de l'endpoint enrichie de champs **strictement additifs** :
 `contexte_candidats`, `contexte_extraits`, `contexte_refuses` (par motif), `contexte_resolus`,
 `contexte_ambigus`, `contexte_erreurs`, `contexte_sans_ligne_crm` (SKIP §3.4), `dry_run`.
+
+**Caractère additif garanti (V1.2)** : aucun champ historique du retour d'`executerAgents` ni de
+la réponse de `scan-emails` ne change de sémantique, de nom, de type ou de valeur — notamment le
+compteur historique `erreurs`, qui n'est **jamais** incrémenté par le greffon (§3.1, isolation
+d'erreur dédiée). Les nouvelles métriques `contexte_*` sont calculées par le greffon seul et
+fusionnées dans la réponse sans toucher aux champs existants.
+
 Logs préfixés `[branchement-contexte]` : identifiant email, motif de refus, modèle utilisé,
 statut de sortie. **Interdiction** de journaliser le contenu du mail, une donnée personnelle,
 ou une clé.
