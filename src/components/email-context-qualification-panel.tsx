@@ -15,6 +15,16 @@ import {
 } from "@/lib/email-context-validation.functions";
 import type { CorrectionContexte } from "@/lib/email-context-validation";
 import { STATUTS_HUMAINS } from "@/lib/email-context-validation";
+import {
+  CHAMPS_IDENTITE_IHM,
+  VALEUR_AUCUNE,
+  construireCorrectionIdentite,
+  libelleCorrectionIhm,
+  optionsIdentite,
+  type ChampIdentiteIhm,
+  type ObjetIhm,
+  type Referentiels,
+} from "@/lib/email-context-qualification-ui";
 
 type LigneFile = {
   id: string;
@@ -44,6 +54,13 @@ type IntentionUi =
   | { type: "valider" }
   | { type: "corriger_et_valider"; corrections: CorrectionContexte[] }
   | { type: "renvoyer_qualification"; motif: string };
+
+/** Lecture d'un champ de proposition sans chemin JSON libre (clés bornées par les descripteurs). */
+function valeurBrute(objet: object | null | undefined, champ: string): string | null {
+  if (!objet) return null;
+  const trouve = Object.entries(objet).find(([k]) => k === champ);
+  return typeof trouve?.[1] === "string" ? trouve[1] : null;
+}
 
 const jour = (v: string | null) => (v ? new Date(v).toLocaleString("fr-FR") : "—");
 
@@ -79,6 +96,48 @@ function StatutSelect({
         </option>
       ))}
     </select>
+  );
+}
+
+/**
+ * Sélecteur borné d'une proposition d'identité (§2.1.5). Aucune saisie libre :
+ * les seules valeurs proposées sont « aucun » et les référentiels renvoyés par
+ * `detailContexteEmail` ou une énumération fermée du schéma 1.1.0.
+ */
+function IdentiteSelect({
+  descripteur,
+  referentiels,
+  valeurActuelle,
+  desactive,
+  onChoix,
+}: {
+  descripteur: ChampIdentiteIhm;
+  referentiels: Referentiels;
+  valeurActuelle: string | null;
+  desactive: boolean;
+  onChoix: (valeurBrute: string) => void;
+}) {
+  const options = optionsIdentite(descripteur, referentiels);
+  const selection = options.some((o) => o.valeur === (valeurActuelle ?? VALEUR_AUCUNE))
+    ? (valeurActuelle ?? VALEUR_AUCUNE)
+    : VALEUR_AUCUNE;
+  return (
+    <label className="flex min-w-0 flex-col gap-1">
+      <span className="text-[10px] uppercase tracking-wide text-ink-muted">{descripteur.libelle}</span>
+      <select
+        data-testid={`identite-${descripteur.champ}`}
+        value={selection}
+        disabled={desactive}
+        onChange={(e) => onChoix(e.target.value)}
+        className="rounded-md border border-line bg-surface px-2 py-1 text-xs"
+      >
+        {options.map((o) => (
+          <option key={o.valeur || "aucune"} value={o.valeur}>
+            {o.libelle}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -140,6 +199,39 @@ export function EmailContextQualificationPanel() {
       c,
     ]);
   }, []);
+
+  const referentiels: Referentiels = useMemo(() => detail?.libelles ?? {}, [detail]);
+
+  /** Valeur affichée pour un champ d'identité : correction en attente sinon proposition IA. */
+  const valeurIdentite = useCallback(
+    (objet: ObjetIhm, index: number | null, champ: string, valeurIa: string | null) => {
+      const enAttente = corrections.find(
+        (c) =>
+          c.cible.objet === objet &&
+          ("index" in c.cible ? c.cible.index : null) === index &&
+          c.champ === champ,
+      );
+      if (!enAttente) return valeurIa;
+      return typeof enAttente.valeur === "string" ? enAttente.valeur : null;
+    },
+    [corrections],
+  );
+
+  const poserCorrectionIdentite = useCallback(
+    (objet: ObjetIhm, index: number | null, champ: string, valeurBrute: string) => {
+      const correction = construireCorrectionIdentite({
+        objet,
+        index,
+        champ,
+        valeurBrute,
+        referentiels,
+      });
+      if (!correction) return;
+      poserCorrection(correction);
+    },
+    [poserCorrection, referentiels],
+  );
+
 
   const envoyer = useCallback(
     async (intention: IntentionUi) => {
@@ -255,7 +347,7 @@ export function EmailContextQualificationPanel() {
                   Client proposé : {libelle("clients", contexte.correspondant?.client_id) ?? "aucun"} · Compagnie :{" "}
                   {libelle("compagnies", contexte.correspondant?.compagnie_id) ?? "aucune"}
                 </p>
-                <div className="mt-2">
+                <div className="mt-2 flex flex-wrap items-end gap-3">
                   <StatutSelect
                     valeur={contexte.correspondant?.statut ?? null}
                     desactive={lectureSeule || enCours}
@@ -263,8 +355,24 @@ export function EmailContextQualificationPanel() {
                       poserCorrection({ cible: { objet: "correspondant" }, champ: "statut", valeur: v })
                     }
                   />
+                  {CHAMPS_IDENTITE_IHM.correspondant.map((d) => (
+                    <IdentiteSelect
+                      key={d.champ}
+                      descripteur={d}
+                      referentiels={referentiels}
+                      valeurActuelle={valeurIdentite(
+                        "correspondant",
+                        null,
+                        d.champ,
+                        valeurBrute(contexte.correspondant, d.champ),
+                      )}
+                      desactive={lectureSeule || enCours}
+                      onChoix={(v) => poserCorrectionIdentite("correspondant", null, d.champ, v)}
+                    />
+                  ))}
                 </div>
               </div>
+
 
               {(
                 [
@@ -287,7 +395,7 @@ export function EmailContextQualificationPanel() {
                               .map(([k, v]) => `${k} : ${String(v)}`)
                               .join(" · ")}
                           </p>
-                          <div className="mt-2">
+                          <div className="mt-2 flex flex-wrap items-end gap-3">
                             <StatutSelect
                               valeur={(it as { statut?: string }).statut ?? null}
                               desactive={lectureSeule || enCours}
@@ -299,7 +407,18 @@ export function EmailContextQualificationPanel() {
                                 } as CorrectionContexte)
                               }
                             />
+                            {CHAMPS_IDENTITE_IHM[objet].map((d) => (
+                              <IdentiteSelect
+                                key={d.champ}
+                                descripteur={d}
+                                referentiels={referentiels}
+                                valeurActuelle={valeurIdentite(objet, index, d.champ, valeurBrute(it, d.champ))}
+                                desactive={lectureSeule || enCours}
+                                onChoix={(v) => poserCorrectionIdentite(objet, index, d.champ, v)}
+                              />
+                            ))}
                           </div>
+
                         </li>
                       ))}
                     </ul>
@@ -322,9 +441,20 @@ export function EmailContextQualificationPanel() {
 
               {!lectureSeule && (
                 <div className="space-y-3 border-t border-line pt-3">
-                  <p className="text-xs text-ink-muted">
-                    {corrections.length} correction(s) en attente d'enregistrement.
-                  </p>
+                  <div>
+                    <p className="text-xs text-ink-muted">
+                      {corrections.length} correction(s) en attente d'enregistrement.
+                    </p>
+                    {corrections.length > 0 && (
+                      <ul className="mt-1 space-y-0.5" data-testid="panier-corrections">
+                        {corrections.map((c, i) => (
+                          <li key={i} className="text-[11px] text-ink-soft">
+                            {libelleCorrectionIhm(c, referentiels)}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
