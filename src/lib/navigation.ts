@@ -77,7 +77,7 @@ export const NAV_DOMAINS: NavDomain[] = [
   },
   {
     key: "conformite",
-    short: "Conform.",
+    short: "Conf.",
     label: "Conformité & sécurité réglementaire",
     icon: IconShieldCheck,
     modules: [

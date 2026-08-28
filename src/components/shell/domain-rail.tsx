@@ -36,7 +36,7 @@ export function DomainRail({
         }
       >
         <d.icon size={20} stroke={1.6} aria-hidden="true" />
-        <span className="w-full truncate text-center text-[9px] font-semibold uppercase tracking-[0.06em] leading-none">
+        <span className="w-full truncate text-center text-[9px] font-semibold uppercase leading-none tracking-normal">
           {d.short}
         </span>
 
