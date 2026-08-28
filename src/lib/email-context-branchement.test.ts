@@ -137,7 +137,7 @@ describe("ACTION 43 — idempotence et refus sécurisés", () => {
 
   it("refuse une sentinelle humaine (Q.11 inchangée)", async () => {
     const humain = contexteDetecte();
-    (humain.analyse as unknown as { validated_by: string }).validated_by = "u1";
+    (humain.analyse as unknown as { validated_by: string }).validated_by = "11111111-1111-4111-8111-111111111111";
     const m = creerMetriquesContexte();
     const r = await lancer({ resoudreEmail: async () => ({ id: "e1", ai_context: humain }) }, m);
     expect(r.statut).toBe("refus_securise");
