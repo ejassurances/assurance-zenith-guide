@@ -13,7 +13,7 @@ import {
   IconBriefcase,
   IconBuildingBank,
   IconCoin,
-  IconFileShield,
+  IconShieldCheck,
   IconChartHistogram,
   IconLifebuoy,
   IconRobot,
@@ -79,7 +79,7 @@ export const NAV_DOMAINS: NavDomain[] = [
     key: "conformite",
     short: "Conformité",
     label: "Conformité & sécurité réglementaire",
-    icon: IconFileShield,
+    icon: IconShieldCheck,
     modules: [
       {
         module: "Conformité",
