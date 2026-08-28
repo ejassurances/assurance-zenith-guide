@@ -4,6 +4,8 @@ import type { EmailResume } from "@/lib/gmail.server";
 import { estEmailInterne } from "@/lib/domaines-internes";
 import {
   brancherContexteEmail,
+  cloturerContexteEmail,
+
   creerMetriquesContexte,
   finaliserMetriquesContexte,
   type MetriquesContexte,
