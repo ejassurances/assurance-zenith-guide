@@ -86,7 +86,11 @@ function StatutSelect({
     <select
       value={STATUTS_HUMAINS.includes(valeur as (typeof STATUTS_HUMAINS)[number]) ? (valeur as string) : ""}
       disabled={desactive}
-      onChange={(e) => onChange(e.target.value as (typeof STATUTS_HUMAINS)[number])}
+      onChange={(e) => {
+        const v = e.target.value;
+        if (!v) return; // option placeholder : aucune correction vide dans le panier
+        onChange(v as (typeof STATUTS_HUMAINS)[number]);
+      }}
       className="rounded-md border border-line bg-surface px-2 py-1 text-xs"
     >
       <option value="">Statut IA : {valeur ?? "—"}</option>
@@ -252,6 +256,11 @@ export function EmailContextQualificationPanel() {
         }
         await ouvrir(selection);
         await rafraichirFile();
+      } catch {
+        setMessage({
+          ton: "ko",
+          texte: "Une erreur inattendue est survenue lors de l'enregistrement. Veuillez réessayer ou contacter le support.",
+        });
       } finally {
         setEnCours(false);
       }
