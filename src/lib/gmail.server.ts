@@ -392,7 +392,7 @@ export async function deposerCopieEnvoyee(params: {
 
     const labelId = await resoudreLabelCopieBrevo();
     const insere = await gmailFetch<{ id: string }>(
-      "/users/me/messages/insert?internalDateSource=dateHeader",
+      "/users/me/messages?internalDateSource=dateHeader",
       {
         method: "POST",
         body: JSON.stringify({
