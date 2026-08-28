@@ -121,19 +121,31 @@ scan-emails.ts (cron, inchangé)
                         └─ ✋ STOP — Lot 4 gelé (aucune FK écrite)
 ```
 
-### 3.1 Position exacte du greffon (MAJEUR-1 — tranché : option a)
+### 3.1 Position exacte du greffon (MAJEUR-1 — tranché : option a, précisé en V1.2)
 
-**Décision (option a retenue)** : le branchement Lot 2 → Lot 3 est effectué **dans `executerAgents`**,
-au point où le `detail` du message Gmail est **déjà chargé** (appel `lireMessage(m.id)` existant,
-`src/lib/emails-agents.server.ts`, boucle de traitement par message, après la récupération de
-`detail` et après les agents qui produisent `triage_ia`).
+**Décision (option a retenue, déterminée de façon univoque)** : le branchement Lot 2 → Lot 3 est
+effectué **dans `executerAgents`**, au point où le `detail` du message Gmail est **déjà chargé**.
 
-Cette option garantit :
-- **zéro appel Gmail supplémentaire** : `lireMessage(m.id)` est déjà invoqué par le chemin nominal
+**Point d'insertion unique et exact (V1.2)** :
+- il existe **une seule boucle** de branchement : la **boucle principale de traitement du triage
+  général** de `executerAgents` ;
+- le greffon est invoqué **après `detail = await lireMessage(m.id)`** (et après les agents qui
+  produisent `triage_ia`) ;
+- le greffon est invoqué **avant les `continue` métier** qui terminent l'itération courante, de
+  sorte qu'aucun chemin de sortie anticipée ne prive un email candidat du branchement ni ne le
+  duplique ;
+- **aucun second point d'insertion n'est créé dans la seconde boucle « Relation client »** de
+  `executerAgents` : le branchement n'existe qu'en un seul endroit du code.
+
+Pourquoi ce point précis garantit les propriétés requises :
+- **corps complet disponible** : `detail.texte` (avec repli `detail.snippet` déjà appliqué par le
+  code existant) est en mémoire à cet endroit ; le greffon ne reçoit jamais un résumé tronqué ;
+- **aucun appel Gmail supplémentaire** : `lireMessage(m.id)` est déjà invoqué par le chemin nominal
   d'ingestion pour chaque message ; le greffon réutilise strictement ce `detail` en mémoire ;
-- **conservation du corps du message** nécessaire à l'extraction Lot 2 (`detail.texte`), là où
-  l'objet `EmailResume` manipulé en fin de `scan-emails` ne porte que le `snippet` ;
-- **aucune dégradation vers le seul snippet** : le greffon ne reçoit jamais un résumé tronqué.
+- **couverture mesurable** : chaque message du lot passe exactement une fois devant le greffon, ce
+  qui rend le taux de couverture du pilote (§7) dénombrable sans ambiguïté ;
+- **absence de duplication** : point d'insertion unique ⇒ impossible d'exécuter deux fois le
+  branchement pour un même message au sein d'un même passage.
 
 **Données disponibles au point d'insertion** (vérifiées dans le code réel) :
 `detail.sujet`, `detail.expediteur_nom`, `detail.expediteur_email`, `detail.texte`
@@ -141,8 +153,15 @@ Cette option garantit :
 (nom/mime), `detail.thread_id`, `detail.date`, `m.id` (`gmail_message_id`), `m.thread_id`,
 `m.date`. Ces champs suffisent au contrat d'entrée de `extraireEtEnregistrerContexteEmail`.
 
-Le greffon est invoqué dans un `try/catch` isolé : un échec du branchement ne doit jamais faire
-échouer l'agent courant, le lot, ni la réponse HTTP de l'endpoint `scan-emails`.
+**Isolation d'erreur dédiée (MINEUR-1 V1.2)** : le greffon est invoqué dans son **propre
+`try/catch` dédié**, distinct du `catch` historique d'`executerAgents`. Une erreur du greffon :
+- ne **déclenche pas** le `catch` historique d'`executerAgents` ;
+- ne **crée aucune tâche administrative parasite** (le catch historique en créerait une) ;
+- ne **fausse pas** le compteur historique `erreurs` du retour d'`executerAgents` ;
+- n'**interrompt pas** le traitement des autres messages du lot (la boucle continue à l'itération
+  suivante) ;
+- est uniquement **journalisée** sous le préfixe `[branchement-contexte]` et comptabilisée dans la
+  métrique additive `contexte_erreurs` (§6.5).
 
 ### 3.2 Conditions de déclenchement (candidats)
 Un email est candidat au Lot 2 si **toutes** ces conditions sont vraies :
