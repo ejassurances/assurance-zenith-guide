@@ -186,7 +186,7 @@ describe("ACTION 34 — accessibilité IHM des corrections d'identité", () => {
     const r = appliquerIntentionHumaine({
       observe: contexteBase(),
       intention: { type: "corriger_et_valider", corrections },
-      operateurId: "op-1",
+      operateurId: "11111111-1111-4111-8111-111111111111",
       valideLe: "2026-08-28T08:00:00.000Z",
     });
     expect(r.autorise).toBe(true);
@@ -217,7 +217,7 @@ describe("ACTION 34 — accessibilité IHM des corrections d'identité", () => {
           })!,
         ],
       },
-      operateurId: "op-1",
+      operateurId: "11111111-1111-4111-8111-111111111111",
       valideLe: "2026-08-28T08:00:00.000Z",
       db: {
         lireEmail: async () => observe as never,
@@ -242,7 +242,7 @@ describe("ACTION 34 — accessibilité IHM des corrections d'identité", () => {
     const r = await validerContexteEmail({
       emailId: "e2",
       intention: { type: "valider" },
-      operateurId: "op-1",
+      operateurId: "11111111-1111-4111-8111-111111111111",
       db: {
         lireEmail: async () => observe as never,
         ecrireAiContext: async () => ({ lignesAffectees: 1, erreur: null }),
@@ -257,7 +257,7 @@ describe("ACTION 34 — accessibilité IHM des corrections d'identité", () => {
     valide.analyse = {
       statut: "CONFIRMED",
       validation_humaine_requise: false,
-      validated_by: "op-9",
+      validated_by: "22222222-2222-4222-8222-222222222222",
       validated_at: "2026-08-01T00:00:00.000Z",
       provenance: { source: "humain" },
     };
@@ -276,7 +276,7 @@ describe("ACTION 34 — accessibilité IHM des corrections d'identité", () => {
           })!,
         ],
       },
-      operateurId: "op-1",
+      operateurId: "11111111-1111-4111-8111-111111111111",
       db: {
         lireEmail: async () => ({ id: "e3", ai_context: valide, updated_at: "x" }) as never,
         ecrireAiContext: async () => {
@@ -302,7 +302,7 @@ describe("ACTION 34 — accessibilité IHM des corrections d'identité", () => {
     valide.analyse = {
       statut: "CONFIRMED",
       validation_humaine_requise: false,
-      validated_by: "op-1",
+      validated_by: "11111111-1111-4111-8111-111111111111",
       validated_at: "2026-08-01T00:00:00.000Z",
       provenance: { source: "humain" },
     };
@@ -321,7 +321,7 @@ describe("ACTION 34 — accessibilité IHM des corrections d'identité", () => {
           })!,
         ],
       },
-      operateurId: "op-1",
+      operateurId: "11111111-1111-4111-8111-111111111111",
       db: {
         lireEmail: async () => ({ id: "e4", ai_context: valide, updated_at: "x" }) as never,
         ecrireAiContext: async () => {
