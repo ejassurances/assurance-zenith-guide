@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
 import { SectionNav } from "@/components/section-nav";
 import { ReponsesIaPanel } from "@/components/reponses-ia-panel";
+import { EmailContextQualificationPanel } from "@/components/email-context-qualification-panel";
 
 export const Route = createFileRoute("/_authenticated/espace/relation-client")({
   component: RelationClientPage,
@@ -28,7 +29,7 @@ export const Route = createFileRoute("/_authenticated/espace/relation-client")({
   }),
 });
 
-type Section = "contrats" | "brouillons" | "signalements";
+type Section = "contrats" | "brouillons" | "qualification" | "signalements";
 
 type ContratRow = {
   id: string;
@@ -116,6 +117,7 @@ function RelationClientPage() {
           items={[
             { key: "contrats", label: `Contrats (${contrats.length})` },
             { key: "brouillons", label: "Brouillons à valider" },
+            { key: "qualification", label: "Qualification des e-mails" },
             { key: "signalements", label: `Réponses signalées (${signalements.length})` },
           ]}
         />
@@ -186,6 +188,8 @@ function RelationClientPage() {
               </p>
             </>
           )}
+
+          {section === "qualification" && <EmailContextQualificationPanel />}
 
           {section === "signalements" && (
             <section className="crm-card min-w-0 p-5">
