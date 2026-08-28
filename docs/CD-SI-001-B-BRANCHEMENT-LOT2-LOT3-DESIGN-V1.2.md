@@ -1,4 +1,4 @@
-# CD-SI-001-B — BRANCHEMENT INGESTION → LOT 2 → LOT 3 — DESIGN V1.1
+# CD-SI-001-B — BRANCHEMENT INGESTION → LOT 2 → LOT 3 — DESIGN V1.2
 
 Statut : DESIGN (aucun code, aucun test, aucune migration, aucune écriture réelle).
 Périmètre : conception du branchement de la chaîne `ingestion Gmail existante → Lot 2 Extraction → Lot 3 Résolution`.
@@ -10,6 +10,7 @@ Gels : **Lot 4 (autorisation/écriture FK) et Lot 5 sont strictement gelés**. A
 | --- | --- | --- |
 | V1.0 | 28/08/2026 | Conception initiale (ACTION 38). |
 | V1.1 | 28/08/2026 | Corrections documentaires imposées par le RAPPORT ACTION 39 (audit DG) : trancher MAJEUR-1 (point d'insertion, option a), MAJEUR-2 (résolution `gmail_message_id → crm_emails.id`), MINEUR-1 (dry-run), MINEUR-2 (rollback), plus la sémantique `direction` et le critère de couverture du pilote. Aucune autre modification. |
+| V1.2 | 28/08/2026 | Corrections documentaires imposées par le RAPPORT ACTION 41 (audit DG final V1.1) : MAJEUR-1 (point d'insertion unique et précis dans la boucle de triage général), MAJEUR-2 (dry-run sans orchestrateurs persistants), MINEUR-1 (isolation d'erreur dédiée au greffon), MINEUR-2 (métriques strictement additives), INFO-1 (lecture préalable `SELECT ai_context` non mutatrice). Aucune autre modification. |
 
 ---
 
