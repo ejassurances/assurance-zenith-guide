@@ -36,7 +36,10 @@ export function DomainRail({
         }
       >
         <d.icon size={20} stroke={1.6} aria-hidden="true" />
-        <span className="text-[9px] font-semibold uppercase tracking-[0.08em] leading-none">{d.short}</span>
+        <span className="w-full truncate text-center text-[9px] font-semibold uppercase tracking-[0.06em] leading-none">
+          {d.short}
+        </span>
+
       </button>
     );
   };
