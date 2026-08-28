@@ -4,6 +4,8 @@ import type { EmailResume } from "@/lib/gmail.server";
 import { estEmailInterne } from "@/lib/domaines-internes";
 import {
   brancherContexteEmail,
+  cloturerContexteEmail,
+
   creerMetriquesContexte,
   finaliserMetriquesContexte,
   type MetriquesContexte,
@@ -212,6 +214,8 @@ export async function executerAgents(
       const { traiterEmailFinance } = await import("@/lib/finance-agent.server");
       const { traiterEmailVeille } = await import("@/lib/veille-reglementaire.server");
       for (const m of aTrier) {
+        // ACTION 56 §13.3 : état mémoire d'itération du greffon (jamais persisté).
+        let resultatContexte: Awaited<ReturnType<typeof brancherContexteEmail>> | null = null;
         try {
           const detail = await lireMessage(m.id);
           const entree = {
@@ -230,7 +234,7 @@ export async function executerAgents(
           // une erreur du greffon n'atteint jamais le catch historique, ne crée
           // aucune tâche administrative et n'incrémente jamais `erreurs`.
           try {
-            await brancherContexteEmail({
+            resultatContexte = await brancherContexteEmail({
               gmailMessageId: m.id,
               email: {
                 sujet: entree.sujet,
@@ -246,6 +250,7 @@ export async function executerAgents(
             metriquesContexte.contexte_erreurs++;
             console.error("[branchement-contexte] erreur non capturée", m.id, e);
           }
+
 
 
 
@@ -558,9 +563,22 @@ export async function executerAgents(
             ].join("\n"),
             created_by: userId,
           });
+        } finally {
+          // ── CD-SI-001-B ACTION 56 §13.3-4/§13.7 — CLÔTURE DU GREFFON.
+          // Dernière étape LOGIQUE DU GREFFON, exécutée même après un `continue`
+          // métier. Une seule seconde LECTURE `SELECT crm_emails`, réutilisation
+          // du même detail Gmail (jamais de second `lireMessage`), aucune
+          // écriture. `try/catch` dédié : jamais le catch historique.
+          try {
+            await cloturerContexteEmail(resultatContexte, metriquesContexte);
+          } catch (e) {
+            metriquesContexte.contexte_erreurs++;
+            console.error("[branchement-contexte] erreur non capturée (clôture)", m.id, e);
+          }
         }
 
       }
+
     }
 
     // Agent relation client : emails rattachés à un client existant et pas
