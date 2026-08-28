@@ -77,7 +77,7 @@ export const NAV_DOMAINS: NavDomain[] = [
   },
   {
     key: "conformite",
-    short: "Conformité",
+    short: "Conf.",
     label: "Conformité & sécurité réglementaire",
     icon: IconShieldCheck,
     modules: [
@@ -116,7 +116,7 @@ export const NAV_DOMAINS: NavDomain[] = [
   },
   {
     key: "souscription",
-    short: "Souscription",
+    short: "OAV",
     label: "Souscription & distribution",
     icon: IconBriefcase,
     modules: [
