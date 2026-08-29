@@ -806,6 +806,8 @@ export async function executerAgents(
     rattrapages_traites: rattrapagesTraites,
     mis_corbeille: corbeille,
     partenaires_routes: partenairesRoutes,
+    pieces_partenaires_rattachees: piecesPartenairesRattachees,
+    pieces_partenaires_a_classer: piecesPartenairesAClasser,
     offres_partenaires: offresPartenaires,
     compagnies_creees: compagniesCreees,
     produits_crees: produitsCrees,
