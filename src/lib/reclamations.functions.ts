@@ -105,7 +105,7 @@ export const transmettreReclamationCompagnie = createServerFn({ method: "POST" }
     const { data: comp } = await (context.supabase as any)
       .from("compagnies")
       .select("nom, email_reclamations")
-      .eq("id", r.contrats.compagnie_id)
+      .eq("id", compagnieId)
       .maybeSingle();
     const destinataire: string | null = (comp as any)?.email_reclamations ?? null;
     if (!destinataire)
