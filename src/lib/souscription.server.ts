@@ -36,40 +36,56 @@ export async function envoyerSouscriptionCompagnie(
   supabase: Admin,
   dossierId: string,
   userId: string | null,
-  options: { email?: string | null; commentaire?: string | null } = {},
+  options: {
+    email?: string | null;
+    commentaire?: string | null;
+    /** `api` = envoi automatisé par email/API ; `intranet` = dépôt manuel sur le portail compagnie. */
+    mode?: "api" | "intranet";
+  } = {},
 ) {
+  const mode = options.mode ?? "api";
+
+  // Garde-fou D4 : aucun envoi possible sans les 4 jalons (recueil, devis,
+  // devoir de conseil signé, pièces obligatoires validées). Aucune dérogation.
+  const { prerequisSouscription } = await import("./souscription-prerequis.server");
+  const { messageBlocageSouscription } = await import("./souscription-prerequis");
+  const prerequis = await prerequisSouscription(supabase as never, dossierId);
+  if (!prerequis.autorise) throw new Error(messageBlocageSouscription(prerequis));
+
   const d = await contexteDossier(supabase, dossierId);
   const destinataire = options.email || emailCompagnie(d);
-  if (!destinataire) {
+  if (mode === "api" && !destinataire) {
     throw new Error(
       "Aucune adresse de souscription connue pour cette compagnie : renseignez l'email de contact sur la fiche compagnie.",
     );
   }
 
   let envoye = false;
-  try {
-    const res = await sendTemplateEmail("souscription-compagnie", destinataire, {
-      templateData: {
-        compagnieName: d.compagnies?.nom ?? "",
-        reference: d.reference,
-        clientName: d.client_nom,
-        produit: d.produits?.nom ?? "",
-        branche: labelForBranche(d.type_assurance),
-        commentaire: options.commentaire ?? "",
-      },
-      brevoParams: {
-        NOM_COMPAGNIE: d.compagnies?.nom ?? "",
-        NOM_PRODUIT: d.produits?.nom ?? "",
-        TYPE_ASSURANCE: labelForBranche(d.type_assurance),
-      },
-      idempotencyKey: `souscription-${dossierId}`,
-      replyTo: "contact@ej-assurances.fr",
-    });
-    envoye = res.sent;
-  } catch (e) {
-    throw new Error(
-      `Envoi à la compagnie impossible : ${e instanceof Error ? e.message : "erreur d'expédition"}`,
-    );
+  if (mode === "api" && destinataire) {
+    try {
+      const res = await sendTemplateEmail("souscription-compagnie", destinataire, {
+        templateData: {
+          compagnieName: d.compagnies?.nom ?? "",
+          reference: d.reference,
+          clientName: d.client_nom,
+          produit: d.produits?.nom ?? "",
+          branche: labelForBranche(d.type_assurance),
+          commentaire: options.commentaire ?? "",
+        },
+        brevoParams: {
+          NOM_COMPAGNIE: d.compagnies?.nom ?? "",
+          NOM_PRODUIT: d.produits?.nom ?? "",
+          TYPE_ASSURANCE: labelForBranche(d.type_assurance),
+        },
+        idempotencyKey: `souscription-${dossierId}`,
+        replyTo: "contact@ej-assurances.fr",
+      });
+      envoye = res.sent;
+    } catch (e) {
+      throw new Error(
+        `Envoi à la compagnie impossible : ${e instanceof Error ? e.message : "erreur d'expédition"}`,
+      );
+    }
   }
 
   const maintenant = new Date().toISOString();
@@ -85,18 +101,28 @@ export async function envoyerSouscriptionCompagnie(
     })
     .eq("id", dossierId);
 
+  const traceEnvoi =
+    mode === "intranet"
+      ? `Dossier déposé sur l'intranet ${d.compagnies?.nom ?? "compagnie"} (saisie manuelle validée)${
+          options.commentaire ? ` — ${options.commentaire}` : ""
+        }`
+      : `Dossier de souscription transmis à ${destinataire}${envoye ? "" : " (échec d'expédition)"}`;
+
   await supabase.from("dossier_etapes_historique").insert({
     dossier_id: dossierId,
     ancienne_etape: d.statut,
     nouvelle_etape: "souscription_envoyee",
-    commentaire: `Dossier de souscription transmis à ${destinataire}${envoye ? "" : " (échec d'expédition)"}`,
+    commentaire: traceEnvoi.slice(0, 1000),
     par: userId,
   });
 
   await supabase.from("taches").insert({
     client_id: d.client_id,
     titre: `Suivi souscription ${d.reference}`,
-    description: `Attente du retour de ${d.compagnies?.nom ?? "la compagnie"} (${destinataire}). Relances automatiques à J+3 et J+7.`,
+    description:
+      mode === "intranet"
+        ? `Dépôt intranet ${d.compagnies?.nom ?? "compagnie"} : suivre le retour de souscription.`
+        : `Attente du retour de ${d.compagnies?.nom ?? "la compagnie"} (${destinataire}). Relances automatiques à J+3 et J+7.`,
     echeance: new Date(Date.now() + 3 * 24 * 3600 * 1000).toISOString().slice(0, 10),
     priorite: "normale",
     statut: "a_faire",
@@ -104,8 +130,9 @@ export async function envoyerSouscriptionCompagnie(
     created_by: userId,
   });
 
-  return { ok: true, destinataire, envoye };
+  return { ok: true, mode, destinataire, envoye };
 }
+
 
 /**
  * Relance des compagnies sans retour : J+3 puis J+7 après l'envoi.

@@ -6,7 +6,24 @@ const envoiSchema = z.object({
   dossier_id: z.string().uuid(),
   email: z.string().email().max(200).optional(),
   commentaire: z.string().max(2000).optional(),
+  mode: z.enum(["api", "intranet"]).default("api"),
 });
+
+/** Prérequis de transmission compagnie (lecture seule). */
+export const prerequisSouscriptionFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ dossier_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: dossier, error } = await context.supabase
+      .from("dossiers")
+      .select("id")
+      .eq("id", data.dossier_id)
+      .maybeSingle();
+    if (error || !dossier) throw new Error("Dossier introuvable ou accès refusé");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { prerequisSouscription } = await import("./souscription-prerequis.server");
+    return prerequisSouscription(supabaseAdmin, data.dossier_id);
+  });
 
 /** Envoi du dossier de souscription à la compagnie (staff). */
 export const envoyerSouscriptionFn = createServerFn({ method: "POST" })
@@ -26,8 +43,10 @@ export const envoyerSouscriptionFn = createServerFn({ method: "POST" })
     return envoyerSouscriptionCompagnie(supabaseAdmin, data.dossier_id, context.userId, {
       email: data.email ?? null,
       commentaire: data.commentaire ?? null,
+      mode: data.mode,
     });
   });
+
 
 const retourSchema = z.object({
   dossier_id: z.string().uuid(),
