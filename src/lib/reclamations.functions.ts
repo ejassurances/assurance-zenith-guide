@@ -143,6 +143,37 @@ export const transmettreReclamationCompagnie = createServerFn({ method: "POST" }
     return { ok: true };
   });
 
+/** Assignation/changement de la compagnie concernée (staff), y compris sans contrat rattaché. */
+export const assignerCompagnieReclamation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ id: z.string().uuid(), compagnie_id: z.string().uuid().nullable() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await exigerStaff(context.supabase, context.userId);
+    const r = await chargerReclamation(context.supabase, data.id);
+    const { error } = await (context.supabase as any)
+      .from("reclamations")
+      .update({ compagnie_id: data.compagnie_id, updated_at: new Date().toISOString() })
+      .eq("id", r.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Liste des compagnies actives pour l'assignation (staff). */
+export const listeCompagniesPourReclamation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await exigerStaff(context.supabase, context.userId);
+    const { data: rows, error } = await (context.supabase as any)
+      .from("compagnies")
+      .select("id, nom, type_partenaire")
+      .eq("statut", "actif")
+      .order("nom");
+    if (error) throw new Error(error.message);
+    return { compagnies: (rows ?? []) as { id: string; nom: string; type_partenaire: string | null }[] };
+  });
+
 /** Clôture manuelle du dossier de réclamation (label Gmail → Archive). */
 export const cloturerReclamation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
