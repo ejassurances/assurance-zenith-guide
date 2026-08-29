@@ -109,6 +109,16 @@ function CompagniesIndex() {
     load();
   }
 
+  /** Type de partenaire : compagnie d'assurance (porteur du risque) ou courtier grossiste. */
+  async function setType(id: string, type: TypePartenaire) {
+    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, type_partenaire: type } : r)));
+    const { error } = await supabase.from("compagnies").update({ type_partenaire: type }).eq("id", id);
+    if (error) {
+      setError(error.message);
+      load();
+    }
+  }
+
   /** Compagnie favorite du cabinet : priorise l'offre dans le classement IA des devis. */
   async function setTier(id: string, tier: number | null) {
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, tier_favori: tier } : r)));
@@ -226,7 +236,7 @@ function CompagniesIndex() {
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {rows.map((c) => (
+              {visibles.map((c) => (
                 <tr key={c.id} className="hover:bg-surface/50">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
@@ -247,6 +257,23 @@ function CompagniesIndex() {
                         <div className="text-xs text-ink-muted">{c.site_web ?? "—"}</div>
                       </div>
                     </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    {isAdmin ? (
+                      <select
+                        value={c.type_partenaire}
+                        onChange={(e) => setType(c.id, e.target.value as TypePartenaire)}
+                        className="rounded-md border border-line bg-background px-2 py-1 text-xs"
+                        title="Compagnie d'assurance (porteur du risque) ou courtier grossiste (plateforme de distribution)"
+                      >
+                        <option value="compagnie">Compagnie d'assurance</option>
+                        <option value="courtier_grossiste">Courtier grossiste</option>
+                      </select>
+                    ) : (
+                      <span className="rounded-full bg-surface px-2 py-0.5 text-xs font-medium text-ink-soft">
+                        {TYPE_PARTENAIRE_LABEL[c.type_partenaire]}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-ink-soft">{c.contact_nom ?? "—"}</td>
                   <td className="px-4 py-3">
