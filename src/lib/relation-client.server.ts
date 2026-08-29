@@ -266,6 +266,8 @@ export async function analyserEmailClient(email: EmailClient): Promise<Classific
         complement_annonce: brut["complement_annonce"] === true,
         tutoiement: brut["tutoiement"] === true,
         cas_non_couvert,
+        // Un mail sensible (niveau_0) n'est JAMAIS considéré sans action.
+        sans_action_attendue: niveau !== "niveau_0" && brut["sans_action_attendue"] === true,
         confiance,
         resume: texteOuNull(brut["resume"], 400) ?? "",
         modele,
