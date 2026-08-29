@@ -900,6 +900,7 @@ async function accuserReceptionPieces(
     classification: ClassificationRelation;
     nb_pieces: number;
     gmail_message_id: string;
+    gmail_thread_id?: string | null;
     userId: string;
   },
 ): Promise<void> {
@@ -907,6 +908,29 @@ async function accuserReceptionPieces(
   if (!client.email || params.nb_pieces === 0) return;
   if (!(await adresseClientEnvoyable(client.email))) return;
   const tu = classification.tutoiement;
+
+  // Anti-doublon : historique CRM (même message, même fil, fenêtre 72 h).
+  const { accuseAutorise } = await import("@/lib/accuses-historique.server");
+  const decision = await accuseAutorise(admin, {
+    client_id: client.id,
+    genre: "pieces",
+    gmail_message_id: params.gmail_message_id,
+    gmail_thread_id: params.gmail_thread_id ?? null,
+  });
+  if (!decision.autorise) {
+    console.info(`[agent-relation-client] accusé pièces non envoyé — ${decision.motif}`);
+    await journaliser(
+      admin,
+      client.id,
+      "Accusé de réception des pièces supprimé (doublon évité)",
+      [decision.motif ?? "Doublon détecté dans l'historique.", `Email : ${lienMail(params.gmail_message_id)}`].join(
+        "\n",
+      ),
+      "systeme",
+    );
+    return;
+  }
+
 
   try {
     await envoyerReponse(client.email, {
