@@ -21,7 +21,14 @@ import {
 
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
-import { IconFolders, IconClockHour4, IconCircleCheck, IconAlertTriangle } from "@tabler/icons-react";
+import { SouscriptionFilePanel } from "@/components/souscription-file-panel";
+import {
+  IconFolders,
+  IconClockHour4,
+  IconCircleCheck,
+  IconAlertTriangle,
+  IconListCheck,
+} from "@tabler/icons-react";
 
 export const Route = createFileRoute("/_authenticated/espace/dossiers/")({
   component: DossiersList,
@@ -44,6 +51,7 @@ function DossiersList() {
   const [items, setItems] = useState<Dossier[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [vue, setVue] = useState<"liste" | "oav">("liste");
   const canCreate = role === "admin" || role === "mandataire" || role === "prescripteur";
 
   const load = async () => {
@@ -82,6 +90,31 @@ function DossiersList() {
         )}
       </PageHeader>
 
+      <div className="mt-6 inline-flex rounded-full border border-line bg-surface-elevated p-1">
+        <button
+          onClick={() => setVue("liste")}
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+            vue === "liste" ? "bg-[#0A192F] text-white" : "text-ink-soft hover:text-ink"
+          }`}
+        >
+          Tous les dossiers
+        </button>
+        <button
+          onClick={() => setVue("oav")}
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+            vue === "oav" ? "bg-[#0A192F] text-white" : "text-ink-soft hover:text-ink"
+          }`}
+        >
+          File OAV
+        </button>
+      </div>
+
+      {vue === "oav" ? (
+        <div className="mt-6">
+          <SouscriptionFilePanel />
+        </div>
+      ) : (
+        <>
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total dossiers" value={items.length} icon={IconFolders} accent />
         <StatCard label="En cours" value={enCours} icon={IconClockHour4} />
