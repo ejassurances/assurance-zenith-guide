@@ -34,6 +34,10 @@ export interface ResultatAgents {
   mis_corbeille: number;
   /** Mails routés vers Service Partenaire d'après le domaine expéditeur. */
   partenaires_routes: number;
+  /** Pièces jointes partenaires déposées sur la fiche du client identifié. */
+  pieces_partenaires_rattachees: number;
+  /** Pièces jointes partenaires conservées mais laissées à qualifier par un humain. */
+  pieces_partenaires_a_classer: number;
   /** Emails partenaires porteurs d'une information exploitable (codes, offre, MAJ produit, challenge). */
   offres_partenaires: number;
   /** Fiches compagnie créées automatiquement (statut inactif). */
@@ -156,6 +160,8 @@ export async function executerAgents(
     let corbeille = 0;
     let rattrapagesTraites = 0;
     let partenairesRoutes = 0;
+    let piecesPartenairesRattachees = 0;
+    let piecesPartenairesAClasser = 0;
     let offresPartenaires = 0;
     let compagniesCreees = 0;
     let produitsCrees = 0;
@@ -277,6 +283,35 @@ export async function executerAgents(
               nettoyer: true,
             });
             partenairesRoutes++;
+
+            // Les pièces jointes d'un mail partenaire appartiennent souvent à un
+            // client du cabinet (attestation, avenant…). Gemini lit la pièce,
+            // identifie le titulaire et la pièce est déposée / rattachée. Aucune
+            // fiche n'est créée : sans certitude, tâche humaine.
+            if (detail.pieces_jointes.length > 0) {
+              const { traiterPiecesJointesPartenaire } = await import("@/lib/pieces-partenaire.server");
+              const pieces = await traiterPiecesJointesPartenaire(admin, {
+                gmail_message_id: m.id,
+                sujet: entree.sujet,
+                texte: entree.texte,
+                compagnie: compagnieExp.nom ?? null,
+                pieces_jointes: detail.pieces_jointes.map((p) => ({
+                  nom: p.nom,
+                  mime: p.mime,
+                  attachment_id: p.attachment_id,
+                })),
+                userId,
+              }).catch((e: unknown) => {
+                console.error("[pieces-partenaire] traitement impossible", m.id, e);
+                return null;
+              });
+              if (pieces) {
+                piecesPartenairesRattachees += pieces.rattachees;
+                piecesPartenairesAClasser += pieces.a_classer;
+                if (pieces.a_classer > 0) await poserLabelCabinet(m.id, "sp_a_traiter");
+              }
+            }
+
 
             // Le mail partenaire contient-il une information exploitable
             // (codes courtier, offre, mise à jour produit, challenge) ? Dans ce
@@ -775,6 +810,8 @@ export async function executerAgents(
     rattrapages_traites: rattrapagesTraites,
     mis_corbeille: corbeille,
     partenaires_routes: partenairesRoutes,
+    pieces_partenaires_rattachees: piecesPartenairesRattachees,
+    pieces_partenaires_a_classer: piecesPartenairesAClasser,
     offres_partenaires: offresPartenaires,
     compagnies_creees: compagniesCreees,
     produits_crees: produitsCrees,
