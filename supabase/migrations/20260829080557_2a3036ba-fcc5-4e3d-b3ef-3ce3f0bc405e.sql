@@ -1,0 +1,3 @@
+ALTER TABLE public.compagnies ADD COLUMN IF NOT EXISTS type_partenaire text NOT NULL DEFAULT 'compagnie' CHECK (type_partenaire IN ('compagnie','courtier_grossiste'));
+UPDATE public.compagnies SET type_partenaire = 'courtier_grossiste' WHERE slug IN ('april','kereis','ugip-assurances','neoliane','entoria','zenioo','netvox','simulassur','ilona');
+UPDATE public.compagnies SET type_partenaire = 'compagnie' WHERE slug IN ('cardif','generali');

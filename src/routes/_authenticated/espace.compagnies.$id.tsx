@@ -62,6 +62,7 @@ export const Route = createFileRoute("/_authenticated/espace/compagnies/$id")({
 });
 
 type ApiAuthType = "none" | "api_key" | "bearer" | "oauth2" | "basic";
+type TypePartenaire = "compagnie" | "courtier_grossiste";
 type Compagnie = {
   id: string;
   nom: string;
@@ -73,6 +74,7 @@ type Compagnie = {
   contact_email: string | null;
   contact_telephone: string | null;
   statut: "actif" | "prospect" | "inactif";
+  type_partenaire: TypePartenaire;
   notes: string | null;
   api_active: boolean;
 };
@@ -327,6 +329,18 @@ function InfosTab({
           onSave({ logo_url: path });
         }}
       />
+      <div>
+        <label className="mb-1 block text-xs font-medium text-ink-muted">Type de partenaire</label>
+        <select
+          value={form.type_partenaire}
+          onChange={(e) => setForm({ ...form, type_partenaire: e.target.value as TypePartenaire })}
+          disabled={readOnly}
+          className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+        >
+          <option value="compagnie">Compagnie d'assurance</option>
+          <option value="courtier_grossiste">Courtier grossiste</option>
+        </select>
+      </div>
       <div>
         <label className="mb-1 block text-xs font-medium text-ink-muted">Statut</label>
         <select

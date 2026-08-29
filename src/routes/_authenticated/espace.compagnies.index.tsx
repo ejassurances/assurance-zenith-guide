@@ -11,12 +11,15 @@ export const Route = createFileRoute("/_authenticated/espace/compagnies/")({
   component: CompagniesIndex,
 });
 
+type TypePartenaire = "compagnie" | "courtier_grossiste";
+
 type Compagnie = {
   id: string;
   nom: string;
   slug: string;
   logo_url: string | null;
   statut: "actif" | "prospect" | "inactif";
+  type_partenaire: TypePartenaire;
   tier_favori: number | null;
   api_active: boolean;
   site_web: string | null;
@@ -25,6 +28,11 @@ type Compagnie = {
 };
 
 export const TIER_LABEL: Record<number, string> = { 1: "Top 1", 2: "Top 2", 3: "Top 3" };
+
+export const TYPE_PARTENAIRE_LABEL: Record<TypePartenaire, string> = {
+  compagnie: "Compagnie d'assurance",
+  courtier_grossiste: "Courtier grossiste",
+};
 
 
 function slugify(s: string) {
@@ -45,6 +53,8 @@ function CompagniesIndex() {
   const [creating, setCreating] = useState(false);
   const [nom, setNom] = useState("");
   const [statut, setStatut] = useState<"actif" | "prospect" | "inactif">("actif");
+  const [typePartenaire, setTypePartenaire] = useState<TypePartenaire>("compagnie");
+  const [filtreType, setFiltreType] = useState<"tous" | TypePartenaire>("tous");
 
   const [grilles, setGrilles] = useState<Record<string, { total: number; validees: number }>>({});
 
@@ -52,7 +62,7 @@ function CompagniesIndex() {
     setLoading(true);
     const { data, error } = await supabase
       .from("compagnies")
-      .select("id,nom,slug,logo_url,statut,tier_favori,api_active,site_web,contact_nom,created_at")
+      .select("id,nom,slug,logo_url,statut,type_partenaire,tier_favori,api_active,site_web,contact_nom,created_at")
       .order("nom");
     if (error) setError(error.message);
     setRows((data as Compagnie[]) ?? []);
@@ -89,7 +99,7 @@ function CompagniesIndex() {
     setCreating(true);
     setError(null);
     const slug = slugify(nom);
-    const { error } = await supabase.from("compagnies").insert({ nom: nom.trim(), slug, statut });
+    const { error } = await supabase.from("compagnies").insert({ nom: nom.trim(), slug, statut, type_partenaire: typePartenaire });
     setCreating(false);
     if (error) {
       setError(error.message);
@@ -97,6 +107,16 @@ function CompagniesIndex() {
     }
     setNom("");
     load();
+  }
+
+  /** Type de partenaire : compagnie d'assurance (porteur du risque) ou courtier grossiste. */
+  async function setType(id: string, type: TypePartenaire) {
+    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, type_partenaire: type } : r)));
+    const { error } = await supabase.from("compagnies").update({ type_partenaire: type }).eq("id", id);
+    if (error) {
+      setError(error.message);
+      load();
+    }
   }
 
   /** Compagnie favorite du cabinet : priorise l'offre dans le classement IA des devis. */
@@ -111,21 +131,22 @@ function CompagniesIndex() {
 
 
   const favorites = rows.filter((c) => c.tier_favori).length;
-  const connectees = rows.filter((c) => c.api_active).length;
+  const visibles = filtreType === "tous" ? rows : rows.filter((c) => c.type_partenaire === filtreType);
 
   return (
     <div className="space-y-8">
       <PageHeader
         eyebrow="Référentiel"
         title="Compagnies partenaires"
-        description="Référentiel des assureurs, de leurs produits et de leurs documents contractuels."
+        description="Référentiel des compagnies d'assurance et courtiers grossistes, de leurs produits et de leurs documents contractuels."
         icon={IconBuildingBank}
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Compagnies référencées" value={rows.length} icon={IconBuildingBank} accent />
+      <div className="grid gap-4 sm:grid-cols-4">
+        <StatCard label="Partenaires référencés" value={rows.length} icon={IconBuildingBank} accent />
+        <StatCard label="Compagnies d'assurance" value={rows.filter((c) => c.type_partenaire === "compagnie").length} icon={IconBuildingBank} />
+        <StatCard label="Courtiers grossistes" value={rows.filter((c) => c.type_partenaire === "courtier_grossiste").length} icon={IconPlugConnected} />
         <StatCard label="Favorites (top)" value={favorites} icon={IconStar} />
-        <StatCard label="API connectées" value={connectees} icon={IconPlugConnected} />
       </div>
 
       {isAdmin && (
@@ -139,6 +160,17 @@ function CompagniesIndex() {
               className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
               required
             />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-ink-muted">Type de partenaire</label>
+            <select
+              value={typePartenaire}
+              onChange={(e) => setTypePartenaire(e.target.value as TypePartenaire)}
+              className="rounded-md border border-line bg-background px-3 py-2 text-sm"
+            >
+              <option value="compagnie">Compagnie d'assurance</option>
+              <option value="courtier_grossiste">Courtier grossiste</option>
+            </select>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-muted">Statut</label>
@@ -169,12 +201,31 @@ function CompagniesIndex() {
       ) : rows.length === 0 ? (
         <p className="text-sm text-ink-muted">Aucune compagnie encore enregistrée.</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-line">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-xs font-medium text-ink-muted">Type :</span>
+            {(["tous", "compagnie", "courtier_grossiste"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setFiltreType(t)}
+                className={
+                  "rounded-full border px-3 py-1 text-xs font-medium " +
+                  (filtreType === t
+                    ? "border-[#0A192F] bg-[#0A192F] text-white"
+                    : "border-line bg-background text-ink-soft hover:bg-surface")
+                }
+              >
+                {t === "tous" ? "Tous" : TYPE_PARTENAIRE_LABEL[t]}
+              </button>
+            ))}
+          </div>
+          <div className="overflow-hidden rounded-lg border border-line">
           <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
             <thead className="bg-surface text-xs uppercase tracking-wide text-ink-muted">
               <tr>
                 <th className="px-4 py-3 text-left">Compagnie</th>
+                <th className="px-4 py-3 text-left">Type</th>
                 <th className="px-4 py-3 text-left">Contact</th>
                 <th className="px-4 py-3 text-left">Statut</th>
                 <th className="px-4 py-3 text-left">Favorite</th>
@@ -185,7 +236,7 @@ function CompagniesIndex() {
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {rows.map((c) => (
+              {visibles.map((c) => (
                 <tr key={c.id} className="hover:bg-surface/50">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
@@ -206,6 +257,23 @@ function CompagniesIndex() {
                         <div className="text-xs text-ink-muted">{c.site_web ?? "—"}</div>
                       </div>
                     </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    {isAdmin ? (
+                      <select
+                        value={c.type_partenaire}
+                        onChange={(e) => setType(c.id, e.target.value as TypePartenaire)}
+                        className="rounded-md border border-line bg-background px-2 py-1 text-xs"
+                        title="Compagnie d'assurance (porteur du risque) ou courtier grossiste (plateforme de distribution)"
+                      >
+                        <option value="compagnie">Compagnie d'assurance</option>
+                        <option value="courtier_grossiste">Courtier grossiste</option>
+                      </select>
+                    ) : (
+                      <span className="rounded-full bg-surface px-2 py-0.5 text-xs font-medium text-ink-soft">
+                        {TYPE_PARTENAIRE_LABEL[c.type_partenaire]}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-ink-soft">{c.contact_nom ?? "—"}</td>
                   <td className="px-4 py-3">
@@ -287,6 +355,7 @@ function CompagniesIndex() {
               ))}
             </tbody>
           </table>
+          </div>
           </div>
         </div>
       )}

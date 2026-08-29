@@ -1521,6 +1521,7 @@ export type Database = {
           slug: string
           statut: Database["public"]["Enums"]["compagnie_statut"]
           tier_favori: number | null
+          type_partenaire: string
           updated_at: string
         }
         Insert: {
@@ -1540,6 +1541,7 @@ export type Database = {
           slug: string
           statut?: Database["public"]["Enums"]["compagnie_statut"]
           tier_favori?: number | null
+          type_partenaire?: string
           updated_at?: string
         }
         Update: {
@@ -1559,6 +1561,7 @@ export type Database = {
           slug?: string
           statut?: Database["public"]["Enums"]["compagnie_statut"]
           tier_favori?: number | null
+          type_partenaire?: string
           updated_at?: string
         }
         Relationships: []
