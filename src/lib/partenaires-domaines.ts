@@ -14,8 +14,11 @@ export const DOMAINES_PARTENAIRES: Record<string, string> = {
   "kereisfrance.com": "Kereis",
   "kereis.com": "Kereis",
   "cbp-solutions.com": "Kereis",
-  // Service résiliation / substitution Kereis.
-  "substitutions.fr": "Kereis (service résiliation)",
+  // Cardif — service résiliation (CLEenmain@substitutions.fr) : adresse de
+  // résiliation de l'assureur Cardif LUI-MÊME, pas une plateforme Kereis.
+  "substitutions.fr": "Cardif (service résiliation)",
+  "cardif.fr": "Cardif",
+  "cardif.com": "Cardif",
   // Néoliane.
   "neoliane.fr": "Néoliane",
   "neoliane.com": "Néoliane",
