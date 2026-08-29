@@ -9,7 +9,7 @@ import { z } from "zod";
  * - dépôt et suivi des recommandations.
  */
 
-const STATUTS_RECO = ["nouveau", "en_cours", "dossier_valide", "sans_suite"] as const;
+import { STATUTS_RECO } from "./referentiels";
 
 async function estStaff(supabase: any, userId: string) {
   const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);

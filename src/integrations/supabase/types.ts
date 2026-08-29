@@ -4588,6 +4588,7 @@ export type Database = {
       reclamations: {
         Row: {
           client_id: string
+          compagnie_id: string | null
           concerne: string
           contrat_id: string | null
           created_at: string
@@ -4605,6 +4606,7 @@ export type Database = {
         }
         Insert: {
           client_id: string
+          compagnie_id?: string | null
           concerne?: string
           contrat_id?: string | null
           created_at?: string
@@ -4622,6 +4624,7 @@ export type Database = {
         }
         Update: {
           client_id?: string
+          compagnie_id?: string | null
           concerne?: string
           contrat_id?: string | null
           created_at?: string
@@ -4646,6 +4649,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "reclamations_compagnie_id_fkey"
+            columns: ["compagnie_id"]
+            isOneToOne: false
+            referencedRelation: "compagnies"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "reclamations_contrat_id_fkey"
             columns: ["contrat_id"]
             isOneToOne: false
@@ -4657,8 +4667,10 @@ export type Database = {
       recommandations_prescripteur: {
         Row: {
           client_id: string | null
+          commission_id: string | null
           created_at: string
           description: string | null
+          dossier_id: string | null
           id: string
           montant_du: number
           nom_contact: string
@@ -4669,8 +4681,10 @@ export type Database = {
         }
         Insert: {
           client_id?: string | null
+          commission_id?: string | null
           created_at?: string
           description?: string | null
+          dossier_id?: string | null
           id?: string
           montant_du?: number
           nom_contact: string
@@ -4681,8 +4695,10 @@ export type Database = {
         }
         Update: {
           client_id?: string | null
+          commission_id?: string | null
           created_at?: string
           description?: string | null
+          dossier_id?: string | null
           id?: string
           montant_du?: number
           nom_contact?: string
@@ -4697,6 +4713,20 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recommandations_prescripteur_commission_id_fkey"
+            columns: ["commission_id"]
+            isOneToOne: false
+            referencedRelation: "commissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recommandations_prescripteur_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
             referencedColumns: ["id"]
           },
           {

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { STATUTS_DOSSIER_AVANT_LM } from "@/lib/referentiels";
 import { appUrl } from "@/lib/app-url";
 
 /**
@@ -33,7 +34,7 @@ export const Route = createFileRoute("/api/public/relance-pieces")({
             "id, reference, client_id, client_nom, client_email, created_at, recueil_besoins, relance_pieces_envoyee_le, accuse_reception_envoye_le",
           )
           .not("client_email", "is", null)
-          .in("statut", ["nouveau", "en_cours"])
+          .in("statut", [...STATUTS_DOSSIER_AVANT_LM])
           .lte("created_at", seuil)
           .limit(200);
         if (error) return Response.json({ error: error.message }, { status: 500 });

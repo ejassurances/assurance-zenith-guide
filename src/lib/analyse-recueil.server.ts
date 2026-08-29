@@ -10,6 +10,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { STATUTS_DOSSIER_AMONT_ANALYSE } from "./referentiels";
 
 type Db = SupabaseClient<any, any, any>;
 
@@ -190,7 +191,7 @@ export async function analyserRecueilDossier(
 
   // Avancement du pipeline : uniquement depuis les étapes amont, pour ne jamais
   // faire reculer un dossier déjà en souscription ou clôturé.
-  const statutsAmont = ["nouveau", "en_cours", "lettre_mission_envoyee", "dda_validee"];
+  const statutsAmont: readonly string[] = STATUTS_DOSSIER_AMONT_ANALYSE;
   const nouveauStatut =
     analyse.recueil_complet && statutsAmont.includes(String(dossier.statut))
       ? "devis_en_cours"

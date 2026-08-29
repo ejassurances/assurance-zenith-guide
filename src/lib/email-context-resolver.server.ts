@@ -33,18 +33,8 @@ import type { EmailContext } from "./email-context-types";
 import type { Database, Json } from "@/integrations/supabase/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const STATUTS_DOSSIER_ACTIFS = new Set([
-  "nouveau",
-  "en_cours",
-  "lettre_mission_envoyee",
-  "dda_validee",
-  "devis_en_cours",
-  "devoir_conseil_envoye",
-  "devoir_conseil_signe",
-  "souscription_envoyee",
-  "contrat_valide",
-  "contrat_actif",
-]);
+// Référentiel unique : src/lib/referentiels.ts
+import { STATUTS_DOSSIER_ACTIFS_SET as STATUTS_DOSSIER_ACTIFS } from "./referentiels";
 
 export type MotifNonTraitement =
   | "email_introuvable"

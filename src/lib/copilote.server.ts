@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { PRIORITES_TACHE } from "./referentiels";
 import { ETAPES } from "@/lib/pipeline-dossier";
 import { phaseClient } from "@/lib/pipeline-client";
 import { labelForBranche } from "@/lib/recueil-besoins-schemas";
@@ -206,7 +207,7 @@ export async function executerCopilote(
   }
   const json = extraireJson(contenu);
   if (mode === "prochaine_action") {
-    const priorites = ["basse", "normale", "haute", "urgente"];
+    const priorites: readonly string[] = PRIORITES_TACHE;
     const priorite = String(json["priorite"] ?? "normale");
     return {
       mode,
