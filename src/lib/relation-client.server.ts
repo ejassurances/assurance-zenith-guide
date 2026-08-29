@@ -978,7 +978,11 @@ export async function traiterEmailClient(
     if (resultat.niveau !== "niveau_0") {
       await poserLabelCabinet(
         params.gmail_message_id,
-        resultat.action === "reponse_envoyee" ? "sc_archive" : "sc_attente_validation",
+        // « rien » = mail traité sans réponse nécessaire (suivi, pièces classées) :
+        // il est archivé, pas mis en attente de validation.
+        resultat.action === "reponse_envoyee" || resultat.action === "rien"
+          ? "sc_archive"
+          : "sc_attente_validation",
         { retirer: ["sc_a_traiter"] },
       );
     }
