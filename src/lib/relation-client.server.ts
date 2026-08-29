@@ -1080,6 +1080,10 @@ async function traiterEmailClientInterne(
     });
     accuseEnvoye = true;
   }
+  // Toutes les pièces jointes ont-elles été réellement classées, sans reprise
+  // humaine (aucune pièce « à classer », aucun document de prêt à vérifier) ?
+  const toutesPiecesClassees = pieces.non_classees === 0 && pieces.pret === 0;
+
 
   const brouillon = async (motif: string, objet: string, corps: string): Promise<ResultatRelationClient> => {
     await enregistrerReponse(admin, {
