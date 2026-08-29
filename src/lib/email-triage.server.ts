@@ -266,6 +266,15 @@ export async function creerDossierDepuisEmail(
   if (!email.expediteur_email) throw new Error("Email expéditeur manquant");
   if (estEmailInterne(email.expediteur_email)) throw new Error("Expéditeur interne au cabinet — aucune fiche client créée");
 
+  // Garde-fou : jamais de fiche client pour une compagnie, un fournisseur ou
+  // une adresse technique (service résiliation, no-reply, notifications…).
+  {
+    const { verifierExpediteurClientPossible } = await import("@/lib/expediteur-non-client.server");
+    const verdict = await verifierExpediteurClientPossible(admin, email.expediteur_email);
+    if (!verdict.client_possible)
+      throw new Error(`Expéditeur non client (${verdict.motif}) — aucune fiche créée : ${verdict.detail}`);
+  }
+
   if (!classificationConfiante(triage)) throw new Error("Classification insuffisante");
 
   const { data: cree, error } = await admin
