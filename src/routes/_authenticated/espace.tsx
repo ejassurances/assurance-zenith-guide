@@ -1,7 +1,10 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { IconChecklist, IconMail, IconSettings } from "@tabler/icons-react";
 
 import { DomainRail } from "@/components/shell/domain-rail";
+import { GlobalSearch } from "@/components/shell/global-search";
+import { IconAction, IconActionLink } from "@/components/shell/icon-action";
 import { ModuleColumn } from "@/components/shell/module-column";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -33,6 +36,20 @@ function EspaceLayout() {
   const [mustChange, setMustChange] = useState(false);
   const [menuOuvert, setMenuOuvert] = useState(false);
   const [domaineChoisi, setDomaineChoisi] = useState<string | null>(null);
+  const [tachesOuvertes, setTachesOuvertes] = useState<number | null>(null);
+
+  // Compteur de tâches à traiter affiché dans la barre supérieure (lecture seule).
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { count } = await supabase
+        .from("taches")
+        .select("id", { count: "exact", head: true })
+        .in("statut", ["a_faire", "en_cours"]);
+      setTachesOuvertes(count ?? null);
+    })();
+  }, [user]);
+
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -166,42 +183,55 @@ function EspaceLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 border-b border-line bg-surface-elevated">
-          <div className="grid h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 sm:px-6">
+          <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
             <button
               type="button"
               onClick={() => setMenuOuvert(true)}
               aria-label="Ouvrir le menu"
-              className="rounded-sm border border-line px-3 py-2 text-ink-soft lg:hidden"
+              className="rounded-full border border-line px-3 py-2 text-ink-soft lg:hidden"
             >
               <span aria-hidden="true">☰</span>
             </button>
-            <span className="hidden lg:block" />
-            <nav aria-label="Fil d'Ariane" className="min-w-0 truncate text-xs text-ink-muted">
-              {domaine && <span className="font-semibold uppercase tracking-[0.14em]">{domaine.short}</span>}
-              {sousModuleActif && (
-                <>
-                  <span aria-hidden="true" className="px-2 text-ink-muted/50">
-                    ›
-                  </span>
-                  <span>{sousModuleActif.module}</span>
-                  <span aria-hidden="true" className="px-2 text-ink-muted/50">
-                    ›
-                  </span>
-                  <span className="text-ink">{sousModuleActif.label}</span>
-                </>
-              )}
-            </nav>
-            <div className="flex items-center gap-3 text-sm">
-              <span className="hidden text-ink-muted xl:inline">{user?.email}</span>
-              <span className="crm-eyebrow hidden sm:inline">{role ? ROLE_LABEL[role] : ""}</span>
-              <button
-                onClick={signOut}
-                className="rounded-sm border border-line px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-ink-soft transition-colors hover:border-[color:var(--crm-gold)]/50 hover:text-ink"
-              >
-                Déconnexion
-              </button>
+
+            <div className="flex min-w-0 flex-1 justify-center">
+              <GlobalSearch />
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2">
+              <IconActionLink label="Traitement des emails" to="/espace/relation-client">
+                <IconMail size={17} aria-hidden="true" />
+              </IconActionLink>
+              <IconActionLink label="Tâches" to="/espace/taches" badge={tachesOuvertes}>
+                <IconChecklist size={17} aria-hidden="true" />
+              </IconActionLink>
+              <IconActionLink label="Paramètres" to="/espace/parametres">
+                <IconSettings size={17} aria-hidden="true" />
+              </IconActionLink>
+              <span className="crm-eyebrow hidden xl:inline">{role ? ROLE_LABEL[role] : ""}</span>
+              <IconAction label={`${user?.email ?? ""} — Se déconnecter`} onClick={() => void signOut()}>
+                <span className="text-[11px] font-bold text-[color:var(--crm-gold)]">{initiales || "EJ"}</span>
+              </IconAction>
             </div>
           </div>
+
+          <nav
+            aria-label="Fil d'Ariane"
+            className="min-w-0 truncate border-t border-line px-4 py-2 text-xs text-ink-muted sm:px-6"
+          >
+            {domaine && <span className="font-semibold uppercase tracking-[0.14em]">{domaine.short}</span>}
+            {sousModuleActif && (
+              <>
+                <span aria-hidden="true" className="px-2 text-ink-muted/50">
+                  ›
+                </span>
+                <span>{sousModuleActif.module}</span>
+                <span aria-hidden="true" className="px-2 text-ink-muted/50">
+                  ›
+                </span>
+                <span className="text-ink">{sousModuleActif.label}</span>
+              </>
+            )}
+          </nav>
         </header>
 
         <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 sm:py-8">
