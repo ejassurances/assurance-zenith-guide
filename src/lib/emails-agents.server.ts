@@ -278,6 +278,35 @@ export async function executerAgents(
             });
             partenairesRoutes++;
 
+            // Les pièces jointes d'un mail partenaire appartiennent souvent à un
+            // client du cabinet (attestation, avenant…). Gemini lit la pièce,
+            // identifie le titulaire et la pièce est déposée / rattachée. Aucune
+            // fiche n'est créée : sans certitude, tâche humaine.
+            if (detail.pieces_jointes.length > 0) {
+              const { traiterPiecesJointesPartenaire } = await import("@/lib/pieces-partenaire.server");
+              const pieces = await traiterPiecesJointesPartenaire(admin, {
+                gmail_message_id: m.id,
+                sujet: entree.sujet,
+                texte: entree.texte,
+                compagnie: compagnieExp.nom ?? null,
+                pieces_jointes: detail.pieces_jointes.map((p) => ({
+                  nom: p.nom,
+                  mime: p.mime,
+                  attachment_id: p.attachment_id,
+                })),
+                userId,
+              }).catch((e: unknown) => {
+                console.error("[pieces-partenaire] traitement impossible", m.id, e);
+                return null;
+              });
+              if (pieces) {
+                piecesPartenairesRattachees += pieces.rattachees;
+                piecesPartenairesAClasser += pieces.a_classer;
+                if (pieces.a_classer > 0) await poserLabelCabinet(m.id, "sp_a_traiter");
+              }
+            }
+
+
             // Le mail partenaire contient-il une information exploitable
             // (codes courtier, offre, mise à jour produit, challenge) ? Dans ce
             // cas il repasse en « Service Partenaire/A_Traiter ».
