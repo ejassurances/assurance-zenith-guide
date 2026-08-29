@@ -80,7 +80,9 @@ function ClientsList() {
       .select(
         "id,reference,civilite,prenom,nom,email,mobile,ville,statut,origine,marque,besoins,conformite_score,conformite_niveau,created_at,client_risque_lcbft(score_risque,niveau_vigilance)",
       )
-
+      // Les fiches techniques (compagnies, fournisseurs, adresses de service)
+      // n'ont pas leur place dans la liste des clients.
+      .not("etiquettes", "cs", '{"non-client"}')
       .order("created_at", { ascending: false })
       .limit(200);
     setItems((data ?? []) as ClientRow[]);

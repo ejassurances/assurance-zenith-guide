@@ -14,6 +14,8 @@ export const DOMAINES_PARTENAIRES: Record<string, string> = {
   "kereisfrance.com": "Kereis",
   "kereis.com": "Kereis",
   "cbp-solutions.com": "Kereis",
+  // Service résiliation / substitution Kereis.
+  "substitutions.fr": "Kereis (service résiliation)",
   // Néoliane.
   "neoliane.fr": "Néoliane",
   "neoliane.com": "Néoliane",
