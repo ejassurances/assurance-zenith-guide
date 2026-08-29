@@ -29,6 +29,8 @@ import { CopilotePanel } from "@/components/copilote-panel";
 import { AnalyseRecueilPanel } from "@/components/analyse-recueil-panel";
 import { DossierDevisPanel } from "@/components/dossier-devis-panel";
 import { SimulassurConsole } from "@/components/simulassur-console";
+import { EtudeEpargnePanel } from "@/components/etude-epargne-panel";
+import { traiterDocumentDepose } from "@/lib/etudes.functions";
 import { ETAPES, etapeLabel, type EtapeKey } from "@/lib/pipeline-dossier";
 import { CompletudeRings } from "@/components/completude-rings";
 import { useCompletudeDossier } from "@/hooks/use-completude";
@@ -453,6 +455,9 @@ function StageContent({
           onAnalyse={onChanged}
         />
       )}
+      {canEdit && dossier.type_assurance === "epargne_retraite" && (
+        <EtudeEpargnePanel dossierId={dossierId} />
+      )}
       {canEdit && <CopilotePanel dossierId={dossierId} />}
       {content}
     </section>
@@ -639,6 +644,7 @@ function DocumentsPanel({ dossierId, userId }: { dossierId: string; userId: stri
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const traiterDocument = useServerFn(traiterDocumentDepose);
 
   const load = async () => {
     const { data } = await supabase
@@ -666,19 +672,33 @@ function DocumentsPanel({ dossierId, userId }: { dossierId: string; userId: stri
       setUploading(false);
       return;
     }
-    const { error: dbErr } = await supabase.from("documents").insert({
-      dossier_id: dossierId,
-      uploader_id: userId,
-      storage_path: path,
-      file_name: file.name,
-      file_size: file.size,
-      mime_type: file.type,
-    });
-    setUploading(false);
+    const { data: cree, error: dbErr } = await supabase
+      .from("documents")
+      .insert({
+        dossier_id: dossierId,
+        uploader_id: userId,
+        storage_path: path,
+        file_name: file.name,
+        file_size: file.size,
+        mime_type: file.type,
+      })
+      .select("id")
+      .maybeSingle();
     if (dbErr) {
+      setUploading(false);
       setError(dbErr.message);
       return;
     }
+    // Analyse IA du document déposé : classification, extraction puis
+    // exploitation métier (recueil emprunteur ou étude épargne).
+    if (cree?.id) {
+      try {
+        await traiterDocument({ data: { document_id: cree.id } });
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Analyse du document indisponible");
+      }
+    }
+    setUploading(false);
     if (fileRef.current) fileRef.current.value = "";
     load();
   };

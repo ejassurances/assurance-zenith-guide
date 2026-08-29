@@ -800,6 +800,22 @@ async function routerAutresPieces(
         }
       }
 
+      // EXPLOITATION MÉTIER — offre de prêt : pré-remplissage du recueil
+      // emprunteur (jamais d'écrasement d'une saisie humaine) puis lettre de
+      // mission si le prêt est complet ; relevé de placement : étude épargne.
+      // Aucun devoir de conseil n'est produit : cet acte reste humain.
+      if (documentId) {
+        try {
+          const { exploiterDocumentEtude } = await import("@/lib/etude-documents.server");
+          const ex = await exploiterDocumentEtude(admin, documentId, params.userId);
+          if (ex.actions.length > 0) {
+            console.info(`[etude] ${documentId} · ${ex.actions.join(" · ")}`);
+          }
+        } catch (e) {
+          console.error("[etude] exploitation non effectuée", e);
+        }
+      }
+
 
 
 

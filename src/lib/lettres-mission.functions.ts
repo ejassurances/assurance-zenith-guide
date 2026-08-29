@@ -117,5 +117,20 @@ export const signerLettreMission = createServerFn({ method: "POST" })
         .eq("id", data.lettre_id);
     }
 
-    return { ok: true, archive, archive_erreur: archiveErreur };
+    // ÉTUDE & TARIFICATION APRÈS SIGNATURE : la lettre de mission signée
+    // autorise l'étude (épargne) ou la tarification (emprunteur). Le devoir de
+    // conseil reste rédigé et validé par un humain (ACPR / DDA).
+    let etude: { actions: string[]; erreurs: string[] } | null = null;
+    if (lettre.dossier_id) {
+      try {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { lancerEtudeApresLettreMission } = await import("./etude-documents.server");
+        const res = await lancerEtudeApresLettreMission(supabaseAdmin, lettre.dossier_id, userId);
+        etude = { actions: res.actions, erreurs: res.erreurs };
+      } catch (e) {
+        console.error("Étude après lettre de mission :", e);
+      }
+    }
+
+    return { ok: true, archive, archive_erreur: archiveErreur, etude };
   });
