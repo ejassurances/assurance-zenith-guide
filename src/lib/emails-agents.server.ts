@@ -284,6 +284,28 @@ export async function executerAgents(
             });
             partenairesRoutes++;
 
+            // AGENT AUTONOME — PARTENAIRES / FOURNISSEURS : accusé et réponse de
+            // gestion courante rédigés et programmés sans validation humaine.
+            // La barrière ACPR / DDA bloque tout acte de distribution.
+            {
+              const { planifierReponseAutonome } = await import("@/lib/reponse-autonome.server");
+              const auto = await planifierReponseAutonome(admin, {
+                canal: "partenaire",
+                gmail_message_id: m.id,
+                destinataire: entree.expediteur_email ?? null,
+                correspondant: compagnieExp.nom ?? entree.expediteur_email ?? "Madame, Monsieur",
+                sujet: entree.sujet,
+                texte: entree.texte,
+                recu_le: m.date ?? detail.date ?? null,
+                liens: { compagnie_id: compagnieExp.id ?? null },
+              });
+              console.info(
+                `[agent-autonome] partenaire ${m.id} · ${auto.planifiee ? "programmée" : "refusée"} · ${auto.motif}`,
+              );
+            }
+
+
+
             // Les pièces jointes d'un mail partenaire appartiennent souvent à un
             // client du cabinet (attestation, avenant…). Gemini lit la pièce,
             // identifie le titulaire et la pièce est déposée / rattachée. Aucune
