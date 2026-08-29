@@ -1,10 +1,15 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { envoyerSouscriptionFn, enregistrerRetourCompagnie } from "@/lib/souscription.functions";
+import {
+  envoyerSouscriptionFn,
+  enregistrerRetourCompagnie,
+  prerequisSouscriptionFn,
+} from "@/lib/souscription.functions";
+import type { ResultatPrerequis } from "@/lib/souscription-prerequis";
 
 /**
- * Étape souscription : transmission du dossier à la compagnie, suivi des
- * relances automatiques (J+3, J+7) et enregistrement du retour compagnie.
+ * Étape souscription : contrôle de complétude bloquant, transmission à la
+ * compagnie (API/email ou dépôt intranet), relances automatiques et retour.
  */
 export function SouscriptionPanel({
   dossierId,
@@ -25,6 +30,7 @@ export function SouscriptionPanel({
 }) {
   const envoyer = useServerFn(envoyerSouscriptionFn);
   const retour = useServerFn(enregistrerRetourCompagnie);
+  const lirePrerequis = useServerFn(prerequisSouscriptionFn);
 
   const [email, setEmail] = useState(emailCompagnie ?? "");
   const [commentaire, setCommentaire] = useState("");
@@ -32,10 +38,25 @@ export function SouscriptionPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [prerequis, setPrerequis] = useState<ResultatPrerequis | null>(null);
 
   const envoyable = ["devoir_conseil_signe", "souscription_envoyee", "devis_en_cours"].includes(statut);
+  const autorise = prerequis?.autorise === true;
 
-  const lancerEnvoi = async () => {
+  const rafraichirPrerequis = useCallback(async () => {
+    try {
+      const res = (await lirePrerequis({ data: { dossier_id: dossierId } })) as ResultatPrerequis;
+      setPrerequis(res);
+    } catch {
+      setPrerequis(null);
+    }
+  }, [dossierId, lirePrerequis]);
+
+  useEffect(() => {
+    void rafraichirPrerequis();
+  }, [rafraichirPrerequis]);
+
+  const lancerEnvoi = async (mode: "api" | "intranet") => {
     setBusy(true);
     setError(null);
     setMessage(null);
@@ -45,11 +66,17 @@ export function SouscriptionPanel({
           dossier_id: dossierId,
           email: email.trim() || undefined,
           commentaire: commentaire.trim() || undefined,
+          mode,
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       })) as any;
-      setMessage(`Dossier transmis à ${res.destinataire}. Relances automatiques armées à J+3 et J+7.`);
+      setMessage(
+        mode === "intranet"
+          ? "Dépôt intranet validé et tracé dans l'historique du dossier."
+          : `Dossier transmis à ${res.destinataire}. Relances automatiques armées à J+3 et J+7.`,
+      );
       setCommentaire("");
+      await rafraichirPrerequis();
       onChanged();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Envoi impossible");
@@ -57,6 +84,7 @@ export function SouscriptionPanel({
       setBusy(false);
     }
   };
+
 
   const enregistrerRetour = async () => {
     setBusy(true);
