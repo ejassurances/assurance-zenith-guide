@@ -22,6 +22,7 @@ import { Route as ApiPublicSuiviContratsRouteImport } from './routes/api/public/
 import { Route as ApiPublicScanEmailsRouteImport } from './routes/api/public/scan-emails'
 import { Route as ApiPublicRevueLcbftRouteImport } from './routes/api/public/revue-lcbft'
 import { Route as ApiPublicReprendreMailsIgnoresRouteImport } from './routes/api/public/reprendre-mails-ignores'
+import { Route as ApiPublicReprendreMailsAValiderRouteImport } from './routes/api/public/reprendre-mails-a-valider'
 import { Route as ApiPublicRelanceSouscriptionRouteImport } from './routes/api/public/relance-souscription'
 import { Route as ApiPublicRelanceSinistresRouteImport } from './routes/api/public/relance-sinistres'
 import { Route as ApiPublicRelancePiecesRouteImport } from './routes/api/public/relance-pieces'
@@ -141,6 +142,12 @@ const ApiPublicReprendreMailsIgnoresRoute =
   ApiPublicReprendreMailsIgnoresRouteImport.update({
     id: '/api/public/reprendre-mails-ignores',
     path: '/api/public/reprendre-mails-ignores',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicReprendreMailsAValiderRoute =
+  ApiPublicReprendreMailsAValiderRouteImport.update({
+    id: '/api/public/reprendre-mails-a-valider',
+    path: '/api/public/reprendre-mails-a-valider',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicRelanceSouscriptionRoute =
@@ -508,6 +515,7 @@ export interface FileRoutesByFullPath {
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
+  '/api/public/reprendre-mails-a-valider': typeof ApiPublicReprendreMailsAValiderRoute
   '/api/public/reprendre-mails-ignores': typeof ApiPublicReprendreMailsIgnoresRoute
   '/api/public/revue-lcbft': typeof ApiPublicRevueLcbftRoute
   '/api/public/scan-emails': typeof ApiPublicScanEmailsRoute
@@ -575,6 +583,7 @@ export interface FileRoutesByTo {
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
+  '/api/public/reprendre-mails-a-valider': typeof ApiPublicReprendreMailsAValiderRoute
   '/api/public/reprendre-mails-ignores': typeof ApiPublicReprendreMailsIgnoresRoute
   '/api/public/revue-lcbft': typeof ApiPublicRevueLcbftRoute
   '/api/public/scan-emails': typeof ApiPublicScanEmailsRoute
@@ -645,6 +654,7 @@ export interface FileRoutesById {
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
   '/api/public/relance-souscription': typeof ApiPublicRelanceSouscriptionRoute
+  '/api/public/reprendre-mails-a-valider': typeof ApiPublicReprendreMailsAValiderRoute
   '/api/public/reprendre-mails-ignores': typeof ApiPublicReprendreMailsIgnoresRoute
   '/api/public/revue-lcbft': typeof ApiPublicRevueLcbftRoute
   '/api/public/scan-emails': typeof ApiPublicScanEmailsRoute
@@ -715,6 +725,7 @@ export interface FileRouteTypes {
     | '/api/public/relance-pieces'
     | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
+    | '/api/public/reprendre-mails-a-valider'
     | '/api/public/reprendre-mails-ignores'
     | '/api/public/revue-lcbft'
     | '/api/public/scan-emails'
@@ -782,6 +793,7 @@ export interface FileRouteTypes {
     | '/api/public/relance-pieces'
     | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
+    | '/api/public/reprendre-mails-a-valider'
     | '/api/public/reprendre-mails-ignores'
     | '/api/public/revue-lcbft'
     | '/api/public/scan-emails'
@@ -851,6 +863,7 @@ export interface FileRouteTypes {
     | '/api/public/relance-pieces'
     | '/api/public/relance-sinistres'
     | '/api/public/relance-souscription'
+    | '/api/public/reprendre-mails-a-valider'
     | '/api/public/reprendre-mails-ignores'
     | '/api/public/revue-lcbft'
     | '/api/public/scan-emails'
@@ -899,6 +912,7 @@ export interface RootRouteChildren {
   ApiPublicRelancePiecesRoute: typeof ApiPublicRelancePiecesRoute
   ApiPublicRelanceSinistresRoute: typeof ApiPublicRelanceSinistresRoute
   ApiPublicRelanceSouscriptionRoute: typeof ApiPublicRelanceSouscriptionRoute
+  ApiPublicReprendreMailsAValiderRoute: typeof ApiPublicReprendreMailsAValiderRoute
   ApiPublicReprendreMailsIgnoresRoute: typeof ApiPublicReprendreMailsIgnoresRoute
   ApiPublicRevueLcbftRoute: typeof ApiPublicRevueLcbftRoute
   ApiPublicScanEmailsRoute: typeof ApiPublicScanEmailsRoute
@@ -1001,6 +1015,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/reprendre-mails-ignores'
       fullPath: '/api/public/reprendre-mails-ignores'
       preLoaderRoute: typeof ApiPublicReprendreMailsIgnoresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/reprendre-mails-a-valider': {
+      id: '/api/public/reprendre-mails-a-valider'
+      path: '/api/public/reprendre-mails-a-valider'
+      fullPath: '/api/public/reprendre-mails-a-valider'
+      preLoaderRoute: typeof ApiPublicReprendreMailsAValiderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/relance-souscription': {
@@ -1516,6 +1537,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicRelancePiecesRoute: ApiPublicRelancePiecesRoute,
   ApiPublicRelanceSinistresRoute: ApiPublicRelanceSinistresRoute,
   ApiPublicRelanceSouscriptionRoute: ApiPublicRelanceSouscriptionRoute,
+  ApiPublicReprendreMailsAValiderRoute: ApiPublicReprendreMailsAValiderRoute,
   ApiPublicReprendreMailsIgnoresRoute: ApiPublicReprendreMailsIgnoresRoute,
   ApiPublicRevueLcbftRoute: ApiPublicRevueLcbftRoute,
   ApiPublicScanEmailsRoute: ApiPublicScanEmailsRoute,
