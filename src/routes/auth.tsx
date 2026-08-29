@@ -47,10 +47,17 @@ function AuthPage() {
   const demanderReset = useServerFn(demanderReinitialisationMotDePasse);
 
   useEffect(() => {
+    setMonte(true);
+  }, []);
+
+  useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/espace" });
     });
   }, [navigate]);
+
+  // Rendu uniquement après montage : évite le mismatch d'hydration (route sans SSR).
+  if (!monte) return null;
 
   /** Connexion Google Workspace (comptes @ej-assurances.fr en priorité). */
   const connexionGoogle = async () => {
