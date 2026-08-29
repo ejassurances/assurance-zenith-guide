@@ -11,12 +11,15 @@ export const Route = createFileRoute("/_authenticated/espace/compagnies/")({
   component: CompagniesIndex,
 });
 
+type TypePartenaire = "compagnie" | "courtier_grossiste";
+
 type Compagnie = {
   id: string;
   nom: string;
   slug: string;
   logo_url: string | null;
   statut: "actif" | "prospect" | "inactif";
+  type_partenaire: TypePartenaire;
   tier_favori: number | null;
   api_active: boolean;
   site_web: string | null;
@@ -25,6 +28,11 @@ type Compagnie = {
 };
 
 export const TIER_LABEL: Record<number, string> = { 1: "Top 1", 2: "Top 2", 3: "Top 3" };
+
+export const TYPE_PARTENAIRE_LABEL: Record<TypePartenaire, string> = {
+  compagnie: "Compagnie d'assurance",
+  courtier_grossiste: "Courtier grossiste",
+};
 
 
 function slugify(s: string) {

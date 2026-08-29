@@ -62,6 +62,7 @@ export const Route = createFileRoute("/_authenticated/espace/compagnies/$id")({
 });
 
 type ApiAuthType = "none" | "api_key" | "bearer" | "oauth2" | "basic";
+type TypePartenaire = "compagnie" | "courtier_grossiste";
 type Compagnie = {
   id: string;
   nom: string;
@@ -73,6 +74,7 @@ type Compagnie = {
   contact_email: string | null;
   contact_telephone: string | null;
   statut: "actif" | "prospect" | "inactif";
+  type_partenaire: TypePartenaire;
   notes: string | null;
   api_active: boolean;
 };
