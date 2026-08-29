@@ -245,3 +245,71 @@ export const majRecommandation = createServerFn({ method: "POST" })
     if (error) return { ok: false as const, error: error.message };
     return { ok: true as const };
   });
+
+/** Dossiers récents proposés au rattachement d'une recommandation (staff). */
+export const dossiersPourRecommandation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({}).parse(input ?? {}))
+  .handler(async ({ context }) => {
+    if (!(await estStaff(context.supabase, context.userId))) {
+      return { ok: false as const, error: "Action réservée au cabinet.", dossiers: [] };
+    }
+    const { data, error } = await context.supabase
+      .from("dossiers")
+      .select("id, reference, client_nom, client_id")
+      .order("created_at", { ascending: false })
+      .limit(150);
+    if (error) return { ok: false as const, error: error.message, dossiers: [] };
+    return { ok: true as const, dossiers: (data ?? []) as { id: string; reference: string; client_nom: string; client_id: string | null }[] };
+  });
+
+/**
+ * Rattache une recommandation à un dossier : le client du dossier et la
+ * commission déjà enregistrée sur ce dossier sont reportés sur la
+ * recommandation, ce qui relie l'apport d'affaires au flux financier.
+ */
+export const lierRecommandationDossier = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        recommandation_id: z.string().uuid(),
+        dossier_id: z.string().uuid().nullable(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    if (!(await estStaff(context.supabase, context.userId))) {
+      return { ok: false as const, error: "Action réservée aux administrateurs et mandataires." };
+    }
+
+    const patch: Record<string, unknown> = { dossier_id: data.dossier_id };
+    if (data.dossier_id) {
+      const { data: dossier } = await context.supabase
+        .from("dossiers")
+        .select("id, client_id")
+        .eq("id", data.dossier_id)
+        .maybeSingle();
+      if (!dossier) return { ok: false as const, error: "Dossier introuvable." };
+      const clientId = (dossier as { client_id: string | null }).client_id;
+      if (clientId) patch.client_id = clientId;
+
+      const { data: commissions } = await context.supabase
+        .from("commissions")
+        .select("id, created_at")
+        .eq("dossier_id", data.dossier_id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      const commission = ((commissions ?? []) as { id: string }[])[0];
+      patch.commission_id = commission?.id ?? null;
+    } else {
+      patch.commission_id = null;
+    }
+
+    const { error } = await context.supabase
+      .from("recommandations_prescripteur")
+      .update(patch as never)
+      .eq("id", data.recommandation_id);
+    if (error) return { ok: false as const, error: error.message };
+    return { ok: true as const, commission_liee: Boolean(patch.commission_id) };
+  });
