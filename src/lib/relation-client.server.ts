@@ -958,6 +958,8 @@ async function accuserReceptionPieces(
         `${params.nb_pieces} pièce(s) reçue(s).`,
         classification.complement_annonce ? "Complément annoncé par le client : relance programmée à J+5." : "",
         `Email : ${lienMail(params.gmail_message_id)}`,
+        `Message Gmail : ${params.gmail_message_id}`,
+        params.gmail_thread_id ? `Fil Gmail : ${params.gmail_thread_id}` : "",
       ]
         .filter(Boolean)
         .join("\n"),
