@@ -8,9 +8,12 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   changerStatutPrescripteur,
+  dossiersPourRecommandation,
+  lierRecommandationDossier,
   majRecommandation,
   validerPrescripteur,
 } from "@/lib/prescripteurs.functions";
+import { STATUT_RECO_LABEL } from "@/lib/referentiels";
 
 export const Route = createFileRoute("/_authenticated/espace/prescripteurs")({
   component: PrescripteursPage,
@@ -34,6 +37,8 @@ type Reco = {
   id: string;
   prescripteur_id: string;
   client_id: string | null;
+  dossier_id: string | null;
+  commission_id: string | null;
   nom_contact: string;
   description: string | null;
   statut: string;
@@ -44,12 +49,7 @@ type Reco = {
   prescripteurs: { nom: string; prenom: string | null } | null;
 };
 
-const STATUT_RECO_LABEL: Record<string, string> = {
-  nouveau: "Nouveau",
-  en_cours: "En cours",
-  dossier_valide: "Dossier validé",
-  sans_suite: "Sans suite",
-};
+type DossierRef = { id: string; reference: string; client_nom: string; client_id: string | null };
 
 const dateFr = (v: string | null) => (v ? new Date(v).toLocaleDateString("fr-FR") : "—");
 
@@ -63,6 +63,9 @@ function PrescripteursPage() {
   const valider = useServerFn(validerPrescripteur);
   const changerStatut = useServerFn(changerStatutPrescripteur);
   const majReco = useServerFn(majRecommandation);
+  const lierDossier = useServerFn(lierRecommandationDossier);
+  const listerDossiers = useServerFn(dossiersPourRecommandation);
+  const [dossiers, setDossiers] = useState<DossierRef[]>([]);
 
   const load = useCallback(async () => {
     const [{ data: p }, { data: r }] = await Promise.all([
@@ -73,7 +76,7 @@ function PrescripteursPage() {
       supabase
         .from("recommandations_prescripteur")
         .select(
-          "id,prescripteur_id,client_id,nom_contact,description,statut,montant_du,verse,verse_le,created_at,prescripteurs(nom,prenom)",
+          "id,prescripteur_id,client_id,dossier_id,commission_id,nom_contact,description,statut,montant_du,verse,verse_le,created_at,prescripteurs(nom,prenom)",
         )
         .order("created_at", { ascending: false }),
     ]);
@@ -84,6 +87,13 @@ function PrescripteursPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    listerDossiers({ data: {} })
+      .then((res) => setDossiers((res.dossiers ?? []) as DossierRef[]))
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const action = async (key: string, fn: () => Promise<{ ok: boolean; error?: string }>, okText: string) => {
     setBusy(key);
@@ -246,6 +256,31 @@ function PrescripteursPage() {
                       >
                         Fiche client
                       </Link>
+                    )}
+                    <select
+                      value={r.dossier_id ?? ""}
+                      disabled={busy !== null}
+                      onChange={(e) =>
+                        action(
+                          `d-${r.id}`,
+                          () =>
+                            lierDossier({
+                              data: { recommandation_id: r.id, dossier_id: e.target.value || null },
+                            }),
+                          "Recommandation rattachée au dossier.",
+                        )
+                      }
+                      className="mt-2 max-w-xs rounded-sm border border-line bg-surface-elevated px-2 py-1 text-[11px] text-ink"
+                    >
+                      <option value="">Aucun dossier rattaché</option>
+                      {dossiers.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.reference} — {d.client_nom}
+                        </option>
+                      ))}
+                    </select>
+                    {r.commission_id && (
+                      <span className="mt-1 block text-[11px] text-ink-muted">Commission du dossier reliée</span>
                     )}
                   </td>
                   <td className="px-3 py-2 text-ink-soft">

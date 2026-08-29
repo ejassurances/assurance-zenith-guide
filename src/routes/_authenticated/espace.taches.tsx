@@ -1,8 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
 import { IconChecklist } from "@tabler/icons-react";
+import { majTache } from "@/lib/taches.functions";
+import { PRIORITE_TACHE_LABEL, STATUT_TACHE_LABEL, STATUTS_TACHE, type StatutTache } from "@/lib/referentiels";
+
 
 export const Route = createFileRoute("/_authenticated/espace/taches")({
   component: TachesPage,
@@ -27,6 +32,7 @@ function TachesPage() {
   const [items, setItems] = useState<Tache[]>([]);
   const [filter, setFilter] = useState<"all" | "a_faire" | "en_cours" | "terminee">("a_faire");
   const [selected, setSelected] = useState<Tache | null>(null);
+  const changerStatut = useServerFn(majTache);
 
   const load = async () => {
     let q = supabase
@@ -44,10 +50,15 @@ function TachesPage() {
     load();
   }, [filter]);
 
-  const setStatut = async (t: Tache, statut: string) => {
-    await supabase.from("taches").update({ statut: statut as never }).eq("id", t.id);
-    load();
+  const setStatut = async (t: Tache, statut: StatutTache) => {
+    try {
+      await changerStatut({ data: { id: t.id, statut } });
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Mise à jour impossible");
+    }
   };
+
 
   return (
     <div>
@@ -115,7 +126,9 @@ function TachesPage() {
                       {t.titre}
                     </p>
                     <div className="flex shrink-0 items-center gap-2 text-xs">
-                      <span className="rounded-full border border-line px-2 py-0.5">{t.priorite}</span>
+                      <span className="rounded-full border border-line px-2 py-0.5">
+                        {PRIORITE_TACHE_LABEL[t.priorite as keyof typeof PRIORITE_TACHE_LABEL] ?? t.priorite}
+                      </span>
                       {t.echeance && (
                         <span className="text-ink-muted">
                           {new Date(t.echeance).toLocaleDateString("fr-FR")}
@@ -152,11 +165,16 @@ function TachesPage() {
               <dl className="mt-4 space-y-2 text-xs">
                 <div className="flex justify-between gap-3">
                   <dt className="text-ink-muted">Statut</dt>
-                  <dd className="text-ink">{selected.statut}</dd>
+                  <dd className="text-ink">
+                    {STATUT_TACHE_LABEL[selected.statut as keyof typeof STATUT_TACHE_LABEL] ?? selected.statut}
+                  </dd>
                 </div>
                 <div className="flex justify-between gap-3">
                   <dt className="text-ink-muted">Priorité</dt>
-                  <dd className="text-ink">{selected.priorite}</dd>
+                  <dd className="text-ink">
+                    {PRIORITE_TACHE_LABEL[selected.priorite as keyof typeof PRIORITE_TACHE_LABEL] ??
+                      selected.priorite}
+                  </dd>
                 </div>
                 <div className="flex justify-between gap-3">
                   <dt className="text-ink-muted">Créée le</dt>
@@ -207,14 +225,7 @@ function TachesPage() {
               </div>
 
               <div className="mt-5 flex flex-wrap gap-2">
-                {(
-                  [
-                    ["a_faire", "À faire"],
-                    ["en_cours", "En cours"],
-                    ["terminee", "Terminée"],
-                    ["annulee", "Annulée"],
-                  ] as const
-                ).map(([k, l]) => (
+                {STATUTS_TACHE.map((k) => (
                   <button
                     key={k}
                     onClick={() => setStatut(selected, k)}
@@ -225,7 +236,7 @@ function TachesPage() {
                         : "border-line text-ink-soft hover:bg-surface")
                     }
                   >
-                    {l}
+                    {STATUT_TACHE_LABEL[k]}
                   </button>
                 ))}
               </div>
