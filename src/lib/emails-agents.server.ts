@@ -284,6 +284,28 @@ export async function executerAgents(
             });
             partenairesRoutes++;
 
+            // AGENT AUTONOME — PARTENAIRES / FOURNISSEURS : accusé et réponse de
+            // gestion courante rédigés et programmés sans validation humaine.
+            // La barrière ACPR / DDA bloque tout acte de distribution.
+            {
+              const { planifierReponseAutonome } = await import("@/lib/reponse-autonome.server");
+              const auto = await planifierReponseAutonome(admin, {
+                canal: "partenaire",
+                gmail_message_id: m.id,
+                destinataire: entree.expediteur_email ?? null,
+                correspondant: compagnieExp.nom ?? entree.expediteur_email ?? "Madame, Monsieur",
+                sujet: entree.sujet,
+                texte: entree.texte,
+                recu_le: m.date ?? detail.date ?? null,
+                liens: { compagnie_id: compagnieExp.id ?? null },
+              });
+              console.info(
+                `[agent-autonome] partenaire ${m.id} · ${auto.planifiee ? "programmée" : "refusée"} · ${auto.motif}`,
+              );
+            }
+
+
+
             // Les pièces jointes d'un mail partenaire appartiennent souvent à un
             // client du cabinet (attestation, avenant…). Gemini lit la pièce,
             // identifie le titulaire et la pièce est déposée / rattachée. Aucune
@@ -737,6 +759,36 @@ export async function executerAgents(
           });
           if (resultat.action === "reponse_envoyee") reponsesAuto++;
           if (resultat.action === "brouillon") brouillons++;
+
+          // AGENT AUTONOME — GESTION COURANTE : quand le CRM n'a produit qu'un
+          // brouillon et que la barrière ACPR / DDA l'autorise, la réponse est
+          // rédigée et programmée (heures d'ouverture + délai métier 45 min,
+          // annulable). Les actes réglementaires restent en validation humaine.
+          if (resultat.action === "brouillon") {
+            const { planifierReponseAutonome } = await import("@/lib/reponse-autonome.server");
+            const auto = await planifierReponseAutonome(admin, {
+              canal: "client",
+              gmail_message_id: messageId,
+              destinataire: detail.expediteur_email ?? null,
+              correspondant: detail.expediteur_nom ?? detail.expediteur_email ?? "Madame, Monsieur",
+              sujet: detail.sujet ?? null,
+              texte: detail.texte ?? detail.snippet ?? null,
+              intention: analyseGemini?.intention ?? null,
+              confiance: analyseGemini?.confidence ?? null,
+              recu_le: detail.date ?? null,
+              liens: { client_id: lien.client_id },
+            });
+            console.info(`[agent-autonome] ${messageId} · ${auto.planifiee ? "programmée" : "refusée"} · ${auto.motif}`);
+            if (auto.planifiee) reponsesAuto++;
+          }
+
+          // Le projet du client avance seul sur les transitions non réglementaires.
+          {
+            const { avancerProjetsClient } = await import("@/lib/projet-avancement.server");
+            await avancerProjetsClient(admin, { client_id: lien.client_id, par: userId });
+          }
+
+
 
           // MOTEUR DE DÉCISION CRM : sécurité → intention → identification →
           // règles métier → libellé Gmail en simple repli. Le libellé
