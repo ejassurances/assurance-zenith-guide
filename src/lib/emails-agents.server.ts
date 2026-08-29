@@ -34,6 +34,10 @@ export interface ResultatAgents {
   mis_corbeille: number;
   /** Mails routés vers Service Partenaire d'après le domaine expéditeur. */
   partenaires_routes: number;
+  /** Pièces jointes partenaires déposées sur la fiche du client identifié. */
+  pieces_partenaires_rattachees: number;
+  /** Pièces jointes partenaires conservées mais laissées à qualifier par un humain. */
+  pieces_partenaires_a_classer: number;
   /** Emails partenaires porteurs d'une information exploitable (codes, offre, MAJ produit, challenge). */
   offres_partenaires: number;
   /** Fiches compagnie créées automatiquement (statut inactif). */
