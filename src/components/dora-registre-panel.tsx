@@ -185,7 +185,9 @@ export function DoraRegistrePanel({ isAdmin }: { isAdmin: boolean }) {
                     <td className="px-4 py-3 text-xs">{s.localisation_donnees ?? "—"}</td>
                     <td className="px-4 py-3 text-xs">{s.plan_continuite ?? "—"}</td>
                     <td className="px-4 py-3 text-xs">
-                      {fmtDate(s.derniere_revue_le)}
+                      <span className={revueEnRetard(s.derniere_revue_le) ? "font-medium text-amber-800" : ""}>
+                        {fmtDate(s.derniere_revue_le)}
+                      </span>
                       {isAdmin && (
                         <button
                           type="button"
