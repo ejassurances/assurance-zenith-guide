@@ -119,6 +119,7 @@ export function DoraRegistrePanel({ isAdmin }: { isAdmin: boolean }) {
   };
 
   const ouverts = incidents.filter((i) => i.statut !== "resolu").length;
+  const revuesDues = systemes.filter((s) => s.actif && revueEnRetard(s.derniere_revue_le)).length;
 
   return (
     <div className="space-y-6">
@@ -136,7 +137,13 @@ export function DoraRegistrePanel({ isAdmin }: { isAdmin: boolean }) {
                 {ouverts} non clos
               </span>
             </p>
+            {revuesDues > 0 && (
+              <p className="mt-2 text-sm font-medium text-amber-800">
+                {revuesDues} prestataire(s) à revoir : revue annuelle dépassée ou jamais réalisée.
+              </p>
+            )}
           </div>
+
           <Button onClick={exporterPdf} disabled={exportEnCours || loading}>
             {exportEnCours ? "Export…" : "Exporter en PDF (Drive)"}
           </Button>
