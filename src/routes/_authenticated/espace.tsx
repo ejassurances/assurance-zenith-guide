@@ -36,6 +36,20 @@ function EspaceLayout() {
   const [mustChange, setMustChange] = useState(false);
   const [menuOuvert, setMenuOuvert] = useState(false);
   const [domaineChoisi, setDomaineChoisi] = useState<string | null>(null);
+  const [tachesOuvertes, setTachesOuvertes] = useState<number | null>(null);
+
+  // Compteur de tâches à traiter affiché dans la barre supérieure (lecture seule).
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { count } = await supabase
+        .from("taches")
+        .select("id", { count: "exact", head: true })
+        .in("statut", ["a_faire", "en_cours"]);
+      setTachesOuvertes(count ?? null);
+    })();
+  }, [user]);
+
 
   const signOut = async () => {
     await supabase.auth.signOut();
