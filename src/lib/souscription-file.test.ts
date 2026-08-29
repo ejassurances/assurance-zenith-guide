@@ -82,7 +82,7 @@ describe("file de souscription — classification", () => {
       prerequis: evaluerPrerequisSouscription({ ...complet, devoir_conseil_refuse: true }),
     });
     expect(r.etat).toBe("bloque");
- souligner: expect(r.bloquants ?? []).length === undefined; // placeholder
+    expect(r.etape_reprise).toBe("devoir_conseil_envoye");
   });
 });
 
