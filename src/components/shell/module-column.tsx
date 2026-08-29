@@ -19,24 +19,24 @@ export function ModuleColumn({
     exact ? pathname === to : pathname === to || pathname.startsWith(to + "/");
 
   return (
-    <div className="flex h-full w-60 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface">
+    <div className="flex h-full w-64 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface-elevated">
       <p className="crm-eyebrow px-5 pb-1 pt-5">Domaine</p>
-      <h2 className="px-5 pb-4 font-serif text-base font-semibold leading-snug text-ink">{domaine.label}</h2>
+      <h2 className="px-5 pb-5 font-serif text-lg font-semibold leading-snug text-ink">{domaine.label}</h2>
 
       {domaine.modules.map((m) => (
         <section key={m.module} className="pb-5">
-          <p className="crm-eyebrow px-5 pb-2 text-ink-muted">{m.module}</p>
-          <ul className="space-y-px px-2">
+          <p className="px-5 pb-1.5 text-sm font-semibold text-ink">{m.module}</p>
+          <ul className="space-y-0.5 px-3">
             {m.items.map((item) => {
               if (!item.to || item.soon) {
                 return (
                   <li key={item.label}>
                     <span
                       title="Périmètre fonctionnel cible — non encore développé"
-                      className="flex cursor-not-allowed items-center justify-between gap-2 rounded-sm px-3 py-2 text-sm text-ink-muted/45"
+                      className="flex cursor-not-allowed items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm text-ink-muted/45"
                     >
                       <span className="truncate">{item.label}</span>
-                      <span className="shrink-0 rounded-sm border border-line px-1 text-[9px] font-semibold uppercase tracking-wider">
+                      <span className="shrink-0 rounded-full border border-line px-1.5 text-[9px] font-semibold uppercase tracking-wider">
                         cible
                       </span>
                     </span>
@@ -51,13 +51,19 @@ export function ModuleColumn({
                     onClick={onNavigate}
                     aria-current={on ? "page" : undefined}
                     className={
-                      "block truncate rounded-sm border-l-2 px-3 py-2 text-sm transition-colors " +
+                      "flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition-colors " +
                       (on
-                        ? "border-[color:var(--crm-gold)] bg-[color:var(--crm-gold)]/12 font-medium text-ink"
-                        : "border-transparent text-ink-soft hover:bg-surface-elevated hover:text-ink")
+                        ? "bg-surface font-semibold text-ink"
+                        : "text-ink-soft hover:bg-surface hover:text-ink")
                     }
                   >
-                    {item.label}
+                    <span className="truncate">{item.label}</span>
+                    {on && (
+                      <span
+                        aria-hidden="true"
+                        className="h-4 w-0.5 shrink-0 rounded-full bg-[color:var(--crm-gold)]"
+                      />
+                    )}
                   </Link>
                 </li>
               );
