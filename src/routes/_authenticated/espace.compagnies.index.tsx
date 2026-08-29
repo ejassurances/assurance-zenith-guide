@@ -128,14 +128,15 @@ function CompagniesIndex() {
       <PageHeader
         eyebrow="Référentiel"
         title="Compagnies partenaires"
-        description="Référentiel des assureurs, de leurs produits et de leurs documents contractuels."
+        description="Référentiel des compagnies d'assurance et courtiers grossistes, de leurs produits et de leurs documents contractuels."
         icon={IconBuildingBank}
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Compagnies référencées" value={rows.length} icon={IconBuildingBank} accent />
+      <div className="grid gap-4 sm:grid-cols-4">
+        <StatCard label="Partenaires référencés" value={rows.length} icon={IconBuildingBank} accent />
+        <StatCard label="Compagnies d'assurance" value={rows.filter((c) => c.type_partenaire === "compagnie").length} icon={IconBuildingBank} />
+        <StatCard label="Courtiers grossistes" value={rows.filter((c) => c.type_partenaire === "courtier_grossiste").length} icon={IconPlugConnected} />
         <StatCard label="Favorites (top)" value={favorites} icon={IconStar} />
-        <StatCard label="API connectées" value={connectees} icon={IconPlugConnected} />
       </div>
 
       {isAdmin && (
@@ -149,6 +150,17 @@ function CompagniesIndex() {
               className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
               required
             />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-ink-muted">Type de partenaire</label>
+            <select
+              value={typePartenaire}
+              onChange={(e) => setTypePartenaire(e.target.value as TypePartenaire)}
+              className="rounded-md border border-line bg-background px-3 py-2 text-sm"
+            >
+              <option value="compagnie">Compagnie d'assurance</option>
+              <option value="courtier_grossiste">Courtier grossiste</option>
+            </select>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-muted">Statut</label>
