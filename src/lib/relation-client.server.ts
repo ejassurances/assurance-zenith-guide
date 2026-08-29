@@ -158,7 +158,7 @@ function consigne(email: EmailClient, reglesTon: string): string {
     '"pieces_kyc":[{"nom":"fichier.pdf","type":"cni|justificatif_domicile|rib|kbis"}],',
     '"pieces_pret":[{"nom":"fichier.pdf"}],',
     '"pieces_documents":[{"nom":"fichier.pdf","contexte":"contrat|sinistre|reclamation|autre"}],',
-    '"complement_annonce":false,"tutoiement":false,',
+    '"complement_annonce":false,"tutoiement":false,"sans_action_attendue":false,',
     '"cas_non_couvert":{"situation":"...","pourquoi":"..."}|null,',
     '"confiance":0.0,"resume":"une phrase"}',
 
