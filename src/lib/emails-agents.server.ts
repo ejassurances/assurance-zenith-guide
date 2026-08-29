@@ -156,6 +156,8 @@ export async function executerAgents(
     let corbeille = 0;
     let rattrapagesTraites = 0;
     let partenairesRoutes = 0;
+    let piecesPartenairesRattachees = 0;
+    let piecesPartenairesAClasser = 0;
     let offresPartenaires = 0;
     let compagniesCreees = 0;
     let produitsCrees = 0;
