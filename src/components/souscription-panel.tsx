@@ -103,6 +103,33 @@ export function SouscriptionPanel({
         </div>
       </dl>
 
+      <div className="mt-4 rounded-lg border border-line bg-surface-2 p-3">
+        <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+          Complétude du dossier avant transmission
+        </p>
+        {prerequis === null ? (
+          <p className="mt-2 text-sm text-ink-muted">Vérification…</p>
+        ) : (
+          <ul className="mt-2 space-y-1 text-sm">
+            {prerequis.jalons.map((j) => (
+              <li key={j.code} className="flex gap-2">
+                <span className={j.etat === "OK" ? "text-emerald-600" : "text-red-600"}>
+                  {j.etat === "OK" ? "✓" : "✗"}
+                </span>
+                <span className="text-ink">
+                  {j.libelle} — <span className="text-ink-muted">{j.detail}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {prerequis && !prerequis.autorise && (
+          <p className="mt-2 text-xs text-red-600">
+            Transmission bloquée : complétez les éléments manquants. Aucune dérogation possible.
+          </p>
+        )}
+      </div>
+
       {envoyable && (
         <div className="mt-4 space-y-3">
           <label className="block text-xs text-ink-muted">
@@ -123,16 +150,27 @@ export function SouscriptionPanel({
               className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
             />
           </label>
-          <button
-            type="button"
-            onClick={lancerEnvoi}
-            disabled={busy}
-            className="rounded-lg bg-ink px-3 py-2 text-sm font-medium text-surface disabled:opacity-50"
-          >
-            {busy ? "Envoi…" : envoyeeLe ? "Renvoyer à la compagnie" : "Envoyer à la compagnie"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => lancerEnvoi("api")}
+              disabled={busy || !autorise}
+              className="rounded-lg bg-ink px-3 py-2 text-sm font-medium text-surface disabled:opacity-50"
+            >
+              {busy ? "Envoi…" : envoyeeLe ? "Renvoyer par API / email" : "Envoyer par API / email"}
+            </button>
+            <button
+              type="button"
+              onClick={() => lancerEnvoi("intranet")}
+              disabled={busy || !autorise}
+              className="rounded-lg border border-line px-3 py-2 text-sm text-ink disabled:opacity-50"
+            >
+              Valider le dépôt sur l'intranet compagnie
+            </button>
+          </div>
         </div>
       )}
+
 
       {envoyeeLe && !retourLe && (
         <div className="mt-4 flex flex-wrap items-end gap-2 border-t border-line pt-4">
