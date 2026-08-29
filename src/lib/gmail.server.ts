@@ -574,6 +574,17 @@ export async function marquerEtat(id: string, etat: "archives" | "a_valider"): P
 
 
 /**
+ * Retire tout libellé d'état (« Archives », « A valider ») en conservant le
+ * libellé de direction : le mail redevient « à traiter » dans la file de son
+ * service et sera repris par les agents au passage suivant.
+ */
+export async function retirerEtat(id: string): Promise<void> {
+  const resolus = await Promise.all(LABELS_ETATS.map((e) => resoudreLabel(e).catch(() => null)));
+  const retirer = resolus.filter((l): l is string => !!l);
+  if (retirer.length) await modifierLabels(id, { ajouter: [], retirer });
+}
+
+/**
  * Applique une étiquette Gmail existante, désignée par son nom exact. Le message
  * reste dans la boîte générale (gérée manuellement) sauf `sortirDeLInbox`.
  */

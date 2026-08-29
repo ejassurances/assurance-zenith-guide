@@ -60,6 +60,13 @@ export interface ClassificationRelation {
   tutoiement: boolean;
   /** Cas jugé significatif pour lequel aucune règle connue ne s'applique. */
   cas_non_couvert: { situation: string; pourquoi: string } | null;
+  /**
+   * Mail de simple suivi / information / transmission de pièces : le client
+   * n'attend AUCUNE action ni réponse du cabinet. Permet d'archiver le mail
+   * après traçage (et classement des pièces) au lieu de l'empiler dans
+   * « A valider ».
+   */
+  sans_action_attendue: boolean;
   confiance: number;
   resume: string;
   modele: string | null;
@@ -133,6 +140,10 @@ function consigne(email: EmailClient, reglesTon: string): string {
     'Renseigne "cas_non_couvert" (sinon null) UNIQUEMENT si la situation est significative et qu\'AUCUNE',
     "règle ci-dessus ni règle de ton ne permet de décider quoi faire : décris alors la situation et",
     "pourquoi aucune règle ne s'applique. N'utilise pas ce champ pour une simple demande floue habituelle.",
+    'Renseigne "sans_action_attendue" à true UNIQUEMENT si le mail n\'attend aucune action ni réponse du',
+    "cabinet : simple suivi de dossier, information, confirmation, remerciement, ou transmission de pièces",
+    "demandées (« voici les documents ») sans question associée. Réponds false dès qu\'il y a une question,",
+    "une demande, une réclamation, une modification, un devis ou une urgence.",
     "En cas de doute, réponds toujours niveau_2. N'invente rien.",
     "",
     `Expéditeur : ${email.expediteur_nom ?? ""} <${email.expediteur_email ?? ""}>`,
@@ -147,7 +158,7 @@ function consigne(email: EmailClient, reglesTon: string): string {
     '"pieces_kyc":[{"nom":"fichier.pdf","type":"cni|justificatif_domicile|rib|kbis"}],',
     '"pieces_pret":[{"nom":"fichier.pdf"}],',
     '"pieces_documents":[{"nom":"fichier.pdf","contexte":"contrat|sinistre|reclamation|autre"}],',
-    '"complement_annonce":false,"tutoiement":false,',
+    '"complement_annonce":false,"tutoiement":false,"sans_action_attendue":false,',
     '"cas_non_couvert":{"situation":"...","pourquoi":"..."}|null,',
     '"confiance":0.0,"resume":"une phrase"}',
 
@@ -255,6 +266,8 @@ export async function analyserEmailClient(email: EmailClient): Promise<Classific
         complement_annonce: brut["complement_annonce"] === true,
         tutoiement: brut["tutoiement"] === true,
         cas_non_couvert,
+        // Un mail sensible (niveau_0) n'est JAMAIS considéré sans action.
+        sans_action_attendue: niveau !== "niveau_0" && brut["sans_action_attendue"] === true,
         confiance,
         resume: texteOuNull(brut["resume"], 400) ?? "",
         modele,
@@ -965,7 +978,11 @@ export async function traiterEmailClient(
     if (resultat.niveau !== "niveau_0") {
       await poserLabelCabinet(
         params.gmail_message_id,
-        resultat.action === "reponse_envoyee" ? "sc_archive" : "sc_attente_validation",
+        // « rien » = mail traité sans réponse nécessaire (suivi, pièces classées) :
+        // il est archivé, pas mis en attente de validation.
+        resultat.action === "reponse_envoyee" || resultat.action === "rien"
+          ? "sc_archive"
+          : "sc_attente_validation",
         { retirer: ["sc_a_traiter"] },
       );
     }
@@ -1067,6 +1084,10 @@ async function traiterEmailClientInterne(
     });
     accuseEnvoye = true;
   }
+  // Toutes les pièces jointes ont-elles été réellement classées, sans reprise
+  // humaine (aucune pièce « à classer », aucun document de prêt à vérifier) ?
+  const toutesPiecesClassees = pieces.non_classees === 0 && pieces.pret === 0;
+
 
   const brouillon = async (motif: string, objet: string, corps: string): Promise<ResultatRelationClient> => {
     await enregistrerReponse(admin, {
@@ -1164,6 +1185,44 @@ async function traiterEmailClientInterne(
     };
   };
 
+
+  // ---- Mail de suivi / transmission de pièces : AUCUNE action attendue.
+  // L'IA a lu le mail, tracé le suivi sur la fiche client et classé les pièces
+  // jointes au bon endroit : le mail est traité et archivé, il n'a rien à faire
+  // dans la file « A valider ». Ne s'applique jamais au niveau_0 (sensible),
+  // ni s'il reste une pièce à classer ou un document de prêt à vérifier.
+  if (
+    classification.niveau !== "niveau_0" &&
+    classification.sans_action_attendue &&
+    !classification.complement_annonce &&
+    !classification.cas_non_couvert &&
+    toutesPiecesClassees
+  ) {
+    const motif = email.pieces_jointes.length
+      ? `Transmission de pièces : ${email.pieces_jointes.length} pièce(s) reçue(s) et classée(s) automatiquement — aucune action attendue.`
+      : "Mail de suivi / information : aucune action ni réponse attendue — suivi tracé sur la fiche client.";
+    await enregistrerReponse(admin, {
+      ...base,
+      statut: "aucune_reponse",
+      motif,
+    });
+    await journaliser(
+      admin,
+      client.id,
+      email.pieces_jointes.length
+        ? "Pièces reçues par email et classées — dossier suivi"
+        : "Mail de suivi reçu — aucune action attendue",
+      `${classification.resume}\n${motif}\nEmail : ${lienMail(gmail_message_id)}`,
+      "systeme",
+    );
+    return {
+      niveau: classification.niveau,
+      intention: classification.intention,
+      action: "rien",
+      pieces_kyc: piecesKyc,
+      motif,
+    };
+  }
 
   // ---- Niveau 0 : aucune automatisation, tâche urgente.
   if (classification.niveau === "niveau_0") {
