@@ -104,6 +104,7 @@ export async function ouvrirReclamationDepuisEmail(
       {
         client_id: params.client_id,
         contrat_id: contrat?.id ?? null,
+        compagnie_id: contrat?.compagnie_id ?? null,
         gmail_message_id: params.gmail_message_id,
         resume: params.resume || (params.sujet ?? "Réclamation reçue par email"),
         concerne: "incertain",

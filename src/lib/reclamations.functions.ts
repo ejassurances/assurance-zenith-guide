@@ -12,7 +12,7 @@ import { z } from "zod";
 const CABINET = "EJ Partners Assurances";
 
 const LISTE_SELECT =
-  "id, client_id, contrat_id, statut, concerne, resume, solution_proposee, date_ouverture, date_accuse_reception, date_cloture, gmail_message_id, clients(nom, prenom, email), contrats(numero, assureur, produit, compagnie_id)";
+  "id, client_id, contrat_id, compagnie_id, statut, concerne, resume, solution_proposee, date_ouverture, date_accuse_reception, date_cloture, gmail_message_id, clients(nom, prenom, email), contrats(numero, assureur, produit, compagnie_id), compagnies(nom, email_reclamations)";
 
 async function exigerStaff(supabase: any, userId: string) {
   const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
@@ -98,7 +98,9 @@ export const transmettreReclamationCompagnie = createServerFn({ method: "POST" }
   .handler(async ({ data, context }) => {
     await exigerStaff(context.supabase, context.userId);
     const r = await chargerReclamation(context.supabase, data.id);
-    if (!r.contrats?.compagnie_id) throw new Error("Aucune compagnie rattachée au contrat de cette réclamation.");
+    const compagnieId: string | null = r.compagnie_id ?? r.contrats?.compagnie_id ?? null;
+    if (!compagnieId)
+      throw new Error("Aucune compagnie rattachée à cette réclamation : assignez-en une depuis la liste.");
 
     const { data: comp } = await (context.supabase as any)
       .from("compagnies")
