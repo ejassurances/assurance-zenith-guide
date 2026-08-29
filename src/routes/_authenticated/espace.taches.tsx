@@ -1,8 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
 import { IconChecklist } from "@tabler/icons-react";
+import { majTache } from "@/lib/taches.functions";
+import { PRIORITE_TACHE_LABEL, STATUT_TACHE_LABEL, STATUTS_TACHE, type StatutTache } from "@/lib/referentiels";
+
 
 export const Route = createFileRoute("/_authenticated/espace/taches")({
   component: TachesPage,
