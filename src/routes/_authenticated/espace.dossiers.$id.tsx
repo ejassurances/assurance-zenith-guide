@@ -31,12 +31,15 @@ import { DossierDevisPanel } from "@/components/dossier-devis-panel";
 import { SimulassurConsole } from "@/components/simulassur-console";
 import { EtudeEpargnePanel } from "@/components/etude-epargne-panel";
 import { traiterDocumentDepose } from "@/lib/etudes.functions";
-import { ETAPES, etapeLabel, type EtapeKey } from "@/lib/pipeline-dossier";
+import { ETAPES, etapeLabel, estEtapeValide, type EtapeKey } from "@/lib/pipeline-dossier";
 import { CompletudeRings } from "@/components/completude-rings";
 import { useCompletudeDossier } from "@/hooks/use-completude";
 import { SectionNav, type SectionNavItem } from "@/components/section-nav";
 
 export const Route = createFileRoute("/_authenticated/espace/dossiers/$id")({
+  validateSearch: (search: Record<string, unknown>): { etape?: string } => ({
+    etape: typeof search.etape === "string" ? search.etape : undefined,
+  }),
   component: DossierDetail,
 });
 
@@ -124,7 +127,10 @@ function DossierDetail() {
   const [dossier, setDossier] = useState<Dossier | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedStep, setSelectedStep] = useState<EtapeKey | null>(null);
+  const { etape } = Route.useSearch();
+  const [selectedStep, setSelectedStep] = useState<EtapeKey | null>(() =>
+    etape && estEtapeValide(etape) ? etape : null,
+  );
   const completude = useCompletudeDossier(id, dossier?.client_id ?? null);
   /** Score de conformité KYC du client (0-100) : sous 50 %, le dossier est gelé. */
   const [scoreKyc, setScoreKyc] = useState<number | null>(null);
@@ -143,9 +149,10 @@ function DossierDetail() {
   };
 
   useEffect(() => {
-    setSelectedStep(null);
+    setSelectedStep(etape && estEtapeValide(etape) ? etape : null);
     load();
-  }, [id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, etape]);
 
   useEffect(() => {
     const clientId = dossier?.client_id;

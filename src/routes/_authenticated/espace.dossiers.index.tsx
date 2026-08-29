@@ -21,7 +21,14 @@ import {
 
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
-import { IconFolders, IconClockHour4, IconCircleCheck, IconAlertTriangle } from "@tabler/icons-react";
+import { SouscriptionFilePanel } from "@/components/souscription-file-panel";
+import {
+  IconFolders,
+  IconClockHour4,
+  IconCircleCheck,
+  IconAlertTriangle,
+  IconListCheck,
+} from "@tabler/icons-react";
 
 export const Route = createFileRoute("/_authenticated/espace/dossiers/")({
   component: DossiersList,
@@ -44,6 +51,7 @@ function DossiersList() {
   const [items, setItems] = useState<Dossier[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [vue, setVue] = useState<"liste" | "oav">("liste");
   const canCreate = role === "admin" || role === "mandataire" || role === "prescripteur";
 
   const load = async () => {
@@ -82,6 +90,31 @@ function DossiersList() {
         )}
       </PageHeader>
 
+      <div className="mt-6 inline-flex rounded-full border border-line bg-surface-elevated p-1">
+        <button
+          onClick={() => setVue("liste")}
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+            vue === "liste" ? "bg-[#0A192F] text-white" : "text-ink-soft hover:text-ink"
+          }`}
+        >
+          Tous les dossiers
+        </button>
+        <button
+          onClick={() => setVue("oav")}
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+            vue === "oav" ? "bg-[#0A192F] text-white" : "text-ink-soft hover:text-ink"
+          }`}
+        >
+          File OAV
+        </button>
+      </div>
+
+      {vue === "oav" ? (
+        <div className="mt-6">
+          <SouscriptionFilePanel />
+        </div>
+      ) : (
+        <>
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total dossiers" value={items.length} icon={IconFolders} accent />
         <StatCard label="En cours" value={enCours} icon={IconClockHour4} />
@@ -137,6 +170,8 @@ function DossiersList() {
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }
@@ -145,6 +180,15 @@ function StatutBadge({ s }: { s: string }) {
   const map: Record<string, string> = {
     nouveau: "bg-surface text-ink-soft",
     en_cours: "bg-amber-100 text-amber-900",
+    lettre_mission_envoyee: "bg-sky-100 text-sky-900",
+    dda_validee: "bg-sky-100 text-sky-900",
+    devis_en_cours: "bg-indigo-100 text-indigo-900",
+    devoir_conseil_envoye: "bg-indigo-100 text-indigo-900",
+    devoir_conseil_signe: "bg-teal-100 text-teal-900",
+    devoir_conseil_refuse: "bg-orange-100 text-orange-900",
+    souscription_envoyee: "bg-blue-100 text-blue-900",
+    contrat_valide: "bg-emerald-100 text-emerald-900",
+    contrat_actif: "bg-emerald-100 text-emerald-900",
     signe: "bg-emerald-100 text-emerald-900",
     perdu: "bg-red-100 text-red-900",
   };

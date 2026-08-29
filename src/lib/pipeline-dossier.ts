@@ -125,6 +125,11 @@ export const ETAPES_HORS_PARCOURS: EtapeDef[] = [
 
 const TOUTES = [...ETAPES, ...ETAPES_HORS_PARCOURS];
 
+/** Garde de type : la valeur est-elle une clé d'étape connue ? */
+export function estEtapeValide(v: string): v is EtapeKey {
+  return TOUTES.some((e) => e.key === v);
+}
+
 export function etapeDef(key: string): EtapeDef | undefined {
   return TOUTES.find((e) => e.key === key);
 }
