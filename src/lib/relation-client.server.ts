@@ -1182,6 +1182,44 @@ async function traiterEmailClientInterne(
   };
 
 
+  // ---- Mail de suivi / transmission de pièces : AUCUNE action attendue.
+  // L'IA a lu le mail, tracé le suivi sur la fiche client et classé les pièces
+  // jointes au bon endroit : le mail est traité et archivé, il n'a rien à faire
+  // dans la file « A valider ». Ne s'applique jamais au niveau_0 (sensible),
+  // ni s'il reste une pièce à classer ou un document de prêt à vérifier.
+  if (
+    classification.niveau !== "niveau_0" &&
+    classification.sans_action_attendue &&
+    !classification.complement_annonce &&
+    !classification.cas_non_couvert &&
+    toutesPiecesClassees
+  ) {
+    const motif = email.pieces_jointes.length
+      ? `Transmission de pièces : ${email.pieces_jointes.length} pièce(s) reçue(s) et classée(s) automatiquement — aucune action attendue.`
+      : "Mail de suivi / information : aucune action ni réponse attendue — suivi tracé sur la fiche client.";
+    await enregistrerReponse(admin, {
+      ...base,
+      statut: "aucune_reponse",
+      motif,
+    });
+    await journaliser(
+      admin,
+      client.id,
+      email.pieces_jointes.length
+        ? "Pièces reçues par email et classées — dossier suivi"
+        : "Mail de suivi reçu — aucune action attendue",
+      `${classification.resume}\n${motif}\nEmail : ${lienMail(gmail_message_id)}`,
+      "systeme",
+    );
+    return {
+      niveau: classification.niveau,
+      intention: classification.intention,
+      action: "rien",
+      pieces_kyc: piecesKyc,
+      motif,
+    };
+  }
+
   // ---- Niveau 0 : aucune automatisation, tâche urgente.
   if (classification.niveau === "niveau_0") {
     // Sous-type sinistre : ouverture d'un dossier dédié + analyse de couverture.
