@@ -8,6 +8,9 @@ import { demanderReinitialisationMotDePasse } from "@/lib/auth-email.functions";
 import { lovable } from "@/integrations/lovable";
 
 export const Route = createFileRoute("/auth")({
+  // Page d'authentification : pas de SSR (noindex, dépend du navigateur),
+  // évite le mismatch d'hydration sur le composant lazy.
+  ssr: false,
   head: () => ({
     meta: [
       { title: `Connexion — CRM ${SITE.name}` },
