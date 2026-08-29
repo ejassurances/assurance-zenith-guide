@@ -1,7 +1,10 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { IconChecklist, IconMail, IconSettings } from "@tabler/icons-react";
 
 import { DomainRail } from "@/components/shell/domain-rail";
+import { GlobalSearch } from "@/components/shell/global-search";
+import { IconAction, IconActionLink } from "@/components/shell/icon-action";
 import { ModuleColumn } from "@/components/shell/module-column";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
