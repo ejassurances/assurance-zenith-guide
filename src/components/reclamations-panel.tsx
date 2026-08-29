@@ -154,6 +154,39 @@ export function ReclamationsPanel({ canManage }: { canManage: boolean }) {
             </div>
 
             {r.resume && <p className="mt-3 whitespace-pre-line text-sm text-ink">{r.resume}</p>}
+
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-ink-muted">
+              <span>
+                Compagnie :{" "}
+                <strong className="text-ink">
+                  {r.compagnies?.nom ?? (r.compagnie_id ? "—" : "Non assignée")}
+                </strong>
+              </span>
+              {canManage && compagnies.length > 0 && (
+                <Select
+                  value={r.compagnie_id ?? ""}
+                  onValueChange={(v) =>
+                    action(
+                      r.id,
+                      () => assignerCompagnie({ data: { id: r.id, compagnie_id: v || null } }),
+                      "Compagnie assignée.",
+                    )
+                  }
+                >
+                  <SelectTrigger className="h-8 w-64 text-xs">
+                    <SelectValue placeholder="Assigner une compagnie…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {compagnies.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.nom}
+                        {c.type_partenaire === "courtier_grossiste" ? " (grossiste)" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
             {r.date_accuse_reception && (
               <p className="mt-2 text-xs text-ink-muted">
                 Accusé de réception envoyé le {new Date(r.date_accuse_reception).toLocaleDateString("fr-FR")}
