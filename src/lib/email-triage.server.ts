@@ -441,6 +441,38 @@ export async function creerFicheProspectIncertaine(
   const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
   const nom = triage.nom ?? email.expediteur_nom ?? email.expediteur_email;
 
+  // Garde-fou : compagnie, fournisseur, groupement, interne ou adresse
+  // technique → aucune fiche client, seulement une tâche de qualification.
+  const { verifierExpediteurClientPossible } = await import("@/lib/expediteur-non-client.server");
+  const verdict = await verifierExpediteurClientPossible(admin, email.expediteur_email);
+  if (!verdict.client_possible) {
+    await creerTacheAdmin(admin, {
+      titre: `Email entrant à qualifier (non client) — ${nom}`,
+      description: [
+        `Objet du mail : ${email.sujet ?? "(sans objet)"}`,
+        `Expéditeur : ${email.expediteur_email}`,
+        `Aucune fiche client créée — ${verdict.detail} (${verdict.motif}).`,
+        `Analyse IA : ${triage.resume || "aucun résumé"}`,
+      ].join("\n"),
+      created_by: params.userId,
+    });
+    await admin.from("crm_emails").upsert(
+      {
+        gmail_message_id: params.gmail_message_id,
+        gmail_thread_id: params.gmail_thread_id ?? null,
+        direction: "entrant",
+        recu_le: params.recu_le ?? null,
+        notes: `Expéditeur non client (${verdict.motif}) — aucune fiche créée`,
+        triage_ia: JSON.parse(JSON.stringify({ agent: "commercial", ...triage })),
+        triage_le: new Date().toISOString(),
+        created_by: params.userId,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "gmail_message_id" },
+    );
+    return { client_id: null as string | null, non_client: verdict.motif };
+  }
+
   // Fiche déjà existante pour cet email : on ne duplique pas.
   const { data: existant } = await admin
     .from("clients")
