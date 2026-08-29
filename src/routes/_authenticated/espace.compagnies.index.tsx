@@ -191,12 +191,31 @@ function CompagniesIndex() {
       ) : rows.length === 0 ? (
         <p className="text-sm text-ink-muted">Aucune compagnie encore enregistrée.</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-line">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-xs font-medium text-ink-muted">Type :</span>
+            {(["tous", "compagnie", "courtier_grossiste"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setFiltreType(t)}
+                className={
+                  "rounded-full border px-3 py-1 text-xs font-medium " +
+                  (filtreType === t
+                    ? "border-[#0A192F] bg-[#0A192F] text-white"
+                    : "border-line bg-background text-ink-soft hover:bg-surface")
+                }
+              >
+                {t === "tous" ? "Tous" : TYPE_PARTENAIRE_LABEL[t]}
+              </button>
+            ))}
+          </div>
+          <div className="overflow-hidden rounded-lg border border-line">
           <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
             <thead className="bg-surface text-xs uppercase tracking-wide text-ink-muted">
               <tr>
                 <th className="px-4 py-3 text-left">Compagnie</th>
+                <th className="px-4 py-3 text-left">Type</th>
                 <th className="px-4 py-3 text-left">Contact</th>
                 <th className="px-4 py-3 text-left">Statut</th>
                 <th className="px-4 py-3 text-left">Favorite</th>
