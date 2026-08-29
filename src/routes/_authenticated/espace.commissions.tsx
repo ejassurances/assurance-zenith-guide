@@ -344,6 +344,8 @@ function CommissionsPage() {
         )}
       </div>
 
+      {role !== "client" && <CommissionRapprochementPanel />}
+
       {role !== "client" && <BordereauxPanel />}
 
       {role === "admin" && <BulletinCommissionsPanel onCommissionsCreees={load} />}
