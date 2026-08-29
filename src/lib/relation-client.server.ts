@@ -499,25 +499,29 @@ async function envoyerAccuseReception(
   admin: Admin,
   client: ClientMini,
   gmailMessageId: string | null,
+  gmailThreadId: string | null = null,
 ): Promise<void> {
   if (!client.email) return;
   if (!(await adresseClientEnvoyable(client.email))) return;
 
-
-  // Anti-doublon : un seul accusé de réception par message Gmail.
-  if (gmailMessageId) {
-    const { data: deja } = await admin
-      .from("activites")
-      .select("id")
-      .eq("client_id", client.id)
-      .eq("titre", "Accusé de réception automatique envoyé au client")
-      .ilike("description", `%${gmailMessageId}%`)
-      .limit(1)
-      .maybeSingle();
-    if (deja) {
-      console.info(`[agent-relation-client] accusé de réception déjà envoyé pour ${gmailMessageId}`);
-      return;
-    }
+  // Anti-doublon : lecture de l'historique CRM (message, fil, fenêtre 72 h).
+  const { accuseAutorise, TITRE_ACCUSE } = await import("@/lib/accuses-historique.server");
+  const decision = await accuseAutorise(admin, {
+    client_id: client.id,
+    genre: "message",
+    gmail_message_id: gmailMessageId,
+    gmail_thread_id: gmailThreadId,
+  });
+  if (!decision.autorise) {
+    console.info(`[agent-relation-client] accusé non envoyé — ${decision.motif}`);
+    await journaliser(
+      admin,
+      client.id,
+      "Accusé de réception automatique supprimé (doublon évité)",
+      [decision.motif ?? "Doublon détecté dans l'historique.", `Email : ${lienMail(gmailMessageId)}`].join("\n"),
+      "systeme",
+    );
+    return;
   }
 
   try {
@@ -533,8 +537,15 @@ async function envoyerAccuseReception(
     await journaliser(
       admin,
       client.id,
-      "Accusé de réception automatique envoyé au client",
-      `Accusé de réception neutre envoyé à ${client.email}.\nEmail d'origine : ${lienMail(gmailMessageId)}`,
+      TITRE_ACCUSE.message,
+      [
+        `Accusé de réception neutre envoyé à ${client.email}.`,
+        `Email d'origine : ${lienMail(gmailMessageId)}`,
+        gmailMessageId ? `Message Gmail : ${gmailMessageId}` : "",
+        gmailThreadId ? `Fil Gmail : ${gmailThreadId}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n"),
     );
   } catch (e) {
     console.error("[agent-relation-client] accusé de réception non envoyé", e);
