@@ -54,6 +54,14 @@ const GRAVITE_STYLE: Record<Incident["gravite"], string> = {
 const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString("fr-FR") : "—");
 const fmtHeure = (d: string | null) => (d ? new Date(d).toLocaleString("fr-FR") : "—");
 
+/* DORA impose une revue périodique des prestataires informatiques : alerte au-delà de 12 mois. */
+const revueEnRetard = (d: string | null) => {
+  if (!d) return true;
+  const limite = new Date(d);
+  limite.setFullYear(limite.getFullYear() + 1);
+  return limite < new Date();
+};
+
 export function DoraRegistrePanel({ isAdmin }: { isAdmin: boolean }) {
   const [systemes, setSystemes] = useState<Systeme[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
