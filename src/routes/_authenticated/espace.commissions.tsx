@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { CommissionBaremeConfig } from "@/components/commission-bareme-config";
 import { BulletinCommissionsPanel } from "@/components/bulletin-commissions-panel";
 import { BordereauxPanel } from "@/components/bordereaux-panel";
+import { CommissionRapprochementPanel } from "@/components/commission-rapprochement-panel";
 import { getSyntheseAnneeCommissions } from "@/lib/dashboard.functions";
 import type { SyntheseAnnee } from "@/lib/commission-previsions";
 import { PageHeader } from "@/components/page-header";
