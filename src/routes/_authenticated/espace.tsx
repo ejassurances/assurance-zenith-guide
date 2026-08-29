@@ -1,10 +1,11 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { IconChecklist, IconMail, IconSettings } from "@tabler/icons-react";
+import { IconChecklist, IconInbox, IconSettings } from "@tabler/icons-react";
 
 import { DomainRail } from "@/components/shell/domain-rail";
 import { GlobalSearch } from "@/components/shell/global-search";
 import { IconAction, IconActionLink } from "@/components/shell/icon-action";
+import { QuickActions } from "@/components/shell/quick-actions";
 import { ModuleColumn } from "@/components/shell/module-column";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -183,26 +184,27 @@ function EspaceLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 border-b border-line bg-surface-elevated">
-          <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2 px-3 py-2 sm:h-16 sm:gap-3 sm:px-6 sm:py-0">
             <button
               type="button"
               onClick={() => setMenuOuvert(true)}
               aria-label="Ouvrir le menu"
-              className="rounded-full border border-line px-3 py-2 text-ink-soft lg:hidden"
+              className="shrink-0 rounded-full border border-line px-3 py-2 text-ink-soft lg:hidden"
             >
               <span aria-hidden="true">☰</span>
             </button>
 
-            <div className="flex min-w-0 flex-1 justify-center">
+            <div className="hidden min-w-0 flex-1 justify-center md:flex">
               <GlobalSearch />
             </div>
 
-            <div className="flex shrink-0 items-center gap-2">
-              <IconActionLink label="Traitement des emails" to="/espace/relation-client">
-                <IconMail size={17} aria-hidden="true" />
-              </IconActionLink>
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-2 md:flex-none">
+              <QuickActions />
               <IconActionLink label="Tâches" to="/espace/taches" badge={tachesOuvertes}>
                 <IconChecklist size={17} aria-hidden="true" />
+              </IconActionLink>
+              <IconActionLink label="Traitement des emails" to="/espace/relation-client">
+                <IconInbox size={17} aria-hidden="true" />
               </IconActionLink>
               <IconActionLink label="Paramètres" to="/espace/parametres">
                 <IconSettings size={17} aria-hidden="true" />
@@ -212,6 +214,10 @@ function EspaceLayout() {
                 <span className="text-[11px] font-bold text-[color:var(--crm-gold)]">{initiales || "EJ"}</span>
               </IconAction>
             </div>
+          </div>
+
+          <div className="border-t border-line px-3 py-2 md:hidden">
+            <GlobalSearch />
           </div>
 
           <nav
