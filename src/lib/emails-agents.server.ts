@@ -738,6 +738,36 @@ export async function executerAgents(
           if (resultat.action === "reponse_envoyee") reponsesAuto++;
           if (resultat.action === "brouillon") brouillons++;
 
+          // AGENT AUTONOME — GESTION COURANTE : quand le CRM n'a produit qu'un
+          // brouillon et que la barrière ACPR / DDA l'autorise, la réponse est
+          // rédigée et programmée (heures d'ouverture + délai métier 45 min,
+          // annulable). Les actes réglementaires restent en validation humaine.
+          if (resultat.action === "brouillon") {
+            const { planifierReponseAutonome } = await import("@/lib/reponse-autonome.server");
+            const auto = await planifierReponseAutonome(admin, {
+              canal: "client",
+              gmail_message_id: messageId,
+              destinataire: detail.expediteur_email ?? null,
+              correspondant: detail.expediteur_nom ?? detail.expediteur_email ?? "Madame, Monsieur",
+              sujet: detail.sujet ?? null,
+              texte: detail.texte ?? detail.snippet ?? null,
+              intention: analyseGemini?.intention ?? null,
+              confiance: analyseGemini?.confiance ?? null,
+              recu_le: detail.date ?? null,
+              liens: { client_id: lien.client_id },
+            });
+            console.info(`[agent-autonome] ${messageId} · ${auto.planifiee ? "programmée" : "refusée"} · ${auto.motif}`);
+            if (auto.planifiee) reponsesAuto++;
+          }
+
+          // Le projet du client avance seul sur les transitions non réglementaires.
+          {
+            const { avancerProjetsClient } = await import("@/lib/projet-avancement.server");
+            await avancerProjetsClient(admin, { client_id: lien.client_id, par: userId });
+          }
+
+
+
           // MOTEUR DE DÉCISION CRM : sécurité → intention → identification →
           // règles métier → libellé Gmail en simple repli. Le libellé
           // « Direction Commerciale » ne provoque plus « A valider » à lui seul.
