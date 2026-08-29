@@ -1158,7 +1158,8 @@ async function traiterEmailClientInterne(
       "Réponse préparée en brouillon (à valider)",
       `${motif}\nEmail : ${lienMail(gmail_message_id)}\n\n${corps}`,
     );
-    if (!accuseEnvoye) await envoyerAccuseReception(admin, client, gmail_message_id);
+    if (!accuseEnvoye)
+      await envoyerAccuseReception(admin, client, gmail_message_id, params.gmail_thread_id ?? null);
 
     // Cas significatif sans règle applicable : journal Drive + email à l'admin,
     // pour décider ensemble s'il faut créer une nouvelle règle (ton ou action).
