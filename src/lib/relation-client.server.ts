@@ -60,6 +60,13 @@ export interface ClassificationRelation {
   tutoiement: boolean;
   /** Cas jugé significatif pour lequel aucune règle connue ne s'applique. */
   cas_non_couvert: { situation: string; pourquoi: string } | null;
+  /**
+   * Mail de simple suivi / information / transmission de pièces : le client
+   * n'attend AUCUNE action ni réponse du cabinet. Permet d'archiver le mail
+   * après traçage (et classement des pièces) au lieu de l'empiler dans
+   * « A valider ».
+   */
+  sans_action_attendue: boolean;
   confiance: number;
   resume: string;
   modele: string | null;
