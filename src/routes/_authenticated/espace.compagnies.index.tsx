@@ -53,6 +53,8 @@ function CompagniesIndex() {
   const [creating, setCreating] = useState(false);
   const [nom, setNom] = useState("");
   const [statut, setStatut] = useState<"actif" | "prospect" | "inactif">("actif");
+  const [typePartenaire, setTypePartenaire] = useState<TypePartenaire>("compagnie");
+  const [filtreType, setFiltreType] = useState<"tous" | TypePartenaire>("tous");
 
   const [grilles, setGrilles] = useState<Record<string, { total: number; validees: number }>>({});
 
@@ -60,7 +62,7 @@ function CompagniesIndex() {
     setLoading(true);
     const { data, error } = await supabase
       .from("compagnies")
-      .select("id,nom,slug,logo_url,statut,tier_favori,api_active,site_web,contact_nom,created_at")
+      .select("id,nom,slug,logo_url,statut,type_partenaire,tier_favori,api_active,site_web,contact_nom,created_at")
       .order("nom");
     if (error) setError(error.message);
     setRows((data as Compagnie[]) ?? []);
@@ -97,7 +99,7 @@ function CompagniesIndex() {
     setCreating(true);
     setError(null);
     const slug = slugify(nom);
-    const { error } = await supabase.from("compagnies").insert({ nom: nom.trim(), slug, statut });
+    const { error } = await supabase.from("compagnies").insert({ nom: nom.trim(), slug, statut, type_partenaire: typePartenaire });
     setCreating(false);
     if (error) {
       setError(error.message);
