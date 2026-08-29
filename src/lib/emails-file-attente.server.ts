@@ -86,7 +86,7 @@ export async function envoyerEmailsDus(
   const { sendTemplateEmail } = await import("@/lib/email-templates/send-email");
   const { data, error } = await admin
     .from("emails_planifies")
-    .select("id, template, destinataire, donnees, idempotency_key")
+    .select("id, template, destinataire, donnees, idempotency_key, contexte")
     .eq("statut", "en_attente")
     .lte("envoyer_le", new Date().toISOString())
     .order("envoyer_le", { ascending: true })
@@ -101,12 +101,14 @@ export async function envoyerEmailsDus(
       const res = await sendTemplateEmail(e.template as string, e.destinataire as string, {
         templateData: (e.donnees ?? {}) as Record<string, unknown>,
         idempotencyKey: (e.idempotency_key as string | null) ?? undefined,
+        liens: (e.contexte?.liens ?? undefined) as never,
       });
       await admin
         .from("emails_planifies")
         .update({ statut: res.sent ? "envoye" : "ignore", envoye_le: new Date().toISOString(), erreur: null })
         .eq("id", e.id);
       if (res.sent) envoyes += 1;
+      if (res.sent) await noterEnvoiDansCrm(admin, e);
     } catch (err) {
       echecs += 1;
       await admin
@@ -116,4 +118,35 @@ export async function envoyerEmailsDus(
     }
   }
   return { envoyes, echecs };
+}
+
+/**
+ * Trace CRM de chaque email réellement envoyé : une note dans « Historique des
+ * échanges » du client concerné (identifié via `contexte.liens.client_id`).
+ * Jamais bloquant : un échec de note n'annule pas l'envoi.
+ */
+async function noterEnvoiDansCrm(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: SupabaseClient<any, any, any>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  e: any,
+): Promise<void> {
+  const clientId: string | null = e?.contexte?.liens?.client_id ?? null;
+  if (!clientId) return;
+  const titre: string = e?.donnees?.titre ?? e?.template ?? "Email";
+  try {
+    await admin.from("activites").insert({
+      client_id: clientId,
+      type: "email",
+      titre: "Email envoyé au client",
+      contenu: [
+        `Objet : ${titre}`,
+        `Destinataire : ${e?.destinataire ?? "—"}`,
+        `Modèle : ${e?.template ?? "—"}`,
+        `Envoyé le : ${new Date().toISOString()}`,
+      ].join("\n"),
+    } as never);
+  } catch (err) {
+    console.error("[emails-file-attente] note CRM non enregistrée", err);
+  }
 }

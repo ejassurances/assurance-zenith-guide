@@ -499,25 +499,29 @@ async function envoyerAccuseReception(
   admin: Admin,
   client: ClientMini,
   gmailMessageId: string | null,
+  gmailThreadId: string | null = null,
 ): Promise<void> {
   if (!client.email) return;
   if (!(await adresseClientEnvoyable(client.email))) return;
 
-
-  // Anti-doublon : un seul accusé de réception par message Gmail.
-  if (gmailMessageId) {
-    const { data: deja } = await admin
-      .from("activites")
-      .select("id")
-      .eq("client_id", client.id)
-      .eq("titre", "Accusé de réception automatique envoyé au client")
-      .ilike("description", `%${gmailMessageId}%`)
-      .limit(1)
-      .maybeSingle();
-    if (deja) {
-      console.info(`[agent-relation-client] accusé de réception déjà envoyé pour ${gmailMessageId}`);
-      return;
-    }
+  // Anti-doublon : lecture de l'historique CRM (message, fil, fenêtre 72 h).
+  const { accuseAutorise, TITRE_ACCUSE } = await import("@/lib/accuses-historique.server");
+  const decision = await accuseAutorise(admin, {
+    client_id: client.id,
+    genre: "message",
+    gmail_message_id: gmailMessageId,
+    gmail_thread_id: gmailThreadId,
+  });
+  if (!decision.autorise) {
+    console.info(`[agent-relation-client] accusé non envoyé — ${decision.motif}`);
+    await journaliser(
+      admin,
+      client.id,
+      "Accusé de réception automatique supprimé (doublon évité)",
+      [decision.motif ?? "Doublon détecté dans l'historique.", `Email : ${lienMail(gmailMessageId)}`].join("\n"),
+      "systeme",
+    );
+    return;
   }
 
   try {
@@ -533,8 +537,15 @@ async function envoyerAccuseReception(
     await journaliser(
       admin,
       client.id,
-      "Accusé de réception automatique envoyé au client",
-      `Accusé de réception neutre envoyé à ${client.email}.\nEmail d'origine : ${lienMail(gmailMessageId)}`,
+      TITRE_ACCUSE.message,
+      [
+        `Accusé de réception neutre envoyé à ${client.email}.`,
+        `Email d'origine : ${lienMail(gmailMessageId)}`,
+        gmailMessageId ? `Message Gmail : ${gmailMessageId}` : "",
+        gmailThreadId ? `Fil Gmail : ${gmailThreadId}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n"),
     );
   } catch (e) {
     console.error("[agent-relation-client] accusé de réception non envoyé", e);
@@ -889,6 +900,7 @@ async function accuserReceptionPieces(
     classification: ClassificationRelation;
     nb_pieces: number;
     gmail_message_id: string;
+    gmail_thread_id?: string | null;
     userId: string;
   },
 ): Promise<void> {
@@ -896,6 +908,29 @@ async function accuserReceptionPieces(
   if (!client.email || params.nb_pieces === 0) return;
   if (!(await adresseClientEnvoyable(client.email))) return;
   const tu = classification.tutoiement;
+
+  // Anti-doublon : historique CRM (même message, même fil, fenêtre 72 h).
+  const { accuseAutorise } = await import("@/lib/accuses-historique.server");
+  const decision = await accuseAutorise(admin, {
+    client_id: client.id,
+    genre: "pieces",
+    gmail_message_id: params.gmail_message_id,
+    gmail_thread_id: params.gmail_thread_id ?? null,
+  });
+  if (!decision.autorise) {
+    console.info(`[agent-relation-client] accusé pièces non envoyé — ${decision.motif}`);
+    await journaliser(
+      admin,
+      client.id,
+      "Accusé de réception des pièces supprimé (doublon évité)",
+      [decision.motif ?? "Doublon détecté dans l'historique.", `Email : ${lienMail(params.gmail_message_id)}`].join(
+        "\n",
+      ),
+      "systeme",
+    );
+    return;
+  }
+
 
   try {
     await envoyerReponse(client.email, {
@@ -923,6 +958,8 @@ async function accuserReceptionPieces(
         `${params.nb_pieces} pièce(s) reçue(s).`,
         classification.complement_annonce ? "Complément annoncé par le client : relance programmée à J+5." : "",
         `Email : ${lienMail(params.gmail_message_id)}`,
+        `Message Gmail : ${params.gmail_message_id}`,
+        params.gmail_thread_id ? `Fil Gmail : ${params.gmail_thread_id}` : "",
       ]
         .filter(Boolean)
         .join("\n"),
@@ -1092,6 +1129,7 @@ async function traiterEmailClientInterne(
     pieces.non_classees = compte.non_classees;
 
     await accuserReceptionPieces(admin, {
+      gmail_thread_id: params.gmail_thread_id ?? null,
       client,
       classification,
       nb_pieces: email.pieces_jointes.length,
@@ -1120,7 +1158,8 @@ async function traiterEmailClientInterne(
       "Réponse préparée en brouillon (à valider)",
       `${motif}\nEmail : ${lienMail(gmail_message_id)}\n\n${corps}`,
     );
-    if (!accuseEnvoye) await envoyerAccuseReception(admin, client, gmail_message_id);
+    if (!accuseEnvoye)
+      await envoyerAccuseReception(admin, client, gmail_message_id, params.gmail_thread_id ?? null);
 
     // Cas significatif sans règle applicable : journal Drive + email à l'admin,
     // pour décider ensemble s'il faut créer une nouvelle règle (ton ou action).
