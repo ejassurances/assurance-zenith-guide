@@ -121,7 +121,7 @@ function CompagniesIndex() {
 
 
   const favorites = rows.filter((c) => c.tier_favori).length;
-  const connectees = rows.filter((c) => c.api_active).length;
+  const visibles = filtreType === "tous" ? rows : rows.filter((c) => c.type_partenaire === filtreType);
 
   return (
     <div className="space-y-8">
