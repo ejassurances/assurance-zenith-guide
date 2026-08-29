@@ -537,17 +537,19 @@ export async function poserLabelCabinet(
   const noms = [couple.direction, couple.etat].filter((n): n is string => !!n);
   const ajouter = await Promise.all([...new Set(noms)].map((n) => resoudreLabel(n)));
 
-  // États à retirer : l'autre état partagé (un seul état à la fois), plus les
-  // états explicitement demandés par l'appelant. Jamais un libellé de direction.
-  const etatsARetirer = new Set<string>();
-  for (const etat of LABELS_ETATS) if (etat !== couple.etat) etatsARetirer.add(etat);
+  // À retirer : l'autre état partagé (un seul état à la fois), plus les libellés
+  // des clés explicitement demandées par l'appelant. Le libellé de DIRECTION
+  // d'une clé retirée n'est supprimé que s'il diffère de la direction posée
+  // (réaiguillage d'un mail rangé dans la mauvaise direction) : sans cela le
+  // mail resterait dans la file des deux services.
+  const aRetirer = new Set<string>();
+  for (const etat of LABELS_ETATS) if (etat !== couple.etat) aRetirer.add(etat);
   for (const c of options?.retirer ?? []) {
-    const e = COUPLES_LABELS[c].etat;
-    if (e && e !== couple.etat) etatsARetirer.add(e);
+    const { etat: e, direction: d } = COUPLES_LABELS[c];
+    if (e && e !== couple.etat) aRetirer.add(e);
+    if (d && couple.direction && d !== couple.direction) aRetirer.add(d);
   }
-  const resolus = await Promise.all(
-    [...etatsARetirer].map((n) => resoudreLabel(n).catch(() => null)),
-  );
+  const resolus = await Promise.all([...aRetirer].map((n) => resoudreLabel(n).catch(() => null)));
   const retirer = resolus.filter((l): l is string => !!l && !ajouter.includes(l));
   if (options?.sortirDeLInbox) retirer.push("INBOX");
   await modifierLabels(id, { ajouter, retirer });
