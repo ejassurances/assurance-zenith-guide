@@ -12,14 +12,20 @@ import {
   envoyerSolutionReclamation,
   transmettreReclamationCompagnie,
   cloturerReclamation,
+  assignerCompagnieReclamation,
+  listeCompagniesPourReclamation,
 } from "@/lib/reclamations.functions";
+import { STATUT_RECLAMATION_LABEL, STATUT_RECLAMATION_STYLE } from "@/lib/referentiels";
 
 /* Onglet Réclamations : circuit conformité, distinct du module sinistres.
    Toute solution ou escalade est validée par le cabinet avant envoi. */
 
+type CompagnieRef = { id: string; nom: string; type_partenaire: string | null };
+
 type Reclamation = {
   id: string;
   client_id: string;
+  compagnie_id: string | null;
   statut: string;
   concerne: string;
   resume: string | null;
@@ -29,23 +35,11 @@ type Reclamation = {
   date_cloture: string | null;
   clients?: { nom: string | null; prenom: string | null; email: string | null } | null;
   contrats?: { numero: string | null; assureur: string | null; compagnie_id: string | null } | null;
+  compagnies?: { nom: string | null; email_reclamations: string | null } | null;
 };
 
-const STATUT_LABEL: Record<string, string> = {
-  ouvert: "Ouvert",
-  analyse: "En analyse",
-  accuse_reception_envoye: "Accusé de réception envoyé",
-  en_attente_reponse: "En attente de réponse",
-  clos: "Clos",
-};
-
-const STATUT_STYLE: Record<string, string> = {
-  ouvert: "bg-amber-100 text-amber-900 border-amber-300",
-  analyse: "bg-amber-100 text-amber-900 border-amber-300",
-  accuse_reception_envoye: "bg-sky-100 text-sky-900 border-sky-300",
-  en_attente_reponse: "bg-sky-100 text-sky-900 border-sky-300",
-  clos: "bg-emerald-100 text-emerald-900 border-emerald-300",
-};
+const STATUT_LABEL: Record<string, string> = STATUT_RECLAMATION_LABEL;
+const STATUT_STYLE: Record<string, string> = STATUT_RECLAMATION_STYLE;
 
 const CONCERNE_LABEL: Record<string, string> = {
   cabinet: "Concerne le cabinet",

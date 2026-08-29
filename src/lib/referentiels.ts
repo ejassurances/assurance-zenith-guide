@@ -72,22 +72,30 @@ export const PRIORITE_TACHE_LABEL: Record<PrioriteTache, string> = {
   urgente: "Urgente",
 };
 
-/* ─── Réclamations (colonne texte, cycle Médiation DDA) ─── */
+/* ─── Réclamations (colonne texte, cycle conformité cabinet) ─── */
 export const STATUTS_RECLAMATION = [
-  "ouverte",
-  "accuse_envoye",
-  "transmise_compagnie",
-  "solution_proposee",
-  "cloturee",
+  "ouvert",
+  "analyse",
+  "accuse_reception_envoye",
+  "en_attente_reponse",
+  "clos",
 ] as const;
 export type StatutReclamation = (typeof STATUTS_RECLAMATION)[number];
 
 export const STATUT_RECLAMATION_LABEL: Record<StatutReclamation, string> = {
-  ouverte: "Ouverte",
-  accuse_envoye: "Accusé envoyé",
-  transmise_compagnie: "Transmise à la compagnie",
-  solution_proposee: "Solution proposée",
-  cloturee: "Clôturée",
+  ouvert: "Ouvert",
+  analyse: "En analyse",
+  accuse_reception_envoye: "Accusé de réception envoyé",
+  en_attente_reponse: "En attente de réponse",
+  clos: "Clos",
+};
+
+export const STATUT_RECLAMATION_STYLE: Record<StatutReclamation, string> = {
+  ouvert: "bg-amber-100 text-amber-900 border-amber-300",
+  analyse: "bg-amber-100 text-amber-900 border-amber-300",
+  accuse_reception_envoye: "bg-sky-100 text-sky-900 border-sky-300",
+  en_attente_reponse: "bg-sky-100 text-sky-900 border-sky-300",
+  clos: "bg-emerald-100 text-emerald-900 border-emerald-300",
 };
 
 /* ─── Recommandations prescripteurs ─── */
