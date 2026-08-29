@@ -317,12 +317,15 @@ export async function aiguillerLot(
 
 
 
-      // Le mail d'origine quitte la file du service d'arrivée : il est archivé
-      // là, et posé en « A_Traiter » du service réellement compétent.
-      await poserLabelCabinet(m.id, arrivee.archive, { retirer: [arrivee.a_traiter] });
-      await poserLabelCabinet(m.id, cible.a_traiter).catch((e: unknown) => {
-        console.error("[aiguillage] étiquetage du service cible impossible", m.id, e);
-      });
+      // Le mail d'origine quitte la file du service d'arrivée : le libellé de
+      // direction d'arrivée est retiré et le mail est posé « à traiter » dans la
+      // direction réellement compétente (un seul appel, pour ne jamais laisser
+      // le mail dans les deux files).
+      await poserLabelCabinet(m.id, cible.a_traiter, { retirer: [arrivee.a_traiter] }).catch(
+        (e: unknown) => {
+          console.error("[aiguillage] réétiquetage vers le service cible impossible", m.id, e);
+        },
+      );
 
       await admin.from("crm_emails").upsert(
         {
