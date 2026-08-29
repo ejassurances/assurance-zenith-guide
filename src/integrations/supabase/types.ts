@@ -4892,6 +4892,122 @@ export type Database = {
         }
         Relationships: []
       }
+      rgpd_demandes_droits: {
+        Row: {
+          canal_reception: string | null
+          client_id: string | null
+          created_at: string
+          demandeur_email: string | null
+          demandeur_nom: string
+          echeance_le: string
+          id: string
+          recue_le: string
+          reponse_le: string | null
+          reponse_resume: string | null
+          statut: string
+          traite_par: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          canal_reception?: string | null
+          client_id?: string | null
+          created_at?: string
+          demandeur_email?: string | null
+          demandeur_nom: string
+          echeance_le?: string
+          id?: string
+          recue_le?: string
+          reponse_le?: string | null
+          reponse_resume?: string | null
+          statut?: string
+          traite_par?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          canal_reception?: string | null
+          client_id?: string | null
+          created_at?: string
+          demandeur_email?: string | null
+          demandeur_nom?: string
+          echeance_le?: string
+          id?: string
+          recue_le?: string
+          reponse_le?: string | null
+          reponse_resume?: string | null
+          statut?: string
+          traite_par?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rgpd_demandes_droits_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rgpd_violations: {
+        Row: {
+          created_at: string
+          decouverte_le: string
+          description: string | null
+          donnees_concernees: string | null
+          gravite: string
+          id: string
+          mesures: string | null
+          nature: string | null
+          notification_cnil: boolean
+          notification_cnil_le: string | null
+          notification_personnes: boolean
+          personnes_concernees_nb: number | null
+          statut: string
+          survenue_le: string
+          titre: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decouverte_le?: string
+          description?: string | null
+          donnees_concernees?: string | null
+          gravite?: string
+          id?: string
+          mesures?: string | null
+          nature?: string | null
+          notification_cnil?: boolean
+          notification_cnil_le?: string | null
+          notification_personnes?: boolean
+          personnes_concernees_nb?: number | null
+          statut?: string
+          survenue_le?: string
+          titre: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decouverte_le?: string
+          description?: string | null
+          donnees_concernees?: string | null
+          gravite?: string
+          id?: string
+          mesures?: string | null
+          nature?: string | null
+          notification_cnil?: boolean
+          notification_cnil_le?: string | null
+          notification_personnes?: boolean
+          personnes_concernees_nb?: number | null
+          statut?: string
+          survenue_le?: string
+          titre?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       simulassur_dossiers: {
         Row: {
           assureur: string | null
