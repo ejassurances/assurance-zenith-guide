@@ -163,7 +163,7 @@ export async function envoyerLettresMissionDues(
   const { data, error } = await supabase
     .from("dossiers")
     .select("id, client_id, client_email, reference, statut")
-    .in("statut", ["nouveau", "en_cours"])
+    .in("statut", [...STATUTS_DOSSIER_AVANT_LM])
     .not("client_email", "is", null)
     .order("created_at", { ascending: true })
     .limit(limite);

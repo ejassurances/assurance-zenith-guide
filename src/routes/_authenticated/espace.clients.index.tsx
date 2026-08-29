@@ -46,7 +46,7 @@ type ClientRow = {
 };
 
 
-const STATUTS = ["prospect", "actif", "inactif", "perdu", "ancien"] as const;
+const STATUTS = STATUTS_CLIENT;
 
 const NIVEAU_LABEL: Record<"simplifiee" | "standard" | "renforcee", string> = {
   simplifiee: "Vigilance simplifiée",

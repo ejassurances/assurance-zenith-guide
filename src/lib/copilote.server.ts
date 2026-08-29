@@ -206,7 +206,7 @@ export async function executerCopilote(
   }
   const json = extraireJson(contenu);
   if (mode === "prochaine_action") {
-    const priorites = ["basse", "normale", "haute", "urgente"];
+    const priorites: readonly string[] = PRIORITES_TACHE;
     const priorite = String(json["priorite"] ?? "normale");
     return {
       mode,
