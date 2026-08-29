@@ -110,31 +110,31 @@
 
 /* ---- Thème CRM « Classic prestige » : marine profond, doré, papier crème ---- */
 .crm-theme {
-  --radius: 0.25rem;
+  --radius: 0.75rem;
   --font-sans-family: "Inter", system-ui, sans-serif;
   --font-serif-family: "Playfair Display", "Newsreader", Georgia, serif;
 
-  --background: #faf9f6;
+  --background: #f4f6fa;
   --foreground: #0a1229;
-  --surface: #f3f1ec;
+  --surface: #eaeef6;
   --surface-elevated: #ffffff;
   --ink: #0a1229;
   --ink-soft: #38415c;
-  --ink-muted: #6c7488;
-  --line: rgb(10 18 41 / 0.09);
+  --ink-muted: #737c92;
+  --line: rgb(10 18 41 / 0.08);
 
   --card: #ffffff;
   --card-foreground: #0a1229;
   --primary: #0a1229;
-  --primary-foreground: #faf9f6;
-  --secondary: #ece9e2;
+  --primary-foreground: #f4f6fa;
+  --secondary: #e6eaf4;
   --secondary-foreground: #0a1229;
-  --muted: #f3f1ec;
-  --muted-foreground: #6c7488;
+  --muted: #eaeef6;
+  --muted-foreground: #737c92;
   --accent: #b88e2f;
   --accent-foreground: #ffffff;
-  --border: rgb(10 18 41 / 0.09);
-  --input: rgb(10 18 41 / 0.16);
+  --border: rgb(10 18 41 / 0.08);
+  --input: rgb(10 18 41 / 0.14);
   --ring: #b88e2f;
 
   --crm-navy: #0a1229;
@@ -158,17 +158,17 @@
   letter-spacing: -0.01em;
 }
 
-/* Surfaces : filets fins et ombres discrètes plutôt que grandes cartes arrondies. */
+/* Surfaces : cartes blanches arrondies posées sur un fond gris bleuté. */
 .crm-theme .crm-card {
   background-color: var(--surface-elevated);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  box-shadow: 0 1px 2px rgb(10 18 41 / 0.04);
+  box-shadow: 0 1px 2px rgb(10 18 41 / 0.04), 0 8px 24px -18px rgb(10 18 41 / 0.25);
 }
 
 .crm-theme .crm-card-accent {
   border-color: rgb(184 142 47 / 0.35);
-  box-shadow: 0 1px 2px rgb(10 18 41 / 0.05);
+  box-shadow: 0 1px 2px rgb(10 18 41 / 0.05), 0 8px 24px -18px rgb(184 142 47 / 0.4);
 }
 
 .crm-theme .crm-eyebrow {
