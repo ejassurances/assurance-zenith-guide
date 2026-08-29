@@ -32,6 +32,7 @@ function TachesPage() {
   const [items, setItems] = useState<Tache[]>([]);
   const [filter, setFilter] = useState<"all" | "a_faire" | "en_cours" | "terminee">("a_faire");
   const [selected, setSelected] = useState<Tache | null>(null);
+  const changerStatut = useServerFn(majTache);
 
   const load = async () => {
     let q = supabase
@@ -49,10 +50,15 @@ function TachesPage() {
     load();
   }, [filter]);
 
-  const setStatut = async (t: Tache, statut: string) => {
-    await supabase.from("taches").update({ statut: statut as never }).eq("id", t.id);
-    load();
+  const setStatut = async (t: Tache, statut: StatutTache) => {
+    try {
+      await changerStatut({ data: { id: t.id, statut } });
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Mise à jour impossible");
+    }
   };
+
 
   return (
     <div>
