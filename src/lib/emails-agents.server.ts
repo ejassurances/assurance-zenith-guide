@@ -752,7 +752,7 @@ export async function executerAgents(
               sujet: detail.sujet ?? null,
               texte: detail.texte ?? detail.snippet ?? null,
               intention: analyseGemini?.intention ?? null,
-              confiance: analyseGemini?.confiance ?? null,
+              confiance: analyseGemini?.confidence ?? null,
               recu_le: detail.date ?? null,
               liens: { client_id: lien.client_id },
             });
