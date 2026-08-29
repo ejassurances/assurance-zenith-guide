@@ -100,6 +100,26 @@ const SCHEMAS: Record<string, { libelle: string; champs: Champ[] }> = {
       { nom: "nature_justificatif", description: "type de justificatif (facture énergie, quittance, avis…)" },
     ],
   },
+  releves_placements: {
+    libelle: "Relevé annuel de placement (assurance-vie, PER, capitalisation, PEA)",
+    champs: [
+      { nom: "assureur", description: "nom de l'assureur ou de l'établissement" },
+      { nom: "nom_contrat", description: "nom commercial du contrat" },
+      { nom: "nature_contrat", description: "assurance_vie, per, capitalisation ou pea" },
+      { nom: "numero_contrat", description: "numéro du contrat" },
+      { nom: "date_releve", description: "date d'arrêté du relevé AAAA-MM-JJ" },
+      { nom: "valeur_acquise", description: "valeur atteinte / épargne acquise à la date du relevé, en euros (nombre)" },
+      { nom: "valeur_debut_periode", description: "valeur du contrat au début de la période couverte, en euros (nombre)" },
+      { nom: "versements_periode", description: "total des versements de la période, en euros (nombre)" },
+      { nom: "rachats_periode", description: "total des rachats / retraits de la période, en euros (nombre)" },
+      { nom: "performance_nette_pct", description: "performance NETTE de la période écrite au relevé, en % (nombre)" },
+      { nom: "frais_gestion_pct", description: "frais de gestion annuels écrits au relevé, en % (nombre)" },
+      { nom: "frais_versement_pct", description: "frais sur versement écrits au relevé, en % (nombre)" },
+      { nom: "part_fonds_euros_pct", description: "part du fonds en euros dans l'encours, en % (nombre)" },
+      { nom: "part_uc_pct", description: "part des unités de compte dans l'encours, en % (nombre)" },
+      { nom: "annees_periode", description: "nombre d'années couvertes par le relevé (nombre)" },
+    ],
+  },
 };
 
 const NOMBRES = new Set([
@@ -109,8 +129,18 @@ const NOMBRES = new Set([
   "duree_mois",
   "mensualite",
   "nombre_echeances",
+  "valeur_acquise",
+  "valeur_debut_periode",
+  "versements_periode",
+  "rachats_periode",
+  "performance_nette_pct",
+  "frais_gestion_pct",
+  "frais_versement_pct",
+  "part_fonds_euros_pct",
+  "part_uc_pct",
+  "annees_periode",
 ]);
-const DATES = new Set(["date_document", "date_premiere_echeance", "date_expiration", "date_naissance", "date_immatriculation"]);
+const DATES = new Set(["date_document", "date_premiere_echeance", "date_expiration", "date_naissance", "date_immatriculation", "date_releve"]);
 
 export type ResultatExtraction =
   | { statut: "extrait"; type_document: string; donnees: Record<string, unknown>; confidence: number; fiable: boolean }

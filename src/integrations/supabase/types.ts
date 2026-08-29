@@ -3225,6 +3225,79 @@ export type Database = {
         }
         Relationships: []
       }
+      etudes_epargne: {
+        Row: {
+          client_id: string | null
+          comparatif: Json
+          contrat_actuel: Json
+          created_at: string
+          created_by: string | null
+          dossier_id: string
+          hypotheses: Json
+          id: string
+          motif_indisponibilite: string | null
+          offre_cabinet: Json
+          produit_id: string | null
+          profil_risque: string | null
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          comparatif?: Json
+          contrat_actuel?: Json
+          created_at?: string
+          created_by?: string | null
+          dossier_id: string
+          hypotheses?: Json
+          id?: string
+          motif_indisponibilite?: string | null
+          offre_cabinet?: Json
+          produit_id?: string | null
+          profil_risque?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          comparatif?: Json
+          contrat_actuel?: Json
+          created_at?: string
+          created_by?: string | null
+          dossier_id?: string
+          hypotheses?: Json
+          id?: string
+          motif_indisponibilite?: string | null
+          offre_cabinet?: Json
+          produit_id?: string | null
+          profil_risque?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "etudes_epargne_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "etudes_epargne_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "etudes_epargne_produit_id_fkey"
+            columns: ["produit_id"]
+            isOneToOne: false
+            referencedRelation: "produits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercices: {
         Row: {
           cloture: boolean
@@ -4401,6 +4474,9 @@ export type Database = {
           description: string | null
           famille_id: string
           famille_requise_id: string | null
+          frais_arbitrage_pct: number | null
+          frais_gestion_pct: number | null
+          frais_versement_pct: number | null
           id: string
           image_url: string | null
           mode_tarification: string
@@ -4427,6 +4503,9 @@ export type Database = {
           description?: string | null
           famille_id: string
           famille_requise_id?: string | null
+          frais_arbitrage_pct?: number | null
+          frais_gestion_pct?: number | null
+          frais_versement_pct?: number | null
           id?: string
           image_url?: string | null
           mode_tarification?: string
@@ -4453,6 +4532,9 @@ export type Database = {
           description?: string | null
           famille_id?: string
           famille_requise_id?: string | null
+          frais_arbitrage_pct?: number | null
+          frais_gestion_pct?: number | null
+          frais_versement_pct?: number | null
           id?: string
           image_url?: string | null
           mode_tarification?: string

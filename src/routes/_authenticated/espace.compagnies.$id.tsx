@@ -109,6 +109,10 @@ type Produit = {
   points_vigilance: string | null;
   cible: string | null;
   commission_taux: number | null;
+  /** Frais épargne (assurance-vie / PER) : base des comparatifs et projections. */
+  frais_versement_pct: number | null;
+  frais_gestion_pct: number | null;
+  frais_arbitrage_pct: number | null;
   produit_requis_id: string | null;
   famille_requise_id: string | null;
   image_url: string | null;
@@ -691,6 +695,9 @@ function ProduitEditor({
         points_vigilance: p.points_vigilance,
         cible: p.cible,
         commission_taux: p.commission_taux,
+        frais_versement_pct: p.frais_versement_pct,
+        frais_gestion_pct: p.frais_gestion_pct,
+        frais_arbitrage_pct: p.frais_arbitrage_pct,
         famille_id: p.famille_id,
         produit_requis_id: p.produit_requis_id,
         famille_requise_id: p.famille_requise_id,
@@ -789,6 +796,30 @@ function ProduitEditor({
             className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
           />
         </div>
+
+        {(["frais_versement_pct", "frais_gestion_pct", "frais_arbitrage_pct"] as const).map((cle) => (
+          <div key={cle}>
+            <label className="mb-1 block text-xs font-medium text-ink-muted">
+              {cle === "frais_versement_pct"
+                ? "Frais sur versement (%)"
+                : cle === "frais_gestion_pct"
+                  ? "Frais de gestion annuels (%)"
+                  : "Frais d'arbitrage (%)"}
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={p[cle] ?? ""}
+              onChange={(e) => setP({ ...p, [cle]: e.target.value === "" ? null : Number(e.target.value) })}
+              readOnly={readOnly}
+              className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+            />
+            <p className="mt-1 text-[11px] text-ink-muted">
+              Épargne / PER : sert au comparatif et aux projections 3 / 8 / 10 ans.
+            </p>
+          </div>
+        ))}
+
 
         <div className="md:col-span-2">
           <label className="mb-1 block text-xs font-medium text-ink-muted">Description</label>
