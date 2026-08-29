@@ -118,7 +118,7 @@ export function SouscriptionFilePanel() {
                 {cartes.length === 0 ? (
                   <p className="px-4 py-4 text-xs text-ink-muted">Aucun dossier.</p>
                 ) : (
-                  cartes.map((l) => <CarteFile key={l.dossier_id} ligne={l} />)
+                  cartes.map((l) => <CarteFile key={l.dossier_id} l={l} />)
                 )}
               </div>
             </div>

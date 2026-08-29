@@ -37,6 +37,9 @@ import { useCompletudeDossier } from "@/hooks/use-completude";
 import { SectionNav, type SectionNavItem } from "@/components/section-nav";
 
 export const Route = createFileRoute("/_authenticated/espace/dossiers/$id")({
+  validateSearch: (search: Record<string, unknown>): { etape?: string } => ({
+    etape: typeof search.etape === "string" ? search.etape : undefined,
+  }),
   component: DossierDetail,
 });
 
