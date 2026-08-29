@@ -86,7 +86,7 @@ export async function envoyerEmailsDus(
   const { sendTemplateEmail } = await import("@/lib/email-templates/send-email");
   const { data, error } = await admin
     .from("emails_planifies")
-    .select("id, template, destinataire, donnees, idempotency_key")
+    .select("id, template, destinataire, donnees, idempotency_key, contexte")
     .eq("statut", "en_attente")
     .lte("envoyer_le", new Date().toISOString())
     .order("envoyer_le", { ascending: true })
@@ -101,12 +101,14 @@ export async function envoyerEmailsDus(
       const res = await sendTemplateEmail(e.template as string, e.destinataire as string, {
         templateData: (e.donnees ?? {}) as Record<string, unknown>,
         idempotencyKey: (e.idempotency_key as string | null) ?? undefined,
+        liens: (e.contexte?.liens ?? undefined) as never,
       });
       await admin
         .from("emails_planifies")
         .update({ statut: res.sent ? "envoye" : "ignore", envoye_le: new Date().toISOString(), erreur: null })
         .eq("id", e.id);
       if (res.sent) envoyes += 1;
+      if (res.sent) await noterEnvoiDansCrm(admin, e);
     } catch (err) {
       echecs += 1;
       await admin
