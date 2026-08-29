@@ -52,12 +52,23 @@ export function ReclamationsPanel({ canManage }: { canManage: boolean }) {
   const envoyerSolution = useServerFn(envoyerSolutionReclamation);
   const transmettre = useServerFn(transmettreReclamationCompagnie);
   const cloturer = useServerFn(cloturerReclamation);
+  const assignerCompagnie = useServerFn(assignerCompagnieReclamation);
+  const listerCompagnies = useServerFn(listeCompagniesPourReclamation);
 
   const [rows, setRows] = useState<Reclamation[]>([]);
+  const [compagnies, setCompagnies] = useState<CompagnieRef[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtre, setFiltre] = useState<string>("tous");
   const [textes, setTextes] = useState<Record<string, string>>({});
   const [enCours, setEnCours] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!canManage) return;
+    listerCompagnies({})
+      .then((res) => setCompagnies((res.compagnies ?? []) as CompagnieRef[]))
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canManage]);
 
   const load = async (statut: string) => {
     setLoading(true);
