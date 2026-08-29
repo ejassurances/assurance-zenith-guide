@@ -330,6 +330,18 @@ function InfosTab({
         }}
       />
       <div>
+        <label className="mb-1 block text-xs font-medium text-ink-muted">Type de partenaire</label>
+        <select
+          value={form.type_partenaire}
+          onChange={(e) => setForm({ ...form, type_partenaire: e.target.value as TypePartenaire })}
+          disabled={readOnly}
+          className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+        >
+          <option value="compagnie">Compagnie d'assurance</option>
+          <option value="courtier_grossiste">Courtier grossiste</option>
+        </select>
+      </div>
+      <div>
         <label className="mb-1 block text-xs font-medium text-ink-muted">Statut</label>
         <select
           value={form.statut}
