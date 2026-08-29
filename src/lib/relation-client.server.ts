@@ -1129,6 +1129,7 @@ async function traiterEmailClientInterne(
     pieces.non_classees = compte.non_classees;
 
     await accuserReceptionPieces(admin, {
+      gmail_thread_id: params.gmail_thread_id ?? null,
       client,
       classification,
       nb_pieces: email.pieces_jointes.length,
