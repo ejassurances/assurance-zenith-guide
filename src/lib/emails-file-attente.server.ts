@@ -119,3 +119,34 @@ export async function envoyerEmailsDus(
   }
   return { envoyes, echecs };
 }
+
+/**
+ * Trace CRM de chaque email réellement envoyé : une note dans « Historique des
+ * échanges » du client concerné (identifié via `contexte.liens.client_id`).
+ * Jamais bloquant : un échec de note n'annule pas l'envoi.
+ */
+async function noterEnvoiDansCrm(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: SupabaseClient<any, any, any>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  e: any,
+): Promise<void> {
+  const clientId: string | null = e?.contexte?.liens?.client_id ?? null;
+  if (!clientId) return;
+  const titre: string = e?.donnees?.titre ?? e?.template ?? "Email";
+  try {
+    await admin.from("activites").insert({
+      client_id: clientId,
+      type: "email",
+      titre: "Email envoyé au client",
+      contenu: [
+        `Objet : ${titre}`,
+        `Destinataire : ${e?.destinataire ?? "—"}`,
+        `Modèle : ${e?.template ?? "—"}`,
+        `Envoyé le : ${new Date().toISOString()}`,
+      ].join("\n"),
+    } as never);
+  } catch (err) {
+    console.error("[emails-file-attente] note CRM non enregistrée", err);
+  }
+}
