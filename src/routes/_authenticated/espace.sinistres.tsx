@@ -7,6 +7,7 @@ import { IconAlertTriangle } from "@tabler/icons-react";
 import { listeSinistres } from "@/lib/sinistres.functions";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
+import { PilotageDelaisPanel } from "@/components/pilotage-delais-panel";
 
 export const Route = createFileRoute("/_authenticated/espace/sinistres")({
   head: () => ({
@@ -112,6 +113,8 @@ function SinistresPage() {
           <StatCard label="Clos" value={counts.clos} />
         </div>
       )}
+
+      <PilotageDelaisPanel />
 
       <section className="crm-card overflow-hidden">
         {loading ? (
