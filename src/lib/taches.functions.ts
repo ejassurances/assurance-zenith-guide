@@ -49,7 +49,6 @@ export const creerTache = createServerFn({ method: "POST" })
         titre: z.string().trim().min(2).max(300),
         description: z.string().trim().max(8000).optional().nullable(),
         client_id: z.string().uuid().optional().nullable(),
-        dossier_id: z.string().uuid().optional().nullable(),
         echeance: z.string().min(1).optional().nullable(),
         priorite: z.enum(PRIORITES_TACHE).default("normale"),
       })
@@ -63,7 +62,6 @@ export const creerTache = createServerFn({ method: "POST" })
         titre: data.titre,
         description: data.description || null,
         client_id: data.client_id || null,
-        dossier_id: data.dossier_id || null,
         echeance: data.echeance || null,
         priorite: data.priorite,
         statut: "a_faire",
