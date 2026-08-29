@@ -126,7 +126,9 @@ function TachesPage() {
                       {t.titre}
                     </p>
                     <div className="flex shrink-0 items-center gap-2 text-xs">
-                      <span className="rounded-full border border-line px-2 py-0.5">{t.priorite}</span>
+                      <span className="rounded-full border border-line px-2 py-0.5">
+                        {PRIORITE_TACHE_LABEL[t.priorite as keyof typeof PRIORITE_TACHE_LABEL] ?? t.priorite}
+                      </span>
                       {t.echeance && (
                         <span className="text-ink-muted">
                           {new Date(t.echeance).toLocaleDateString("fr-FR")}
@@ -163,11 +165,16 @@ function TachesPage() {
               <dl className="mt-4 space-y-2 text-xs">
                 <div className="flex justify-between gap-3">
                   <dt className="text-ink-muted">Statut</dt>
-                  <dd className="text-ink">{selected.statut}</dd>
+                  <dd className="text-ink">
+                    {STATUT_TACHE_LABEL[selected.statut as keyof typeof STATUT_TACHE_LABEL] ?? selected.statut}
+                  </dd>
                 </div>
                 <div className="flex justify-between gap-3">
                   <dt className="text-ink-muted">Priorité</dt>
-                  <dd className="text-ink">{selected.priorite}</dd>
+                  <dd className="text-ink">
+                    {PRIORITE_TACHE_LABEL[selected.priorite as keyof typeof PRIORITE_TACHE_LABEL] ??
+                      selected.priorite}
+                  </dd>
                 </div>
                 <div className="flex justify-between gap-3">
                   <dt className="text-ink-muted">Créée le</dt>
@@ -218,14 +225,7 @@ function TachesPage() {
               </div>
 
               <div className="mt-5 flex flex-wrap gap-2">
-                {(
-                  [
-                    ["a_faire", "À faire"],
-                    ["en_cours", "En cours"],
-                    ["terminee", "Terminée"],
-                    ["annulee", "Annulée"],
-                  ] as const
-                ).map(([k, l]) => (
+                {STATUTS_TACHE.map((k) => (
                   <button
                     key={k}
                     onClick={() => setStatut(selected, k)}
@@ -236,7 +236,7 @@ function TachesPage() {
                         : "border-line text-ink-soft hover:bg-surface")
                     }
                   >
-                    {l}
+                    {STATUT_TACHE_LABEL[k]}
                   </button>
                 ))}
               </div>
