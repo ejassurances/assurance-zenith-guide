@@ -54,6 +54,14 @@ const GRAVITE_STYLE: Record<Incident["gravite"], string> = {
 const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString("fr-FR") : "—");
 const fmtHeure = (d: string | null) => (d ? new Date(d).toLocaleString("fr-FR") : "—");
 
+/* DORA impose une revue périodique des prestataires informatiques : alerte au-delà de 12 mois. */
+const revueEnRetard = (d: string | null) => {
+  if (!d) return true;
+  const limite = new Date(d);
+  limite.setFullYear(limite.getFullYear() + 1);
+  return limite < new Date();
+};
+
 export function DoraRegistrePanel({ isAdmin }: { isAdmin: boolean }) {
   const [systemes, setSystemes] = useState<Systeme[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
@@ -111,6 +119,7 @@ export function DoraRegistrePanel({ isAdmin }: { isAdmin: boolean }) {
   };
 
   const ouverts = incidents.filter((i) => i.statut !== "resolu").length;
+  const revuesDues = systemes.filter((s) => s.actif && revueEnRetard(s.derniere_revue_le)).length;
 
   return (
     <div className="space-y-6">
@@ -128,7 +137,13 @@ export function DoraRegistrePanel({ isAdmin }: { isAdmin: boolean }) {
                 {ouverts} non clos
               </span>
             </p>
+            {revuesDues > 0 && (
+              <p className="mt-2 text-sm font-medium text-amber-800">
+                {revuesDues} prestataire(s) à revoir : revue annuelle dépassée ou jamais réalisée.
+              </p>
+            )}
           </div>
+
           <Button onClick={exporterPdf} disabled={exportEnCours || loading}>
             {exportEnCours ? "Export…" : "Exporter en PDF (Drive)"}
           </Button>
@@ -170,7 +185,9 @@ export function DoraRegistrePanel({ isAdmin }: { isAdmin: boolean }) {
                     <td className="px-4 py-3 text-xs">{s.localisation_donnees ?? "—"}</td>
                     <td className="px-4 py-3 text-xs">{s.plan_continuite ?? "—"}</td>
                     <td className="px-4 py-3 text-xs">
-                      {fmtDate(s.derniere_revue_le)}
+                      <span className={revueEnRetard(s.derniere_revue_le) ? "font-medium text-amber-800" : ""}>
+                        {fmtDate(s.derniere_revue_le)}
+                      </span>
                       {isAdmin && (
                         <button
                           type="button"
