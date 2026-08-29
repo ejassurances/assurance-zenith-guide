@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { STATUTS_CLIENT } from "@/lib/referentiels";
 import { useServerFn } from "@tanstack/react-start";
 import { creerClientManuel } from "@/lib/clients.functions";
 import { lancerLcbClientsManquants } from "@/lib/lcb-ft.functions";
