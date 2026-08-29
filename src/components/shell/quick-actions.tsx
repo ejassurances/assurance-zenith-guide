@@ -7,6 +7,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
+  IconChecklist,
   IconFileText,
   IconFolderPlus,
   IconMail,
@@ -356,11 +357,11 @@ export function QuickActions({ compact = false }: { compact?: boolean }) {
           <IconMail size={17} aria-hidden="true" />
         </IconAction>
         <IconAction label="Créer une tâche" onClick={() => setModale("tache")}>
-          <IconPlus size={17} aria-hidden="true" />
+          <IconChecklist size={17} aria-hidden="true" />
         </IconAction>
         <div className="relative">
           <IconAction label="Ajouter" onClick={() => setAjout((v) => !v)}>
-            <IconFolderPlus size={17} aria-hidden="true" />
+            <IconPlus size={17} aria-hidden="true" />
           </IconAction>
           {ajout && <MenuAjout onClose={() => setAjout(false)} />}
         </div>
