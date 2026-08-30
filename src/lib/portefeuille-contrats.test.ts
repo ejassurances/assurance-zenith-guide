@@ -74,8 +74,12 @@ describe("agregerPortefeuille", () => {
     expect(a.total).toBe(4);
     expect(a.prime_annuelle_totale).toBe(1650.5);
     expect(a.par_etat).toEqual({ echeance_proche: 1, suivi_du: 1, suivi_non_planifie: 1, a_jour: 1 });
-    expect(a.par_compagnie[0]).toEqual({ nom: "Cardif", nb: 2, prime: 750.5 });
-    expect(a.par_compagnie.find((c) => c.nom === "Cardif")).toBeTruthy();
+    expect(a.par_compagnie[0]).toEqual({ nom: "APRIL", nb: 1, prime: 900 });
+    expect(a.par_compagnie.find((c) => c.nom === "Cardif")).toEqual({
+      nom: "Cardif",
+      nb: 2,
+      prime: 750.5,
+    });
   });
 
   it("retourne un agrégat vide sans contrat", () => {
