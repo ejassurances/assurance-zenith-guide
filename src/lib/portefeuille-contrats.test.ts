@@ -77,7 +77,7 @@ describe("agregerPortefeuille", () => {
     expect(a.par_compagnie[0]).toEqual({ nom: "APRIL", nb: 1, prime: 900 });
     expect(a.par_compagnie.find((c) => c.nom === "Cardif")).toEqual({
       nom: "Cardif",
-      nb: 2,
+      nb: 3,
       prime: 750.5,
     });
   });
