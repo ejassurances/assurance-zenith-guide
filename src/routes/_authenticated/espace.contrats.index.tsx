@@ -95,7 +95,7 @@ function PortefeuilleContrats() {
       header={
         <PageHeader
           title="Portefeuille de contrats"
-          subtitle="Échéances proches, suivis périodiques et primes annuelles — vue en lecture seule."
+          description="Échéances proches, suivis périodiques et primes annuelles — vue en lecture seule."
         />
       }
       barre={
@@ -138,22 +138,22 @@ function PortefeuilleContrats() {
         <StatCard
           label="Contrats en portefeuille"
           value={String(agregats?.total ?? 0)}
-          icon={<IconFileText size={18} aria-hidden="true" />}
+          icon={IconFileText}
         />
         <StatCard
           label="Échéances ≤ 60 jours"
           value={String(agregats?.par_etat.echeance_proche ?? 0)}
-          icon={<IconCalendarEvent size={18} aria-hidden="true" />}
+          icon={IconCalendarEvent}
         />
         <StatCard
           label="Suivis à faire"
           value={String((agregats?.par_etat.suivi_du ?? 0) + (agregats?.par_etat.suivi_non_planifie ?? 0))}
-          icon={<IconClockHour4 size={18} aria-hidden="true" />}
+          icon={IconClockHour4}
         />
         <StatCard
           label="Primes annuelles"
           value={fmtEuro(agregats?.prime_annuelle_totale ?? 0)}
-          icon={<IconCircleCheck size={18} aria-hidden="true" />}
+          icon={IconCircleCheck}
         />
       </div>
 
