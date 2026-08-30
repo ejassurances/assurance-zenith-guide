@@ -150,7 +150,7 @@ export const NAV_DOMAINS: NavDomain[] = [
       {
         module: "Suivi des contrats",
         items: [
-          { label: "Portefeuille de contrats", soon: true, roles: STAFF },
+          { label: "Portefeuille de contrats", to: "/espace/contrats", exact: true, roles: STAFF },
           { label: "Échéances & renouvellements", soon: true, roles: STAFF },
           { label: "Avenants & résiliations", soon: true, roles: STAFF },
         ],

@@ -65,6 +65,7 @@ import { Route as AuthenticatedEspaceCommissionsRouteImport } from './routes/_au
 import { Route as AuthenticatedEspaceBibliothequeCgRouteImport } from './routes/_authenticated/espace.bibliotheque-cg'
 import { Route as AuthenticatedEspaceAuditLogsRouteImport } from './routes/_authenticated/espace.audit-logs'
 import { Route as AuthenticatedEspaceDossiersIndexRouteImport } from './routes/_authenticated/espace.dossiers.index'
+import { Route as AuthenticatedEspaceContratsIndexRouteImport } from './routes/_authenticated/espace.contrats.index'
 import { Route as AuthenticatedEspaceCompagniesIndexRouteImport } from './routes/_authenticated/espace.compagnies.index'
 import { Route as AuthenticatedEspaceClientsIndexRouteImport } from './routes/_authenticated/espace.clients.index'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -396,6 +397,12 @@ const AuthenticatedEspaceDossiersIndexRoute =
     path: '/dossiers/',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const AuthenticatedEspaceContratsIndexRoute =
+  AuthenticatedEspaceContratsIndexRouteImport.update({
+    id: '/contrats/',
+    path: '/contrats/',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
 const AuthenticatedEspaceCompagniesIndexRoute =
   AuthenticatedEspaceCompagniesIndexRouteImport.update({
     id: '/compagnies/',
@@ -533,6 +540,7 @@ export interface FileRoutesByFullPath {
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/espace/clients/': typeof AuthenticatedEspaceClientsIndexRoute
   '/espace/compagnies/': typeof AuthenticatedEspaceCompagniesIndexRoute
+  '/espace/contrats/': typeof AuthenticatedEspaceContratsIndexRoute
   '/espace/dossiers/': typeof AuthenticatedEspaceDossiersIndexRoute
 }
 export interface FileRoutesByTo {
@@ -601,6 +609,7 @@ export interface FileRoutesByTo {
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/espace/clients': typeof AuthenticatedEspaceClientsIndexRoute
   '/espace/compagnies': typeof AuthenticatedEspaceCompagniesIndexRoute
+  '/espace/contrats': typeof AuthenticatedEspaceContratsIndexRoute
   '/espace/dossiers': typeof AuthenticatedEspaceDossiersIndexRoute
 }
 export interface FileRoutesById {
@@ -672,6 +681,7 @@ export interface FileRoutesById {
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/_authenticated/espace/clients/': typeof AuthenticatedEspaceClientsIndexRoute
   '/_authenticated/espace/compagnies/': typeof AuthenticatedEspaceCompagniesIndexRoute
+  '/_authenticated/espace/contrats/': typeof AuthenticatedEspaceContratsIndexRoute
   '/_authenticated/espace/dossiers/': typeof AuthenticatedEspaceDossiersIndexRoute
 }
 export interface FileRouteTypes {
@@ -743,6 +753,7 @@ export interface FileRouteTypes {
     | '/lovable/email/transactional/preview'
     | '/espace/clients/'
     | '/espace/compagnies/'
+    | '/espace/contrats/'
     | '/espace/dossiers/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -811,6 +822,7 @@ export interface FileRouteTypes {
     | '/lovable/email/transactional/preview'
     | '/espace/clients'
     | '/espace/compagnies'
+    | '/espace/contrats'
     | '/espace/dossiers'
   id:
     | '__root__'
@@ -881,6 +893,7 @@ export interface FileRouteTypes {
     | '/lovable/email/transactional/preview'
     | '/_authenticated/espace/clients/'
     | '/_authenticated/espace/compagnies/'
+    | '/_authenticated/espace/contrats/'
     | '/_authenticated/espace/dossiers/'
   fileRoutesById: FileRoutesById
 }
@@ -1318,6 +1331,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceDossiersIndexRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/contrats/': {
+      id: '/_authenticated/espace/contrats/'
+      path: '/contrats'
+      fullPath: '/espace/contrats/'
+      preLoaderRoute: typeof AuthenticatedEspaceContratsIndexRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
     '/_authenticated/espace/compagnies/': {
       id: '/_authenticated/espace/compagnies/'
       path: '/compagnies'
@@ -1448,6 +1468,7 @@ interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceDossiersIdRoute: typeof AuthenticatedEspaceDossiersIdRoute
   AuthenticatedEspaceClientsIndexRoute: typeof AuthenticatedEspaceClientsIndexRoute
   AuthenticatedEspaceCompagniesIndexRoute: typeof AuthenticatedEspaceCompagniesIndexRoute
+  AuthenticatedEspaceContratsIndexRoute: typeof AuthenticatedEspaceContratsIndexRoute
   AuthenticatedEspaceDossiersIndexRoute: typeof AuthenticatedEspaceDossiersIndexRoute
 }
 
@@ -1489,6 +1510,7 @@ const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
   AuthenticatedEspaceClientsIndexRoute: AuthenticatedEspaceClientsIndexRoute,
   AuthenticatedEspaceCompagniesIndexRoute:
     AuthenticatedEspaceCompagniesIndexRoute,
+  AuthenticatedEspaceContratsIndexRoute: AuthenticatedEspaceContratsIndexRoute,
   AuthenticatedEspaceDossiersIndexRoute: AuthenticatedEspaceDossiersIndexRoute,
 }
 
