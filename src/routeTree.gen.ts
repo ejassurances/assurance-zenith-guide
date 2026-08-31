@@ -52,6 +52,7 @@ import { Route as AuthenticatedEspaceSignerDevoirConseilRouteImport } from './ro
 import { Route as AuthenticatedEspaceSignerDerRouteImport } from './routes/_authenticated/espace.signer-der'
 import { Route as AuthenticatedEspaceRelationClientRouteImport } from './routes/_authenticated/espace.relation-client'
 import { Route as AuthenticatedEspacePrescripteursRouteImport } from './routes/_authenticated/espace.prescripteurs'
+import { Route as AuthenticatedEspacePilotageRouteImport } from './routes/_authenticated/espace.pilotage'
 import { Route as AuthenticatedEspaceParametresRouteImport } from './routes/_authenticated/espace.parametres'
 import { Route as AuthenticatedEspaceNeolianeRouteImport } from './routes/_authenticated/espace.neoliane'
 import { Route as AuthenticatedEspaceMonEspaceRouteImport } from './routes/_authenticated/espace.mon-espace'
@@ -319,6 +320,12 @@ const AuthenticatedEspacePrescripteursRoute =
     path: '/prescripteurs',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const AuthenticatedEspacePilotageRoute =
+  AuthenticatedEspacePilotageRouteImport.update({
+    id: '/pilotage',
+    path: '/pilotage',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
 const AuthenticatedEspaceParametresRoute =
   AuthenticatedEspaceParametresRouteImport.update({
     id: '/parametres',
@@ -493,6 +500,7 @@ export interface FileRoutesByFullPath {
   '/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
   '/espace/neoliane': typeof AuthenticatedEspaceNeolianeRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
+  '/espace/pilotage': typeof AuthenticatedEspacePilotageRoute
   '/espace/prescripteurs': typeof AuthenticatedEspacePrescripteursRoute
   '/espace/relation-client': typeof AuthenticatedEspaceRelationClientRoute
   '/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
@@ -562,6 +570,7 @@ export interface FileRoutesByTo {
   '/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
   '/espace/neoliane': typeof AuthenticatedEspaceNeolianeRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
+  '/espace/pilotage': typeof AuthenticatedEspacePilotageRoute
   '/espace/prescripteurs': typeof AuthenticatedEspacePrescripteursRoute
   '/espace/relation-client': typeof AuthenticatedEspaceRelationClientRoute
   '/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
@@ -634,6 +643,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
   '/_authenticated/espace/neoliane': typeof AuthenticatedEspaceNeolianeRoute
   '/_authenticated/espace/parametres': typeof AuthenticatedEspaceParametresRoute
+  '/_authenticated/espace/pilotage': typeof AuthenticatedEspacePilotageRoute
   '/_authenticated/espace/prescripteurs': typeof AuthenticatedEspacePrescripteursRoute
   '/_authenticated/espace/relation-client': typeof AuthenticatedEspaceRelationClientRoute
   '/_authenticated/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
@@ -706,6 +716,7 @@ export interface FileRouteTypes {
     | '/espace/mon-espace'
     | '/espace/neoliane'
     | '/espace/parametres'
+    | '/espace/pilotage'
     | '/espace/prescripteurs'
     | '/espace/relation-client'
     | '/espace/signer-der'
@@ -775,6 +786,7 @@ export interface FileRouteTypes {
     | '/espace/mon-espace'
     | '/espace/neoliane'
     | '/espace/parametres'
+    | '/espace/pilotage'
     | '/espace/prescripteurs'
     | '/espace/relation-client'
     | '/espace/signer-der'
@@ -846,6 +858,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/mon-espace'
     | '/_authenticated/espace/neoliane'
     | '/_authenticated/espace/parametres'
+    | '/_authenticated/espace/pilotage'
     | '/_authenticated/espace/prescripteurs'
     | '/_authenticated/espace/relation-client'
     | '/_authenticated/espace/signer-der'
@@ -1240,6 +1253,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspacePrescripteursRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/pilotage': {
+      id: '/_authenticated/espace/pilotage'
+      path: '/pilotage'
+      fullPath: '/espace/pilotage'
+      preLoaderRoute: typeof AuthenticatedEspacePilotageRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
     '/_authenticated/espace/parametres': {
       id: '/_authenticated/espace/parametres'
       path: '/parametres'
@@ -1452,6 +1472,7 @@ interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceMonEspaceRoute: typeof AuthenticatedEspaceMonEspaceRoute
   AuthenticatedEspaceNeolianeRoute: typeof AuthenticatedEspaceNeolianeRoute
   AuthenticatedEspaceParametresRoute: typeof AuthenticatedEspaceParametresRoute
+  AuthenticatedEspacePilotageRoute: typeof AuthenticatedEspacePilotageRoute
   AuthenticatedEspacePrescripteursRoute: typeof AuthenticatedEspacePrescripteursRoute
   AuthenticatedEspaceRelationClientRoute: typeof AuthenticatedEspaceRelationClientRoute
   AuthenticatedEspaceSignerDerRoute: typeof AuthenticatedEspaceSignerDerRoute
@@ -1488,6 +1509,7 @@ const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
   AuthenticatedEspaceMonEspaceRoute: AuthenticatedEspaceMonEspaceRoute,
   AuthenticatedEspaceNeolianeRoute: AuthenticatedEspaceNeolianeRoute,
   AuthenticatedEspaceParametresRoute: AuthenticatedEspaceParametresRoute,
+  AuthenticatedEspacePilotageRoute: AuthenticatedEspacePilotageRoute,
   AuthenticatedEspacePrescripteursRoute: AuthenticatedEspacePrescripteursRoute,
   AuthenticatedEspaceRelationClientRoute:
     AuthenticatedEspaceRelationClientRoute,
