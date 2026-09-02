@@ -1,0 +1,162 @@
+/**
+ * Documents de prêt du dossier emprunteur (offre de prêt, tableau
+ * d'amortissement, échéancier).
+ *
+ * Affiché dans le devoir de conseil emprunteur : le conseiller doit pouvoir
+ * consulter et télécharger l'offre de prêt et le tableau d'amortissement au
+ * moment où il rédige sa recommandation, et les déposer s'ils manquent.
+ */
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
+import { monFichierUrl } from "@/lib/espace-client.functions";
+
+type Doc = {
+  id: string;
+  file_name: string;
+  type_document: string | null;
+  categorie: string | null;
+  created_at: string;
+};
+
+/** Motifs reconnus : offre de prêt, tableau d'amortissement, échéancier. */
+const MOTIF = /(offre[-_ ]?de[-_ ]?pret|offre[-_ ]?pret|amortissement|amort|echeancier|échéancier|pret[-_ ]?immo)/i;
+
+function estDocumentPret(d: Doc): boolean {
+  return MOTIF.test(d.type_document ?? "") || MOTIF.test(d.categorie ?? "") || MOTIF.test(d.file_name ?? "");
+}
+
+export function DocumentsPretPanel({ dossierId }: { dossierId: string }) {
+  const fichierUrl = useServerFn(monFichierUrl);
+  const [docs, setDocs] = useState<Doc[]>([]);
+  const [clientId, setClientId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const input = useRef<HTMLInputElement | null>(null);
+
+  const load = useCallback(async () => {
+    const [{ data: rows }, { data: dossier }] = await Promise.all([
+      supabase
+        .from("documents")
+        .select("id, file_name, type_document, categorie, created_at")
+        .eq("dossier_id", dossierId)
+        .order("created_at", { ascending: false }),
+      supabase.from("dossiers").select("client_id").eq("id", dossierId).maybeSingle(),
+    ]);
+    setDocs(((rows ?? []) as Doc[]).filter(estDocumentPret));
+    setClientId(((dossier as { client_id: string | null } | null)?.client_id) ?? null);
+  }, [dossierId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function telecharger(doc: Doc) {
+    setError(null);
+    try {
+      const res = await fichierUrl({ data: { source: "document", id: doc.id } });
+      window.open(res.url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Téléchargement impossible");
+    }
+  }
+
+  async function deposer(file: File) {
+    setBusy(true);
+    setError(null);
+    try {
+      const safeName = file.name.replace(/[^\w.\-]+/g, "_").slice(0, 120);
+      const path = `${clientId ?? dossierId}/${Date.now()}-${safeName}`;
+      const { error: upErr } = await supabase.storage
+        .from("dossier-documents")
+        .upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+
+      const { data: auth } = await supabase.auth.getUser();
+      const uploaderId = auth.user?.id;
+      if (!uploaderId) throw new Error("Session expirée — reconnectez-vous.");
+
+      const { data: inserted, error: insErr } = await supabase
+        .from("documents")
+        .insert({
+          dossier_id: dossierId,
+          uploader_id: uploaderId,
+          client_id: clientId,
+          storage_path: path,
+          file_name: file.name.slice(0, 200),
+          file_size: file.size,
+          mime_type: file.type || null,
+          categorie: "dossier",
+          type_document: "offre_pret",
+        })
+        .select("id")
+        .maybeSingle();
+      if (insErr) throw insErr;
+
+      // Marque la pièce requise « Offre de prêt / tableau d'amortissement ».
+      const docId = (inserted as { id: string } | null)?.id ?? null;
+      if (docId) {
+        await supabase
+          .from("dossier_pieces_requises")
+          .update({ statut: "recue", recue_le: new Date().toISOString(), document_id: docId })
+          .eq("dossier_id", dossierId)
+          .in("code", ["offre_pret", "tableau_amortissement"]);
+      }
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Dépôt impossible");
+    }
+    setBusy(false);
+  }
+
+  return (
+    <div className="rounded-xl border border-line p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs uppercase tracking-wide text-ink-muted">
+          Offre de prêt et tableau d'amortissement
+        </p>
+        <button
+          type="button"
+          onClick={() => input.current?.click()}
+          disabled={busy}
+          className="rounded-full border border-line px-3 py-1 text-xs hover:bg-surface disabled:opacity-50"
+        >
+          {busy ? "Dépôt…" : "Déposer un document"}
+        </button>
+        <input
+          ref={input}
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.csv"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            e.target.value = "";
+            if (f) void deposer(f);
+          }}
+        />
+      </div>
+
+      {docs.length === 0 ? (
+        <p className="mt-2 text-xs text-ink-muted">
+          Aucune offre de prêt ni tableau d'amortissement rattaché à ce dossier.
+        </p>
+      ) : (
+        <ul className="mt-2 space-y-1 text-sm">
+          {docs.map((d) => (
+            <li key={d.id} className="flex items-center justify-between gap-2">
+              <span className="truncate">{d.file_name}</span>
+              <button
+                type="button"
+                onClick={() => void telecharger(d)}
+                className="shrink-0 text-xs underline underline-offset-4"
+              >
+                Télécharger
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
+    </div>
+  );
+}

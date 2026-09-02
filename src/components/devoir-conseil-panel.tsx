@@ -13,6 +13,8 @@ import {
   type Periodicite,
 } from "@/lib/commission-previsions";
 import { etatDelaiEnvoi } from "@/lib/devoir-conseil-delai";
+import { DocumentsPretPanel } from "@/components/documents-pret-panel";
+
 
 
 type Devoir = {
@@ -759,6 +761,10 @@ export function DevoirConseilPanel({
               className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
             />
           </Field>
+
+          {emprunteur && <DocumentsPretPanel dossierId={dossierId} />}
+
+
 
           {/* Offres comparées */}
           <div className="rounded-xl border border-line p-3">
