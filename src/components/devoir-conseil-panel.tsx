@@ -13,6 +13,8 @@ import {
   type Periodicite,
 } from "@/lib/commission-previsions";
 import { etatDelaiEnvoi } from "@/lib/devoir-conseil-delai";
+import { DocumentsPretPanel } from "@/components/documents-pret-panel";
+
 
 
 type Devoir = {
