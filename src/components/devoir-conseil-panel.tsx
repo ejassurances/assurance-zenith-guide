@@ -760,6 +760,10 @@ export function DevoirConseilPanel({
             />
           </Field>
 
+          {emprunteur && <DocumentsPretPanel dossierId={dossierId} />}
+
+
+
           {/* Offres comparées */}
           <div className="rounded-xl border border-line p-3">
             <p className="text-xs uppercase tracking-wide text-ink-muted">
