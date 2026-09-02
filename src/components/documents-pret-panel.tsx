@@ -72,10 +72,15 @@ export function DocumentsPretPanel({ dossierId }: { dossierId: string }) {
         .upload(path, file, { upsert: true });
       if (upErr) throw upErr;
 
+      const { data: auth } = await supabase.auth.getUser();
+      const uploaderId = auth.user?.id;
+      if (!uploaderId) throw new Error("Session expirée — reconnectez-vous.");
+
       const { data: inserted, error: insErr } = await supabase
         .from("documents")
         .insert({
           dossier_id: dossierId,
+          uploader_id: uploaderId,
           client_id: clientId,
           storage_path: path,
           file_name: file.name.slice(0, 200),
