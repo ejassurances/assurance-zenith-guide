@@ -32,6 +32,8 @@ function ajouterMois(iso: string, mois: number): string {
 
 export interface ResultatContratDossier {
   contrat_id: string;
+  /** Un contrat par personne assurée sur le prêt (emprunteur). */
+  contrats_ids: string[];
   deja_existant: boolean;
   prime_annuelle: number | null;
   date_effet: string;
