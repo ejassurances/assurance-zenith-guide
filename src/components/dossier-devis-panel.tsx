@@ -534,7 +534,12 @@ export function DossierDevisPanel({
    * puis lu par l'IA. Les valeurs lues ne sont que PROPOSÉES dans le formulaire
    * ci-dessous — le conseiller vérifie et valide avant enregistrement.
    */
-  const importerDevis = async (file: File) => {
+  /**
+   * Import d'un devis (PDF ou photo) analysé par l'IA. `produit` : produit du
+   * catalogue depuis lequel l'import est lancé — il sert de valeur de repli
+   * lorsque l'IA ne reconnaît pas le partenaire ou le produit.
+   */
+  const importerDevis = async (file: File, produit?: ProduitRef) => {
     setImportBusy(true);
     setErr(null);
     setImportMsg("Dépôt du devis…");
@@ -570,8 +575,8 @@ export function DossierDevisPanel({
       const num = (v: number | null) => (v === null || v === undefined ? "" : String(v));
       setForm((f) => ({
         ...f,
-        compagnie_id: lu.compagnie_id ?? f.compagnie_id,
-        produit_id: lu.produit_id ?? f.produit_id,
+        compagnie_id: lu.compagnie_id ?? produit?.compagnie_id ?? f.compagnie_id,
+        produit_id: lu.produit_id ?? produit?.id ?? f.produit_id,
         montant_total_saisi: num(lu.montant_total) || f.montant_total_saisi,
         type_cotisation: lu.type_cotisation ?? f.type_cotisation,
         cotisation_mensuelle: num(lu.cotisation_mensuelle) || f.cotisation_mensuelle,
@@ -1048,8 +1053,29 @@ export function DossierDevisPanel({
                         onClick={() => preparerDevisProduit(produit)}
                         className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs text-ink"
                       >
-                        Ajouter le prix de ce produit
+                        Saisir le prix de ce produit
                       </button>
+                      <label
+                        className={`cursor-pointer rounded-full border border-line bg-surface px-3 py-1.5 text-xs text-ink ${
+                          importBusy ? "opacity-50" : "hover:bg-surface-elevated"
+                        }`}
+                      >
+                        <input
+                          type="file"
+                          accept="application/pdf,image/*"
+                          className="hidden"
+                          disabled={importBusy}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            e.target.value = "";
+                            if (f) {
+                              preparerDevisProduit(produit);
+                              void importerDevis(f, produit);
+                            }
+                          }}
+                        />
+                        {importBusy ? "Lecture…" : "Importer le devis (IA)"}
+                      </label>
                     </div>
                   </div>
                 </div>

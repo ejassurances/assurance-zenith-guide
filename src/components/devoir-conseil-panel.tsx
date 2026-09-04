@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { echeancierDepuisRecueil } from "@/lib/echeancier-comparatif";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { catalogueOffreUniqueFn, envoyerDevoirConseilFn, pdfDevoirConseil } from "@/lib/devoir-conseil.functions";
@@ -103,6 +104,7 @@ export function DevoirConseilPanel({
     compagnie_id: string | null;
     type_assurance: string | null;
     recueil_besoins: Record<string, unknown> | null;
+    created_at: string | null;
   } | null>(null);
   const [prevision, setPrevision] = useState<{ id: string; montant_previsionnel_total: number | null } | null>(
     null,
@@ -178,7 +180,7 @@ export function DevoirConseilPanel({
     const [d, p] = await Promise.all([
       supabase
         .from("dossiers")
-        .select("compagnie_id, type_assurance, recueil_besoins")
+        .select("compagnie_id, type_assurance, recueil_besoins, created_at")
         .eq("id", dossierId)
         .maybeSingle(),
       supabase
@@ -267,7 +269,7 @@ export function DevoirConseilPanel({
           .order("created_at", { ascending: true }),
         supabase
           .from("dossiers")
-          .select("compagnie_id, type_assurance, recueil_besoins, capital, duree_mois")
+          .select("compagnie_id, type_assurance, recueil_besoins, capital, duree_mois, created_at")
           .eq("id", dossierId)
           .maybeSingle(),
       ]);
@@ -292,6 +294,7 @@ export function DevoirConseilPanel({
           compagnie_id: dosRow.compagnie_id ?? null,
           type_assurance: dosRow.type_assurance ?? null,
           recueil_besoins: dosRow.recueil_besoins ?? null,
+          created_at: dosRow.created_at ?? null,
         });
         appliquerRecueil(dosRow);
       }
@@ -299,6 +302,28 @@ export function DevoirConseilPanel({
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dossierId]);
+
+  /** Montant en euros, format court pour un tableau dense. */
+  const eur = (n: number) =>
+    n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+
+  /**
+   * Échéancier comparatif emprunteur (fonction pure) : prélèvement bancaire,
+   * assurance en place, assurance proposée et différentiel mois par mois.
+   */
+  const echeancier = useMemo(
+    () =>
+      echeancierDepuisRecueil(
+        dossier?.recueil_besoins ?? null,
+        {
+          mensuelle: form.cotisation_mensuelle ? Number(form.cotisation_mensuelle) : null,
+          type_cotisation: form.type_cotisation || null,
+        },
+        dossier?.created_at ?? null,
+      ),
+    [dossier?.recueil_besoins, dossier?.created_at, form.cotisation_mensuelle, form.type_cotisation],
+  );
+
 
   /** Reprend les données du recueil de besoins (capital, CRD, quotité, durée, exigences). */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1008,6 +1033,83 @@ export function DevoirConseilPanel({
               </Field>
             )}
           </div>
+
+          {emprunteur && echeancier.lignes.length > 0 && (
+            <div className="rounded-lg border border-line">
+              <div className="border-b border-line px-3 py-2">
+                <p className="text-sm font-semibold">Échéancier comparatif du prêt</p>
+                <p className="text-xs text-muted-foreground">
+                  À compter du mois prévu de la substitution
+                  {echeancier.date_effet
+                    ? ` (${echeancier.date_effet.split("-").reverse().join("/")})`
+                    : ""}
+                  . Différentiel en vert : économie pour le client ; en rouge : surcoût.
+                </p>
+                {form.type_cotisation === "CRD" && (
+                  <p className="mt-1 text-xs text-amber-700">
+                    Cotisation calculée sur le capital restant dû : plus élevée les premières années,
+                    puis dégressive. Cette information est reprise dans le devoir de conseil remis au
+                    client.
+                  </p>
+                )}
+              </div>
+              <div className="max-h-80 overflow-auto">
+                <table className="w-full text-right text-xs">
+                  <thead className="sticky top-0 bg-muted">
+                    <tr>
+                      <th className="px-2 py-1 text-left font-medium">Échéance</th>
+                      <th className="px-2 py-1 font-medium">Mensualité</th>
+                      <th className="px-2 py-1 font-medium">Intérêts</th>
+                      <th className="px-2 py-1 font-medium">Capital</th>
+                      <th className="px-2 py-1 font-medium">Assur. banque</th>
+                      <th className="px-2 py-1 font-medium">Nouvelle assur.</th>
+                      <th className="px-2 py-1 font-medium">Total actuel</th>
+                      <th className="px-2 py-1 font-medium">Total proposé</th>
+                      <th className="px-2 py-1 font-medium">Différentiel</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {echeancier.lignes.map((l) => (
+                      <tr key={l.rang} className="border-t border-line">
+                        <td className="px-2 py-1 text-left">
+                          {l.date.split("-").reverse().join("/")}
+                        </td>
+                        <td className="px-2 py-1">{eur(l.echeance)}</td>
+                        <td className="px-2 py-1">{eur(l.interets)}</td>
+                        <td className="px-2 py-1">{eur(l.capital)}</td>
+                        <td className="px-2 py-1">{eur(l.assurance_initiale)}</td>
+                        <td className="px-2 py-1">{eur(l.assurance_nouvelle)}</td>
+                        <td className="px-2 py-1">{eur(l.total_actuel)}</td>
+                        <td className="px-2 py-1">{eur(l.total_nouveau)}</td>
+                        <td
+                          className={`px-2 py-1 font-semibold ${l.differentiel > 0 ? "text-red-600" : "text-emerald-600"}`}
+                        >
+                          {l.differentiel > 0 ? "+" : ""}
+                          {eur(l.differentiel)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="border-t border-line px-3 py-2 text-xs">
+                Assurance de la banque : {eur(echeancier.total_assurance_initiale)} — assurance
+                proposée : {eur(echeancier.total_assurance_nouvelle)} —{" "}
+                <span
+                  className={
+                    echeancier.total_differentiel > 0
+                      ? "font-semibold text-red-600"
+                      : "font-semibold text-emerald-600"
+                  }
+                >
+                  {echeancier.total_differentiel > 0 ? "surcoût " : "économie "}
+                  {eur(Math.abs(echeancier.total_differentiel))}
+                </span>{" "}
+                sur la période restante.
+              </div>
+            </div>
+          )}
+
 
           <Field label="Garanties retenues">
             <textarea

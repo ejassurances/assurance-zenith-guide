@@ -669,6 +669,101 @@ export async function genererPdfDevoirConseil(input: DevoirPdfInput): Promise<Ui
 
   }
 
+  /* Echeancier comparatif emprunteur : prelevement bancaire, assurance en place,
+     nouvelle assurance et differentiel mois par mois (aucune valeur deduite). */
+  const ech = c.echeancier_comparatif ?? null;
+  const lignesEch: {
+    date: string;
+    echeance: number;
+    interets: number;
+    capital: number;
+    assurance_initiale: number;
+    assurance_nouvelle: number;
+    total_actuel: number;
+    total_nouveau: number;
+    differentiel: number;
+  }[] = ech && Array.isArray(ech.lignes) ? ech.lignes : [];
+  if (lignesEch.length > 0) {
+    titreSection("Echeancier comparatif : prelevements et differentiel d'assurance");
+    para(
+      "Tableau etabli a partir de votre offre de pret, a compter du mois prevu de la substitution" +
+        (ech.date_effet ? ` (${String(ech.date_effet).split("-").reverse().join("/")})` : "") +
+        ". Le differentiel compare le prelevement total actuel (echeance + assurance de la banque) au prelevement total avec l'assurance proposee : un montant negatif est une economie.",
+      { size: 8.5, color: MUTED, gap: 6 },
+    );
+    if (ech.type_cotisation === "CRD") {
+      encadre(
+        "Information importante : cotisation calculee sur le capital restant du",
+        "L'assurance proposee est tarifee sur le capital restant du : la cotisation est plus elevee les premieres annees puis diminue au fil du remboursement du pret. Le tableau ci-dessous restitue cette evolution mois par mois. Une cotisation moyenne plus basse qu'un contrat a capital initial n'implique donc pas une cotisation plus basse des la premiere echeance.",
+      );
+    }
+
+    const colsE = [
+      { label: "Echeance", w: 0.11 },
+      { label: "Mensualite", w: 0.11 },
+      { label: "Interets", w: 0.1 },
+      { label: "Capital", w: 0.1 },
+      { label: "Assur. banque", w: 0.12 },
+      { label: "Nouvelle assur.", w: 0.12 },
+      { label: "Total actuel", w: 0.11 },
+      { label: "Total propose", w: 0.11 },
+      { label: "Differentiel", w: 0.12 },
+    ];
+    const wE = colsE.map((col) => col.w * CONTENT);
+    const enteteE = () => {
+      page.drawRectangle({ x: MARGIN, y: y - 18, width: CONTENT, height: 18, color: INK });
+      let hx = MARGIN + 4;
+      colsE.forEach((col, i) => {
+        page.drawText(safe(col.label), { x: hx, y: y - 12.5, size: 6.2, font: bold, color: WHITE });
+        hx += wE[i]!;
+      });
+      y -= 18;
+    };
+    ensure(60);
+    enteteE();
+    const m2 = (n: number) => n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    lignesEch.forEach((l, idx) => {
+      const rowH = 11;
+      if (y - rowH < MARGIN + 60) {
+        ensure(rowH + 40);
+        enteteE();
+      }
+      if (idx % 2 === 1) page.drawRectangle({ x: MARGIN, y: y - rowH, width: CONTENT, height: rowH, color: SOFT });
+      const cells = [
+        String(l.date).split("-").reverse().join("/"),
+        m2(l.echeance),
+        m2(l.interets),
+        m2(l.capital),
+        m2(l.assurance_initiale),
+        m2(l.assurance_nouvelle),
+        m2(l.total_actuel),
+        m2(l.total_nouveau),
+        (l.differentiel > 0 ? "+" : "") + m2(l.differentiel),
+      ];
+      let cx = MARGIN + 4;
+      cells.forEach((t, i) => {
+        page.drawText(safe(t), {
+          x: cx,
+          y: y - 8,
+          size: 6.2,
+          font: i === 8 ? bold : font,
+          color: i === 8 ? (l.differentiel > 0 ? BAD : OK) : INK,
+        });
+        cx += wE[i]!;
+      });
+      y -= rowH;
+    });
+    y -= 6;
+    ensure(40);
+    para(
+      `Total de l'assurance de la banque sur la periode : ${euro(Number(ech.total_assurance_initiale))} — ` +
+        `total de l'assurance proposee : ${euro(Number(ech.total_assurance_nouvelle))} — ` +
+        `differentiel : ${Number(ech.total_differentiel) > 0 ? "+" : ""}${euro(Number(ech.total_differentiel))} ` +
+        `(${Number(ech.total_differentiel) > 0 ? "surcout" : "economie"}).`,
+      { size: 9, gap: 6 },
+    );
+  }
+
   /* Comparatif avec le contrat actuel du client — uniquement a partir des grilles
      de garanties validees dans le CRM. Aucune source externe n'est interrogee ;
      a defaut de grille validee, la mention "non disponible" est imprimee. */

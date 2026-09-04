@@ -11,6 +11,7 @@ import {
 } from "@/lib/devoir-conseil-modeles";
 import { grillePourFamille, synthetiserGaranties, type ValeursGrille } from "@/lib/garanties-grille";
 import { assuresDevoirConseil } from "@/lib/devoir-conseil-assures.server";
+import { echeancierDepuisRecueil } from "@/lib/echeancier-comparatif";
 
 export type DevoirConseilSaisie = {
   recommandation: string;
@@ -302,6 +303,24 @@ export async function envoyerDevoirConseil(
      * et l'assurance qui le concerne (contrat en cours ou devis retenu).
      */
     assures: await assuresDevoirConseil(supabase, dossierId, d),
+
+    /**
+     * Emprunteur : échéancier comparatif à partir du mois prévu de la
+     * substitution — échéance du prêt, intérêts, capital amorti, assurance de la
+     * banque, notre assurance, prélèvements totaux et différentiel mensuel.
+     */
+    echeancier_comparatif:
+      d.type_assurance === "emprunteur"
+        ? echeancierDepuisRecueil(
+            (d.recueil_besoins ?? {}) as Record<string, unknown>,
+            {
+              mensuelle: saisie.cotisation_mensuelle ?? null,
+              type_cotisation: saisie.type_cotisation ?? null,
+            },
+            d.created_at ?? null,
+          )
+        : null,
+
 
     modele: modele.branche,
     modele_libelle: modele.libelle,
