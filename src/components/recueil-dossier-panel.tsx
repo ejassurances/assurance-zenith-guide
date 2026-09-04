@@ -19,6 +19,7 @@ import { DocumentsPretPanel } from "@/components/documents-pret-panel";
 import { DossierDevisPanel } from "@/components/dossier-devis-panel";
 import { synchroniserAssuresClients } from "@/lib/recueil-clients.functions";
 import { situationPret, incoherencesPret } from "@/lib/pret-amortissement";
+import { assuranceInitialeDepuisRecueil } from "@/lib/assurance-initiale";
 
 /** Étape de tarification : c'est là que les devis sont produits. */
 function estEtapeTarification(titre: string): boolean {
