@@ -477,7 +477,67 @@ export function DossierDevisPanel({
     onChanged?.();
   };
 
-  const produitsVisibles = produits.filter((p) => !form.compagnie_id || p.compagnie_id === form.compagnie_id);
+  /**
+   * Catalogue proposable : uniquement les produits de la MÊME branche que le
+   * dossier (rattachement produit_familles.branches). Le conseiller peut donc
+   * établir un devis chez un autre partenaire ou sur un autre produit, sans
+   * jamais sortir de la branche ni du catalogue.
+   */
+  const produitsBranche = produits.filter(
+    (p) => famillesBranche.length === 0 || famillesBranche.includes(p.famille_id),
+  );
+  const compagniesBranche = compagnies.filter((c) => produitsBranche.some((p) => p.compagnie_id === c.id));
+  const produitsVisibles = produitsBranche.filter((p) => !form.compagnie_id || p.compagnie_id === form.compagnie_id);
+
+  /** Devis actuellement retenu sur le dossier (compagnie + produit reportés). */
+  const estDevisRetenu = (d: DossierDevis) =>
+    !!dossierInfo.produit_id &&
+    d.produit_id === dossierInfo.produit_id &&
+    (dossierInfo.compagnie_id == null || d.compagnie_id === dossierInfo.compagnie_id);
+
+  /** Meilleur prix par tête assurée (repère visuel du comparatif). */
+  const meilleurParTete = new Map<number, string>();
+  for (const d of devis) {
+    if (d.cotisation_mensuelle == null) continue;
+    const tete = d.assure_rang ?? 1;
+    const actuel = meilleurParTete.get(tete);
+    const ref = actuel ? devis.find((x) => x.id === actuel) : null;
+    if (!ref || Number(d.cotisation_mensuelle) < Number(ref.cotisation_mensuelle)) meilleurParTete.set(tete, d.id);
+  }
+
+  /** Rang attribué par le classement IA, s'il existe. */
+  const rangIa = (id: string) => classement?.classement.find((l) => l.dossier_devis_id === id)?.rang ?? null;
+
+  /**
+   * Sélection directe d'un devis depuis le comparatif, y compris sur un dossier
+   * déjà validé : compagnie et produit sont reportés sur le dossier et le devoir
+   * de conseil est régénéré en brouillon (aucun envoi au client).
+   */
+  const retenirDirectement = async (d: DossierDevis) => {
+    if (
+      !confirm(
+        "Retenir ce devis pour le dossier et générer le devoir de conseil en brouillon (aucun envoi au client) ?",
+      )
+    )
+      return;
+    setErr(null);
+    setIaMsg(null);
+    setIaEtat("selection");
+    try {
+      await retenirManuel({
+        data: { devis_id: d.id, motif: "offre choisie par le conseiller dans le comparatif du dossier" },
+      });
+      await load();
+      setIaMsg(
+        "Offre retenue : compagnie et produit reportés sur le dossier, devoir de conseil créé en brouillon. L'envoi au client reste manuel.",
+      );
+      onChanged?.();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Sélection impossible");
+    } finally {
+      setIaEtat("idle");
+    }
+  };
 
   const demanderClassement = async () => {
     setIaMsg(null);
