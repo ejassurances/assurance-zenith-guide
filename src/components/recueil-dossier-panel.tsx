@@ -18,6 +18,7 @@ import { RecueilWorkflow } from "@/components/recueil-workflow";
 import { DocumentsPretPanel } from "@/components/documents-pret-panel";
 import { DossierDevisPanel } from "@/components/dossier-devis-panel";
 import { synchroniserAssuresClients } from "@/lib/recueil-clients.functions";
+import { situationPret, incoherencesPret } from "@/lib/pret-amortissement";
 
 /** Étape de tarification : c'est là que les devis sont produits. */
 function estEtapeTarification(titre: string): boolean {
@@ -83,6 +84,71 @@ function FichesAssures({ dossierId, canEdit }: { dossierId: string; canEdit: boo
   );
 }
 
+/**
+ * Cohérence du prêt : le capital restant dû et les mois restants sont
+ * recalculés à la date d'effet prévue de la substitution (date communiquée par
+ * la compagnie, sinon création du dossier + 3 mois). Les écarts avec la saisie
+ * sont signalés, jamais corrigés automatiquement.
+ */
+function CoherencePret({
+  values,
+  dossierCreeLe,
+}: {
+  values: Record<string, unknown>;
+  dossierCreeLe: string | null;
+}) {
+  const nombre = (cle: string): number | null => {
+    const n = Number(values[cle]);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+  const calcul = situationPret({
+    capital: nombre("capital"),
+    taux_pret: nombre("taux_pret"),
+    duree_mois: nombre("duree_mois"),
+    date_premiere_echeance:
+      typeof values["date_premiere_echeance"] === "string" ? (values["date_premiere_echeance"] as string) : null,
+    date_effet: typeof values["date_effet"] === "string" ? (values["date_effet"] as string) : null,
+    dossier_cree_le: dossierCreeLe,
+  });
+  const alertes = incoherencesPret(values, dossierCreeLe);
+  const euros = (v: number | null) => (v === null ? "—" : `${Math.round(v).toLocaleString("fr-FR")} €`);
+  const dateFr = (v: string | null) => (v ? new Date(v).toLocaleDateString("fr-FR") : "—");
+
+  return (
+    <PanneauLateral titre="Cohérence du prêt">
+      <dl className="space-y-1 text-xs">
+        <div className="flex justify-between gap-2">
+          <dt className="text-ink-muted">
+            Date d'effet {calcul.origine_date_effet === "compagnie" ? "(compagnie)" : "(création + 3 mois)"}
+          </dt>
+          <dd className="text-ink">{dateFr(calcul.date_effet)}</dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt className="text-ink-muted">Capital restant dû calculé</dt>
+          <dd className="text-ink">{euros(calcul.capital_restant_du)}</dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt className="text-ink-muted">Mois restants calculés</dt>
+          <dd className="text-ink">{calcul.mois_restants ?? "—"}</dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt className="text-ink-muted">Mensualité estimée</dt>
+          <dd className="text-ink">{euros(calcul.mensualite)}</dd>
+        </div>
+      </dl>
+      {alertes.length > 0 ? (
+        <ul className="space-y-1 text-xs text-destructive">
+          {alertes.map((a) => (
+            <li key={a}>• {a}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-xs text-ink-muted">Aucune incohérence détectée entre les montants et les durées saisis.</p>
+      )}
+    </PanneauLateral>
+  );
+}
+
 export function RecueilDossierPanel({
   dossierId,
   typeAssurance,
@@ -112,6 +178,14 @@ export function RecueilDossierPanel({
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const syncClients = useServerFn(synchroniserAssuresClients);
+  const [dossierCreeLe, setDossierCreeLe] = useState<string | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      const { data } = await supabase.from("dossiers").select("created_at").eq("id", dossierId).maybeSingle();
+      setDossierCreeLe((data?.created_at as string | null) ?? null);
+    })();
+  }, [dossierId]);
 
   useEffect(() => {
     void (async () => {
@@ -205,6 +279,9 @@ export function RecueilDossierPanel({
           />
         </PanneauLateral>
       );
+    }
+    if (branche.value === "emprunteur" && /montant|dur[eé]e|substitut|capital/i.test(titre)) {
+      return <CoherencePret values={values} dossierCreeLe={dossierCreeLe} />;
     }
     if (estEtapeAssures(titre)) {
       return <FichesAssures dossierId={dossierId} canEdit={canEdit} />;
