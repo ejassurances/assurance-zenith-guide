@@ -44,11 +44,12 @@ export const lireDevisImporte = createServerFn({ method: "POST" })
 
     let produitsBranche = (produits ?? []) as { id: string; nom: string; compagnie_id: string | null; famille_id: string | null }[];
     if (branche) {
-      const { data: familles } = await supabaseAdmin
-        .from("produit_familles")
-        .select("id, branche")
-        .eq("branche", branche);
-      const ids = new Set(((familles ?? []) as { id: string }[]).map((f) => f.id));
+      const { data: familles } = await supabaseAdmin.from("produit_familles").select("id, branches");
+      const ids = new Set(
+        ((familles ?? []) as { id: string; branches: string[] | null }[])
+          .filter((f) => (f.branches ?? []).includes(branche))
+          .map((f) => f.id),
+      );
       if (ids.size > 0) produitsBranche = produitsBranche.filter((p) => p.famille_id && ids.has(p.famille_id));
     }
 
