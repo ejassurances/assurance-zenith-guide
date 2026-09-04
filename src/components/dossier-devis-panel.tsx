@@ -622,6 +622,65 @@ export function DossierDevisPanel({
   const compagniesBranche = compagnies.filter((c) => produitsBranche.some((p) => p.compagnie_id === c.id));
   const produitsVisibles = produitsBranche.filter((p) => !form.compagnie_id || p.compagnie_id === form.compagnie_id);
 
+  /**
+   * Note d'adéquation de chaque produit emprunteur du catalogue, calculée sur sa
+   * grille de garanties validée dans le CRM et la situation du prospect. Sans
+   * grille validée, le produit reste non notable (aucune valeur déduite).
+   */
+  const notesProduits = useMemo(() => {
+    const table = new Map<string, NoteProduit>();
+    if (!estEmprunteur) return table;
+    for (const p of produitsBranche) {
+      table.set(p.id, noterProduitEmprunteur(grillesProduits[p.id] ?? null, recueilDossier));
+    }
+    return table;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estEmprunteur, produits, famillesBranche, grillesProduits, recueilDossier]);
+
+  /** Produits du catalogue triés par note décroissante (non notables en dernier). */
+  const produitsNotes = useMemo(
+    () =>
+      [...produitsBranche]
+        .map((p) => ({ produit: p, note: notesProduits.get(p.id) ?? null }))
+        .sort((a, b) => (b.note?.score ?? -1) - (a.note?.score ?? -1)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [produits, famillesBranche, notesProduits],
+  );
+
+  /** Coût total d'un devis sur la période restante du prêt. */
+  const coutTotalDevis = useCallback(
+    (d: DossierDevis): number | null => {
+      if (d.montant_total_saisi != null) return Number(d.montant_total_saisi);
+      if (d.cotisation_mensuelle != null && moisRestants) return Number(d.cotisation_mensuelle) * moisRestants;
+      if (d.cotisation_mensuelle != null) return null;
+      return null;
+    },
+    [moisRestants],
+  );
+
+  /** Classement du moins cher au plus cher (base : coût total, sinon cotisation). */
+  const classementPrix = useMemo(() => {
+    const cle = (d: DossierDevis) => {
+      const total = coutTotalDevis(d);
+      if (total != null) return total;
+      return d.cotisation_mensuelle != null ? Number(d.cotisation_mensuelle) * 1000 : Infinity;
+    };
+    return [...devisAffiches].sort((a, b) => cle(a) - cle(b));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [devisAffiches, coutTotalDevis]);
+
+  /** Prépare la saisie du prix obtenu pour un produit du catalogue. */
+  const preparerDevisProduit = (p: ProduitRef) => {
+    setForm((f) => ({ ...f, compagnie_id: p.compagnie_id, produit_id: p.id, formule_id: "" }));
+    setMotifSaisie("sans_api");
+    setSaisieOuverte(true);
+    setTimeout(() => {
+      document.getElementById("saisie-devis-manuel")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
+  };
+
+
+
   /** Devis actuellement retenu sur le dossier (compagnie + produit reportés). */
   const estDevisRetenu = (d: DossierDevis) =>
     !!dossierInfo.produit_id &&
