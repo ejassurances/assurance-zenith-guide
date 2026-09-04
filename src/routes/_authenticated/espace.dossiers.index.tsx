@@ -405,7 +405,7 @@ export function NewDossierForm({
     // Emprunteurs détectés dans l'offre de prêt : rapprochement ou création des
     // fiches clients avant l'ouverture du dossier (un dossier = un prêt).
     let clientPrincipalId = clientId;
-    let recueilFinal = recueil;
+    let recueilFinal: Record<string, unknown> = recueil;
     if (type === "emprunteur" && emprunteurs.length > 0) {
       try {
         const res = await creerFiches({
