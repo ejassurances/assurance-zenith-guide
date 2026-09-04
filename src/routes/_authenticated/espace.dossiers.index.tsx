@@ -449,10 +449,10 @@ export function NewDossierForm({
     let fumeur = false;
     let economie: number | null = null;
     if (type === "emprunteur") {
-      capital = Number(recueil.capital) || null;
-      duree_mois = Number(recueil.duree_mois) || null;
+      capital = Number(recueilSoumis["capital"]) || null;
+      duree_mois = Number(recueilSoumis["duree_mois"]) || null;
       // Assuré principal de la liste « assures » : base de l'estimation d'économie.
-      const principal = assurePrincipalEmprunteur(recueil["assures"]);
+      const principal = assurePrincipalEmprunteur(recueilSoumis["assures"]);
       age = principal ? ageDepuisDateNaissance(principal.date_naissance) : null;
       fumeur = principal?.fumeur === true;
       if (capital && duree_mois && age) {
@@ -466,14 +466,15 @@ export function NewDossierForm({
     }
 
     const { data: created, error: insErr } = await supabase.from("dossiers").insert({
-      client_id: clientId || null,
+      client_id: clientPrincipalId || null,
       client_nom: clientNom,
       client_email: clientEmail || null,
       client_phone: clientPhone || null,
       type_assurance: type,
       compagnie_id: compagnieId,
       produit_id: produitId,
-      recueil_besoins: recueil as never,
+      recueil_besoins: recueilSoumis as never,
+
       capital,
       duree_mois,
       age,
