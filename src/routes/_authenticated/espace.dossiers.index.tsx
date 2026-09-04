@@ -402,6 +402,46 @@ export function NewDossierForm({
     setSaving(true);
     setError(null);
 
+    // Emprunteurs détectés dans l'offre de prêt : rapprochement ou création des
+    // fiches clients avant l'ouverture du dossier (un dossier = un prêt).
+    let clientPrincipalId = clientId;
+    let recueilFinal = recueil;
+    if (type === "emprunteur" && emprunteurs.length > 0) {
+      try {
+        const res = await creerFiches({
+          data: {
+            emprunteurs: emprunteurs.map((e) => ({
+              prenom: e.prenom,
+              nom: e.nom,
+              date_naissance: e.date_naissance,
+              quotite_pct: e.quotite_pct,
+              csp: e.csp,
+              fumeur: e.fumeur,
+              email: e.email,
+              telephone: e.telephone,
+              client_id: e.client_id,
+            })),
+          },
+        });
+        const ids = res.resultats;
+        if (!clientPrincipalId && ids[0]) clientPrincipalId = ids[0].client_id;
+        const assures = assuresEmprunteur(recueil["assures"]);
+        if (assures.length > 0) {
+          recueilFinal = {
+            ...recueil,
+            assures: assures.map((a, i) => (ids[i] ? { ...a, client_id: ids[i]!.client_id } : a)),
+          };
+        }
+      } catch (e) {
+        setSaving(false);
+        setError(e instanceof Error ? e.message : "Création des fiches clients impossible");
+        return;
+      }
+    }
+    const recueil = recueilFinal;
+
+
+
     // Champs de compat pour emprunteur (pour garder les colonnes existantes utiles)
     let capital: number | null = null;
     let duree_mois: number | null = null;
