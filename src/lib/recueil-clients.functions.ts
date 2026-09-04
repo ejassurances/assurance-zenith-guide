@@ -34,7 +34,7 @@ export const synchroniserAssuresClients = createServerFn({ method: "POST" })
 
     const { data: dossier, error: errD } = await sb
       .from("dossiers")
-      .select("id, client_id, recueil_besoins, commercial_id")
+      .select("id, client_id, recueil_besoins, created_by")
       .eq("id", data.dossier_id)
       .maybeSingle();
     if (errD) throw new Error(errD.message);
@@ -105,7 +105,7 @@ export const synchroniserAssuresClients = createServerFn({ method: "POST" })
           date_naissance: vide(a["date_naissance"]) ? null : (a["date_naissance"] as string),
           csp: vide(a["csp"]) ? null : (a["csp"] as string),
           fumeur: typeof a["fumeur"] === "boolean" ? (a["fumeur"] as boolean) : null,
-          commercial_id: dossier.commercial_id ?? null,
+          commercial_id: dossier.created_by ?? context.userId ?? null,
           remarque: "Fiche créée depuis le recueil des besoins (co-emprunteur du prêt).",
         } as never)
         .select("id")
