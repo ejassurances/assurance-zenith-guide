@@ -27,6 +27,8 @@ import { DevoirConseilRefusAnalysePanel } from "@/components/devoir-conseil-refu
 import { SouscriptionPanel } from "@/components/souscription-panel";
 import { CopilotePanel } from "@/components/copilote-panel";
 import { AnalyseRecueilPanel } from "@/components/analyse-recueil-panel";
+import { RecueilDossierPanel } from "@/components/recueil-dossier-panel";
+
 import { DossierDevisPanel } from "@/components/dossier-devis-panel";
 import { SimulassurConsole } from "@/components/simulassur-console";
 import { EtudeEpargnePanel } from "@/components/etude-epargne-panel";
