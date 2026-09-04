@@ -328,14 +328,33 @@ export function DossierDevisPanel({
       return Number.isFinite(n) && n > 0 ? n : null;
     };
     const assures = Array.isArray(recueil["assures"]) ? (recueil["assures"] as Record<string, unknown>[]) : [];
+    const txt = (v: unknown) => {
+      if (v == null) return null;
+      if (Array.isArray(v)) {
+        const l = v.map((x) => String(x)).filter(Boolean);
+        return l.length ? l.join(", ") : null;
+      }
+      const s = String(v).trim();
+      return s ? s : null;
+    };
     setAssuresRecueil(
       assures.map((a, i) => ({
         rang: i + 1,
         label: `${
           a?.["lien"] === "co_emprunteur" ? "Co-emprunteur" : "Assuré principal"
         }${a?.["quotite_pct"] ? ` — quotité ${a["quotite_pct"]} %` : ""}`,
+        nom:
+          txt(a?.["nom_complet"]) ??
+          [txt(a?.["prenom"]), txt(a?.["nom"])].filter(Boolean).join(" ").trim() ??
+          null,
+        quotite: nb(a?.["quotite_pct"]),
+        garanties: txt(a?.["garanties"]) ?? txt(a?.["garanties_souhaitees"]),
+        franchise: txt(a?.["franchise"]) ?? txt(a?.["franchise_jours"]),
+        options: txt(a?.["options"]),
+        adhesion: txt(a?.["numero_adhesion"]) ?? txt(a?.["adhesion"]),
       })),
     );
+
     setMoisRestants(nb(recueil["mois_restants"]) ?? nb(recueil["duree_mois"]));
     setCrdRecueil(nb(recueil["capital_restant_du"]) ?? nb(recueil["capital"]));
     // Branche emprunteur : plus aucune tarification automatique par API — le
