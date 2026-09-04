@@ -247,23 +247,22 @@ function DossierDetail() {
         onStepClick={setSelectedStep}
       />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
-        <div className="min-w-0">
-          {userId && (
-            <StageContent
-              step={displayedStep}
-              dossier={dossier}
-              userId={userId}
-              canEdit={canEdit}
-              contreProposition={contreProposition}
-              onChanged={load}
-              onContreProposition={(suggestion, motif) => {
-                setContreProposition({ suggestion, motif, key: Date.now() });
-              }}
-            />
-          )}
-        </div>
+      <div className="min-w-0">
+        {userId && (
+          <StageContent
+            step={displayedStep}
+            dossier={dossier}
+            userId={userId}
+            canEdit={canEdit}
+            contreProposition={contreProposition}
+            onChanged={load}
+            onContreProposition={(suggestion, motif) => {
+              setContreProposition({ suggestion, motif, key: Date.now() });
+            }}
+          />
+        )}
       </div>
+
     </div>
   );
 }
