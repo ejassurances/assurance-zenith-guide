@@ -698,8 +698,8 @@ export function DossierDevisPanel({
   return (
     <div className="rounded-2xl border border-line bg-surface-elevated p-5">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:flex sm:items-center sm:justify-between">
-        <h2 className="min-w-0 font-serif text-lg font-medium text-ink">Devis comparés</h2>
-        {!produitFixe && (
+        <h2 className="min-w-0 font-serif text-lg font-medium text-ink">Devis et valorisation</h2>
+        {(
           <button
             onClick={() => {
               setSaisieOuverte(true);
@@ -709,7 +709,7 @@ export function DossierDevisPanel({
             }}
             className="shrink-0 rounded-full bg-ink px-4 py-2 text-xs text-primary-foreground"
           >
-            Ajouter un devis manuellement
+            Nouveau devis (autre partenaire ou produit)
           </button>
         )}
       </div>
@@ -1184,7 +1184,6 @@ export function DossierDevisPanel({
       </div>
       )}
 
-      {!produitFixe && (
       <div
         id="saisie-devis-manuel"
         className={`mt-4 grid gap-3 rounded-xl border-t border-line pt-4 sm:grid-cols-2 ${
@@ -1192,10 +1191,13 @@ export function DossierDevisPanel({
         }`}
       >
         <div className="sm:col-span-2">
-          <h3 className="text-sm font-medium text-ink">Saisie manuelle d'un devis</h3>
+          <h3 className="text-sm font-medium text-ink">Nouveau devis — autre partenaire ou autre produit</h3>
           <p className="mt-1 text-xs text-ink-muted">
-            Pour une compagnie sans API de tarification (devis reçu par e-mail ou extranet) ou pour un contrat déjà
-            validé par la compagnie que l'on reprend rétroactivement.
+            Choisissez librement un partenaire et un produit du catalogue, dans la même branche que le dossier
+            {branche ? ` (${branche})` : ""} : {compagniesBranche.length} partenaire(s) et {produitsBranche.length}{" "}
+            produit(s) disponibles. Utile pour une compagnie sans API de tarification, pour un contrat déjà validé
+            repris rétroactivement, ou pour ajouter une offre concurrente à un dossier déjà avancé — un nouveau devis
+            peut être retenu à tout moment, ce qui régénère le devoir de conseil en brouillon.
           </p>
         </div>
         <label className="block sm:col-span-2">
@@ -1224,7 +1226,7 @@ export function DossierDevisPanel({
             className={inp}
           >
             <option value="">— Choisir —</option>
-            {compagnies.map((c) => (
+            {(compagniesBranche.length > 0 ? compagniesBranche : compagnies).map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nom}
               </option>
@@ -1424,7 +1426,6 @@ export function DossierDevisPanel({
           )}
         </div>
       </div>
-      )}
 
     </div>
   );
