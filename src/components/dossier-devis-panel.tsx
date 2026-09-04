@@ -345,8 +345,8 @@ export function DossierDevisPanel({
         }${a?.["quotite_pct"] ? ` — quotité ${a["quotite_pct"]} %` : ""}`,
         nom:
           txt(a?.["nom_complet"]) ??
-          [txt(a?.["prenom"]), txt(a?.["nom"])].filter(Boolean).join(" ").trim() ??
-          null,
+          txt([txt(a?.["prenom"]), txt(a?.["nom"])].filter(Boolean).join(" ")),
+
         quotite: nb(a?.["quotite_pct"]),
         garanties: txt(a?.["garanties"]) ?? txt(a?.["garanties_souhaitees"]),
         franchise: txt(a?.["franchise"]) ?? txt(a?.["franchise_jours"]),
