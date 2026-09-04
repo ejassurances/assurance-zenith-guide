@@ -10,6 +10,7 @@ import {
   creerDevisTarifFixeFn,
 } from "@/lib/devis-classement.functions";
 import { assuranceInitialeDepuisRecueil, economieDevis } from "@/lib/assurance-initiale";
+import { lireDevisImporte } from "@/lib/devis-import.functions";
 import { neolianeTariferDossier } from "@/lib/neoliane.functions";
 import { brancheTarifableNeoliane, nbAssuresNeoliane } from "@/lib/neoliane/branches";
 import { ugipTariferDossier } from "@/lib/ugip.functions";
@@ -108,6 +109,11 @@ export function DossierDevisPanel({
   const lancerClassement = useServerFn(classerDevisDossierFn);
   const retenirOffre = useServerFn(retenirDevisDossierFn);
   const retenirManuel = useServerFn(retenirDevisManuelFn);
+  const lireDevis = useServerFn(lireDevisImporte);
+  /** Import d'un devis PDF/photo : lecture IA proposée, validation humaine obligatoire. */
+  const [importBusy, setImportBusy] = useState(false);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
+  const [importDocId, setImportDocId] = useState<string | null>(null);
   const creerFixe = useServerFn(creerDevisTarifFixeFn);
 
   /** Produit du dossier en tarification fixe : formules et options à cotisation connue. */
@@ -451,8 +457,9 @@ export function DossierDevisPanel({
         quotite_pct: form.quotite_pct ? Number(form.quotite_pct) : null,
         assure_rang: form.assure_rang ? Number(form.assure_rang) : 1,
         garanties_resume: resume || null,
-        source: "manuel",
+        source: importDocId ? "pdf" : "manuel",
         saisi_par: userId,
+        document_id: importDocId,
       })
       .select("id")
       .single();
@@ -485,8 +492,79 @@ export function DossierDevisPanel({
       garanties_resume: "",
       assure_rang: "1",
     });
+    setImportDocId(null);
+    setImportMsg(null);
     await load();
     onChanged?.();
+  };
+
+  /**
+   * Importe un devis reçu (PDF ou photo) : le fichier est archivé sur le dossier
+   * puis lu par l'IA. Les valeurs lues ne sont que PROPOSÉES dans le formulaire
+   * ci-dessous — le conseiller vérifie et valide avant enregistrement.
+   */
+  const importerDevis = async (file: File) => {
+    setImportBusy(true);
+    setErr(null);
+    setImportMsg("Dépôt du devis…");
+    try {
+      const safeName = file.name.replace(/[^\w.\-]+/g, "_").slice(0, 120);
+      const path = `${dossierId}/${Date.now()}-${safeName}`;
+      const { error: upErr } = await supabase.storage.from("dossier-documents").upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: auth } = await supabase.auth.getUser();
+      const uploaderId = auth.user?.id;
+      if (!uploaderId) throw new Error("Session expirée — reconnectez-vous.");
+      const { data: doc, error: insErr } = await supabase
+        .from("documents")
+        .insert({
+          dossier_id: dossierId,
+          uploader_id: uploaderId,
+          storage_path: path,
+          file_name: file.name.slice(0, 200),
+          file_size: file.size,
+          mime_type: file.type || null,
+          categorie: "dossier",
+          type_document: "devis_assurance",
+        })
+        .select("id")
+        .maybeSingle();
+      if (insErr) throw insErr;
+      const docId = (doc as { id: string } | null)?.id ?? null;
+      if (!docId) throw new Error("Enregistrement du devis impossible.");
+      setImportDocId(docId);
+
+      setImportMsg("Lecture du devis par l'IA…");
+      const lu = await lireDevis({ data: { dossier_id: dossierId, document_id: docId } });
+      const num = (v: number | null) => (v === null || v === undefined ? "" : String(v));
+      setForm((f) => ({
+        ...f,
+        compagnie_id: lu.compagnie_id ?? f.compagnie_id,
+        produit_id: lu.produit_id ?? f.produit_id,
+        montant_total_saisi: num(lu.montant_total) || f.montant_total_saisi,
+        type_cotisation: lu.type_cotisation ?? f.type_cotisation,
+        cotisation_mensuelle: num(lu.cotisation_mensuelle) || f.cotisation_mensuelle,
+        cotisation_min: num(lu.cotisation_min) || f.cotisation_min,
+        cotisation_max: num(lu.cotisation_max) || f.cotisation_max,
+        quotite_pct: num(lu.quotite_pct) || f.quotite_pct,
+        garanties_resume: lu.garanties_resume ?? f.garanties_resume,
+      }));
+      setSaisieOuverte(true);
+      const manque: string[] = [];
+      if (!lu.compagnie_id) manque.push(lu.compagnie ? `partenaire (« ${lu.compagnie} » absent du catalogue de la branche)` : "partenaire");
+      if (!lu.produit_id) manque.push(lu.produit ? `produit (« ${lu.produit} »)` : "produit");
+      if (lu.cotisation_mensuelle === null && lu.montant_total === null) manque.push("tarif");
+      setImportMsg(
+        `Devis lu${lu.assure_nom ? ` (assuré : ${lu.assure_nom})` : ""}. Vérifiez les valeurs proposées ci-dessous puis enregistrez.` +
+          (manque.length ? ` À compléter à la main : ${manque.join(", ")}.` : ""),
+      );
+      document.getElementById("saisie-devis-manuel")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    } catch (e) {
+      setImportMsg(null);
+      setErr(e instanceof Error ? e.message : "Import du devis impossible");
+    } finally {
+      setImportBusy(false);
+    }
   };
 
   /** Traçabilité ACPR : le devis n'est jamais supprimé, il est archivé (masqué). */
@@ -1272,6 +1350,30 @@ export function DossierDevisPanel({
         )}
       </div>
       )}
+
+      <div className="mt-4 rounded-xl border border-line bg-surface-elevated/60 p-3">
+        <h3 className="text-sm font-medium text-ink">Importer un devis reçu (PDF ou photo)</h3>
+        <p className="mt-1 text-xs text-ink-muted">
+          Le devis est conservé comme justificatif sur le dossier et lu automatiquement : partenaire, produit, tarif,
+          mode de calcul, quotité et garanties sont proposés dans le formulaire ci-dessous. Rien n'est enregistré tant
+          que vous n'avez pas vérifié et validé.
+        </p>
+        <label className="mt-2 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink hover:bg-surface">
+          <input
+            type="file"
+            accept="application/pdf,image/*"
+            className="hidden"
+            disabled={importBusy}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (f) void importerDevis(f);
+            }}
+          />
+          {importBusy ? "Lecture en cours…" : "Choisir un devis"}
+        </label>
+        {importMsg && <p className="mt-2 text-xs text-ink-soft">{importMsg}</p>}
+      </div>
 
       <div
         id="saisie-devis-manuel"
