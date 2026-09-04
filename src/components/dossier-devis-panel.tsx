@@ -1117,73 +1117,258 @@ export function DossierDevisPanel({
         </div>
       )}
 
-      {estEmprunteur && classementPrix.length > 0 && (
-        <div className="mt-4 rounded-xl border border-line bg-surface p-4">
-          <h3 className="text-sm font-medium text-ink">Classement des offres — du moins cher au plus cher</h3>
-          <p className="mt-1 text-xs text-ink-muted">
-            Coût calculé sur la période restant à courir
-            {moisRestants ? ` (${moisRestants} mois)` : ""} et comparé à l'assurance actuelle de la banque.
-          </p>
-          <div className="mt-3 space-y-2">
-            {classementPrix.map((d, i) => {
-              const eco = economiePourDevis(d);
-              const total = coutTotalDevis(d);
-              const note = notesProduits.get(d.produit_id ?? "")?.score ?? null;
-              const retenu = estDevisRetenu(d);
-              return (
-                <div
-                  key={d.id}
-                  className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3 text-sm ${
-                    retenu
-                      ? "border-[color:var(--crm-gold)] bg-[color:var(--crm-gold)]/10"
-                      : "border-line bg-surface-elevated/60"
+      {estEmprunteur && (
+        <div className="mt-4 space-y-3">
+          {/* Bandeau de synthèse du dossier : coût total et gain, toutes têtes confondues. */}
+          <div className="rounded-xl border border-line bg-ink px-4 py-3 text-primary-foreground">
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
+              <div>
+                <p className="text-[11px] uppercase tracking-wide opacity-70">Coût total assurance retenu</p>
+                <p className="font-serif text-xl">
+                  {totalRetenuDossier != null
+                    ? `${Math.round(totalRetenuDossier).toLocaleString("fr-FR")} €`
+                    : "non disponible"}
+                </p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-wide opacity-70">Les 8 premières années</p>
+                <p className="text-sm">
+                  {huitAnsRetenuDossier != null
+                    ? `${Math.round(huitAnsRetenuDossier).toLocaleString("fr-FR")} €`
+                    : "non disponible"}
+                </p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-wide opacity-70">Assurance bancaire actuelle</p>
+                <p className="text-sm">
+                  {assuranceInit.coutRestant != null
+                    ? `${Math.round(assuranceInit.coutRestant).toLocaleString("fr-FR")} €`
+                    : "non disponible"}
+                </p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-wide opacity-70">Économie estimée</p>
+                <p
+                  className={`text-sm font-medium ${
+                    economieRetenueDossier == null
+                      ? ""
+                      : economieRetenueDossier >= 0
+                        ? "text-emerald-300"
+                        : "text-red-300"
                   }`}
                 >
-                  <div className="min-w-0">
-                    <p className="font-medium text-ink">
-                      <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-ink text-xs text-primary-foreground">
-                        {i + 1}
-                      </span>
-                      {nomCompagnie(d.compagnie_id)} — {nomProduit(d.produit_id)}
-                      {assuresRecueil.length >= 2 && (
-                        <span className="text-ink-soft">
-                          {" "}
-                          ·{" "}
-                          {assuresRecueil.find((a) => a.rang === (d.assure_rang ?? 1))?.label ??
-                            `Tête ${d.assure_rang ?? 1}`}
-                        </span>
+                  {economieRetenueDossier == null
+                    ? "non disponible"
+                    : `${economieRetenueDossier >= 0 ? "+" : "−"}${Math.abs(
+                        Math.round(economieRetenueDossier),
+                      ).toLocaleString("fr-FR")} €`}
+                </p>
+              </div>
+              <p className="ml-auto text-[11px] opacity-70">
+                {moisRestants ? `${moisRestants} mois restants` : "durée restante à compléter"}
+              </p>
+            </div>
+          </div>
+
+          {/* Une colonne par assuré : couvertures puis propositions chiffrées. */}
+          <div
+            className={`grid gap-3 ${assuresColonnes.length >= 2 ? "lg:grid-cols-2" : "grid-cols-1"}`}
+          >
+            {assuresColonnes.map((a) => {
+              const offres = propositionsParTete(a.rang);
+              const meilleur = offres[0];
+              const retenuTete = offres.find((o) => estDevisRetenu(o));
+              const reference = retenuTete ?? meilleur;
+              const totalTete = reference ? coutTotalDevis(reference) : null;
+              return (
+                <div key={a.rang} className="overflow-hidden rounded-xl border border-line bg-surface">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2 bg-ink px-4 py-3 text-primary-foreground">
+                    <div className="min-w-0">
+                      <p className="font-serif text-base">{a.nom ?? a.label}</p>
+                      <p className="text-[11px] opacity-70">
+                        {a.label}
+                        {a.adhesion ? ` · adhésion ${a.adhesion}` : ""}
+                      </p>
+                    </div>
+                    <p className="text-sm">
+                      {totalTete != null ? (
+                        <>
+                          <strong className="font-serif text-lg">
+                            {Math.round(totalTete).toLocaleString("fr-FR")} €
+                          </strong>
+                          <span className="ml-2 text-[11px] opacity-70">coût total assurance</span>
+                        </>
+                      ) : (
+                        <span className="text-[11px] opacity-70">coût total non disponible</span>
                       )}
                     </p>
-                    <p className="mt-1 text-xs text-ink-soft">
-                      {d.cotisation_mensuelle != null
-                        ? `${Number(d.cotisation_mensuelle).toLocaleString("fr-FR", { maximumFractionDigits: 2 })} € / mois`
-                        : "cotisation à renseigner"}
-                      {total != null && ` · ${Math.round(total).toLocaleString("fr-FR")} € au total`}
-                      {note != null && ` · adéquation ${note}/100`}
-                    </p>
-                    <p className="mt-1 text-xs text-ink">
-                      {eco
-                        ? eco.economie > 0
-                          ? `Économie ${Math.round(eco.economie).toLocaleString("fr-FR")} € (${eco.pourcentage} %)`
-                          : `Plus cher que la banque de ${Math.abs(Math.round(eco.economie)).toLocaleString("fr-FR")} €`
-                        : "Économie non chiffrable : complétez l'assurance bancaire actuelle et le montant du devis."}
-                    </p>
                   </div>
-                  <button
-                    onClick={() => void retenirDirectement(d)}
-                    disabled={iaEtat !== "idle" || !d.compagnie_id || !d.produit_id}
-                    className={`shrink-0 rounded-full px-4 py-2 text-xs disabled:opacity-50 ${
-                      retenu ? "border border-line bg-surface text-ink" : "bg-ink text-primary-foreground"
-                    }`}
-                  >
-                    {retenu ? "Offre retenue" : "Recommander ce devis"}
-                  </button>
+
+                  <div className="border-b border-line bg-surface-elevated/60 px-4 py-3">
+                    <p className="text-xs font-medium uppercase tracking-wide text-ink-soft">Couvertures</p>
+                    <dl className="mt-2 grid gap-x-4 gap-y-1 text-xs sm:grid-cols-3">
+                      <div>
+                        <dt className="text-ink-muted">Garanties</dt>
+                        <dd className="text-ink">{a.garanties ?? "non renseignées"}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-ink-muted">Quotité</dt>
+                        <dd className="text-ink">{a.quotite != null ? `${a.quotite} %` : "non renseignée"}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-ink-muted">Franchise</dt>
+                        <dd className="text-ink">{a.franchise ?? "non renseignée"}</dd>
+                      </div>
+                    </dl>
+                    {a.options && <p className="mt-2 text-xs text-ink-soft">Options : {a.options}</p>}
+                    {crdRecueil != null && (
+                      <p className="mt-2 text-xs text-ink-muted">
+                        Capital assuré de référence : {Math.round(crdRecueil).toLocaleString("fr-FR")} €
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="px-4 py-3">
+                    <p className="text-xs font-medium uppercase tracking-wide text-ink-soft">
+                      {offres.length} proposition{offres.length > 1 ? "s" : ""} — du moins cher au plus cher
+                    </p>
+                    {offres.length === 0 && (
+                      <p className="mt-2 rounded-lg border border-dashed border-line px-3 py-3 text-xs text-ink-muted">
+                        Aucun prix saisi pour cet assuré : utilisez « Saisir le prix » ou « Importer le devis » sur un
+                        produit du catalogue ci-dessus.
+                      </p>
+                    )}
+                    <div className="mt-2 space-y-2">
+                      {offres.map((d, i) => {
+                        const total = coutTotalDevis(d);
+                        const huit = coutHuitAns(d);
+                        const eco = economiePourDevis(d);
+                        const note = notesProduits.get(d.produit_id ?? "")?.score ?? null;
+                        const retenu = estDevisRetenu(d);
+                        return (
+                          <div
+                            key={d.id}
+                            className={`rounded-lg border p-3 ${
+                              retenu
+                                ? "border-[color:var(--crm-gold)] bg-[color:var(--crm-gold)]/10"
+                                : "border-line bg-surface-elevated/40"
+                            }`}
+                          >
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <p className="min-w-0 text-sm font-medium text-ink">
+                                <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[10px] text-primary-foreground">
+                                  {i + 1}
+                                </span>
+                                {nomCompagnie(d.compagnie_id)} — {nomProduit(d.produit_id)}
+                              </p>
+                              <span
+                                className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] ${
+                                  note == null
+                                    ? "border border-dashed border-line text-ink-muted"
+                                    : note >= 70
+                                      ? "bg-emerald-600/15 text-emerald-800"
+                                      : "border border-line text-ink-soft"
+                                }`}
+                              >
+                                {note == null
+                                  ? "équivalence non disponible"
+                                  : note >= 70
+                                    ? "Compatible banque"
+                                    : `Adéquation ${note}/100`}
+                              </span>
+                            </div>
+
+                            <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 text-xs sm:grid-cols-4">
+                              <div>
+                                <p className="text-ink-muted">Coût total assurance</p>
+                                <p className="text-ink">
+                                  {total != null
+                                    ? `${Math.round(total).toLocaleString("fr-FR")} €`
+                                    : "non disponible"}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-ink-muted">Les 8 premières années</p>
+                                <p className="text-ink">
+                                  {huit != null ? `${Math.round(huit).toLocaleString("fr-FR")} €` : "non disponible"}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-ink-muted">Cotisation</p>
+                                <p className="text-ink">
+                                  {d.cotisation_mensuelle != null
+                                    ? `${Number(d.cotisation_mensuelle).toLocaleString("fr-FR", {
+                                        maximumFractionDigits: 2,
+                                      })} € / mois`
+                                    : "à renseigner"}
+                                  {d.type_cotisation ? ` (${d.type_cotisation})` : ""}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-ink-muted">Différentiel vs banque</p>
+                                <p
+                                  className={
+                                    eco == null
+                                      ? "text-ink-muted"
+                                      : eco.economie >= 0
+                                        ? "font-medium text-emerald-700"
+                                        : "font-medium text-red-700"
+                                  }
+                                >
+                                  {eco == null
+                                    ? "non disponible"
+                                    : `${eco.economie >= 0 ? "−" : "+"}${Math.abs(
+                                        Math.round(eco.economie),
+                                      ).toLocaleString("fr-FR")} €${
+                                        eco.economie >= 0 ? ` (${eco.pourcentage} %)` : ""
+                                      }`}
+                                </p>
+                              </div>
+                            </div>
+
+                            {d.type_cotisation === "CRD" && (
+                              <p className="mt-2 rounded-md bg-surface px-2 py-1 text-[11px] text-ink-soft">
+                                Cotisation sur capital restant dû : plus élevée au début puis dégressive. Cette
+                                information est reprise dans le devoir de conseil remis au client.
+                              </p>
+                            )}
+
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                              <button
+                                onClick={() => void retenirDirectement(d)}
+                                disabled={iaEtat !== "idle" || !d.compagnie_id || !d.produit_id}
+                                className={`rounded-full px-4 py-1.5 text-xs disabled:opacity-50 ${
+                                  retenu ? "border border-line bg-surface text-ink" : "bg-ink text-primary-foreground"
+                                }`}
+                              >
+                                {retenu ? "Offre retenue" : "Recommander ce devis"}
+                              </button>
+                              <button
+                                onClick={() => supprimer(d)}
+                                className="text-[11px] text-red-700 underline underline-offset-4"
+                              >
+                                Archiver
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               );
             })}
           </div>
+
+          <button
+            onClick={() => setDetailOuvert((v) => !v)}
+            className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs text-ink"
+          >
+            {detailOuvert ? "Masquer le détail technique des devis" : "Afficher le détail technique des devis"}
+          </button>
         </div>
       )}
+
 
 
 
