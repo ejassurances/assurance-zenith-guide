@@ -141,6 +141,15 @@ export function DossierDevisPanel({
   const [simuMsg, setSimuMsg] = useState<string | null>(null);
   const [simuErr, setSimuErr] = useState<string | null>(null);
 
+  /** Offre actuellement retenue sur le dossier + état du dossier (validé ou non). */
+  const [dossierInfo, setDossierInfo] = useState<{
+    compagnie_id: string | null;
+    produit_id: string | null;
+    statut: string | null;
+  }>({ compagnie_id: null, produit_id: null, statut: null });
+  /** Familles du catalogue : rattachement branche → produits proposables. */
+  const [famillesBranche, setFamillesBranche] = useState<string[]>([]);
+
   /** Comparatif : par défaut une seule offre par assureur porteur (doublons de canaux masqués). */
   const [afficherDoublons, setAfficherDoublons] = useState(false);
 
@@ -202,7 +211,7 @@ export function DossierDevisPanel({
         .maybeSingle(),
       supabase
         .from("dossiers")
-        .select("produit_id,type_assurance,recueil_besoins,mode_recommandation")
+        .select("produit_id,compagnie_id,statut,type_assurance,recueil_besoins,mode_recommandation")
         .eq("id", dossierId)
         .maybeSingle(),
     ]);
@@ -214,6 +223,8 @@ export function DossierDevisPanel({
 
     const dossier = dos.data as
       | {
+          compagnie_id?: string | null;
+          statut?: string | null;
           produit_id: string | null;
           type_assurance: string | null;
           recueil_besoins: unknown;
@@ -223,6 +234,22 @@ export function DossierDevisPanel({
     const recueil = (dossier?.recueil_besoins ?? {}) as Record<string, unknown>;
     const brancheDossier = dossier?.type_assurance ?? "";
     setModeReco(dossier?.mode_recommandation ?? "auto");
+    setDossierInfo({
+      compagnie_id: dossier?.compagnie_id ?? null,
+      produit_id: dossier?.produit_id ?? null,
+      statut: dossier?.statut ?? null,
+    });
+
+    // Familles du catalogue correspondant à la branche du dossier : le devis
+    // peut être créé chez un autre partenaire à condition de rester dans la
+    // même branche et dans le catalogue.
+    const { data: fam } = await supabase.from("produit_familles").select("id,branches");
+    const brancheCible = (branche ?? brancheDossier ?? "").trim();
+    setFamillesBranche(
+      ((fam as { id: string; branches: string[] | null }[] | null) ?? [])
+        .filter((f) => !brancheCible || (f.branches ?? []).includes(brancheCible))
+        .map((f) => f.id),
+    );
     setRecueilDossier(recueil);
 
     const nb = (v: unknown) => {
@@ -285,7 +312,7 @@ export function DossierDevisPanel({
     ]);
     setFormulesFixes((fm.data as FormuleFixe[]) ?? []);
     setOptionsFixes((op.data as OptionFixe[]) ?? []);
-  }, [dossierId]);
+  }, [dossierId, branche]);
 
 
 
