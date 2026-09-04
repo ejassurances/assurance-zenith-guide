@@ -185,11 +185,6 @@ function DossierDetail() {
     load();
   };
 
-  const etapesNav: SectionNavItem<EtapeKey>[] = ETAPES.map((e) => ({
-    key: e.key,
-    label: e.label,
-    atone: e.horsParcours,
-  }));
 
   return (
     <div className="space-y-8">
