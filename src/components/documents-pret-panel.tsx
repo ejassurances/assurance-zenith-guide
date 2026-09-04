@@ -26,13 +26,27 @@ function estDocumentPret(d: Doc): boolean {
   return MOTIF.test(d.type_document ?? "") || MOTIF.test(d.categorie ?? "") || MOTIF.test(d.file_name ?? "");
 }
 
-export function DocumentsPretPanel({ dossierId }: { dossierId: string }) {
+export function DocumentsPretPanel({
+  dossierId,
+  titre = "Offre de prêt et tableau d'amortissement",
+  filtre = "pret",
+  typeDocument = "offre_pret",
+}: {
+  dossierId: string;
+  /** Intitulé du bloc. */
+  titre?: string;
+  /** « pret » : seuls les documents de prêt ; « tous » : toutes les pièces du dossier. */
+  filtre?: "pret" | "tous";
+  /** Type enregistré lors du dépôt. */
+  typeDocument?: string;
+}) {
   const fichierUrl = useServerFn(monFichierUrl);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [clientId, setClientId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const input = useRef<HTMLInputElement | null>(null);
+
 
   const load = useCallback(async () => {
     const [{ data: rows }, { data: dossier }] = await Promise.all([
