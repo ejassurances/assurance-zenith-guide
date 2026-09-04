@@ -58,7 +58,6 @@ export function prefillRecueilEmprunteur(
   // Capital restant dû et mois restants : calculés par amortissement à la date
   // d'effet prévue de la substitution (date communiquée par la compagnie, sinon
   // création du dossier + 3 mois). Une saisie humaine n'est jamais écrasée.
-  const { situationPret } = require("./pret-amortissement") as typeof import("./pret-amortissement");
   const situation = situationPret({
     capital: Number(recueil["capital"]) || null,
     taux_pret: Number(recueil["taux_pret"]) || null,
