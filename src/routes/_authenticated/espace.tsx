@@ -241,7 +241,7 @@ function EspaceLayout() {
         </header>
 
         <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 sm:py-8">
-          <div className="mx-auto min-w-0 max-w-6xl">
+          <div className="mx-auto min-w-0 w-full max-w-[1700px]">
             <Outlet />
           </div>
         </main>
