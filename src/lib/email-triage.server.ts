@@ -307,7 +307,6 @@ export async function creerDossierDepuisEmail(
           .filter(Boolean)
           .join("\n"),
         client_id: clientId,
-        dossier_id: dossierOuvert,
         created_by: params.userId,
       });
       await admin.from("crm_emails").upsert(
