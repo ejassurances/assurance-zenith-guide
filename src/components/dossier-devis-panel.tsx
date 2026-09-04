@@ -1902,6 +1902,32 @@ export function DossierDevisPanel({
       </div>
       )}
 
+      {saisieOuverte && (
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-ink/60 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSaisieOuverte(false);
+          }}
+        >
+          <div className="mx-auto my-6 w-full max-w-3xl rounded-2xl border border-line bg-surface-elevated p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-3 border-b border-line pb-3">
+              <div className="min-w-0">
+                <h3 className="font-serif text-lg font-medium text-ink">Ajouter le prix de ce produit</h3>
+                <p className="mt-1 truncate text-xs text-ink-muted">
+                  {form.produit_id
+                    ? `${nomCompagnie(form.compagnie_id)} — ${nomProduit(form.produit_id)}`
+                    : "Choisissez le partenaire et le produit du catalogue, puis saisissez le prix obtenu."}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSaisieOuverte(false)}
+                className="shrink-0 rounded-full border border-line px-3 py-1.5 text-xs text-ink hover:bg-surface"
+              >
+                Fermer
+              </button>
+            </div>
+
       <div className="mt-4 rounded-xl border border-line bg-surface-elevated/60 p-3">
         <h3 className="text-sm font-medium text-ink">Importer un devis reçu (PDF ou photo)</h3>
         <p className="mt-1 text-xs text-ink-muted">
@@ -2168,6 +2194,9 @@ export function DossierDevisPanel({
           )}
         </div>
       </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
