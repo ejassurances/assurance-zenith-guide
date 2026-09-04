@@ -15,6 +15,7 @@ import {
   type BrancheConfig,
   type FieldConfig,
   type PersonneAssuree,
+  type SectionConfig,
 } from "@/lib/recueil-besoins-schemas";
 
 import { ContratActuelCgField, lireCgActuel } from "@/components/contrat-actuel-cg-field";
