@@ -106,6 +106,9 @@ export const CSP_EMPRUNTEUR = [
 /** Assuré emprunteur : la quotité est portée par chaque personne. */
 export type PersonneEmprunteur = {
   lien: string;
+  /** Identité de la tête assurée : reprise telle quelle dans le devoir de conseil. */
+  prenom: string;
+  nom: string;
   date_naissance: string;
   quotite_pct: number | null;
   csp: string;
@@ -985,6 +988,8 @@ export function assuresEmprunteur(value: unknown): PersonneEmprunteur[] {
       const q = Number(p.quotite_pct ?? NaN);
       return {
         lien: typeof p.lien === "string" ? p.lien : "",
+        prenom: typeof p.prenom === "string" ? p.prenom : "",
+        nom: typeof p.nom === "string" ? p.nom : "",
         date_naissance: typeof p.date_naissance === "string" ? p.date_naissance : "",
         quotite_pct: Number.isFinite(q) && q > 0 ? q : null,
         csp: typeof p.csp === "string" ? p.csp : "",

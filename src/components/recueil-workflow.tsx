@@ -352,6 +352,8 @@ export function resumeAssureEmprunteur(p: PersonneEmprunteur) {
 
 const ASSURE_EMPRUNTEUR_VIDE = (lien: string): PersonneEmprunteur => ({
   lien,
+  prenom: "",
+  nom: "",
   date_naissance: "",
   quotite_pct: null,
   csp: "",
@@ -395,6 +397,24 @@ function AssuresEmprunteurField({
                     </option>
                   ))}
                 </select>
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Prénom</span>
+                <input
+                  type="text"
+                  value={p.prenom}
+                  onChange={(e) => update(i, { prenom: e.target.value })}
+                  className={inputCls}
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Nom</span>
+                <input
+                  type="text"
+                  value={p.nom}
+                  onChange={(e) => update(i, { nom: e.target.value })}
+                  className={inputCls}
+                />
               </label>
               <label className="block">
                 <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
