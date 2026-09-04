@@ -71,8 +71,11 @@ export function RecueilWorkflow({
   aside?: React.ReactNode;
   /** Bloc propre à une étape (ex. tarification : devis API / catalogue). */
   asideSection?: (section: SectionConfig, index: number) => React.ReactNode;
+  /** Bloc pleine largeur sous l'étape (ex. devis d'assurance, colonnes par assuré). */
+  pleineLargeurSection?: (section: SectionConfig, index: number) => React.ReactNode;
   /** Rappel permanent du contexte (client, dossier) en tête de colonne latérale. */
   contexte?: React.ReactNode;
+
 }) {
 
   const steps = branche.sections;
