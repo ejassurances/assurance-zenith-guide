@@ -257,6 +257,20 @@ const BRANCHES_BASE: BrancheConfig[] = [
           },
 
           { key: "taux_pret", label: "Taux nominal du prêt", type: "number", suffix: "%" },
+          {
+            key: "taux_assurance_banque",
+            label: "Taux d'assurance de la banque",
+            type: "number",
+            suffix: "% / an",
+            help: "Taux du contrat groupe bancaire figurant sur l'offre de prêt. Il sert à chiffrer le coût de l'assurance initiale et l'économie de la substitution.",
+          },
+          {
+            key: "assurance_banque_mensuelle",
+            label: "Cotisation d'assurance actuelle",
+            type: "number",
+            suffix: "€ / mois",
+            help: "Montant mensuel d'assurance indiqué sur l'offre de prêt ou l'échéancier. S'il est renseigné, il prime sur le calcul par taux.",
+          },
         ],
       },
       {

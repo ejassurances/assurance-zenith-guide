@@ -51,6 +51,16 @@ const SCHEMAS: Record<string, { libelle: string; champs: Champ[] }> = {
       { nom: "taeg", description: "TAEG en % (nombre)" },
       { nom: "duree_mois", description: "durée totale du prêt en mois (nombre entier)" },
       { nom: "mensualite", description: "mensualité hors assurance en euros (nombre)" },
+      {
+        nom: "taux_assurance",
+        description:
+          "taux annuel de l'assurance emprunteur de la banque en % (nombre), ex. 0.36 — jamais le taux nominal du prêt",
+      },
+      {
+        nom: "cotisation_assurance_mensuelle",
+        description:
+          "cotisation mensuelle d'assurance emprunteur en euros (nombre), telle qu'indiquée sur l'offre ou l'échéancier",
+      },
       { nom: "date_document", description: "date du document au format AAAA-MM-JJ" },
       { nom: "date_premiere_echeance", description: "date de la première échéance AAAA-MM-JJ" },
       { nom: "nombre_echeances", description: "nombre d'échéances listées (nombre entier)" },
@@ -128,6 +138,8 @@ const NOMBRES = new Set([
   "taeg",
   "duree_mois",
   "mensualite",
+  "taux_assurance",
+  "cotisation_assurance_mensuelle",
   "nombre_echeances",
   "valeur_acquise",
   "valeur_debut_periode",
@@ -302,6 +314,10 @@ function valider(
   for (const t of ["taux_nominal", "taeg"]) {
     if (typeof donnees[t] === "number" && (donnees[t] as number) > 30) donnees[t] = null;
   }
+  // Taux d'assurance emprunteur : au-delà de 3 %/an, il s'agit d'une confusion
+  // avec le taux nominal du prêt — la valeur est écartée plutôt que déduite.
+  if (typeof donnees["taux_assurance"] === "number" && (donnees["taux_assurance"] as number) > 3)
+    donnees["taux_assurance"] = null;
 
   const raw = typeof brut["resume_texte"] === "string" && brut["resume_texte"].trim()
     ? (brut["resume_texte"] as string).trim().slice(0, 2000)

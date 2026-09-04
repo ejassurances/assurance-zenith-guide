@@ -31,6 +31,10 @@ const CHAMPS_PRET: { cle: string; source: string }[] = [
   { cle: "duree_mois", source: "duree_mois" },
   { cle: "taux_pret", source: "taux_nominal" },
   { cle: "date_premiere_echeance", source: "date_premiere_echeance" },
+  // Assurance emprunteur actuellement portée par la banque : base du calcul du
+  // coût initial et de l'économie réalisée par la substitution.
+  { cle: "taux_assurance_banque", source: "taux_assurance" },
+  { cle: "assurance_banque_mensuelle", source: "cotisation_assurance_mensuelle" },
 ];
 
 
