@@ -36,7 +36,7 @@ import { traiterDocumentDepose } from "@/lib/etudes.functions";
 import { ETAPES, etapeLabel, estEtapeValide, type EtapeKey } from "@/lib/pipeline-dossier";
 import { CompletudeRings } from "@/components/completude-rings";
 import { useCompletudeDossier } from "@/hooks/use-completude";
-import { SectionNav, type SectionNavItem } from "@/components/section-nav";
+
 
 export const Route = createFileRoute("/_authenticated/espace/dossiers/$id")({
   validateSearch: (search: Record<string, unknown>): { etape?: string } => ({
