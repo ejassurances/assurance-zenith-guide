@@ -191,6 +191,6 @@ export function completerAssuresDepuisOffre(
   });
 
 
-  if (ajouts.length === 0) return { recueil, ajouts: [] };
-  return { recueil: { ...recueil, assures }, ajouts };
+  if (ajouts.length === 0) return { recueil, ajouts: [], corrections };
+  return { recueil: { ...recueil, assures }, ajouts, corrections };
 }
