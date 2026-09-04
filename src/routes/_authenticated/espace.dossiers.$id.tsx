@@ -36,7 +36,7 @@ import { traiterDocumentDepose } from "@/lib/etudes.functions";
 import { ETAPES, etapeLabel, estEtapeValide, type EtapeKey } from "@/lib/pipeline-dossier";
 import { CompletudeRings } from "@/components/completude-rings";
 import { useCompletudeDossier } from "@/hooks/use-completude";
-import { SectionNav, type SectionNavItem } from "@/components/section-nav";
+
 
 export const Route = createFileRoute("/_authenticated/espace/dossiers/$id")({
   validateSearch: (search: Record<string, unknown>): { etape?: string } => ({
@@ -185,11 +185,6 @@ function DossierDetail() {
     load();
   };
 
-  const etapesNav: SectionNavItem<EtapeKey>[] = ETAPES.map((e) => ({
-    key: e.key,
-    label: e.label,
-    atone: e.horsParcours,
-  }));
 
   return (
     <div className="space-y-8">
@@ -268,14 +263,6 @@ function DossierDetail() {
             />
           )}
         </div>
-        <aside className="lg:sticky lg:top-6 lg:self-start">
-          <SectionNav
-            title="Étapes du dossier"
-            items={etapesNav}
-            active={displayedStep}
-            onSelect={setSelectedStep}
-          />
-        </aside>
       </div>
     </div>
   );
