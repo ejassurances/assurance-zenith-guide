@@ -344,8 +344,9 @@ export function resumePersonne(p: PersonneAssuree) {
 /** Résumé lisible d'un assuré emprunteur : « Co-emprunteur, 38 ans, 40 % ». */
 export function resumeAssureEmprunteur(p: PersonneEmprunteur) {
   const lien = LIENS_EMPRUNTEUR.find((l) => l.value === p.lien)?.label ?? "Assuré";
+  const identite = [p.prenom, p.nom].map((v) => v.trim()).filter(Boolean).join(" ");
   const age = ageDepuisDateNaissance(p.date_naissance);
-  return [lien, age !== null ? `${age} ans` : null, p.quotite_pct != null ? `${p.quotite_pct} %` : null]
+  return [identite || null, lien, age !== null ? `${age} ans` : null, p.quotite_pct != null ? `${p.quotite_pct} %` : null]
     .filter(Boolean)
     .join(", ");
 }
