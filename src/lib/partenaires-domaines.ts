@@ -19,6 +19,9 @@ export const DOMAINES_PARTENAIRES: Record<string, string> = {
   "substitutions.fr": "Cardif (service résiliation)",
   "cardif.fr": "Cardif",
   "cardif.com": "Cardif",
+  // iChange — service de substitution / accompagnement (groupe Kereis).
+  "iassure.fr": "iChange (service substitution)",
+  "ichange.fr": "iChange (service substitution)",
   // Néoliane.
   "neoliane.fr": "Néoliane",
   "neoliane.com": "Néoliane",
