@@ -103,7 +103,7 @@ export function DocumentsPretPanel({
           file_size: file.size,
           mime_type: file.type || null,
           categorie: "dossier",
-          type_document: "offre_pret",
+          type_document: typeDocument,
         })
         .select("id")
         .maybeSingle();
@@ -111,13 +111,14 @@ export function DocumentsPretPanel({
 
       // Marque la pièce requise « Offre de prêt / tableau d'amortissement ».
       const docId = (inserted as { id: string } | null)?.id ?? null;
-      if (docId) {
+      if (docId && typeDocument === "offre_pret") {
         await supabase
           .from("dossier_pieces_requises")
           .update({ statut: "recue", recue_le: new Date().toISOString(), document_id: docId })
           .eq("dossier_id", dossierId)
           .in("code", ["offre_pret", "tableau_amortissement"]);
       }
+
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Dépôt impossible");
