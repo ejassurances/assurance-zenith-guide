@@ -263,14 +263,6 @@ function DossierDetail() {
             />
           )}
         </div>
-        <aside className="lg:sticky lg:top-6 lg:self-start">
-          <SectionNav
-            title="Étapes du dossier"
-            items={etapesNav}
-            active={displayedStep}
-            onSelect={setSelectedStep}
-          />
-        </aside>
       </div>
     </div>
   );
