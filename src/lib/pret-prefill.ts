@@ -97,3 +97,70 @@ export function prefillRecueilEmprunteur(
 
   return { recueil, ajouts, manquants };
 }
+
+/** Identité comparable : sans accents, sans ponctuation, en minuscules. */
+function jetons(...parties: (string | null | undefined)[]): string[] {
+  return parties
+    .filter(Boolean)
+    .join(" ")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length > 1);
+}
+
+export interface EmprunteurLu {
+  nom?: string | null;
+  prenom?: string | null;
+  date_naissance?: string | null;
+  quotite_pct?: number | null;
+  csp?: string | null;
+  fumeur?: boolean | null;
+}
+
+/**
+ * Complète les personnes assurées du recueil avec ce que l'offre de prêt
+ * indique RÉELLEMENT (quotité, date de naissance, profession, statut fumeur).
+ * Une valeur déjà renseignée n'est jamais remplacée, et rien n'est déduit :
+ * une quotité absente du document reste vide.
+ */
+export function completerAssuresDepuisOffre(
+  recueil: Record<string, unknown>,
+  emprunteurs: EmprunteurLu[],
+): { recueil: Record<string, unknown>; ajouts: string[] } {
+  const assures = Array.isArray(recueil["assures"])
+    ? (recueil["assures"] as Record<string, unknown>[]).map((a) => ({ ...a }))
+    : [];
+  if (assures.length === 0 || emprunteurs.length === 0) return { recueil, ajouts: [] };
+
+  const ajouts: string[] = [];
+  assures.forEach((a, i) => {
+    const cibles = jetons(a["nom"] as string, a["prenom"] as string);
+    let lu =
+      emprunteurs.find((e) => {
+        const src = jetons(e.nom, e.prenom);
+        return src.some((t) => cibles.includes(t));
+      }) ?? null;
+    // Une seule personne de part et d'autre : rapprochement direct.
+    if (!lu && assures.length === 1 && emprunteurs.length === 1) lu = emprunteurs[0]!;
+    if (!lu) return;
+
+    const poser = (cle: string, valeur: unknown) => {
+      if (vide(valeur)) return;
+      if (!vide(a[cle])) return;
+      a[cle] = valeur;
+      ajouts.push(`assures[${i}].${cle}`);
+    };
+    poser("quotite_pct", typeof lu.quotite_pct === "number" ? lu.quotite_pct : null);
+    poser("date_naissance", lu.date_naissance);
+    poser("csp", lu.csp);
+    if (lu.fumeur === true && a["fumeur"] !== true) {
+      a["fumeur"] = true;
+      ajouts.push(`assures[${i}].fumeur`);
+    }
+  });
+
+  if (ajouts.length === 0) return { recueil, ajouts: [] };
+  return { recueil: { ...recueil, assures }, ajouts };
+}

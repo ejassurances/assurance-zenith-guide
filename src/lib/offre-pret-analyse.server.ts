@@ -209,3 +209,44 @@ export async function analyserOffrePretFichier(fichier: {
     emprunteurs: lisible ? normaliserEmprunteurs(brut["emprunteurs"]) : [],
   };
 }
+
+const BUCKETS = ["dossier-documents", "conformite-documents"];
+const TAILLE_MAX = 12 * 1024 * 1024;
+
+/**
+ * Lit un document DÉJÀ DÉPOSÉ (offre de prêt / tableau d'amortissement) et en
+ * retourne les caractéristiques du prêt et les emprunteurs (dont la quotité).
+ * Aucune écriture en base.
+ */
+export async function analyserOffrePretDocument(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: { from: (t: string) => any; storage: { from: (b: string) => any } },
+  documentId: string,
+): Promise<AnalyseOffrePret> {
+  const { data: doc } = await admin
+    .from("documents")
+    .select("id, file_name, mime_type, storage_path")
+    .eq("id", documentId)
+    .maybeSingle();
+  if (!doc) throw new Error("Document introuvable");
+  const d = doc as { file_name: string | null; mime_type: string | null; storage_path: string };
+
+  let blob: Blob | null = null;
+  for (const bucket of BUCKETS) {
+    const { data } = await admin.storage.from(bucket).download(d.storage_path);
+    if (data) {
+      blob = data as Blob;
+      break;
+    }
+  }
+  if (!blob) throw new Error("Fichier indisponible dans le stockage");
+  const octets = Buffer.from(await blob.arrayBuffer());
+  if (octets.byteLength === 0) throw new Error("Fichier vide");
+  if (octets.byteLength > TAILLE_MAX) throw new Error("Fichier trop volumineux (12 Mo maximum)");
+
+  return analyserOffrePretFichier({
+    nom: d.file_name || "offre-de-pret.pdf",
+    mime: blob.type || d.mime_type || "application/pdf",
+    base64: octets.toString("base64"),
+  });
+}

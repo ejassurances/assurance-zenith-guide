@@ -64,9 +64,20 @@ export const analyserDocumentRecueil = createServerFn({ method: "POST" })
         .map((d) => d.id);
     }
 
+    const { analyserOffrePretDocument } = await import("@/lib/offre-pret-analyse.server");
+    const { completerAssuresDepuisOffre } = await import("@/lib/pret-prefill");
+
     // Chaque document est isolé : un échec n'interrompt pas les suivants.
     let statut = "indisponible";
     const donneesCumul: Record<string, unknown> = {};
+    const emprunteursLus: {
+      nom: string;
+      prenom: string;
+      date_naissance: string;
+      quotite_pct: number | null;
+      csp: string;
+      fumeur: boolean | null;
+    }[] = [];
     for (const id of ids) {
       try {
         await classifierDocument(supabaseAdmin, id);
@@ -83,6 +94,19 @@ export const analyserDocumentRecueil = createServerFn({ method: "POST" })
       } catch {
         // Document illisible ou analyse indisponible : saisie manuelle.
       }
+      // Lecture complémentaire : identité et QUOTITÉ de chaque emprunteur, qui
+      // figurent sur l'offre de prêt et le tableau d'amortissement.
+      try {
+        const lu = await analyserOffrePretDocument(supabaseAdmin, id);
+        if (lu.lisible) {
+          for (const [cle, valeur] of Object.entries(lu.pret)) {
+            if (donneesCumul[cle] === undefined) donneesCumul[cle] = valeur;
+          }
+          for (const e of lu.emprunteurs) emprunteursLus.push(e);
+        }
+      } catch {
+        // Lecture complémentaire indisponible : les données restent manuelles.
+      }
     }
 
     const { data: dossierRow } = await supabaseAdmin
@@ -97,7 +121,8 @@ export const analyserDocumentRecueil = createServerFn({ method: "POST" })
       created_at: string | null;
     } | null;
 
-    if (!dossier || dossier.type_assurance !== "emprunteur" || Object.keys(donneesCumul).length === 0) {
+    const rienALire = Object.keys(donneesCumul).length === 0 && emprunteursLus.length === 0;
+    if (!dossier || dossier.type_assurance !== "emprunteur" || rienALire) {
       return {
         statut,
         ajouts: [] as string[],
@@ -106,11 +131,14 @@ export const analyserDocumentRecueil = createServerFn({ method: "POST" })
       };
     }
 
-    const { recueil, ajouts, manquants } = prefillRecueilEmprunteur(
-      dossier.recueil_besoins,
-      donneesCumul,
-      { dossier_cree_le: dossier.created_at },
-    );
+    const base = prefillRecueilEmprunteur(dossier.recueil_besoins, donneesCumul, {
+      dossier_cree_le: dossier.created_at,
+    });
+    // Quotités et identités relevées sur le document, sans écraser une saisie.
+    const complet = completerAssuresDepuisOffre(base.recueil, emprunteursLus);
+    const recueil = complet.recueil;
+    const ajouts = [...base.ajouts, ...complet.ajouts];
+    const manquants = base.manquants;
 
     if (ajouts.length > 0) {
       const { error } = await supabaseAdmin
