@@ -521,7 +521,51 @@ export function NewDossierForm({
             </button>
           ))}
         </div>
+
+        {type === "emprunteur" ? (
+          <div className="mt-6 rounded-2xl border border-line bg-background/40 p-4">
+            <p className="text-sm font-medium text-ink">Offre de prêt ou tableau d'amortissement (facultatif)</p>
+            <p className="mt-1 text-xs text-ink-muted">
+              Déposez le document : les caractéristiques du prêt et les emprunteurs sont relevés automatiquement, les
+              fiches clients manquantes sont créées à l'enregistrement. Aucune information déjà saisie n'est remplacée.
+            </p>
+            <input
+              type="file"
+              multiple
+              accept="application/pdf,image/*"
+              disabled={analysing}
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? []);
+                if (files.length > 0) void analyserOffreDeposee(files);
+              }}
+              className="mt-3 block w-full text-sm"
+            />
+            {offreFiles.length > 0 ? (
+              <ul className="mt-2 space-y-1 text-xs text-ink-muted">
+                {offreFiles.map((f) => (
+                  <li key={f.name}>{f.name}</li>
+                ))}
+              </ul>
+            ) : null}
+            {analyseEtat ? <p className="mt-3 text-xs text-ink">{analyseEtat}</p> : null}
+            {emprunteurs.length > 0 ? (
+              <ul className="mt-3 space-y-1 text-xs text-ink">
+                {emprunteurs.map((e, i) => (
+                  <li key={`${e.nom}-${i}`}>
+                    {[e.prenom, e.nom].filter(Boolean).join(" ")}
+                    {e.date_naissance ? ` · né(e) le ${e.date_naissance}` : ""}
+                    {e.quotite_pct !== null ? ` · quotité ${e.quotite_pct} %` : ""}
+                    {" — "}
+                    {e.client_id ? `fiche existante${e.client_reference ? ` ${e.client_reference}` : ""}` : "fiche à créer"}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="mt-6 flex justify-end">
+
           <button
             onClick={() => setStep(2)}
             className="rounded-full bg-[#0A192F] px-5 py-2 text-sm font-medium text-white"
