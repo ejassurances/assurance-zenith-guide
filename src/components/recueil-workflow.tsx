@@ -54,7 +54,9 @@ export function RecueilWorkflow({
   children,
   aside,
   asideSection,
+  pleineLargeurSection,
   contexte,
+
 
 }: {
   branche: BrancheConfig;
@@ -71,8 +73,11 @@ export function RecueilWorkflow({
   aside?: React.ReactNode;
   /** Bloc propre à une étape (ex. tarification : devis API / catalogue). */
   asideSection?: (section: SectionConfig, index: number) => React.ReactNode;
+  /** Bloc pleine largeur sous l'étape (ex. devis d'assurance, colonnes par assuré). */
+  pleineLargeurSection?: (section: SectionConfig, index: number) => React.ReactNode;
   /** Rappel permanent du contexte (client, dossier) en tête de colonne latérale. */
   contexte?: React.ReactNode;
+
 }) {
 
   const steps = branche.sections;
@@ -153,7 +158,8 @@ export function RecueilWorkflow({
 
       <div className="px-6 py-6">
         {!isRecap && section && (
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <div className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
             <div className="space-y-8">
               <div>
                 <h3 className="font-serif text-xl text-ink">{section.title}</h3>
@@ -186,8 +192,11 @@ export function RecueilWorkflow({
                 {asideSection?.(section, index)}
               </aside>
             )}
+            </div>
+            {pleineLargeurSection?.(section, index)}
           </div>
         )}
+
 
         {isRecap && (
           <div className="space-y-6">
