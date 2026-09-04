@@ -62,7 +62,10 @@ export function RecueilWorkflow({
   dossierId?: string | null;
   /** Contenu affiché sur la dernière étape (récapitulatif) */
   children?: React.ReactNode;
+  /** Bloc affiché sous les questions à chaque étape (dépôt de documents…) */
+  aside?: React.ReactNode;
 }) {
+
   const steps = branche.sections;
   const total = steps.length + 1; // + récapitulatif
   const [index, setIndex] = useState(0);
