@@ -626,7 +626,7 @@ export function DossierDevisPanel({
         `Devis lu${lu.assure_nom ? ` (assuré : ${lu.assure_nom})` : ""}. Vérifiez les valeurs proposées ci-dessous puis enregistrez.` +
           (manque.length ? ` À compléter à la main : ${manque.join(", ")}.` : ""),
       );
-      document.getElementById("saisie-devis-manuel")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setSaisieOuverte(true);
     } catch (e) {
       setImportMsg(null);
       setErr(e instanceof Error ? e.message : "Import du devis impossible");
@@ -711,9 +711,6 @@ export function DossierDevisPanel({
     setForm((f) => ({ ...f, compagnie_id: p.compagnie_id, produit_id: p.id, formule_id: "" }));
     setMotifSaisie("sans_api");
     setSaisieOuverte(true);
-    setTimeout(() => {
-      document.getElementById("saisie-devis-manuel")?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 50);
   };
 
 
@@ -991,9 +988,6 @@ export function DossierDevisPanel({
           <button
             onClick={() => {
               setSaisieOuverte(true);
-              setTimeout(() => {
-                document.getElementById("saisie-devis-manuel")?.scrollIntoView({ behavior: "smooth", block: "center" });
-              }, 50);
             }}
             className="shrink-0 rounded-full bg-ink px-4 py-2 text-xs text-primary-foreground"
           >
@@ -1954,9 +1948,7 @@ export function DossierDevisPanel({
 
       <div
         id="saisie-devis-manuel"
-        className={`mt-4 grid gap-3 rounded-xl border-t border-line pt-4 sm:grid-cols-2 ${
-          saisieOuverte ? "ring-2 ring-[color:var(--crm-gold)] ring-offset-2 ring-offset-surface-elevated" : ""
-        }`}
+        className="mt-4 grid gap-3 rounded-xl border-t border-line pt-4 sm:grid-cols-2"
       >
         <div className="sm:col-span-2">
           <h3 className="text-sm font-medium text-ink">Nouveau devis — autre partenaire ou autre produit</h3>
