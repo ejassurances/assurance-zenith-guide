@@ -380,6 +380,119 @@ export async function genererPdfDevoirConseil(input: DevoirPdfInput): Promise<Ui
     { gap: 4 },
   );
 
+  /* ------- Detail par assure (emprunteur : un pret, plusieurs tetes) ------- */
+  const assures: any[] = Array.isArray(c.assures) ? c.assures : [];
+  if (assures.length > 0) {
+    titreSection(
+      assures.length > 1
+        ? "Assures du pret : exigences et couverture de chaque emprunteur"
+        : "Assure du pret : exigences et couverture",
+    );
+    para(
+      "Le present dossier porte sur un pret unique comportant " +
+        `${assures.length} tete${assures.length > 1 ? "s" : ""} assuree${assures.length > 1 ? "s" : ""}. ` +
+        "Chaque emprunteur dispose de sa propre quotite, de ses propres exigences et de son propre contrat d'assurance.",
+      { size: 8.5, color: MUTED, gap: 6 },
+    );
+
+    for (const a of assures) {
+      ensure(70);
+      const titre =
+        [a.nom, a.lien_libelle].filter(Boolean).join(" - ") || `Assure ${a.rang ?? ""}`.trim();
+      page.drawRectangle({ x: MARGIN, y: y - 18, width: CONTENT, height: 18, color: SOFT });
+      page.drawText(safe(titre.toUpperCase()), {
+        x: MARGIN + 8,
+        y: y - 12.5,
+        size: 8.5,
+        font: bold,
+        color: INK,
+      });
+      const droite = [
+        a.quotite_pct != null ? `Quotite ${a.quotite_pct} %` : null,
+        a.age != null ? `${a.age} ans` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      if (droite) {
+        const w = font.widthOfTextAtSize(safe(droite), 8.5);
+        page.drawText(safe(droite), {
+          x: A4[0] - MARGIN - 8 - w,
+          y: y - 12.5,
+          size: 8.5,
+          font,
+          color: MUTED,
+        });
+      }
+      y -= 24;
+
+      if (a.date_naissance) kv("Date de naissance", dateFr(a.date_naissance));
+      if (a.csp) kv("Categorie socio-professionnelle", String(a.csp));
+      kv("Statut fumeur", a.fumeur ? "Fumeur" : "Non-fumeur");
+
+      const exigences: string[] = Array.isArray(a.exigences) ? a.exigences : [];
+      if (exigences.length > 0) {
+        para("Exigences et besoins propres a cet assure :", { size: 8.5, bold: true });
+        for (const e of exigences) para(`- ${e}`, { size: 8.5, x: MARGIN + 10, width: CONTENT - 10 });
+        y -= 2;
+      }
+
+      const cv = a.couverture ?? null;
+      if (cv) {
+        para(
+          cv.origine === "contrat"
+            ? "Assurance personnelle en place pour cet assure :"
+            : "Solution retenue pour cet assure :",
+          { size: 8.5, bold: true },
+        );
+        const sol = [cv.compagnie, cv.produit].filter(Boolean).join(" - ");
+        if (sol) kv("Compagnie / produit", sol, { color: OK });
+        if (cv.formule) kv("Formule", String(cv.formule));
+        if (cv.numero) kv("Numero de contrat", String(cv.numero));
+        if (cv.quotite_pct != null) kv("Quotite assuree", `${cv.quotite_pct} %`);
+        if (cv.type_cotisation)
+          kv(
+            "Mode de cotisation",
+            cv.type_cotisation === "CRD"
+              ? "CRD - cotisation degressive sur capital restant du"
+              : cv.type_cotisation === "CI"
+                ? "CI - cotisation constante sur capital initial"
+                : String(cv.type_cotisation),
+          );
+        if (cv.cotisation_mensuelle != null)
+          kv("Cotisation mensuelle", euro2(Number(cv.cotisation_mensuelle)));
+        if (cv.cout_total != null) kv("Cout total sur la duree", euro(Number(cv.cout_total)));
+        if (cv.garanties) kv("Garanties", String(cv.garanties));
+      } else {
+        para(
+          "Aucun contrat ni devis retenu n'est encore rattache a cet assure : sa couverture reste a l'etude.",
+          { size: 8.5, color: BAD },
+        );
+      }
+
+      const etudiees: any[] = Array.isArray(a.couvertures_etudiees) ? a.couvertures_etudiees : [];
+      const autres = etudiees.filter(
+        (e) => !cv || e.compagnie !== cv.compagnie || e.produit !== cv.produit,
+      );
+      if (autres.length > 0) {
+        para(
+          `Autres offres etudiees pour cet assure : ${autres
+            .map((e) =>
+              [
+                [e.compagnie, e.produit].filter(Boolean).join(" - "),
+                e.cotisation_mensuelle != null ? `${euro2(Number(e.cotisation_mensuelle))} /mois` : null,
+              ]
+                .filter(Boolean)
+                .join(" · "),
+            )
+            .join(" ; ")}.`,
+          { size: 8.5, color: MUTED },
+        );
+      }
+      y -= 8;
+    }
+  }
+
+
   /* ---------------------- 3. Offres comparées ---------------------- */
   const offres: OffreComparee[] = Array.isArray(conseil.offres) ? conseil.offres : [];
   if (offres.length > 0) {

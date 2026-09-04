@@ -10,6 +10,7 @@ import {
   prefillDevoirConseil,
 } from "@/lib/devoir-conseil-modeles";
 import { grillePourFamille, synthetiserGaranties, type ValeursGrille } from "@/lib/garanties-grille";
+import { assuresDevoirConseil } from "@/lib/devoir-conseil-assures.server";
 
 export type DevoirConseilSaisie = {
   recommandation: string;
@@ -295,6 +296,12 @@ export async function envoyerDevoirConseil(
       garanties.grille,
       garanties.valeurs,
     ),
+    /**
+     * Emprunteur : un dossier = un prêt, plusieurs têtes assurées. Chaque
+     * assuré est restitué avec son identité, sa quotité, ses exigences propres
+     * et l'assurance qui le concerne (contrat en cours ou devis retenu).
+     */
+    assures: await assuresDevoirConseil(supabase, dossierId, d),
 
     modele: modele.branche,
     modele_libelle: modele.libelle,

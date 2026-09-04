@@ -344,14 +344,17 @@ export function resumePersonne(p: PersonneAssuree) {
 /** Résumé lisible d'un assuré emprunteur : « Co-emprunteur, 38 ans, 40 % ». */
 export function resumeAssureEmprunteur(p: PersonneEmprunteur) {
   const lien = LIENS_EMPRUNTEUR.find((l) => l.value === p.lien)?.label ?? "Assuré";
+  const identite = [p.prenom, p.nom].map((v) => v.trim()).filter(Boolean).join(" ");
   const age = ageDepuisDateNaissance(p.date_naissance);
-  return [lien, age !== null ? `${age} ans` : null, p.quotite_pct != null ? `${p.quotite_pct} %` : null]
+  return [identite || null, lien, age !== null ? `${age} ans` : null, p.quotite_pct != null ? `${p.quotite_pct} %` : null]
     .filter(Boolean)
     .join(", ");
 }
 
 const ASSURE_EMPRUNTEUR_VIDE = (lien: string): PersonneEmprunteur => ({
   lien,
+  prenom: "",
+  nom: "",
   date_naissance: "",
   quotite_pct: null,
   csp: "",
@@ -395,6 +398,24 @@ function AssuresEmprunteurField({
                     </option>
                   ))}
                 </select>
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Prénom</span>
+                <input
+                  type="text"
+                  value={p.prenom}
+                  onChange={(e) => update(i, { prenom: e.target.value })}
+                  className={inputCls}
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Nom</span>
+                <input
+                  type="text"
+                  value={p.nom}
+                  onChange={(e) => update(i, { nom: e.target.value })}
+                  className={inputCls}
+                />
               </label>
               <label className="block">
                 <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
