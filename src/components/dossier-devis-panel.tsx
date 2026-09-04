@@ -980,6 +980,155 @@ export function DossierDevisPanel({
         </div>
       )}
 
+      {estEmprunteur && (
+        <div className="mt-4 rounded-xl border border-line bg-surface p-4">
+          <h3 className="text-sm font-medium text-ink">Produits du catalogue et adéquation au dossier</h3>
+          <p className="mt-1 text-xs text-ink-muted">
+            Le contrat est choisi dans le catalogue du cabinet selon la situation du prospect
+            {notesProduits.size > 0 &&
+            [...notesProduits.values()][0] &&
+            [...notesProduits.values()][0]!.profils.length > 0
+              ? ` (${[...notesProduits.values()][0]!.profils.map((p) => LIBELLES_PROFILS[p]).join(", ")})`
+              : ""}
+            . La note est calculée uniquement sur les grilles de garanties validées dans le CRM : un produit sans
+            grille validée n'est pas noté. Pour chaque produit retenu, ajoutez le prix obtenu auprès du partenaire —
+            le classement par prix se fait automatiquement ci-dessous.
+          </p>
+
+          {produitsNotes.length === 0 && (
+            <p className="mt-3 text-sm text-ink-muted">
+              Aucun produit emprunteur dans le catalogue : ajoutez-les depuis les fiches partenaires.
+            </p>
+          )}
+
+          <div className="mt-3 space-y-2">
+            {produitsNotes.map(({ produit, note }) => {
+              const devisProduit = devis.filter((d) => d.produit_id === produit.id);
+              return (
+                <div key={produit.id} className="rounded-xl border border-line bg-surface-elevated/60 p-3">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-ink">
+                        {nomCompagnie(produit.compagnie_id)} — {produit.nom}
+                        {produit.assureur_porteur && (
+                          <span className="text-ink-soft"> · porté par {produit.assureur_porteur}</span>
+                        )}
+                      </p>
+                      {note?.score != null ? (
+                        <p className="mt-1 text-xs text-ink-soft">
+                          {note.points_forts.length > 0 && <>Points forts : {note.points_forts.join(", ")}. </>}
+                          {note.points_faibles.length > 0 && <>À surveiller : {note.points_faibles.join(", ")}.</>}
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-xs text-ink-muted">
+                          Grille de garanties non validée pour ce produit : adéquation non disponible pour
+                          comparaison.
+                        </p>
+                      )}
+                      {devisProduit.length > 0 && (
+                        <p className="mt-1 text-xs text-ink-muted">
+                          {devisProduit.length} prix déjà saisi(s) pour ce produit sur le dossier.
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`inline-flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-full text-xs ${
+                          note?.score == null
+                            ? "border border-dashed border-line text-ink-muted"
+                            : note.score >= 70
+                              ? "bg-[color:var(--crm-gold)]/25 text-ink"
+                              : "border border-line text-ink-soft"
+                        }`}
+                      >
+                        {note?.score == null ? "—" : <strong>{note.score}</strong>}
+                        {note?.score != null && <span className="text-[10px] text-ink-muted">/100</span>}
+                      </span>
+                      <button
+                        onClick={() => preparerDevisProduit(produit)}
+                        className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs text-ink"
+                      >
+                        Ajouter le prix de ce produit
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {estEmprunteur && classementPrix.length > 0 && (
+        <div className="mt-4 rounded-xl border border-line bg-surface p-4">
+          <h3 className="text-sm font-medium text-ink">Classement des offres — du moins cher au plus cher</h3>
+          <p className="mt-1 text-xs text-ink-muted">
+            Coût calculé sur la période restant à courir
+            {moisRestants ? ` (${moisRestants} mois)` : ""} et comparé à l'assurance actuelle de la banque.
+          </p>
+          <div className="mt-3 space-y-2">
+            {classementPrix.map((d, i) => {
+              const eco = economiePourDevis(d);
+              const total = coutTotalDevis(d);
+              const note = notesProduits.get(d.produit_id ?? "")?.score ?? null;
+              const retenu = estDevisRetenu(d);
+              return (
+                <div
+                  key={d.id}
+                  className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3 text-sm ${
+                    retenu
+                      ? "border-[color:var(--crm-gold)] bg-[color:var(--crm-gold)]/10"
+                      : "border-line bg-surface-elevated/60"
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium text-ink">
+                      <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-ink text-xs text-primary-foreground">
+                        {i + 1}
+                      </span>
+                      {nomCompagnie(d.compagnie_id)} — {nomProduit(d.produit_id)}
+                      {assuresRecueil.length >= 2 && (
+                        <span className="text-ink-soft">
+                          {" "}
+                          ·{" "}
+                          {assuresRecueil.find((a) => a.rang === (d.assure_rang ?? 1))?.label ??
+                            `Tête ${d.assure_rang ?? 1}`}
+                        </span>
+                      )}
+                    </p>
+                    <p className="mt-1 text-xs text-ink-soft">
+                      {d.cotisation_mensuelle != null
+                        ? `${Number(d.cotisation_mensuelle).toLocaleString("fr-FR", { maximumFractionDigits: 2 })} € / mois`
+                        : "cotisation à renseigner"}
+                      {total != null && ` · ${Math.round(total).toLocaleString("fr-FR")} € au total`}
+                      {note != null && ` · adéquation ${note}/100`}
+                    </p>
+                    <p className="mt-1 text-xs text-ink">
+                      {eco
+                        ? eco.economie > 0
+                          ? `Économie ${Math.round(eco.economie).toLocaleString("fr-FR")} € (${eco.pourcentage} %)`
+                          : `Plus cher que la banque de ${Math.abs(Math.round(eco.economie)).toLocaleString("fr-FR")} €`
+                        : "Économie non chiffrable : complétez l'assurance bancaire actuelle et le montant du devis."}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => void retenirDirectement(d)}
+                    disabled={iaEtat !== "idle" || !d.compagnie_id || !d.produit_id}
+                    className={`shrink-0 rounded-full px-4 py-2 text-xs disabled:opacity-50 ${
+                      retenu ? "border border-line bg-surface text-ink" : "bg-ink text-primary-foreground"
+                    }`}
+                  >
+                    {retenu ? "Offre retenue" : "Recommander ce devis"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+
+
       <div className="mt-4 space-y-2">
         {devis.length === 0 && (
           <p className="rounded-xl border border-dashed border-line bg-surface px-3 py-4 text-sm text-ink-muted">
