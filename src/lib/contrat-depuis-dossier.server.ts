@@ -30,6 +30,25 @@ function ajouterMois(iso: string, mois: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** Personnes assurées sur le prêt, telles que saisies dans le recueil. */
+function assuresDuPret(
+  recueil: unknown,
+): { libelle: string | null; quotite_pct: number | null }[] {
+  const valeur = (recueil as Record<string, unknown> | null)?.["assures"];
+  if (!Array.isArray(valeur)) return [];
+  return valeur
+    .filter((p): p is Record<string, unknown> => !!p && typeof p === "object")
+    .map((p) => {
+      const q = Number(p["quotite_pct"] ?? NaN);
+      const nom = typeof p["nom"] === "string" && p["nom"] ? p["nom"] : null;
+      const lien = typeof p["lien"] === "string" ? p["lien"] : "";
+      return {
+        libelle: nom ?? (lien === "co_emprunteur" ? "Co-emprunteur" : lien === "principal" ? null : lien || null),
+        quotite_pct: Number.isFinite(q) && q > 0 ? q : null,
+      };
+    });
+}
+
 export interface ResultatContratDossier {
   contrat_id: string;
   /** Un contrat par personne assurée sur le prêt (emprunteur). */
