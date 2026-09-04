@@ -277,26 +277,86 @@ export async function creerDossierDepuisEmail(
 
   if (!classificationConfiante(triage)) throw new Error("Classification insuffisante");
 
-  const { data: cree, error } = await admin
-    .from("clients")
-    .insert({
-      nom: triage.nom!,
-      prenom: triage.prenom,
-      email: email.expediteur_email,
-      mobile: triage.telephone,
-      statut: "prospect",
-      origine: "internet",
-      etiquettes: ["email-entrant", "agent-commercial"],
-      created_by: params.userId,
-    })
-    .select("id")
-    .single();
-  if (error || !cree) throw new Error(error?.message ?? "Création de la fiche impossible");
-  const clientId = cree.id;
+  // Dédoublonnage : le client est peut-être déjà connu (email OU nom + prénom
+  // cités dans le corps du mail, cas des suivis partenaires / substitutions).
+  const { trouverClientExistant, trouverDossierOuvert } = await import("@/lib/client-dedoublonnage.server");
+  const deja = await trouverClientExistant(admin, {
+    email: email.expediteur_email,
+    nom: triage.nom,
+    prenom: triage.prenom,
+  });
 
-  // Contrôle LCB-FT / OpenSanctions automatique sur toute nouvelle fiche.
-  const { lancerLcbAutomatique } = await import("@/lib/dossier-automation.server");
-  await lancerLcbAutomatique(admin, { client_id: clientId, nom: triage.nom!, prenom: triage.prenom });
+  let clientId: string;
+  if (deja) {
+    clientId = deja.client_id;
+    // Un dossier ouvert existe déjà pour cette branche : on ne duplique pas,
+    // l'email est rattaché et une tâche de suivi est déposée.
+    const dossierOuvert = await trouverDossierOuvert(admin, {
+      client_id: clientId,
+      type_assurance: triage.branche ?? null,
+    });
+    if (dossierOuvert) {
+      const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
+      await creerTacheAdmin(admin, {
+        titre: `Email entrant sur un dossier existant — ${triage.nom ?? email.expediteur_email}`,
+        description: [
+          `Objet du mail : ${email.sujet ?? "(sans objet)"}`,
+          `Rapprochement automatique (${deja.via}) — aucun nouveau dossier créé.`,
+          triage.resume,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+        client_id: clientId,
+        dossier_id: dossierOuvert,
+        created_by: params.userId,
+      });
+      await admin.from("crm_emails").upsert(
+        {
+          gmail_message_id: params.gmail_message_id,
+          gmail_thread_id: params.gmail_thread_id ?? null,
+          direction: "entrant",
+          recu_le: params.recu_le ?? null,
+          client_id: clientId,
+          dossier_id: dossierOuvert,
+          notes: `Rattaché au dossier existant (rapprochement ${deja.via}) — aucun doublon créé`,
+          triage_ia: JSON.parse(JSON.stringify({ agent: "commercial", ...triage })),
+          triage_le: new Date().toISOString(),
+          created_by: params.userId,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "gmail_message_id" },
+      );
+      return {
+        client_id: clientId,
+        dossier_id: dossierOuvert,
+        dossier_reference: null as string | null,
+        lettre_envoyee: false,
+        rapproche: deja.via,
+      };
+    }
+  } else {
+    const { data: cree, error } = await admin
+      .from("clients")
+      .insert({
+        nom: triage.nom!,
+        prenom: triage.prenom,
+        email: email.expediteur_email,
+        mobile: triage.telephone,
+        statut: "prospect",
+        origine: "internet",
+        etiquettes: ["email-entrant", "agent-commercial"],
+        created_by: params.userId,
+      })
+      .select("id")
+      .single();
+    if (error || !cree) throw new Error(error?.message ?? "Création de la fiche impossible");
+    clientId = cree.id;
+
+    // Contrôle LCB-FT / OpenSanctions automatique sur toute nouvelle fiche.
+    const { lancerLcbAutomatique } = await import("@/lib/dossier-automation.server");
+    await lancerLcbAutomatique(admin, { client_id: clientId, nom: triage.nom!, prenom: triage.prenom });
+  }
+
 
   const { creerDossierAutomatique } = await import("@/lib/dossier-automation.server");
   const dossier = await creerDossierAutomatique(admin, {
