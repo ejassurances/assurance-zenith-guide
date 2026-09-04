@@ -18,13 +18,18 @@ export interface PrefillEmprunteurResultat {
   manquants: string[];
 }
 
+/**
+ * Champs du recueil pouvant être pré-remplis. La liste est volontairement
+ * limitée aux clés autorisées par le recueil emprunteur (liste blanche stricte
+ * côté base) : aucune clé hors schéma n'est écrite.
+ */
 const CHAMPS_PRET: { cle: string; source: string }[] = [
   { cle: "banque", source: "banque" },
   { cle: "capital", source: "montant_capital" },
   { cle: "duree_mois", source: "duree_mois" },
   { cle: "taux_pret", source: "taux_nominal" },
-  { cle: "mensualite_pret", source: "mensualite" },
 ];
+
 
 function vide(v: unknown): boolean {
   return v === null || v === undefined || v === "" || (Array.isArray(v) && v.length === 0);

@@ -16,8 +16,19 @@ import { z } from "zod";
 
 const entree = (input: unknown) =>
   z
-    .object({ dossier_id: z.string().uuid(), document_id: z.string().uuid() })
+    .object({
+      dossier_id: z.string().uuid(),
+      /**
+       * Document précis à analyser. Absent : tous les documents de prêt déjà
+       * déposés sur le dossier sont (re)analysés.
+       */
+      document_id: z.string().uuid().optional(),
+    })
     .parse(input);
+
+/** Motifs de reconnaissance d'un document de prêt (même règle que l'UI). */
+const MOTIF_PRET =
+  /(offre[-_ ]?de[-_ ]?pret|offre[-_ ]?pret|amortissement|amort|echeancier|échéancier|pret[-_ ]?immo)/i;
 
 export const analyserDocumentRecueil = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -33,10 +44,46 @@ export const analyserDocumentRecueil = createServerFn({ method: "POST" })
     const { extraireDocument } = await import("@/lib/extraction-documentaire.server");
     const { prefillRecueilEmprunteur } = await import("@/lib/pret-prefill");
 
-    await classifierDocument(supabaseAdmin, data.document_id);
-    const extraction = await extraireDocument(supabaseAdmin, data.document_id);
-    const donnees =
-      (extraction as { donnees?: Record<string, unknown> | null }).donnees ?? null;
+    // Documents à analyser : celui déposé, sinon tous les documents de prêt.
+    let ids: string[] = [];
+    if (data.document_id) {
+      ids = [data.document_id];
+    } else {
+      const { data: rows } = await supabaseAdmin
+        .from("documents")
+        .select("id, file_name, type_document, categorie")
+        .eq("dossier_id", data.dossier_id)
+        .order("created_at", { ascending: false });
+      ids = ((rows ?? []) as { id: string; file_name: string | null; type_document: string | null; categorie: string | null }[])
+        .filter(
+          (d) =>
+            MOTIF_PRET.test(d.type_document ?? "") ||
+            MOTIF_PRET.test(d.categorie ?? "") ||
+            MOTIF_PRET.test(d.file_name ?? ""),
+        )
+        .map((d) => d.id);
+    }
+
+    // Chaque document est isolé : un échec n'interrompt pas les suivants.
+    let statut = "indisponible";
+    const donneesCumul: Record<string, unknown> = {};
+    for (const id of ids) {
+      try {
+        await classifierDocument(supabaseAdmin, id);
+        const extraction = await extraireDocument(supabaseAdmin, id);
+        statut = extraction.statut;
+        const donnees =
+          (extraction as { donnees?: Record<string, unknown> | null }).donnees ?? null;
+        if (!donnees) continue;
+        for (const [cle, valeur] of Object.entries(donnees)) {
+          if (cle.startsWith("_")) continue;
+          if (valeur === null || valeur === undefined || valeur === "") continue;
+          if (donneesCumul[cle] === undefined) donneesCumul[cle] = valeur;
+        }
+      } catch {
+        // Document illisible ou analyse indisponible : saisie manuelle.
+      }
+    }
 
     const { data: dossierRow } = await supabaseAdmin
       .from("dossiers")
@@ -49,9 +96,9 @@ export const analyserDocumentRecueil = createServerFn({ method: "POST" })
       recueil_besoins: Record<string, unknown> | null;
     } | null;
 
-    if (!dossier || dossier.type_assurance !== "emprunteur" || !donnees) {
+    if (!dossier || dossier.type_assurance !== "emprunteur" || Object.keys(donneesCumul).length === 0) {
       return {
-        statut: extraction.statut,
+        statut,
         ajouts: [] as string[],
         manquants: [] as string[],
         recueil_json: dossier?.recueil_besoins ? JSON.stringify(dossier.recueil_besoins) : null,
@@ -60,7 +107,7 @@ export const analyserDocumentRecueil = createServerFn({ method: "POST" })
 
     const { recueil, ajouts, manquants } = prefillRecueilEmprunteur(
       dossier.recueil_besoins,
-      donnees,
+      donneesCumul,
     );
 
     if (ajouts.length > 0) {
@@ -82,5 +129,6 @@ export const analyserDocumentRecueil = createServerFn({ method: "POST" })
       } as never);
     }
 
-    return { statut: extraction.statut, ajouts, manquants, recueil_json: JSON.stringify(recueil) };
+    return { statut, ajouts, manquants, recueil_json: JSON.stringify(recueil) };
   });
+
