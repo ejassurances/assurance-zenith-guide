@@ -490,8 +490,12 @@ export function NewDossierForm({
       return;
     }
 
+    // Offre de prêt déposée à la création : archivée sur le dossier.
+    if (offreFiles.length > 0) await archiverOffres(created.id, clientPrincipalId || null);
+
     // Recueil validé → lettre de mission générée et envoyée automatiquement
     const res = await lancerLettreMission({ data: { dossier_id: created.id } });
+
     setSaving(false);
     if (!res.ok && res.raison) setError(res.raison);
     onCreated();
