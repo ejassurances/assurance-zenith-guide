@@ -159,6 +159,12 @@ export function DossierDevisPanel({
   }>({ compagnie_id: null, produit_id: null, statut: null });
   /** Familles du catalogue : rattachement branche → produits proposables. */
   const [famillesBranche, setFamillesBranche] = useState<string[]>([]);
+  /** Branche du dossier (utilisée quand la prop n'est pas fournie). */
+  const [brancheDossierEtat, setBrancheDossierEtat] = useState<string>("");
+  const estEmprunteur = (branche ?? brancheDossierEtat) === "emprunteur";
+  /** Grilles de garanties emprunteur VALIDÉES, par produit : base de la notation. */
+  const [grillesProduits, setGrillesProduits] = useState<Record<string, ValeursGrille>>({});
+
 
   /** Comparatif : par défaut une seule offre par assureur porteur (doublons de canaux masqués). */
   const [afficherDoublons, setAfficherDoublons] = useState(false);
