@@ -724,6 +724,23 @@ export function DossierDevisPanel({
 
       {err && <p className="mt-2 text-sm text-destructive">{err}</p>}
 
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-xs">
+        <p className="text-ink-soft">
+          {dossierInfo.produit_id ? (
+            <>
+              Offre actuellement retenue : <strong className="text-ink">{nomCompagnie(dossierInfo.compagnie_id)}</strong>{" "}
+              — {nomProduit(dossierInfo.produit_id)}
+            </>
+          ) : (
+            "Aucune offre retenue pour l'instant : choisissez un devis ci-dessous."
+          )}
+        </p>
+        <p className="text-ink-muted">
+          {devis.length} devis au dossier · une autre offre peut être retenue à tout moment, même sur un dossier déjà
+          validé.
+        </p>
+      </div>
+
       {nbDoublonsMasques > 0 && (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[color:var(--crm-gold)]/40 bg-[color:var(--crm-gold)]/10 px-3 py-2">
           <p className="text-xs text-ink-soft">
