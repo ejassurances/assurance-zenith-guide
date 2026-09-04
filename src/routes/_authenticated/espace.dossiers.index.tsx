@@ -3,6 +3,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { declencherLettreMissionAuto } from "@/lib/lettres-mission.functions";
+import {
+  analyserOffrePretCreation,
+  creerFichesEmprunteurs,
+  type EmprunteurPropose,
+} from "@/lib/offre-pret-creation.functions";
+
 import { useAuth } from "@/lib/auth-context";
 import { estimerEconomie } from "@/lib/insurance-rates";
 import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
@@ -234,7 +240,16 @@ export function NewDossierForm({
   const [produitId, setProduitId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Offre de prêt déposée dès la création : analysée par l'IA puis archivée
+  // sur le dossier une fois celui-ci créé.
+  const [offreFiles, setOffreFiles] = useState<File[]>([]);
+  const [analyseEtat, setAnalyseEtat] = useState<string | null>(null);
+  const [analysing, setAnalysing] = useState(false);
+  const [emprunteurs, setEmprunteurs] = useState<EmprunteurPropose[]>([]);
   const lancerLettreMission = useServerFn(declencherLettreMissionAuto);
+  const analyserOffre = useServerFn(analyserOffrePretCreation);
+  const creerFiches = useServerFn(creerFichesEmprunteurs);
+
 
   useEffect(() => {
     (async () => {
@@ -270,6 +285,115 @@ export function NewDossierForm({
 
   const branche = getBranche(type)!;
 
+  /** Lit un fichier en base64 (sans le préfixe data:). */
+  const enBase64 = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const s = String(reader.result ?? "");
+        resolve(s.includes(",") ? s.slice(s.indexOf(",") + 1) : s);
+      };
+      reader.onerror = () => reject(new Error("Lecture du fichier impossible"));
+      reader.readAsDataURL(file);
+    });
+
+  /**
+   * Analyse IA de l'offre de prêt / du tableau d'amortissement déposé avant
+   * création : les données du prêt et les emprunteurs sont reportés dans le
+   * formulaire, sans jamais écraser une valeur déjà saisie.
+   */
+  const analyserOffreDeposee = async (files: File[]) => {
+    setOffreFiles(files);
+    if (files.length === 0) return;
+    setAnalysing(true);
+    setAnalyseEtat("Lecture du document par l'IA…");
+    try {
+      const fichiers = await Promise.all(
+        files.map(async (f) => ({
+          nom: f.name.slice(0, 200),
+          mime: f.type || "application/pdf",
+          contenu_base64: await enBase64(f),
+        })),
+      );
+      const res = await analyserOffre({ data: { fichiers } });
+      const extrait = JSON.parse(res.recueil_json) as Record<string, unknown>;
+      setRecueil((r) => {
+        const fusion: Record<string, unknown> = { ...r };
+        for (const [k, v] of Object.entries(extrait)) {
+          const actuel = fusion[k];
+          const vide = actuel === undefined || actuel === null || actuel === "" || (Array.isArray(actuel) && actuel.length === 0);
+          if (vide) fusion[k] = v;
+        }
+        return fusion;
+      });
+      setEmprunteurs(res.emprunteurs);
+      const principal = res.emprunteurs[0];
+      if (principal) {
+        if (!clientId) {
+          if (principal.client_id) setClientId(principal.client_id);
+          setClientNom([principal.prenom, principal.nom].filter(Boolean).join(" ").trim());
+          if (principal.email) setClientEmail(principal.email);
+          if (principal.telephone) setClientPhone(principal.telephone);
+        }
+      }
+      const nouveaux = res.emprunteurs.filter((e) => !e.client_id).length;
+      setAnalyseEtat(
+        [
+          res.ajouts.length > 0 ? `Données du prêt reportées : ${res.ajouts.join(", ")}.` : "Aucune donnée de prêt exploitable détectée.",
+          res.emprunteurs.length > 0
+            ? `${res.emprunteurs.length} emprunteur(s) détecté(s)${nouveaux > 0 ? `, dont ${nouveaux} sans fiche client (créée à l'enregistrement)` : ", tous rapprochés d'une fiche existante"}.`
+            : "Aucun emprunteur nommé détecté : saisie manuelle.",
+          res.manquants.length > 0 ? `À compléter : ${res.manquants.join(", ")}.` : "",
+          res.erreurs.length > 0 ? `Documents non exploités : ${res.erreurs.join(" ; ")}` : "",
+        ]
+          .filter(Boolean)
+          .join(" "),
+      );
+    } catch (e) {
+      setAnalyseEtat(`Analyse IA indisponible : ${e instanceof Error ? e.message : "erreur"} — saisie manuelle.`);
+    }
+    setAnalysing(false);
+  };
+
+  /** Archive les offres déposées sur le dossier créé et coche la pièce requise. */
+  const archiverOffres = async (dossierId: string, clientDossierId: string | null) => {
+    for (const file of offreFiles) {
+      try {
+        const safeName = file.name.replace(/[^\w.\-]+/g, "_").slice(0, 120);
+        const path = `${clientDossierId ?? dossierId}/${Date.now()}-${safeName}`;
+        const { error: upErr } = await supabase.storage
+          .from("dossier-documents")
+          .upload(path, file, { upsert: true });
+        if (upErr) throw upErr;
+        const { data: doc } = await supabase
+          .from("documents")
+          .insert({
+            dossier_id: dossierId,
+            client_id: clientDossierId,
+            uploader_id: userId,
+            storage_path: path,
+            file_name: file.name.slice(0, 200),
+            file_size: file.size,
+            mime_type: file.type || null,
+            categorie: "dossier",
+            type_document: "offre_pret",
+          })
+          .select("id")
+          .maybeSingle();
+        if (doc?.id) {
+          await supabase
+            .from("dossier_pieces_requises")
+            .update({ statut: "recue", recue_le: new Date().toISOString(), document_id: doc.id })
+            .eq("dossier_id", dossierId)
+            .in("code", ["offre_pret", "tableau_amortissement"]);
+        }
+      } catch (e) {
+        console.error("[offre de prêt] archivage impossible", e);
+      }
+    }
+  };
+
+
   const submit = async () => {
     if (!clientNom.trim()) {
       setError("Sélectionnez un client ou saisissez un nom.");
@@ -278,6 +402,46 @@ export function NewDossierForm({
     setSaving(true);
     setError(null);
 
+    // Emprunteurs détectés dans l'offre de prêt : rapprochement ou création des
+    // fiches clients avant l'ouverture du dossier (un dossier = un prêt).
+    let clientPrincipalId = clientId;
+    let recueilFinal: Record<string, unknown> = recueil;
+    if (type === "emprunteur" && emprunteurs.length > 0) {
+      try {
+        const res = await creerFiches({
+          data: {
+            emprunteurs: emprunteurs.map((e) => ({
+              prenom: e.prenom,
+              nom: e.nom,
+              date_naissance: e.date_naissance,
+              quotite_pct: e.quotite_pct,
+              csp: e.csp,
+              fumeur: e.fumeur,
+              email: e.email,
+              telephone: e.telephone,
+              client_id: e.client_id,
+            })),
+          },
+        });
+        const ids = res.resultats;
+        if (!clientPrincipalId && ids[0]) clientPrincipalId = ids[0].client_id;
+        const assures = assuresEmprunteur(recueil["assures"]);
+        if (assures.length > 0) {
+          recueilFinal = {
+            ...recueil,
+            assures: assures.map((a, i) => (ids[i] ? { ...a, client_id: ids[i]!.client_id } : a)),
+          };
+        }
+      } catch (e) {
+        setSaving(false);
+        setError(e instanceof Error ? e.message : "Création des fiches clients impossible");
+        return;
+      }
+    }
+    const recueilSoumis = recueilFinal;
+
+
+
     // Champs de compat pour emprunteur (pour garder les colonnes existantes utiles)
     let capital: number | null = null;
     let duree_mois: number | null = null;
@@ -285,10 +449,10 @@ export function NewDossierForm({
     let fumeur = false;
     let economie: number | null = null;
     if (type === "emprunteur") {
-      capital = Number(recueil.capital) || null;
-      duree_mois = Number(recueil.duree_mois) || null;
+      capital = Number(recueilSoumis["capital"]) || null;
+      duree_mois = Number(recueilSoumis["duree_mois"]) || null;
       // Assuré principal de la liste « assures » : base de l'estimation d'économie.
-      const principal = assurePrincipalEmprunteur(recueil["assures"]);
+      const principal = assurePrincipalEmprunteur(recueilSoumis["assures"]);
       age = principal ? ageDepuisDateNaissance(principal.date_naissance) : null;
       fumeur = principal?.fumeur === true;
       if (capital && duree_mois && age) {
@@ -302,14 +466,15 @@ export function NewDossierForm({
     }
 
     const { data: created, error: insErr } = await supabase.from("dossiers").insert({
-      client_id: clientId || null,
+      client_id: clientPrincipalId || null,
       client_nom: clientNom,
       client_email: clientEmail || null,
       client_phone: clientPhone || null,
       type_assurance: type,
       compagnie_id: compagnieId,
       produit_id: produitId,
-      recueil_besoins: recueil as never,
+      recueil_besoins: recueilSoumis as never,
+
       capital,
       duree_mois,
       age,
@@ -325,8 +490,12 @@ export function NewDossierForm({
       return;
     }
 
+    // Offre de prêt déposée à la création : archivée sur le dossier.
+    if (offreFiles.length > 0) await archiverOffres(created.id, clientPrincipalId || null);
+
     // Recueil validé → lettre de mission générée et envoyée automatiquement
     const res = await lancerLettreMission({ data: { dossier_id: created.id } });
+
     setSaving(false);
     if (!res.ok && res.raison) setError(res.raison);
     onCreated();
@@ -352,7 +521,51 @@ export function NewDossierForm({
             </button>
           ))}
         </div>
+
+        {type === "emprunteur" ? (
+          <div className="mt-6 rounded-2xl border border-line bg-background/40 p-4">
+            <p className="text-sm font-medium text-ink">Offre de prêt ou tableau d'amortissement (facultatif)</p>
+            <p className="mt-1 text-xs text-ink-muted">
+              Déposez le document : les caractéristiques du prêt et les emprunteurs sont relevés automatiquement, les
+              fiches clients manquantes sont créées à l'enregistrement. Aucune information déjà saisie n'est remplacée.
+            </p>
+            <input
+              type="file"
+              multiple
+              accept="application/pdf,image/*"
+              disabled={analysing}
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? []);
+                if (files.length > 0) void analyserOffreDeposee(files);
+              }}
+              className="mt-3 block w-full text-sm"
+            />
+            {offreFiles.length > 0 ? (
+              <ul className="mt-2 space-y-1 text-xs text-ink-muted">
+                {offreFiles.map((f) => (
+                  <li key={f.name}>{f.name}</li>
+                ))}
+              </ul>
+            ) : null}
+            {analyseEtat ? <p className="mt-3 text-xs text-ink">{analyseEtat}</p> : null}
+            {emprunteurs.length > 0 ? (
+              <ul className="mt-3 space-y-1 text-xs text-ink">
+                {emprunteurs.map((e, i) => (
+                  <li key={`${e.nom}-${i}`}>
+                    {[e.prenom, e.nom].filter(Boolean).join(" ")}
+                    {e.date_naissance ? ` · né(e) le ${e.date_naissance}` : ""}
+                    {e.quotite_pct !== null ? ` · quotité ${e.quotite_pct} %` : ""}
+                    {" — "}
+                    {e.client_id ? `fiche existante${e.client_reference ? ` ${e.client_reference}` : ""}` : "fiche à créer"}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="mt-6 flex justify-end">
+
           <button
             onClick={() => setStep(2)}
             className="rounded-full bg-[#0A192F] px-5 py-2 text-sm font-medium text-white"
