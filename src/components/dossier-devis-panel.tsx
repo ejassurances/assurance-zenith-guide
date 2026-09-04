@@ -752,63 +752,94 @@ export function DossierDevisPanel({
         )}
 
       <div className="mt-4 space-y-2">
-        {devis.length === 0 && <p className="text-sm text-ink-muted">Aucun devis saisi pour ce dossier.</p>}
+        {devis.length === 0 && (
+          <p className="rounded-xl border border-dashed border-line bg-surface px-3 py-4 text-sm text-ink-muted">
+            Aucune offre pour ce dossier. Lancez une tarification automatique ci-dessous ou ajoutez un devis
+            manuellement : tous les partenaires et produits du catalogue de la branche sont disponibles.
+          </p>
+        )}
         {devisAffiches.map((d) => {
           const formule = d.formule_id;
           const groupeListe = porteurPartage(d);
+          const retenu = estDevisRetenu(d);
+          const meilleur = meilleurParTete.get(d.assure_rang ?? 1) === d.id;
+          const rang = rangIa(d.id);
           return (
             <div
               key={d.id}
-              className={`rounded-xl border bg-surface p-3 text-sm ${
-                groupeListe
-                  ? "border-l-4 border-l-[color:var(--crm-gold)] border-[color:var(--crm-gold)]/40"
-                  : "border-line"
+              className={`rounded-xl border bg-surface p-4 text-sm ${
+                retenu
+                  ? "border-[color:var(--crm-gold)] bg-[color:var(--crm-gold)]/10 ring-1 ring-[color:var(--crm-gold)]"
+                  : groupeListe
+                    ? "border-l-4 border-l-[color:var(--crm-gold)] border-[color:var(--crm-gold)]/40"
+                    : "border-line"
               }`}
             >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-medium text-ink">
-                  {assuresRecueil.length >= 2 && (
-                    <span className="mr-2 rounded-full border border-[color:var(--crm-gold)]/50 px-2 py-0.5 text-xs text-ink-soft">
-                      {assuresRecueil.find((a) => a.rang === (d.assure_rang ?? 1))?.label ??
-                        `Tête ${d.assure_rang ?? 1}`}
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {rang != null && (
+                      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-ink text-xs text-primary-foreground">
+                        {rang}
+                      </span>
+                    )}
+                    <p className="font-serif text-base font-medium text-ink">
+                      {nomCompagnie(d.compagnie_id)} — {nomProduit(d.produit_id)}
+                      {formule && <FormuleNom formuleId={formule} />}
+                    </p>
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
+                    {retenu && (
+                      <span className="rounded-full bg-ink px-2 py-0.5 text-primary-foreground">Offre retenue</span>
+                    )}
+                    {meilleur && !retenu && (
+                      <span className="rounded-full border border-[color:var(--crm-gold)] px-2 py-0.5 text-ink">
+                        Cotisation la plus basse
+                      </span>
+                    )}
+                    {assuresRecueil.length >= 2 && (
+                      <span className="rounded-full border border-line px-2 py-0.5 text-ink-soft">
+                        {assuresRecueil.find((a) => a.rang === (d.assure_rang ?? 1))?.label ??
+                          `Tête ${d.assure_rang ?? 1}`}
+                      </span>
+                    )}
+                    <span className="rounded-full border border-line px-2 py-0.5 text-ink-muted">
+                      {d.source === "api" ? "Tarif automatique (API)" : d.source === "pdf" ? "Devis PDF" : "Saisie manuelle"}
                     </span>
+                    {d.quotite_pct != null && (
+                      <span className="rounded-full border border-line px-2 py-0.5 text-ink-muted">
+                        Quotité {d.quotite_pct} %
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-serif text-lg text-ink">
+                    {d.cotisation_mensuelle != null
+                      ? `${Number(d.cotisation_mensuelle).toLocaleString("fr-FR", { maximumFractionDigits: 2 })} € / mois`
+                      : "Cotisation à renseigner"}
+                  </p>
+                  {d.montant_total_saisi != null && (
+                    <p className="text-xs text-ink-soft">
+                      {Number(d.montant_total_saisi).toLocaleString("fr-FR")} € au total sur la durée du prêt
+                    </p>
                   )}
-                  {nomCompagnie(d.compagnie_id)} — {nomProduit(d.produit_id)}
-                  {formule && <FormuleNom formuleId={formule} />}
-                </p>
-                <div className="flex items-center gap-3">
-                  <span className="text-right text-ink-soft">
-                    {d.montant_total_saisi != null && (
-                      <span className="block">
-                        {Number(d.montant_total_saisi).toLocaleString("fr-FR")} € au total sur la durée du prêt
-                      </span>
-                    )}
-                    <span className="block">
-                      {d.cotisation_mensuelle != null
-                        ? `${Number(d.cotisation_mensuelle).toLocaleString("fr-FR")} € / mois${
-                            d.type_cotisation === "CRD" ? " en moyenne" : ""
-                          }`
-                        : "Cotisation mensuelle non renseignée"}
-                    </span>
-                    {d.type_cotisation && (
-                      <span className="block text-xs text-ink-muted">
-                        {d.type_cotisation === "CI"
-                          ? "CI — cotisation constante sur le capital initial"
-                          : `CRD — cotisation dégressive${
-                              d.cotisation_min != null && d.cotisation_max != null
-                                ? ` (de ${Number(d.cotisation_min).toLocaleString("fr-FR")} € à ${Number(
-                                    d.cotisation_max,
-                                  ).toLocaleString("fr-FR")} €)`
-                                : ""
-                            }`}
-                      </span>
-                    )}
-                  </span>
-                  <button onClick={() => supprimer(d)} className="text-xs text-red-700 underline underline-offset-4">
-                    Archiver
-                  </button>
+                  {d.type_cotisation && (
+                    <p className="text-xs text-ink-muted">
+                      {d.type_cotisation === "CI"
+                        ? "CI — cotisation constante sur le capital initial"
+                        : `CRD — cotisation dégressive${
+                            d.cotisation_min != null && d.cotisation_max != null
+                              ? ` (de ${Number(d.cotisation_min).toLocaleString("fr-FR")} € à ${Number(
+                                  d.cotisation_max,
+                                ).toLocaleString("fr-FR")} €)`
+                              : ""
+                          }`}
+                    </p>
+                  )}
                 </div>
               </div>
+
               {groupeListe && (
                 <p className="mt-2 rounded-md bg-surface-elevated/70 px-2 py-1 text-xs text-ink-soft">
                   Même assureur porteur : <strong>{groupeListe.nom}</strong> — disponible via{" "}
@@ -816,8 +847,39 @@ export function DossierDevisPanel({
                 </p>
               )}
               {d.garanties_resume && (
-                <p className="mt-1 whitespace-pre-wrap text-xs text-ink-soft">{d.garanties_resume}</p>
+                <p className="mt-2 whitespace-pre-wrap text-xs text-ink-soft">{d.garanties_resume}</p>
               )}
+              {rang != null && classement && (
+                <p className="mt-2 whitespace-pre-wrap rounded-md bg-surface-elevated/70 px-2 py-1 text-xs text-ink-soft">
+                  {classement.classement.find((l) => l.dossier_devis_id === d.id)?.justification}
+                </p>
+              )}
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => void retenirDirectement(d)}
+                  disabled={iaEtat !== "idle" || !d.compagnie_id || !d.produit_id}
+                  className={`rounded-full px-4 py-2 text-xs disabled:opacity-50 ${
+                    retenu
+                      ? "border border-line bg-surface text-ink"
+                      : "bg-ink text-primary-foreground"
+                  }`}
+                >
+                  {iaEtat === "selection"
+                    ? "Traitement…"
+                    : retenu
+                      ? "Confirmer à nouveau cette offre"
+                      : "Retenir ce devis"}
+                </button>
+                {(!d.compagnie_id || !d.produit_id) && (
+                  <span className="text-xs text-ink-muted">
+                    Compagnie ou produit manquant sur ce devis : il ne peut pas être retenu.
+                  </span>
+                )}
+                <button onClick={() => supprimer(d)} className="text-xs text-red-700 underline underline-offset-4">
+                  Archiver
+                </button>
+              </div>
             </div>
           );
         })}
