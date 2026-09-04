@@ -49,22 +49,25 @@ export async function creerContratDepuisDossier(
 ): Promise<ResultatContratDossier> {
   const { data: dossier, error } = await client
     .from("dossiers")
-    .select("id, reference, client_id, type_assurance, duree_mois, capital, compagnie_id, produit_id")
+    .select(
+      "id, reference, client_id, type_assurance, duree_mois, capital, compagnie_id, produit_id, recueil_besoins",
+    )
     .eq("id", dossierId)
     .maybeSingle();
   if (error || !dossier) throw new Error("Dossier introuvable ou accès refusé");
   if (!dossier.client_id) throw new Error("Dossier sans fiche client : rattachez le client avant de créer le contrat.");
 
-  // Idempotence : un dossier ne produit qu'un contrat.
-  const { data: existant } = await client
+  // Idempotence : un dossier (un prêt) ne produit qu'un jeu de contrats.
+  const { data: existants } = await client
     .from("contrats")
     .select("id, prime_annuelle, date_effet, date_echeance")
     .eq("dossier_id", dossierId)
-    .limit(1)
-    .maybeSingle();
+    .order("created_at", { ascending: true });
+  const existant = (existants ?? [])[0];
   if (existant) {
     return {
       contrat_id: existant.id,
+      contrats_ids: (existants ?? []).map((c) => c.id),
       deja_existant: true,
       prime_annuelle: existant.prime_annuelle,
       date_effet: existant.date_effet ?? "",
