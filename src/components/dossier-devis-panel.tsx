@@ -141,6 +141,15 @@ export function DossierDevisPanel({
   const [simuMsg, setSimuMsg] = useState<string | null>(null);
   const [simuErr, setSimuErr] = useState<string | null>(null);
 
+  /** Offre actuellement retenue sur le dossier + état du dossier (validé ou non). */
+  const [dossierInfo, setDossierInfo] = useState<{
+    compagnie_id: string | null;
+    produit_id: string | null;
+    statut: string | null;
+  }>({ compagnie_id: null, produit_id: null, statut: null });
+  /** Familles du catalogue : rattachement branche → produits proposables. */
+  const [famillesBranche, setFamillesBranche] = useState<string[]>([]);
+
   /** Comparatif : par défaut une seule offre par assureur porteur (doublons de canaux masqués). */
   const [afficherDoublons, setAfficherDoublons] = useState(false);
 
@@ -202,7 +211,7 @@ export function DossierDevisPanel({
         .maybeSingle(),
       supabase
         .from("dossiers")
-        .select("produit_id,type_assurance,recueil_besoins,mode_recommandation")
+        .select("produit_id,compagnie_id,statut,type_assurance,recueil_besoins,mode_recommandation")
         .eq("id", dossierId)
         .maybeSingle(),
     ]);
@@ -214,6 +223,8 @@ export function DossierDevisPanel({
 
     const dossier = dos.data as
       | {
+          compagnie_id?: string | null;
+          statut?: string | null;
           produit_id: string | null;
           type_assurance: string | null;
           recueil_besoins: unknown;
@@ -223,6 +234,22 @@ export function DossierDevisPanel({
     const recueil = (dossier?.recueil_besoins ?? {}) as Record<string, unknown>;
     const brancheDossier = dossier?.type_assurance ?? "";
     setModeReco(dossier?.mode_recommandation ?? "auto");
+    setDossierInfo({
+      compagnie_id: dossier?.compagnie_id ?? null,
+      produit_id: dossier?.produit_id ?? null,
+      statut: dossier?.statut ?? null,
+    });
+
+    // Familles du catalogue correspondant à la branche du dossier : le devis
+    // peut être créé chez un autre partenaire à condition de rester dans la
+    // même branche et dans le catalogue.
+    const { data: fam } = await supabase.from("produit_familles").select("id,branches");
+    const brancheCible = (branche ?? brancheDossier ?? "").trim();
+    setFamillesBranche(
+      ((fam as { id: string; branches: string[] | null }[] | null) ?? [])
+        .filter((f) => !brancheCible || (f.branches ?? []).includes(brancheCible))
+        .map((f) => f.id),
+    );
     setRecueilDossier(recueil);
 
     const nb = (v: unknown) => {
@@ -285,7 +312,7 @@ export function DossierDevisPanel({
     ]);
     setFormulesFixes((fm.data as FormuleFixe[]) ?? []);
     setOptionsFixes((op.data as OptionFixe[]) ?? []);
-  }, [dossierId]);
+  }, [dossierId, branche]);
 
 
 
@@ -450,7 +477,67 @@ export function DossierDevisPanel({
     onChanged?.();
   };
 
-  const produitsVisibles = produits.filter((p) => !form.compagnie_id || p.compagnie_id === form.compagnie_id);
+  /**
+   * Catalogue proposable : uniquement les produits de la MÊME branche que le
+   * dossier (rattachement produit_familles.branches). Le conseiller peut donc
+   * établir un devis chez un autre partenaire ou sur un autre produit, sans
+   * jamais sortir de la branche ni du catalogue.
+   */
+  const produitsBranche = produits.filter(
+    (p) => famillesBranche.length === 0 || famillesBranche.includes(p.famille_id),
+  );
+  const compagniesBranche = compagnies.filter((c) => produitsBranche.some((p) => p.compagnie_id === c.id));
+  const produitsVisibles = produitsBranche.filter((p) => !form.compagnie_id || p.compagnie_id === form.compagnie_id);
+
+  /** Devis actuellement retenu sur le dossier (compagnie + produit reportés). */
+  const estDevisRetenu = (d: DossierDevis) =>
+    !!dossierInfo.produit_id &&
+    d.produit_id === dossierInfo.produit_id &&
+    (dossierInfo.compagnie_id == null || d.compagnie_id === dossierInfo.compagnie_id);
+
+  /** Meilleur prix par tête assurée (repère visuel du comparatif). */
+  const meilleurParTete = new Map<number, string>();
+  for (const d of devis) {
+    if (d.cotisation_mensuelle == null) continue;
+    const tete = d.assure_rang ?? 1;
+    const actuel = meilleurParTete.get(tete);
+    const ref = actuel ? devis.find((x) => x.id === actuel) : null;
+    if (!ref || Number(d.cotisation_mensuelle) < Number(ref.cotisation_mensuelle)) meilleurParTete.set(tete, d.id);
+  }
+
+  /** Rang attribué par le classement IA, s'il existe. */
+  const rangIa = (id: string) => classement?.classement.find((l) => l.dossier_devis_id === id)?.rang ?? null;
+
+  /**
+   * Sélection directe d'un devis depuis le comparatif, y compris sur un dossier
+   * déjà validé : compagnie et produit sont reportés sur le dossier et le devoir
+   * de conseil est régénéré en brouillon (aucun envoi au client).
+   */
+  const retenirDirectement = async (d: DossierDevis) => {
+    if (
+      !confirm(
+        "Retenir ce devis pour le dossier et générer le devoir de conseil en brouillon (aucun envoi au client) ?",
+      )
+    )
+      return;
+    setErr(null);
+    setIaMsg(null);
+    setIaEtat("selection");
+    try {
+      await retenirManuel({
+        data: { devis_id: d.id, motif: "offre choisie par le conseiller dans le comparatif du dossier" },
+      });
+      await load();
+      setIaMsg(
+        "Offre retenue : compagnie et produit reportés sur le dossier, devoir de conseil créé en brouillon. L'envoi au client reste manuel.",
+      );
+      onChanged?.();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Sélection impossible");
+    } finally {
+      setIaEtat("idle");
+    }
+  };
 
   const demanderClassement = async () => {
     setIaMsg(null);
@@ -611,8 +698,8 @@ export function DossierDevisPanel({
   return (
     <div className="rounded-2xl border border-line bg-surface-elevated p-5">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:flex sm:items-center sm:justify-between">
-        <h2 className="min-w-0 font-serif text-lg font-medium text-ink">Devis comparés</h2>
-        {!produitFixe && (
+        <h2 className="min-w-0 font-serif text-lg font-medium text-ink">Devis et valorisation</h2>
+        {(
           <button
             onClick={() => {
               setSaisieOuverte(true);
@@ -622,7 +709,7 @@ export function DossierDevisPanel({
             }}
             className="shrink-0 rounded-full bg-ink px-4 py-2 text-xs text-primary-foreground"
           >
-            Ajouter un devis manuellement
+            Nouveau devis (autre partenaire ou produit)
           </button>
         )}
       </div>
@@ -636,6 +723,23 @@ export function DossierDevisPanel({
 
 
       {err && <p className="mt-2 text-sm text-destructive">{err}</p>}
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-xs">
+        <p className="text-ink-soft">
+          {dossierInfo.produit_id ? (
+            <>
+              Offre actuellement retenue : <strong className="text-ink">{nomCompagnie(dossierInfo.compagnie_id)}</strong>{" "}
+              — {nomProduit(dossierInfo.produit_id)}
+            </>
+          ) : (
+            "Aucune offre retenue pour l'instant : choisissez un devis ci-dessous."
+          )}
+        </p>
+        <p className="text-ink-muted">
+          {devis.length} devis au dossier · une autre offre peut être retenue à tout moment, même sur un dossier déjà
+          validé.
+        </p>
+      </div>
 
       {nbDoublonsMasques > 0 && (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[color:var(--crm-gold)]/40 bg-[color:var(--crm-gold)]/10 px-3 py-2">
@@ -665,63 +769,94 @@ export function DossierDevisPanel({
         )}
 
       <div className="mt-4 space-y-2">
-        {devis.length === 0 && <p className="text-sm text-ink-muted">Aucun devis saisi pour ce dossier.</p>}
+        {devis.length === 0 && (
+          <p className="rounded-xl border border-dashed border-line bg-surface px-3 py-4 text-sm text-ink-muted">
+            Aucune offre pour ce dossier. Lancez une tarification automatique ci-dessous ou ajoutez un devis
+            manuellement : tous les partenaires et produits du catalogue de la branche sont disponibles.
+          </p>
+        )}
         {devisAffiches.map((d) => {
           const formule = d.formule_id;
           const groupeListe = porteurPartage(d);
+          const retenu = estDevisRetenu(d);
+          const meilleur = meilleurParTete.get(d.assure_rang ?? 1) === d.id;
+          const rang = rangIa(d.id);
           return (
             <div
               key={d.id}
-              className={`rounded-xl border bg-surface p-3 text-sm ${
-                groupeListe
-                  ? "border-l-4 border-l-[color:var(--crm-gold)] border-[color:var(--crm-gold)]/40"
-                  : "border-line"
+              className={`rounded-xl border bg-surface p-4 text-sm ${
+                retenu
+                  ? "border-[color:var(--crm-gold)] bg-[color:var(--crm-gold)]/10 ring-1 ring-[color:var(--crm-gold)]"
+                  : groupeListe
+                    ? "border-l-4 border-l-[color:var(--crm-gold)] border-[color:var(--crm-gold)]/40"
+                    : "border-line"
               }`}
             >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-medium text-ink">
-                  {assuresRecueil.length >= 2 && (
-                    <span className="mr-2 rounded-full border border-[color:var(--crm-gold)]/50 px-2 py-0.5 text-xs text-ink-soft">
-                      {assuresRecueil.find((a) => a.rang === (d.assure_rang ?? 1))?.label ??
-                        `Tête ${d.assure_rang ?? 1}`}
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {rang != null && (
+                      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-ink text-xs text-primary-foreground">
+                        {rang}
+                      </span>
+                    )}
+                    <p className="font-serif text-base font-medium text-ink">
+                      {nomCompagnie(d.compagnie_id)} — {nomProduit(d.produit_id)}
+                      {formule && <FormuleNom formuleId={formule} />}
+                    </p>
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
+                    {retenu && (
+                      <span className="rounded-full bg-ink px-2 py-0.5 text-primary-foreground">Offre retenue</span>
+                    )}
+                    {meilleur && !retenu && (
+                      <span className="rounded-full border border-[color:var(--crm-gold)] px-2 py-0.5 text-ink">
+                        Cotisation la plus basse
+                      </span>
+                    )}
+                    {assuresRecueil.length >= 2 && (
+                      <span className="rounded-full border border-line px-2 py-0.5 text-ink-soft">
+                        {assuresRecueil.find((a) => a.rang === (d.assure_rang ?? 1))?.label ??
+                          `Tête ${d.assure_rang ?? 1}`}
+                      </span>
+                    )}
+                    <span className="rounded-full border border-line px-2 py-0.5 text-ink-muted">
+                      {d.source === "api" ? "Tarif automatique (API)" : d.source === "pdf" ? "Devis PDF" : "Saisie manuelle"}
                     </span>
+                    {d.quotite_pct != null && (
+                      <span className="rounded-full border border-line px-2 py-0.5 text-ink-muted">
+                        Quotité {d.quotite_pct} %
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-serif text-lg text-ink">
+                    {d.cotisation_mensuelle != null
+                      ? `${Number(d.cotisation_mensuelle).toLocaleString("fr-FR", { maximumFractionDigits: 2 })} € / mois`
+                      : "Cotisation à renseigner"}
+                  </p>
+                  {d.montant_total_saisi != null && (
+                    <p className="text-xs text-ink-soft">
+                      {Number(d.montant_total_saisi).toLocaleString("fr-FR")} € au total sur la durée du prêt
+                    </p>
                   )}
-                  {nomCompagnie(d.compagnie_id)} — {nomProduit(d.produit_id)}
-                  {formule && <FormuleNom formuleId={formule} />}
-                </p>
-                <div className="flex items-center gap-3">
-                  <span className="text-right text-ink-soft">
-                    {d.montant_total_saisi != null && (
-                      <span className="block">
-                        {Number(d.montant_total_saisi).toLocaleString("fr-FR")} € au total sur la durée du prêt
-                      </span>
-                    )}
-                    <span className="block">
-                      {d.cotisation_mensuelle != null
-                        ? `${Number(d.cotisation_mensuelle).toLocaleString("fr-FR")} € / mois${
-                            d.type_cotisation === "CRD" ? " en moyenne" : ""
-                          }`
-                        : "Cotisation mensuelle non renseignée"}
-                    </span>
-                    {d.type_cotisation && (
-                      <span className="block text-xs text-ink-muted">
-                        {d.type_cotisation === "CI"
-                          ? "CI — cotisation constante sur le capital initial"
-                          : `CRD — cotisation dégressive${
-                              d.cotisation_min != null && d.cotisation_max != null
-                                ? ` (de ${Number(d.cotisation_min).toLocaleString("fr-FR")} € à ${Number(
-                                    d.cotisation_max,
-                                  ).toLocaleString("fr-FR")} €)`
-                                : ""
-                            }`}
-                      </span>
-                    )}
-                  </span>
-                  <button onClick={() => supprimer(d)} className="text-xs text-red-700 underline underline-offset-4">
-                    Archiver
-                  </button>
+                  {d.type_cotisation && (
+                    <p className="text-xs text-ink-muted">
+                      {d.type_cotisation === "CI"
+                        ? "CI — cotisation constante sur le capital initial"
+                        : `CRD — cotisation dégressive${
+                            d.cotisation_min != null && d.cotisation_max != null
+                              ? ` (de ${Number(d.cotisation_min).toLocaleString("fr-FR")} € à ${Number(
+                                  d.cotisation_max,
+                                ).toLocaleString("fr-FR")} €)`
+                              : ""
+                          }`}
+                    </p>
+                  )}
                 </div>
               </div>
+
               {groupeListe && (
                 <p className="mt-2 rounded-md bg-surface-elevated/70 px-2 py-1 text-xs text-ink-soft">
                   Même assureur porteur : <strong>{groupeListe.nom}</strong> — disponible via{" "}
@@ -729,8 +864,39 @@ export function DossierDevisPanel({
                 </p>
               )}
               {d.garanties_resume && (
-                <p className="mt-1 whitespace-pre-wrap text-xs text-ink-soft">{d.garanties_resume}</p>
+                <p className="mt-2 whitespace-pre-wrap text-xs text-ink-soft">{d.garanties_resume}</p>
               )}
+              {rang != null && classement && (
+                <p className="mt-2 whitespace-pre-wrap rounded-md bg-surface-elevated/70 px-2 py-1 text-xs text-ink-soft">
+                  {classement.classement.find((l) => l.dossier_devis_id === d.id)?.justification}
+                </p>
+              )}
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => void retenirDirectement(d)}
+                  disabled={iaEtat !== "idle" || !d.compagnie_id || !d.produit_id}
+                  className={`rounded-full px-4 py-2 text-xs disabled:opacity-50 ${
+                    retenu
+                      ? "border border-line bg-surface text-ink"
+                      : "bg-ink text-primary-foreground"
+                  }`}
+                >
+                  {iaEtat === "selection"
+                    ? "Traitement…"
+                    : retenu
+                      ? "Confirmer à nouveau cette offre"
+                      : "Retenir ce devis"}
+                </button>
+                {(!d.compagnie_id || !d.produit_id) && (
+                  <span className="text-xs text-ink-muted">
+                    Compagnie ou produit manquant sur ce devis : il ne peut pas être retenu.
+                  </span>
+                )}
+                <button onClick={() => supprimer(d)} className="text-xs text-red-700 underline underline-offset-4">
+                  Archiver
+                </button>
+              </div>
             </div>
           );
         })}
@@ -1035,7 +1201,6 @@ export function DossierDevisPanel({
       </div>
       )}
 
-      {!produitFixe && (
       <div
         id="saisie-devis-manuel"
         className={`mt-4 grid gap-3 rounded-xl border-t border-line pt-4 sm:grid-cols-2 ${
@@ -1043,10 +1208,13 @@ export function DossierDevisPanel({
         }`}
       >
         <div className="sm:col-span-2">
-          <h3 className="text-sm font-medium text-ink">Saisie manuelle d'un devis</h3>
+          <h3 className="text-sm font-medium text-ink">Nouveau devis — autre partenaire ou autre produit</h3>
           <p className="mt-1 text-xs text-ink-muted">
-            Pour une compagnie sans API de tarification (devis reçu par e-mail ou extranet) ou pour un contrat déjà
-            validé par la compagnie que l'on reprend rétroactivement.
+            Choisissez librement un partenaire et un produit du catalogue, dans la même branche que le dossier
+            {branche ? ` (${branche})` : ""} : {compagniesBranche.length} partenaire(s) et {produitsBranche.length}{" "}
+            produit(s) disponibles. Utile pour une compagnie sans API de tarification, pour un contrat déjà validé
+            repris rétroactivement, ou pour ajouter une offre concurrente à un dossier déjà avancé — un nouveau devis
+            peut être retenu à tout moment, ce qui régénère le devoir de conseil en brouillon.
           </p>
         </div>
         <label className="block sm:col-span-2">
@@ -1075,7 +1243,7 @@ export function DossierDevisPanel({
             className={inp}
           >
             <option value="">— Choisir —</option>
-            {compagnies.map((c) => (
+            {(compagniesBranche.length > 0 ? compagniesBranche : compagnies).map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nom}
               </option>
@@ -1275,7 +1443,6 @@ export function DossierDevisPanel({
           )}
         </div>
       </div>
-      )}
 
     </div>
   );
