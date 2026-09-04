@@ -15,6 +15,7 @@ import {
   type BrancheConfig,
   type FieldConfig,
   type PersonneAssuree,
+  type SectionConfig,
 } from "@/lib/recueil-besoins-schemas";
 
 import { ContratActuelCgField, lireCgActuel } from "@/components/contrat-actuel-cg-field";
@@ -52,6 +53,7 @@ export function RecueilWorkflow({
   dossierId,
   children,
   aside,
+  asideSection,
 
 }: {
   branche: BrancheConfig;
@@ -66,6 +68,8 @@ export function RecueilWorkflow({
   children?: React.ReactNode;
   /** Bloc affiché sous les questions à chaque étape (dépôt de documents…) */
   aside?: React.ReactNode;
+  /** Bloc propre à une étape (ex. tarification : devis API / catalogue). */
+  asideSection?: (section: SectionConfig, index: number) => React.ReactNode;
 }) {
 
   const steps = branche.sections;
@@ -165,6 +169,7 @@ export function RecueilWorkflow({
               />
             ))}
 
+            {asideSection?.(section, index)}
             {aside}
 
             {showErrors && missing.length > 0 && (
