@@ -51,6 +51,8 @@ export function RecueilWorkflow({
   completeLabel = "Terminer le recueil",
   dossierId,
   children,
+  aside,
+
 }: {
   branche: BrancheConfig;
   values: Record<string, unknown>;
