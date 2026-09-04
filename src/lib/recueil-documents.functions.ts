@@ -121,7 +121,8 @@ export const analyserDocumentRecueil = createServerFn({ method: "POST" })
       created_at: string | null;
     } | null;
 
-    if (!dossier || dossier.type_assurance !== "emprunteur" || Object.keys(donneesCumul).length === 0) {
+    const rienALire = Object.keys(donneesCumul).length === 0 && emprunteursLus.length === 0;
+    if (!dossier || dossier.type_assurance !== "emprunteur" || rienALire) {
       return {
         statut,
         ajouts: [] as string[],
@@ -130,11 +131,14 @@ export const analyserDocumentRecueil = createServerFn({ method: "POST" })
       };
     }
 
-    const { recueil, ajouts, manquants } = prefillRecueilEmprunteur(
-      dossier.recueil_besoins,
-      donneesCumul,
-      { dossier_cree_le: dossier.created_at },
-    );
+    const base = prefillRecueilEmprunteur(dossier.recueil_besoins, donneesCumul, {
+      dossier_cree_le: dossier.created_at,
+    });
+    // Quotités et identités relevées sur le document, sans écraser une saisie.
+    const complet = completerAssuresDepuisOffre(base.recueil, emprunteursLus);
+    const recueil = complet.recueil;
+    const ajouts = [...base.ajouts, ...complet.ajouts];
+    const manquants = base.manquants;
 
     if (ajouts.length > 0) {
       const { error } = await supabaseAdmin
