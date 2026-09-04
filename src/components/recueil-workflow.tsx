@@ -153,34 +153,39 @@ export function RecueilWorkflow({
 
       <div className="px-6 py-6">
         {!isRecap && section && (
-          <div className="space-y-8">
-            <div>
-              <h3 className="font-serif text-xl text-ink">{section.title}</h3>
-              {section.intro && <p className="mt-1 max-w-2xl text-sm text-ink-muted">{section.intro}</p>}
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+            <div className="space-y-8">
+              <div>
+                <h3 className="font-serif text-xl text-ink">{section.title}</h3>
+                {section.intro && <p className="mt-1 max-w-2xl text-sm text-ink-muted">{section.intro}</p>}
+              </div>
+
+              {section.fields.filter((f) => isFieldVisible(f, values)).map((f) => (
+                <WorkflowField
+                  key={f.key}
+                  field={f}
+                  value={values[f.key]}
+                  onChange={(v) => set(f.key, v)}
+                  error={showErrors && missing.some((m) => m.key === f.key)}
+                  branche={branche.value}
+                  values={values}
+                  dossierId={dossierId ?? null}
+                />
+              ))}
+
+              {showErrors && missing.length > 0 && (
+                <p className="text-sm text-destructive">
+                  Merci de répondre aux questions obligatoires avant de continuer.
+                </p>
+              )}
             </div>
 
-            {section.fields.filter((f) => isFieldVisible(f, values)).map((f) => (
-              <WorkflowField
-                key={f.key}
-                field={f}
-                value={values[f.key]}
-                onChange={(v) => set(f.key, v)}
-                error={showErrors && missing.some((m) => m.key === f.key)}
-                branche={branche.value}
-                values={values}
-                dossierId={dossierId ?? null}
-              />
-            ))}
-
-            {asideSection?.(section, index)}
-            {aside}
-
-            {showErrors && missing.length > 0 && (
-              <p className="text-sm text-destructive">
-                Merci de répondre aux questions obligatoires avant de continuer.
-              </p>
+            {(contexte || asideSection) && (
+              <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
+                {contexte}
+                {asideSection?.(section, index)}
+              </aside>
             )}
-
           </div>
         )}
 
