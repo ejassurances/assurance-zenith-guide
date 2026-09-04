@@ -328,7 +328,14 @@ function StageContent({
     case "en_cours":
       content = (
         <>
-          <RecueilPanel dossier={dossier} />
+          <RecueilDossierPanel
+            dossierId={dossierId}
+            typeAssurance={dossier.type_assurance}
+            recueil={dossier.recueil_besoins}
+            canEdit={canEdit}
+            onSaved={onChanged}
+          />
+
           <div className="grid gap-6 md:grid-cols-2">
             <Section title="Informations client">
               <Row label="Email">{dossier.client_email ?? "—"}</Row>
