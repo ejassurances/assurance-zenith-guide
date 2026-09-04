@@ -51,7 +51,28 @@ export function RecueilDossierPanel({
 
   const documents = (
     <div className="space-y-3">
-      {branche.value === "emprunteur" && <DocumentsPretPanel dossierId={dossierId} />}
+      {branche.value === "emprunteur" && (
+        <DocumentsPretPanel
+          dossierId={dossierId}
+          onAnalyse={({ recueil }) => {
+            if (!recueil) return;
+            // Les saisies en cours (non encore enregistrées) restent prioritaires.
+            setValues((prev) => {
+              const fusion: Record<string, unknown> = { ...recueil };
+              for (const [cle, valeur] of Object.entries(prev)) {
+                const videur =
+                  valeur === null ||
+                  valeur === undefined ||
+                  valeur === "" ||
+                  (Array.isArray(valeur) && valeur.length === 0);
+                if (!videur) fusion[cle] = valeur;
+              }
+              return fusion;
+            });
+            setMessage("Document analysé : les étapes suivantes ont été pré-remplies.");
+          }}
+        />
+      )}
       <DocumentsPretPanel
         dossierId={dossierId}
         titre="Documents du recueil (pièces, relevés, justificatifs)"
