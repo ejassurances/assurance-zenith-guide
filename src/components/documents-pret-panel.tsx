@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { monFichierUrl } from "@/lib/espace-client.functions";
+import { analyserDocumentRecueil } from "@/lib/recueil-documents.functions";
 
 type Doc = {
   id: string;
@@ -31,6 +32,7 @@ export function DocumentsPretPanel({
   titre = "Offre de prêt et tableau d'amortissement",
   filtre = "pret",
   typeDocument = "offre_pret",
+  onAnalyse,
 }: {
   dossierId: string;
   /** Intitulé du bloc. */
@@ -39,8 +41,19 @@ export function DocumentsPretPanel({
   filtre?: "pret" | "tous";
   /** Type enregistré lors du dépôt. */
   typeDocument?: string;
+  /**
+   * Appelé après l'analyse IA du document déposé : permet au recueil des
+   * besoins de récupérer les données reportées (aucune valeur humaine écrasée).
+   */
+  onAnalyse?: (resultat: {
+    recueil: Record<string, unknown> | null;
+    ajouts: string[];
+    manquants: string[];
+  }) => void;
 }) {
   const fichierUrl = useServerFn(monFichierUrl);
+  const analyser = useServerFn(analyserDocumentRecueil);
+  const [analyse, setAnalyse] = useState<string | null>(null);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [clientId, setClientId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -119,6 +132,28 @@ export function DocumentsPretPanel({
           .in("code", ["offre_pret", "tableau_amortissement"]);
       }
 
+      // Analyse IA du document : les données du prêt sont reportées dans le
+      // recueil pour renseigner les étapes suivantes.
+      if (docId) {
+        try {
+          setAnalyse("Analyse du document par l'IA…");
+          const res = await analyser({ data: { dossier_id: dossierId, document_id: docId } });
+          const recueil = res.recueil_json
+            ? (JSON.parse(res.recueil_json) as Record<string, unknown>)
+            : null;
+          onAnalyse?.({ recueil, ajouts: res.ajouts, manquants: res.manquants });
+          setAnalyse(
+            res.ajouts.length > 0
+              ? `Données reportées au recueil : ${res.ajouts.join(", ")}.${res.manquants.length ? ` À compléter : ${res.manquants.join(", ")}.` : ""}`
+              : "Aucune donnée exploitable détectée : saisie manuelle nécessaire.",
+          );
+        } catch (e) {
+          setAnalyse(
+            `Analyse IA indisponible : ${e instanceof Error ? e.message : "erreur"} — saisie manuelle.`,
+          );
+        }
+      }
+
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Dépôt impossible");
@@ -177,6 +212,7 @@ export function DocumentsPretPanel({
           ))}
         </ul>
       )}
+      {analyse && <p className="mt-2 text-xs text-ink-muted">{analyse}</p>}
       {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
     </div>
   );
