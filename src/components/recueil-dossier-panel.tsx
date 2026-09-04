@@ -85,6 +85,54 @@ function FichesAssures({ dossierId, canEdit }: { dossierId: string; canEdit: boo
 }
 
 /**
+ * Coût de l'assurance bancaire actuelle : cotisation lue sur l'offre de prêt ou
+ * calculée depuis le taux du contrat groupe, puis coût restant à courir entre
+ * le mois prévu de la substitution et la fin du crédit.
+ */
+function AssuranceBancaire({
+  values,
+  moisRestants,
+}: {
+  values: Record<string, unknown>;
+  moisRestants: number | null;
+}) {
+  const a = assuranceInitialeDepuisRecueil(values, moisRestants);
+  const euros = (v: number | null) => (v === null ? "—" : `${Math.round(v).toLocaleString("fr-FR")} €`);
+  if (a.mensuel === null) {
+    return (
+      <p className="rounded-md bg-surface-elevated/70 px-2 py-1 text-xs text-ink-muted">
+        Assurance actuelle : renseignez le taux d'assurance de la banque ou la cotisation mensuelle de l'offre de prêt
+        pour chiffrer le coût initial et l'économie de la substitution.
+      </p>
+    );
+  }
+  return (
+    <div className="rounded-md bg-surface-elevated/70 px-2 py-1.5">
+      <p className="text-xs font-medium text-ink">Assurance bancaire actuelle</p>
+      <dl className="mt-1 space-y-1 text-xs">
+        <div className="flex justify-between gap-2">
+          <dt className="text-ink-muted">
+            Cotisation {a.origine === "offre" ? "(offre de prêt)" : "(calcul par taux)"}
+          </dt>
+          <dd className="text-ink">{a.mensuel.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} € / mois</dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt className="text-ink-muted">Coût sur toute la durée</dt>
+          <dd className="text-ink">{euros(a.coutTotal)}</dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt className="text-ink-muted">Coût restant (substitution → fin)</dt>
+          <dd className="font-medium text-ink">
+            {euros(a.coutRestant)}
+            {a.moisRestants ? ` · ${a.moisRestants} mois` : ""}
+          </dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
+
+/**
  * Cohérence du prêt : le capital restant dû et les mois restants sont
  * recalculés à la date d'effet prévue de la substitution (date communiquée par
  * la compagnie, sinon création du dossier + 3 mois). Les écarts avec la saisie
@@ -136,6 +184,7 @@ function CoherencePret({
           <dd className="text-ink">{euros(calcul.mensualite)}</dd>
         </div>
       </dl>
+      <AssuranceBancaire values={values} moisRestants={calcul.mois_restants} />
       {alertes.length > 0 ? (
         <ul className="space-y-1 text-xs text-destructive">
           {alertes.map((a) => (
