@@ -256,6 +256,7 @@ export function RecueilDossierPanel({
   const lateral = (titre: string) => {
     if (branche.value === "emprunteur" && estEtapePret(titre)) {
       return (
+        <div className="space-y-3">
         <PanneauLateral titre="Offre de prêt & tableau d'amortissement">
           <DocumentsPretPanel
             dossierId={dossierId}
@@ -278,6 +279,8 @@ export function RecueilDossierPanel({
             }}
           />
         </PanneauLateral>
+        <CoherencePret values={values} dossierCreeLe={dossierCreeLe} />
+        </div>
       );
     }
     if (branche.value === "emprunteur" && /montant|dur[eé]e|substitut|capital/i.test(titre)) {
