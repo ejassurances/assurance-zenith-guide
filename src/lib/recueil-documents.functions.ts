@@ -64,9 +64,20 @@ export const analyserDocumentRecueil = createServerFn({ method: "POST" })
         .map((d) => d.id);
     }
 
+    const { analyserOffrePretDocument } = await import("@/lib/offre-pret-analyse.server");
+    const { completerAssuresDepuisOffre } = await import("@/lib/pret-prefill");
+
     // Chaque document est isolé : un échec n'interrompt pas les suivants.
     let statut = "indisponible";
     const donneesCumul: Record<string, unknown> = {};
+    const emprunteursLus: {
+      nom: string;
+      prenom: string;
+      date_naissance: string;
+      quotite_pct: number | null;
+      csp: string;
+      fumeur: boolean | null;
+    }[] = [];
     for (const id of ids) {
       try {
         await classifierDocument(supabaseAdmin, id);
@@ -82,6 +93,19 @@ export const analyserDocumentRecueil = createServerFn({ method: "POST" })
         }
       } catch {
         // Document illisible ou analyse indisponible : saisie manuelle.
+      }
+      // Lecture complémentaire : identité et QUOTITÉ de chaque emprunteur, qui
+      // figurent sur l'offre de prêt et le tableau d'amortissement.
+      try {
+        const lu = await analyserOffrePretDocument(supabaseAdmin, id);
+        if (lu.lisible) {
+          for (const [cle, valeur] of Object.entries(lu.pret)) {
+            if (donneesCumul[cle] === undefined) donneesCumul[cle] = valeur;
+          }
+          for (const e of lu.emprunteurs) emprunteursLus.push(e);
+        }
+      } catch {
+        // Lecture complémentaire indisponible : les données restent manuelles.
       }
     }
 
