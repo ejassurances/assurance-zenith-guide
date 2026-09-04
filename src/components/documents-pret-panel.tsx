@@ -57,9 +57,11 @@ export function DocumentsPretPanel({
         .order("created_at", { ascending: false }),
       supabase.from("dossiers").select("client_id").eq("id", dossierId).maybeSingle(),
     ]);
-    setDocs(((rows ?? []) as Doc[]).filter(estDocumentPret));
+    const tous = (rows ?? []) as Doc[];
+    setDocs(filtre === "tous" ? tous : tous.filter(estDocumentPret));
     setClientId(((dossier as { client_id: string | null } | null)?.client_id) ?? null);
-  }, [dossierId]);
+  }, [dossierId, filtre]);
+
 
   useEffect(() => {
     void load();
