@@ -51,6 +51,8 @@ export function RecueilWorkflow({
   completeLabel = "Terminer le recueil",
   dossierId,
   children,
+  aside,
+
 }: {
   branche: BrancheConfig;
   values: Record<string, unknown>;
@@ -62,7 +64,10 @@ export function RecueilWorkflow({
   dossierId?: string | null;
   /** Contenu affiché sur la dernière étape (récapitulatif) */
   children?: React.ReactNode;
+  /** Bloc affiché sous les questions à chaque étape (dépôt de documents…) */
+  aside?: React.ReactNode;
 }) {
+
   const steps = branche.sections;
   const total = steps.length + 1; // + récapitulatif
   const [index, setIndex] = useState(0);
@@ -160,11 +165,14 @@ export function RecueilWorkflow({
               />
             ))}
 
+            {aside}
+
             {showErrors && missing.length > 0 && (
               <p className="text-sm text-destructive">
                 Merci de répondre aux questions obligatoires avant de continuer.
               </p>
             )}
+
           </div>
         )}
 
@@ -204,7 +212,9 @@ export function RecueilWorkflow({
               ))}
             </div>
             {branche.value === "emprunteur" && <ValorisationCard values={values} />}
+            {aside}
             {children}
+
 
           </div>
         )}

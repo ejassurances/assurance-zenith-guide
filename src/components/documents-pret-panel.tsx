@@ -26,13 +26,27 @@ function estDocumentPret(d: Doc): boolean {
   return MOTIF.test(d.type_document ?? "") || MOTIF.test(d.categorie ?? "") || MOTIF.test(d.file_name ?? "");
 }
 
-export function DocumentsPretPanel({ dossierId }: { dossierId: string }) {
+export function DocumentsPretPanel({
+  dossierId,
+  titre = "Offre de prêt et tableau d'amortissement",
+  filtre = "pret",
+  typeDocument = "offre_pret",
+}: {
+  dossierId: string;
+  /** Intitulé du bloc. */
+  titre?: string;
+  /** « pret » : seuls les documents de prêt ; « tous » : toutes les pièces du dossier. */
+  filtre?: "pret" | "tous";
+  /** Type enregistré lors du dépôt. */
+  typeDocument?: string;
+}) {
   const fichierUrl = useServerFn(monFichierUrl);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [clientId, setClientId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const input = useRef<HTMLInputElement | null>(null);
+
 
   const load = useCallback(async () => {
     const [{ data: rows }, { data: dossier }] = await Promise.all([
@@ -43,9 +57,11 @@ export function DocumentsPretPanel({ dossierId }: { dossierId: string }) {
         .order("created_at", { ascending: false }),
       supabase.from("dossiers").select("client_id").eq("id", dossierId).maybeSingle(),
     ]);
-    setDocs(((rows ?? []) as Doc[]).filter(estDocumentPret));
+    const tous = (rows ?? []) as Doc[];
+    setDocs(filtre === "tous" ? tous : tous.filter(estDocumentPret));
     setClientId(((dossier as { client_id: string | null } | null)?.client_id) ?? null);
-  }, [dossierId]);
+  }, [dossierId, filtre]);
+
 
   useEffect(() => {
     void load();
@@ -87,7 +103,7 @@ export function DocumentsPretPanel({ dossierId }: { dossierId: string }) {
           file_size: file.size,
           mime_type: file.type || null,
           categorie: "dossier",
-          type_document: "offre_pret",
+          type_document: typeDocument,
         })
         .select("id")
         .maybeSingle();
@@ -95,13 +111,14 @@ export function DocumentsPretPanel({ dossierId }: { dossierId: string }) {
 
       // Marque la pièce requise « Offre de prêt / tableau d'amortissement ».
       const docId = (inserted as { id: string } | null)?.id ?? null;
-      if (docId) {
+      if (docId && typeDocument === "offre_pret") {
         await supabase
           .from("dossier_pieces_requises")
           .update({ statut: "recue", recue_le: new Date().toISOString(), document_id: docId })
           .eq("dossier_id", dossierId)
           .in("code", ["offre_pret", "tableau_amortissement"]);
       }
+
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Dépôt impossible");
@@ -112,9 +129,7 @@ export function DocumentsPretPanel({ dossierId }: { dossierId: string }) {
   return (
     <div className="rounded-xl border border-line p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs uppercase tracking-wide text-ink-muted">
-          Offre de prêt et tableau d'amortissement
-        </p>
+        <p className="text-xs uppercase tracking-wide text-ink-muted">{titre}</p>
         <button
           type="button"
           onClick={() => input.current?.click()}
@@ -126,20 +141,26 @@ export function DocumentsPretPanel({ dossierId }: { dossierId: string }) {
         <input
           ref={input}
           type="file"
+          multiple
           accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.csv"
           className="hidden"
           onChange={(e) => {
-            const f = e.target.files?.[0];
+            const fichiers = Array.from(e.target.files ?? []);
             e.target.value = "";
-            if (f) void deposer(f);
+            void (async () => {
+              for (const f of fichiers) await deposer(f);
+            })();
           }}
         />
       </div>
 
       {docs.length === 0 ? (
         <p className="mt-2 text-xs text-ink-muted">
-          Aucune offre de prêt ni tableau d'amortissement rattaché à ce dossier.
+          {filtre === "pret"
+            ? "Aucune offre de prêt ni tableau d'amortissement rattaché à ce dossier."
+            : "Aucun document rattaché à ce dossier."}
         </p>
+
       ) : (
         <ul className="mt-2 space-y-1 text-sm">
           {docs.map((d) => (

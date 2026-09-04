@@ -27,6 +27,8 @@ import { DevoirConseilRefusAnalysePanel } from "@/components/devoir-conseil-refu
 import { SouscriptionPanel } from "@/components/souscription-panel";
 import { CopilotePanel } from "@/components/copilote-panel";
 import { AnalyseRecueilPanel } from "@/components/analyse-recueil-panel";
+import { RecueilDossierPanel } from "@/components/recueil-dossier-panel";
+
 import { DossierDevisPanel } from "@/components/dossier-devis-panel";
 import { SimulassurConsole } from "@/components/simulassur-console";
 import { EtudeEpargnePanel } from "@/components/etude-epargne-panel";
@@ -328,7 +330,14 @@ function StageContent({
     case "en_cours":
       content = (
         <>
-          <RecueilPanel dossier={dossier} />
+          <RecueilDossierPanel
+            dossierId={dossierId}
+            typeAssurance={dossier.type_assurance}
+            recueil={dossier.recueil_besoins}
+            canEdit={canEdit}
+            onSaved={onChanged}
+          />
+
           <div className="grid gap-6 md:grid-cols-2">
             <Section title="Informations client">
               <Row label="Email">{dossier.client_email ?? "—"}</Row>
