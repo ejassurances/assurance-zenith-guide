@@ -285,6 +285,115 @@ export function NewDossierForm({
 
   const branche = getBranche(type)!;
 
+  /** Lit un fichier en base64 (sans le préfixe data:). */
+  const enBase64 = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const s = String(reader.result ?? "");
+        resolve(s.includes(",") ? s.slice(s.indexOf(",") + 1) : s);
+      };
+      reader.onerror = () => reject(new Error("Lecture du fichier impossible"));
+      reader.readAsDataURL(file);
+    });
+
+  /**
+   * Analyse IA de l'offre de prêt / du tableau d'amortissement déposé avant
+   * création : les données du prêt et les emprunteurs sont reportés dans le
+   * formulaire, sans jamais écraser une valeur déjà saisie.
+   */
+  const analyserOffreDeposee = async (files: File[]) => {
+    setOffreFiles(files);
+    if (files.length === 0) return;
+    setAnalysing(true);
+    setAnalyseEtat("Lecture du document par l'IA…");
+    try {
+      const fichiers = await Promise.all(
+        files.map(async (f) => ({
+          nom: f.name.slice(0, 200),
+          mime: f.type || "application/pdf",
+          contenu_base64: await enBase64(f),
+        })),
+      );
+      const res = await analyserOffre({ data: { fichiers } });
+      const extrait = JSON.parse(res.recueil_json) as Record<string, unknown>;
+      setRecueil((r) => {
+        const fusion: Record<string, unknown> = { ...r };
+        for (const [k, v] of Object.entries(extrait)) {
+          const actuel = fusion[k];
+          const vide = actuel === undefined || actuel === null || actuel === "" || (Array.isArray(actuel) && actuel.length === 0);
+          if (vide) fusion[k] = v;
+        }
+        return fusion;
+      });
+      setEmprunteurs(res.emprunteurs);
+      const principal = res.emprunteurs[0];
+      if (principal) {
+        if (!clientId) {
+          if (principal.client_id) setClientId(principal.client_id);
+          setClientNom([principal.prenom, principal.nom].filter(Boolean).join(" ").trim());
+          if (principal.email) setClientEmail(principal.email);
+          if (principal.telephone) setClientPhone(principal.telephone);
+        }
+      }
+      const nouveaux = res.emprunteurs.filter((e) => !e.client_id).length;
+      setAnalyseEtat(
+        [
+          res.ajouts.length > 0 ? `Données du prêt reportées : ${res.ajouts.join(", ")}.` : "Aucune donnée de prêt exploitable détectée.",
+          res.emprunteurs.length > 0
+            ? `${res.emprunteurs.length} emprunteur(s) détecté(s)${nouveaux > 0 ? `, dont ${nouveaux} sans fiche client (créée à l'enregistrement)` : ", tous rapprochés d'une fiche existante"}.`
+            : "Aucun emprunteur nommé détecté : saisie manuelle.",
+          res.manquants.length > 0 ? `À compléter : ${res.manquants.join(", ")}.` : "",
+          res.erreurs.length > 0 ? `Documents non exploités : ${res.erreurs.join(" ; ")}` : "",
+        ]
+          .filter(Boolean)
+          .join(" "),
+      );
+    } catch (e) {
+      setAnalyseEtat(`Analyse IA indisponible : ${e instanceof Error ? e.message : "erreur"} — saisie manuelle.`);
+    }
+    setAnalysing(false);
+  };
+
+  /** Archive les offres déposées sur le dossier créé et coche la pièce requise. */
+  const archiverOffres = async (dossierId: string, clientDossierId: string | null) => {
+    for (const file of offreFiles) {
+      try {
+        const safeName = file.name.replace(/[^\w.\-]+/g, "_").slice(0, 120);
+        const path = `${clientDossierId ?? dossierId}/${Date.now()}-${safeName}`;
+        const { error: upErr } = await supabase.storage
+          .from("dossier-documents")
+          .upload(path, file, { upsert: true });
+        if (upErr) throw upErr;
+        const { data: doc } = await supabase
+          .from("documents")
+          .insert({
+            dossier_id: dossierId,
+            client_id: clientDossierId,
+            uploader_id: userId,
+            storage_path: path,
+            file_name: file.name.slice(0, 200),
+            file_size: file.size,
+            mime_type: file.type || null,
+            categorie: "dossier",
+            type_document: "offre_pret",
+          })
+          .select("id")
+          .maybeSingle();
+        if (doc?.id) {
+          await supabase
+            .from("dossier_pieces_requises")
+            .update({ statut: "recue", recue_le: new Date().toISOString(), document_id: doc.id })
+            .eq("dossier_id", dossierId)
+            .in("code", ["offre_pret", "tableau_amortissement"]);
+        }
+      } catch (e) {
+        console.error("[offre de prêt] archivage impossible", e);
+      }
+    }
+  };
+
+
   const submit = async () => {
     if (!clientNom.trim()) {
       setError("Sélectionnez un client ou saisissez un nom.");
