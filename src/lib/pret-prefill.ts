@@ -142,21 +142,24 @@ export interface EmprunteurLu {
 }
 
 /**
- * Complète les personnes assurées du recueil avec ce que l'offre de prêt
- * indique RÉELLEMENT (quotité, date de naissance, profession, statut fumeur).
- * Une valeur déjà renseignée n'est jamais remplacée, et rien n'est déduit :
- * une quotité absente du document reste vide.
+ * Renseigne et CORRIGE les personnes assurées d'après ce que l'offre de prêt
+ * indique réellement (quotité, date de naissance, profession, statut fumeur).
+ * Le document importé fait foi : une valeur enregistrée différente est
+ * remplacée. Rien n'est déduit : une donnée absente du document est conservée
+ * telle quelle.
  */
 export function completerAssuresDepuisOffre(
   recueil: Record<string, unknown>,
   emprunteurs: EmprunteurLu[],
-): { recueil: Record<string, unknown>; ajouts: string[] } {
+): { recueil: Record<string, unknown>; ajouts: string[]; corrections: string[] } {
   const assures = Array.isArray(recueil["assures"])
     ? (recueil["assures"] as Record<string, unknown>[]).map((a) => ({ ...a }))
     : [];
-  if (assures.length === 0 || emprunteurs.length === 0) return { recueil, ajouts: [] };
+  if (assures.length === 0 || emprunteurs.length === 0)
+    return { recueil, ajouts: [], corrections: [] };
 
   const ajouts: string[] = [];
+  const corrections: string[] = [];
   assures.forEach((a, i) => {
     const cibles = jetons(a["nom"] as string, a["prenom"] as string);
     let lu =
@@ -170,18 +173,23 @@ export function completerAssuresDepuisOffre(
 
     const poser = (cle: string, valeur: unknown) => {
       if (vide(valeur)) return;
-      if (!vide(a[cle])) return;
+      const actuelle = a[cle];
+      if (!vide(actuelle)) {
+        if (String(actuelle) === String(valeur)) return;
+        corrections.push(`${a["nom"] ?? "assuré"} ${cle} : ${String(actuelle)} → ${String(valeur)}`);
+      }
       a[cle] = valeur;
       ajouts.push(`assures[${i}].${cle}`);
     };
     poser("quotite_pct", typeof lu.quotite_pct === "number" ? lu.quotite_pct : null);
     poser("date_naissance", lu.date_naissance);
     poser("csp", lu.csp);
-    if (lu.fumeur === true && a["fumeur"] !== true) {
-      a["fumeur"] = true;
+    if (typeof lu.fumeur === "boolean" && a["fumeur"] !== lu.fumeur) {
+      a["fumeur"] = lu.fumeur;
       ajouts.push(`assures[${i}].fumeur`);
     }
   });
+
 
   if (ajouts.length === 0) return { recueil, ajouts: [] };
   return { recueil: { ...recueil, assures }, ajouts };
