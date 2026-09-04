@@ -30,8 +30,29 @@ function ajouterMois(iso: string, mois: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** Personnes assurées sur le prêt, telles que saisies dans le recueil. */
+function assuresDuPret(
+  recueil: unknown,
+): { libelle: string | null; quotite_pct: number | null }[] {
+  const valeur = (recueil as Record<string, unknown> | null)?.["assures"];
+  if (!Array.isArray(valeur)) return [];
+  return valeur
+    .filter((p): p is Record<string, unknown> => !!p && typeof p === "object")
+    .map((p) => {
+      const q = Number(p["quotite_pct"] ?? NaN);
+      const nom = typeof p["nom"] === "string" && p["nom"] ? p["nom"] : null;
+      const lien = typeof p["lien"] === "string" ? p["lien"] : "";
+      return {
+        libelle: nom ?? (lien === "co_emprunteur" ? "Co-emprunteur" : lien === "principal" ? null : lien || null),
+        quotite_pct: Number.isFinite(q) && q > 0 ? q : null,
+      };
+    });
+}
+
 export interface ResultatContratDossier {
   contrat_id: string;
+  /** Un contrat par personne assurée sur le prêt (emprunteur). */
+  contrats_ids: string[];
   deja_existant: boolean;
   prime_annuelle: number | null;
   date_effet: string;
@@ -47,22 +68,25 @@ export async function creerContratDepuisDossier(
 ): Promise<ResultatContratDossier> {
   const { data: dossier, error } = await client
     .from("dossiers")
-    .select("id, reference, client_id, type_assurance, duree_mois, capital, compagnie_id, produit_id")
+    .select(
+      "id, reference, client_id, type_assurance, duree_mois, capital, compagnie_id, produit_id, recueil_besoins",
+    )
     .eq("id", dossierId)
     .maybeSingle();
   if (error || !dossier) throw new Error("Dossier introuvable ou accès refusé");
   if (!dossier.client_id) throw new Error("Dossier sans fiche client : rattachez le client avant de créer le contrat.");
 
-  // Idempotence : un dossier ne produit qu'un contrat.
-  const { data: existant } = await client
+  // Idempotence : un dossier (un prêt) ne produit qu'un jeu de contrats.
+  const { data: existants } = await client
     .from("contrats")
     .select("id, prime_annuelle, date_effet, date_echeance")
     .eq("dossier_id", dossierId)
-    .limit(1)
-    .maybeSingle();
+    .order("created_at", { ascending: true });
+  const existant = (existants ?? [])[0];
   if (existant) {
     return {
       contrat_id: existant.id,
+      contrats_ids: (existants ?? []).map((c) => c.id),
       deja_existant: true,
       prime_annuelle: existant.prime_annuelle,
       date_effet: existant.date_effet ?? "",
@@ -130,30 +154,54 @@ export async function creerContratDepuisDossier(
   const dureeMois = options?.duree_mois ?? (estEmprunteur ? dossier.duree_mois ?? 12 : 12);
   const dateEcheance = ajouterMois(dateEffet, Math.max(1, dureeMois));
 
-  const { data: cree, error: insErr } = await client
-    .from("contrats")
-    .insert({
-      client_id: dossier.client_id,
-      dossier_id: dossierId,
-      numero: options?.numero ?? null,
-      assureur: compagnie.data?.nom ?? "À compléter",
-      produit: produit.data?.nom ?? dossier.type_assurance ?? "Contrat",
-      compagnie_id: compagnieId,
-      produit_id: produitId,
-      date_effet: dateEffet,
-      date_echeance: dateEcheance,
-      duree_mois: dureeMois,
-      prime_annuelle: primeAnnuelle,
-      fractionnement: devis?.cotisation_mensuelle != null ? "mensuel" : "annuel",
-      statut: "actif",
-      is_emprunteur: estEmprunteur,
-      capital_initial: estEmprunteur ? dossier.capital : null,
-      quotite: devis?.quotite_pct ?? null,
-      created_by: userId,
-    })
-    .select("id")
-    .single();
-  if (insErr || !cree) throw new Error(insErr?.message ?? "Création du contrat impossible");
+  // Emprunteur : le dossier porte UN prêt, mais chaque personne assurée sur ce
+  // prêt donne lieu à SON contrat (quotité propre, prime au prorata de la
+  // quotité lorsque seule la prime globale du prêt est connue).
+  const assures = estEmprunteur ? assuresDuPret(dossier.recueil_besoins) : [];
+  const totalQuotites = assures.reduce((s, a) => s + (a.quotite_pct ?? 0), 0);
+
+  const lignes =
+    assures.length > 0
+      ? assures.map((a) => {
+          const part =
+            primeAnnuelle == null
+              ? null
+              : totalQuotites > 0 && a.quotite_pct != null
+                ? Math.round(((primeAnnuelle * a.quotite_pct) / totalQuotites) * 100) / 100
+                : Math.round((primeAnnuelle / assures.length) * 100) / 100;
+          return { quotite: a.quotite_pct, prime: part, libelle: a.libelle };
+        })
+      : [{ quotite: devis?.quotite_pct ?? null, prime: primeAnnuelle, libelle: null as string | null }];
+
+  const contratsIds: string[] = [];
+  for (const ligne of lignes) {
+    const { data: cree, error: insErr } = await client
+      .from("contrats")
+      .insert({
+        client_id: dossier.client_id,
+        dossier_id: dossierId,
+        numero: options?.numero ?? null,
+        assureur: compagnie.data?.nom ?? "À compléter",
+        produit: produit.data?.nom ?? dossier.type_assurance ?? "Contrat",
+        compagnie_id: compagnieId,
+        produit_id: produitId,
+        date_effet: dateEffet,
+        date_echeance: dateEcheance,
+        duree_mois: dureeMois,
+        prime_annuelle: ligne.prime,
+        fractionnement: devis?.cotisation_mensuelle != null ? "mensuel" : "annuel",
+        statut: "actif",
+        is_emprunteur: estEmprunteur,
+        capital_initial: estEmprunteur ? dossier.capital : null,
+        quotite: ligne.quotite,
+        co_emprunteur: ligne.libelle,
+        created_by: userId,
+      })
+      .select("id")
+      .single();
+    if (insErr || !cree) throw new Error(insErr?.message ?? "Création du contrat impossible");
+    contratsIds.push(cree.id);
+  }
 
   // Le client produit du chiffre d'affaires : il n'est plus un prospect.
   await client.from("clients").update({ statut: "actif" }).eq("id", dossier.client_id).eq("statut", "prospect");
@@ -188,12 +236,25 @@ export async function creerContratDepuisDossier(
   await client.from("activites").insert({
     client_id: dossier.client_id,
     type: "systeme",
-    titre: "Contrat créé au portefeuille (confirmation compagnie)",
+    titre:
+      contratsIds.length > 1
+        ? `Contrats créés au portefeuille (${contratsIds.length} assurés du prêt)`
+        : "Contrat créé au portefeuille (confirmation compagnie)",
     contenu: [
       `Dossier ${dossier.reference}`,
       `${compagnie.data?.nom ?? "Assureur à compléter"} — ${produit.data?.nom ?? dossier.type_assurance}`,
       `Effet ${dateEffet} · fin ${dateEcheance}`,
-      primeAnnuelle != null ? `Prime annuelle : ${primeAnnuelle} €` : null,
+      primeAnnuelle != null ? `Prime annuelle du prêt : ${primeAnnuelle} €` : null,
+      lignes.length > 1
+        ? `Un contrat par assuré : ${lignes
+            .map(
+              (l) =>
+                `${l.libelle ?? "assuré principal"}${l.quotite != null ? ` — quotité ${l.quotite} %` : ""}${
+                  l.prime != null ? ` — ${l.prime} €/an` : ""
+                }`,
+            )
+            .join(" ; ")}`
+        : null,
       manquants.length > 0 ? `Documents DDA à régulariser : ${manquants.join(" ; ")}` : "Dossier DDA complet.",
     ]
       .filter(Boolean)
@@ -202,7 +263,8 @@ export async function creerContratDepuisDossier(
   });
 
   return {
-    contrat_id: cree.id,
+    contrat_id: contratsIds[0]!,
+    contrats_ids: contratsIds,
     deja_existant: false,
     prime_annuelle: primeAnnuelle,
     date_effet: dateEffet,

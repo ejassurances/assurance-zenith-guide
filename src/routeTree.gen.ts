@@ -27,6 +27,7 @@ import { Route as ApiPublicRelanceSouscriptionRouteImport } from './routes/api/p
 import { Route as ApiPublicRelanceSinistresRouteImport } from './routes/api/public/relance-sinistres'
 import { Route as ApiPublicRelancePiecesRouteImport } from './routes/api/public/relance-pieces'
 import { Route as ApiPublicReglesAgentRouteImport } from './routes/api/public/regles-agent'
+import { Route as ApiPublicRecueilEmprunteurReconstitutionRouteImport } from './routes/api/public/recueil-emprunteur-reconstitution'
 import { Route as ApiPublicReclamationsAccuseReceptionRouteImport } from './routes/api/public/reclamations-accuse-reception'
 import { Route as ApiPublicRappelsExpirationRouteImport } from './routes/api/public/rappels-expiration'
 import { Route as ApiPublicLettresMissionEnvoisRouteImport } from './routes/api/public/lettres-mission-envois'
@@ -174,6 +175,12 @@ const ApiPublicReglesAgentRoute = ApiPublicReglesAgentRouteImport.update({
   path: '/api/public/regles-agent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicRecueilEmprunteurReconstitutionRoute =
+  ApiPublicRecueilEmprunteurReconstitutionRouteImport.update({
+    id: '/api/public/recueil-emprunteur-reconstitution',
+    path: '/api/public/recueil-emprunteur-reconstitution',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicReclamationsAccuseReceptionRoute =
   ApiPublicReclamationsAccuseReceptionRouteImport.update({
     id: '/api/public/reclamations-accuse-reception',
@@ -526,6 +533,7 @@ export interface FileRoutesByFullPath {
   '/api/public/lettres-mission-envois': typeof ApiPublicLettresMissionEnvoisRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/reclamations-accuse-reception': typeof ApiPublicReclamationsAccuseReceptionRoute
+  '/api/public/recueil-emprunteur-reconstitution': typeof ApiPublicRecueilEmprunteurReconstitutionRoute
   '/api/public/regles-agent': typeof ApiPublicReglesAgentRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
@@ -596,6 +604,7 @@ export interface FileRoutesByTo {
   '/api/public/lettres-mission-envois': typeof ApiPublicLettresMissionEnvoisRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/reclamations-accuse-reception': typeof ApiPublicReclamationsAccuseReceptionRoute
+  '/api/public/recueil-emprunteur-reconstitution': typeof ApiPublicRecueilEmprunteurReconstitutionRoute
   '/api/public/regles-agent': typeof ApiPublicReglesAgentRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
@@ -669,6 +678,7 @@ export interface FileRoutesById {
   '/api/public/lettres-mission-envois': typeof ApiPublicLettresMissionEnvoisRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
   '/api/public/reclamations-accuse-reception': typeof ApiPublicReclamationsAccuseReceptionRoute
+  '/api/public/recueil-emprunteur-reconstitution': typeof ApiPublicRecueilEmprunteurReconstitutionRoute
   '/api/public/regles-agent': typeof ApiPublicReglesAgentRoute
   '/api/public/relance-pieces': typeof ApiPublicRelancePiecesRoute
   '/api/public/relance-sinistres': typeof ApiPublicRelanceSinistresRoute
@@ -742,6 +752,7 @@ export interface FileRouteTypes {
     | '/api/public/lettres-mission-envois'
     | '/api/public/rappels-expiration'
     | '/api/public/reclamations-accuse-reception'
+    | '/api/public/recueil-emprunteur-reconstitution'
     | '/api/public/regles-agent'
     | '/api/public/relance-pieces'
     | '/api/public/relance-sinistres'
@@ -812,6 +823,7 @@ export interface FileRouteTypes {
     | '/api/public/lettres-mission-envois'
     | '/api/public/rappels-expiration'
     | '/api/public/reclamations-accuse-reception'
+    | '/api/public/recueil-emprunteur-reconstitution'
     | '/api/public/regles-agent'
     | '/api/public/relance-pieces'
     | '/api/public/relance-sinistres'
@@ -884,6 +896,7 @@ export interface FileRouteTypes {
     | '/api/public/lettres-mission-envois'
     | '/api/public/rappels-expiration'
     | '/api/public/reclamations-accuse-reception'
+    | '/api/public/recueil-emprunteur-reconstitution'
     | '/api/public/regles-agent'
     | '/api/public/relance-pieces'
     | '/api/public/relance-sinistres'
@@ -934,6 +947,7 @@ export interface RootRouteChildren {
   ApiPublicLettresMissionEnvoisRoute: typeof ApiPublicLettresMissionEnvoisRoute
   ApiPublicRappelsExpirationRoute: typeof ApiPublicRappelsExpirationRoute
   ApiPublicReclamationsAccuseReceptionRoute: typeof ApiPublicReclamationsAccuseReceptionRoute
+  ApiPublicRecueilEmprunteurReconstitutionRoute: typeof ApiPublicRecueilEmprunteurReconstitutionRoute
   ApiPublicReglesAgentRoute: typeof ApiPublicReglesAgentRoute
   ApiPublicRelancePiecesRoute: typeof ApiPublicRelancePiecesRoute
   ApiPublicRelanceSinistresRoute: typeof ApiPublicRelanceSinistresRoute
@@ -1076,6 +1090,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/regles-agent'
       fullPath: '/api/public/regles-agent'
       preLoaderRoute: typeof ApiPublicReglesAgentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/recueil-emprunteur-reconstitution': {
+      id: '/api/public/recueil-emprunteur-reconstitution'
+      path: '/api/public/recueil-emprunteur-reconstitution'
+      fullPath: '/api/public/recueil-emprunteur-reconstitution'
+      preLoaderRoute: typeof ApiPublicRecueilEmprunteurReconstitutionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/reclamations-accuse-reception': {
@@ -1577,6 +1598,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicRappelsExpirationRoute: ApiPublicRappelsExpirationRoute,
   ApiPublicReclamationsAccuseReceptionRoute:
     ApiPublicReclamationsAccuseReceptionRoute,
+  ApiPublicRecueilEmprunteurReconstitutionRoute:
+    ApiPublicRecueilEmprunteurReconstitutionRoute,
   ApiPublicReglesAgentRoute: ApiPublicReglesAgentRoute,
   ApiPublicRelancePiecesRoute: ApiPublicRelancePiecesRoute,
   ApiPublicRelanceSinistresRoute: ApiPublicRelanceSinistresRoute,
