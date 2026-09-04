@@ -1244,6 +1244,16 @@ export function DossierDevisPanel({
                 </div>
               </div>
 
+              {estEmprunteur && d.type_cotisation === "CRD" && (
+                <p className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-800">
+                  Note d'information : cotisation calculée sur le capital restant dû. Même si le coût
+                  total est inférieur, la cotisation est plus élevée les premières années puis diminue
+                  avec le capital. Si cette offre est retenue, cette caractéristique est reprise dans
+                  le devoir de conseil remis au client.
+                </p>
+              )}
+
+
               {(() => {
                 const eco = economiePourDevis(d);
                 if (!eco) return null;
