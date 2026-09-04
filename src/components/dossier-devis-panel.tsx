@@ -901,7 +901,7 @@ export function DossierDevisPanel({
           </p>
         )}
 
-      {branche === "emprunteur" && (
+      {estEmprunteur && (
         <div className="mt-4 rounded-xl border border-line bg-surface-elevated/60 px-3 py-2 text-xs">
           {assuranceInit.coutRestant != null ? (
             <p className="text-ink">
@@ -1266,7 +1266,7 @@ export function DossierDevisPanel({
           <p className="mt-2 text-xs text-ink-muted">Saisissez au moins 2 devis pour activer le classement.</p>
         )}
 
-        {branche === "emprunteur" && (
+        {estEmprunteur && (
           <div className="mt-3 rounded-xl border border-line bg-surface-2 p-3 text-xs">
             <p className="font-medium text-ink">
               Route de recommandation :{" "}
@@ -1596,7 +1596,7 @@ export function DossierDevisPanel({
             </span>
           </label>
         )}
-        {branche === "emprunteur" && (
+        {estEmprunteur && (
           <label className="block">
             <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Quotité assurée (%)</span>
             <input
