@@ -272,6 +272,8 @@ export function DossierDevisPanel({
       | null;
     const recueil = (dossier?.recueil_besoins ?? {}) as Record<string, unknown>;
     const brancheDossier = dossier?.type_assurance ?? "";
+    setBrancheDossierEtat(brancheDossier);
+    const emprunteur = (branche ?? brancheDossier) === "emprunteur";
     setModeReco(dossier?.mode_recommandation ?? "auto");
     setDossierInfo({
       compagnie_id: dossier?.compagnie_id ?? null,
@@ -291,6 +293,23 @@ export function DossierDevisPanel({
     );
     setRecueilDossier(recueil);
 
+    // Grilles de garanties emprunteur validées : seule base autorisée pour noter
+    // les produits du catalogue (aucune valeur déduite).
+    if (emprunteur) {
+      const { data: gr } = await supabase
+        .from("produit_garanties")
+        .select("produit_id,valeurs,statut,famille_code")
+        .eq("famille_code", "emprunteur")
+        .eq("statut", "valide");
+      const table: Record<string, ValeursGrille> = {};
+      for (const g of (gr as { produit_id: string; valeurs: unknown }[] | null) ?? []) {
+        table[g.produit_id] = (g.valeurs ?? {}) as ValeursGrille;
+      }
+      setGrillesProduits(table);
+    } else {
+      setGrillesProduits({});
+    }
+
     const nb = (v: unknown) => {
       const n = Number(v);
       return Number.isFinite(n) && n > 0 ? n : null;
@@ -306,13 +325,16 @@ export function DossierDevisPanel({
     );
     setMoisRestants(nb(recueil["mois_restants"]) ?? nb(recueil["duree_mois"]));
     setCrdRecueil(nb(recueil["capital_restant_du"]) ?? nb(recueil["capital"]));
+    // Branche emprunteur : plus aucune tarification automatique par API — le
+    // devis est établi depuis le catalogue et le prix obtenu du partenaire.
     setNbAssuresApi(
-      brancheTarifableNeoliane(brancheDossier) ? nbAssuresNeoliane(brancheDossier, recueil) : 0,
+      !emprunteur && brancheTarifableNeoliane(brancheDossier) ? nbAssuresNeoliane(brancheDossier, recueil) : 0,
     );
-    setNbAssuresUgipApi(nbAssuresUgip(brancheDossier, recueil));
+    setNbAssuresUgipApi(emprunteur ? 0 : nbAssuresUgip(brancheDossier, recueil));
     setNbAssuresSimu(
-      brancheTarifableSimulassur(brancheDossier) ? nbAssuresSimulassur(brancheDossier, recueil) : 0,
+      !emprunteur && brancheTarifableSimulassur(brancheDossier) ? nbAssuresSimulassur(brancheDossier, recueil) : 0,
     );
+
 
 
     const produitDossierId = dossier?.produit_id ?? null;
