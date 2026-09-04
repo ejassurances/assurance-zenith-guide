@@ -87,13 +87,14 @@ export const analyserDocumentRecueil = createServerFn({ method: "POST" })
 
     const { data: dossierRow } = await supabaseAdmin
       .from("dossiers")
-      .select("id, statut, type_assurance, recueil_besoins")
+      .select("id, statut, type_assurance, recueil_besoins, created_at")
       .eq("id", data.dossier_id)
       .maybeSingle();
     const dossier = dossierRow as {
       statut: string;
       type_assurance: string | null;
       recueil_besoins: Record<string, unknown> | null;
+      created_at: string | null;
     } | null;
 
     if (!dossier || dossier.type_assurance !== "emprunteur" || Object.keys(donneesCumul).length === 0) {
@@ -108,6 +109,7 @@ export const analyserDocumentRecueil = createServerFn({ method: "POST" })
     const { recueil, ajouts, manquants } = prefillRecueilEmprunteur(
       dossier.recueil_besoins,
       donneesCumul,
+      { dossier_cree_le: dossier.created_at },
     );
 
     if (ajouts.length > 0) {

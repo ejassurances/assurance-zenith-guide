@@ -55,7 +55,7 @@ async function exploiterOffrePret(
 ): Promise<void> {
   const { data: dossierRow } = await admin
     .from("dossiers")
-    .select("id, statut, type_assurance, recueil_besoins, client_email")
+    .select("id, statut, type_assurance, recueil_besoins, client_email, created_at")
     .eq("id", params.dossierId)
     .maybeSingle();
   const dossier = dossierRow as any;
@@ -64,6 +64,7 @@ async function exploiterOffrePret(
   const { recueil, ajouts, manquants } = prefillRecueilEmprunteur(
     (dossier.recueil_besoins ?? null) as Record<string, unknown> | null,
     params.donnees,
+    { dossier_cree_le: (dossier.created_at ?? null) as string | null },
   );
 
   if (ajouts.length > 0) {
