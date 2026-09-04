@@ -738,6 +738,65 @@ export function DossierDevisPanel({
   const rangIa = (id: string) => classement?.classement.find((l) => l.dossier_devis_id === id)?.rang ?? null;
 
   /**
+   * Coût des 8 premières années : calculé uniquement pour une cotisation
+   * constante (capital initial). En capital restant dû, la valeur dépend de
+   * l'échéancier et n'est pas déduite ici.
+   */
+  const coutHuitAns = (d: DossierDevis): number | null => {
+    if (d.cotisation_mensuelle == null || d.type_cotisation === "CRD") return null;
+    const mois = moisRestants ? Math.min(96, moisRestants) : 96;
+    return Number(d.cotisation_mensuelle) * mois;
+  };
+
+  /** Colonnes du comparatif : une par tête assurée du recueil (au moins une). */
+  const assuresColonnes =
+    assuresRecueil.length > 0
+      ? assuresRecueil
+      : [
+          {
+            rang: 1,
+            label: "Assuré principal",
+            nom: null,
+            quotite: null,
+            garanties: null,
+            franchise: null,
+            options: null,
+            adhesion: null,
+          },
+        ];
+
+  /** Propositions d'une tête assurée, du moins cher au plus cher. */
+  const propositionsParTete = (rang: number) =>
+    devisAffiches
+      .filter((d) => (d.assure_rang ?? 1) === rang)
+      .sort((a, b) => {
+        const va = coutTotalDevis(a) ?? (a.cotisation_mensuelle != null ? Number(a.cotisation_mensuelle) * 1000 : Infinity);
+        const vb = coutTotalDevis(b) ?? (b.cotisation_mensuelle != null ? Number(b.cotisation_mensuelle) * 1000 : Infinity);
+        return va - vb;
+      });
+
+  /** Agrégats du dossier : offre retenue par tête, sinon la moins chère. */
+  const referencesParTete = assuresColonnes.map((a) => {
+    const offres = propositionsParTete(a.rang);
+    return offres.find((o) => estDevisRetenu(o)) ?? offres[0] ?? null;
+  });
+  const somme = (valeurs: (number | null)[]) =>
+    valeurs.some((v) => v == null) || valeurs.length === 0
+      ? null
+      : valeurs.reduce((s, v) => (s ?? 0) + (v ?? 0), 0);
+  const totalRetenuDossier = somme(referencesParTete.map((d) => (d ? coutTotalDevis(d) : null)));
+  const huitAnsRetenuDossier = somme(referencesParTete.map((d) => (d ? coutHuitAns(d) : null)));
+  const economieRetenueDossier =
+    assuranceInit.coutRestant != null && totalRetenuDossier != null
+      ? assuranceInit.coutRestant - totalRetenuDossier
+      : null;
+
+  /** Détail technique des devis : replié par défaut en emprunteur. */
+  const [detailOuvert, setDetailOuvert] = useState(false);
+
+
+
+  /**
    * Sélection directe d'un devis depuis le comparatif, y compris sur un dossier
    * déjà validé : compagnie et produit sont reportés sur le dossier et le devoir
    * de conseil est régénéré en brouillon (aucun envoi au client).
