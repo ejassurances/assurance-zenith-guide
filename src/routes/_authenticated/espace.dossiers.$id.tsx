@@ -336,6 +336,13 @@ function StageContent({
             recueil={dossier.recueil_besoins}
             canEdit={canEdit}
             onSaved={onChanged}
+            client={{
+              id: dossier.client_id,
+              nom: dossier.client_nom,
+              email: dossier.client_email,
+              telephone: dossier.client_phone,
+              reference: dossier.reference,
+            }}
           />
 
           <div className="grid gap-6 md:grid-cols-2">
