@@ -48,22 +48,43 @@ export function prefillRecueilEmprunteur(
   options?: {
     /** Date de création du dossier : base du délai de 3 mois de substitution. */
     dossier_cree_le?: string | null;
+    /**
+     * Le document importé fait foi : une valeur lue sur l'offre de prêt corrige
+     * la valeur enregistrée si elle diffère (les valeurs dérivées, capital
+     * restant dû et mois restants, sont alors recalculées).
+     */
+    document_fait_foi?: boolean;
   },
 ): PrefillEmprunteurResultat {
   const recueil: Record<string, unknown> = { ...(recueilExistant ?? {}) };
   const ajouts: string[] = [];
+  const faitFoi = options?.document_fait_foi === true;
+  let pretCorrige = false;
 
   for (const champ of CHAMPS_PRET) {
     const valeur = extraction?.[champ.source];
     if (vide(valeur)) continue;
-    if (!vide(recueil[champ.cle])) continue;
+    const actuelle = recueil[champ.cle];
+    if (!vide(actuelle)) {
+      // Le document importé fait foi : correction si la valeur diffère.
+      if (!faitFoi) continue;
+      if (String(actuelle) === String(valeur)) continue;
+      pretCorrige = true;
+    }
     recueil[champ.cle] = valeur;
     ajouts.push(champ.cle);
   }
 
+  // Une caractéristique du prêt corrigée invalide les valeurs calculées : elles
+  // sont effacées ici pour être recalculées juste après.
+  if (pretCorrige) {
+    delete recueil["capital_restant_du"];
+    delete recueil["mois_restants"];
+  }
+
   // Capital restant dû et mois restants : calculés par amortissement à la date
   // d'effet prévue de la substitution (date communiquée par la compagnie, sinon
-  // création du dossier + 3 mois). Une saisie humaine n'est jamais écrasée.
+  // création du dossier + 3 mois).
   const situation = situationPret({
     capital: Number(recueil["capital"]) || null,
     taux_pret: Number(recueil["taux_pret"]) || null,
@@ -88,6 +109,7 @@ export function prefillRecueilEmprunteur(
     recueil["capital_restant_du"] = situation.capital_restant_du;
     ajouts.push("capital_restant_du");
   }
+
 
 
   const manquants = ["capital", "duree_mois"].filter((k) => vide(recueil[k]));
