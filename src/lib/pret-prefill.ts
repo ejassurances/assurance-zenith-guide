@@ -10,6 +10,8 @@
  *    validée par un humain (ou par le circuit existant de la lettre de mission).
  */
 
+import { situationPret } from "./pret-amortissement";
+
 export interface PrefillEmprunteurResultat {
   recueil: Record<string, unknown>;
   /** Clés réellement ajoutées par le pré-remplissage. */
