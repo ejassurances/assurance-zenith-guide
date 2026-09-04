@@ -1431,7 +1431,7 @@ export function DossierDevisPanel({
 
 
 
-      <div className="mt-4 space-y-2">
+      <div className={`mt-4 space-y-2 ${estEmprunteur && !detailOuvert ? "hidden" : ""}`}>
         {devis.length === 0 && (
           <p className="rounded-xl border border-dashed border-line bg-surface px-3 py-4 text-sm text-ink-muted">
             Aucune offre pour ce dossier. Lancez une tarification automatique ci-dessous ou ajoutez un devis
