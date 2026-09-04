@@ -129,9 +129,7 @@ export function DocumentsPretPanel({
   return (
     <div className="rounded-xl border border-line p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs uppercase tracking-wide text-ink-muted">
-          Offre de prêt et tableau d'amortissement
-        </p>
+        <p className="text-xs uppercase tracking-wide text-ink-muted">{titre}</p>
         <button
           type="button"
           onClick={() => input.current?.click()}
@@ -143,20 +141,26 @@ export function DocumentsPretPanel({
         <input
           ref={input}
           type="file"
+          multiple
           accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.csv"
           className="hidden"
           onChange={(e) => {
-            const f = e.target.files?.[0];
+            const fichiers = Array.from(e.target.files ?? []);
             e.target.value = "";
-            if (f) void deposer(f);
+            void (async () => {
+              for (const f of fichiers) await deposer(f);
+            })();
           }}
         />
       </div>
 
       {docs.length === 0 ? (
         <p className="mt-2 text-xs text-ink-muted">
-          Aucune offre de prêt ni tableau d'amortissement rattaché à ce dossier.
+          {filtre === "pret"
+            ? "Aucune offre de prêt ni tableau d'amortissement rattaché à ce dossier."
+            : "Aucun document rattaché à ce dossier."}
         </p>
+
       ) : (
         <ul className="mt-2 space-y-1 text-sm">
           {docs.map((d) => (
