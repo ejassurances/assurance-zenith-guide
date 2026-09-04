@@ -54,7 +54,7 @@ export const analyserDocumentRecueil = createServerFn({ method: "POST" })
         statut: extraction.statut,
         ajouts: [] as string[],
         manquants: [] as string[],
-        recueil: (dossier?.recueil_besoins ?? null) as Record<string, unknown> | null,
+        recueil_json: dossier?.recueil_besoins ? JSON.stringify(dossier.recueil_besoins) : null,
       };
     }
 
@@ -82,5 +82,5 @@ export const analyserDocumentRecueil = createServerFn({ method: "POST" })
       } as never);
     }
 
-    return { statut: extraction.statut, ajouts, manquants, recueil };
+    return { statut: extraction.statut, ajouts, manquants, recueil_json: JSON.stringify(recueil) };
   });
