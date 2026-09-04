@@ -2652,6 +2652,7 @@ export type Database = {
           cotisation_mensuelle: number | null
           cotisation_min: number | null
           created_at: string
+          document_id: string | null
           dossier_id: string
           formule_id: string | null
           garanties_resume: string | null
@@ -2674,6 +2675,7 @@ export type Database = {
           cotisation_mensuelle?: number | null
           cotisation_min?: number | null
           created_at?: string
+          document_id?: string | null
           dossier_id: string
           formule_id?: string | null
           garanties_resume?: string | null
@@ -2696,6 +2698,7 @@ export type Database = {
           cotisation_mensuelle?: number | null
           cotisation_min?: number | null
           created_at?: string
+          document_id?: string | null
           dossier_id?: string
           formule_id?: string | null
           garanties_resume?: string | null
@@ -2714,6 +2717,13 @@ export type Database = {
             columns: ["compagnie_id"]
             isOneToOne: false
             referencedRelation: "compagnies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dossier_devis_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
             referencedColumns: ["id"]
           },
           {
