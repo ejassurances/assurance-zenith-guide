@@ -212,7 +212,9 @@ export function RecueilWorkflow({
               ))}
             </div>
             {branche.value === "emprunteur" && <ValorisationCard values={values} />}
+            {aside}
             {children}
+
 
           </div>
         )}
