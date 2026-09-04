@@ -9,6 +9,7 @@ import {
   retenirDevisManuelFn,
   creerDevisTarifFixeFn,
 } from "@/lib/devis-classement.functions";
+import { assuranceInitialeDepuisRecueil, economieDevis } from "@/lib/assurance-initiale";
 import { neolianeTariferDossier } from "@/lib/neoliane.functions";
 import { brancheTarifableNeoliane, nbAssuresNeoliane } from "@/lib/neoliane/branches";
 import { ugipTariferDossier } from "@/lib/ugip.functions";
@@ -190,6 +191,29 @@ export function DossierDevisPanel({
     form.montant_total_saisi && moisRestants && moisRestants > 0
       ? Number(form.montant_total_saisi) / moisRestants
       : null;
+
+  /**
+   * Assurance bancaire actuelle : coût restant à courir entre le mois prévu de
+   * la substitution et la fin du crédit. Base de l'économie de chaque devis.
+   */
+  const assuranceInit = useMemo(
+    () => assuranceInitialeDepuisRecueil(recueilDossier, moisRestants),
+    [recueilDossier, moisRestants],
+  );
+
+  /** Coût total d'un devis sur la période restante, puis économie associée. */
+  const economiePourDevis = useCallback(
+    (d: { montant_total_saisi: number | null; cotisation_mensuelle: number | null }) => {
+      const cout =
+        d.montant_total_saisi != null
+          ? Number(d.montant_total_saisi)
+          : d.cotisation_mensuelle != null && moisRestants
+            ? Number(d.cotisation_mensuelle) * moisRestants
+            : null;
+      return economieDevis(assuranceInit.coutRestant, cout);
+    },
+    [assuranceInit, moisRestants],
+  );
 
   const load = useCallback(async () => {
     const [d, c, p, cl, dos] = await Promise.all([
@@ -516,7 +540,7 @@ export function DossierDevisPanel({
   const retenirDirectement = async (d: DossierDevis) => {
     if (
       !confirm(
-        "Retenir ce devis pour le dossier et générer le devoir de conseil en brouillon (aucun envoi au client) ?",
+        "Recommander ce devis : il devient l'offre retenue du dossier, alimente le devoir de conseil (brouillon, aucun envoi au client) et pré-enregistre les données du futur contrat. Confirmer ?",
       )
     )
       return;
@@ -768,6 +792,26 @@ export function DossierDevisPanel({
           </p>
         )}
 
+      {branche === "emprunteur" && (
+        <div className="mt-4 rounded-xl border border-line bg-surface-elevated/60 px-3 py-2 text-xs">
+          {assuranceInit.coutRestant != null ? (
+            <p className="text-ink">
+              <strong>Assurance bancaire actuelle</strong> :{" "}
+              {assuranceInit.mensuel?.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} € / mois
+              {assuranceInit.origine === "offre" ? " (offre de prêt)" : " (calcul par taux)"} — reste{" "}
+              <strong>{Math.round(assuranceInit.coutRestant).toLocaleString("fr-FR")} €</strong> à payer
+              {assuranceInit.moisRestants ? ` sur ${assuranceInit.moisRestants} mois` : ""}, du mois prévu de la
+              substitution à la fin du crédit. C'est la base de comparaison des devis ci-dessous.
+            </p>
+          ) : (
+            <p className="text-ink-muted">
+              Économie non chiffrable : renseignez dans le recueil des besoins le taux d'assurance de la banque (ou la
+              cotisation mensuelle de l'offre de prêt) et les mois restants.
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="mt-4 space-y-2">
         {devis.length === 0 && (
           <p className="rounded-xl border border-dashed border-line bg-surface px-3 py-4 text-sm text-ink-muted">
@@ -857,6 +901,34 @@ export function DossierDevisPanel({
                 </div>
               </div>
 
+              {(() => {
+                const eco = economiePourDevis(d);
+                if (!eco) return null;
+                return (
+                  <p
+                    className={`mt-2 rounded-md px-2 py-1 text-xs ${
+                      eco.economie > 0
+                        ? "bg-[color:var(--crm-gold)]/15 text-ink"
+                        : "bg-surface-elevated/70 text-ink-muted"
+                    }`}
+                  >
+                    {eco.economie > 0 ? (
+                      <>
+                        Économie estimée : <strong>{Math.round(eco.economie).toLocaleString("fr-FR")} €</strong> (
+                        {eco.pourcentage} %) — {Math.round(eco.coutDevis).toLocaleString("fr-FR")} € contre{" "}
+                        {Math.round(eco.coutInitial).toLocaleString("fr-FR")} € avec la banque, jusqu'à la fin du
+                        crédit.
+                      </>
+                    ) : (
+                      <>
+                        Aucune économie : ce devis coûte{" "}
+                        {Math.abs(Math.round(eco.economie)).toLocaleString("fr-FR")} € de plus que l'assurance bancaire
+                        actuelle sur la période restante.
+                      </>
+                    )}
+                  </p>
+                );
+              })()}
               {groupeListe && (
                 <p className="mt-2 rounded-md bg-surface-elevated/70 px-2 py-1 text-xs text-ink-soft">
                   Même assureur porteur : <strong>{groupeListe.nom}</strong> — disponible via{" "}
@@ -885,8 +957,8 @@ export function DossierDevisPanel({
                   {iaEtat === "selection"
                     ? "Traitement…"
                     : retenu
-                      ? "Confirmer à nouveau cette offre"
-                      : "Retenir ce devis"}
+                      ? "Confirmer cette recommandation"
+                      : "Recommander ce devis"}
                 </button>
                 {(!d.compagnie_id || !d.produit_id) && (
                   <span className="text-xs text-ink-muted">
