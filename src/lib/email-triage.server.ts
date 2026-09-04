@@ -532,15 +532,15 @@ export async function creerFicheProspectIncertaine(
     return { client_id: null as string | null, non_client: verdict.motif };
   }
 
-  // Fiche déjà existante pour cet email : on ne duplique pas.
-  const { data: existant } = await admin
-    .from("clients")
-    .select("id")
-    .eq("email", email.expediteur_email)
-    .limit(1)
-    .maybeSingle();
+  // Fiche déjà existante (email OU nom + prénom cités) : on ne duplique pas.
+  const { trouverClientExistant } = await import("@/lib/client-dedoublonnage.server");
+  const existant = await trouverClientExistant(admin, {
+    email: email.expediteur_email,
+    nom: triage.nom,
+    prenom: triage.prenom,
+  });
 
-  let clientId = existant?.id ?? null;
+  let clientId = existant?.client_id ?? null;
   if (!clientId) {
     const { data: cree, error } = await admin
       .from("clients")
