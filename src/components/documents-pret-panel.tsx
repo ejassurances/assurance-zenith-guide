@@ -161,18 +161,52 @@ export function DocumentsPretPanel({
     setBusy(false);
   }
 
+  /** (Ré)analyse tous les documents de prêt déjà déposés sur le dossier. */
+  async function analyserExistants() {
+    setBusy(true);
+    setError(null);
+    setAnalyse("Analyse des documents par l'IA…");
+    try {
+      const res = await analyser({ data: { dossier_id: dossierId } });
+      const recueil = res.recueil_json
+        ? (JSON.parse(res.recueil_json) as Record<string, unknown>)
+        : null;
+      onAnalyse?.({ recueil, ajouts: res.ajouts, manquants: res.manquants });
+      setAnalyse(
+        res.ajouts.length > 0
+          ? `Données reportées au recueil : ${res.ajouts.join(", ")}.${res.manquants.length ? ` À compléter : ${res.manquants.join(", ")}.` : ""}`
+          : "Aucune donnée nouvelle exploitable : les champs sont déjà renseignés ou la saisie manuelle est nécessaire.",
+      );
+    } catch (e) {
+      setAnalyse(`Analyse IA indisponible : ${e instanceof Error ? e.message : "erreur"}.`);
+    }
+    setBusy(false);
+  }
+
   return (
     <div className="rounded-xl border border-line p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs uppercase tracking-wide text-ink-muted">{titre}</p>
-        <button
-          type="button"
-          onClick={() => input.current?.click()}
-          disabled={busy}
-          className="rounded-full border border-line px-3 py-1 text-xs hover:bg-surface disabled:opacity-50"
-        >
-          {busy ? "Dépôt…" : "Déposer un document"}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {docs.length > 0 && (
+            <button
+              type="button"
+              onClick={() => void analyserExistants()}
+              disabled={busy}
+              className="rounded-full border border-line px-3 py-1 text-xs hover:bg-surface disabled:opacity-50"
+            >
+              Analyser et pré-remplir
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => input.current?.click()}
+            disabled={busy}
+            className="rounded-full border border-line px-3 py-1 text-xs hover:bg-surface disabled:opacity-50"
+          >
+            {busy ? "Traitement…" : "Déposer un document"}
+          </button>
+        </div>
         <input
           ref={input}
           type="file"
@@ -188,6 +222,7 @@ export function DocumentsPretPanel({
           }}
         />
       </div>
+
 
       {docs.length === 0 ? (
         <p className="mt-2 text-xs text-ink-muted">
