@@ -10,6 +10,7 @@ import {
   prefillDevoirConseil,
 } from "@/lib/devoir-conseil-modeles";
 import { grillePourFamille, synthetiserGaranties, type ValeursGrille } from "@/lib/garanties-grille";
+import { assuresDevoirConseil } from "@/lib/devoir-conseil-assures.server";
 
 export type DevoirConseilSaisie = {
   recommandation: string;
