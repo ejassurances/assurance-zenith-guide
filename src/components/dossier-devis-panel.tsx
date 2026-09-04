@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LIBELLES_PROFILS, routeRecommandation } from "@/lib/emprunteur-notebook";
+import { noterProduitEmprunteur, type NoteProduit } from "@/lib/emprunteur-scoring-produits";
+import type { ValeursGrille } from "@/lib/garanties-grille";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
@@ -17,6 +19,7 @@ import { ugipTariferDossier } from "@/lib/ugip.functions";
 import { nbAssuresUgip } from "@/lib/ugip/eligibilite";
 import { simulassurTariferDossier } from "@/lib/simulassur.functions";
 import { brancheTarifableSimulassur, nbAssuresSimulassur } from "@/lib/simulassur/eligibilite";
+
 
 /** 1er jour du mois suivant (AAAA-MM-JJ) — date d'effet proposée par défaut. */
 function premierDuMoisSuivant(): string {
