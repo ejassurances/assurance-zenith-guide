@@ -163,6 +163,6 @@ export const analyserDocumentRecueil = createServerFn({ method: "POST" })
       } as never);
     }
 
-    return { statut, ajouts, manquants, recueil_json: JSON.stringify(recueil) };
+    return { statut, ajouts, corrections, manquants, recueil_json: JSON.stringify(recueil) };
   });
 
