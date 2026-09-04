@@ -339,17 +339,9 @@ export function RecueilDossierPanel({
     if (estEtapeAssures(titre)) {
       return <FichesAssures dossierId={dossierId} canEdit={canEdit} />;
     }
-    if (estEtapeTarification(titre) && userId) {
-      return (
-        <PanneauLateral titre={`Devis — API partenaires et catalogue ${branche.label}`}>
-          <DossierDevisPanel
-            dossierId={dossierId}
-            branche={branche.value}
-            userId={userId}
-            onChanged={onSaved}
-          />
-        </PanneauLateral>
-      );
+    if (estEtapeTarification(titre)) {
+      // Les devis sont affichés en pleine largeur sous l'étape (colonnes par assuré).
+      return null;
     }
     return (
       <PanneauLateral titre="Pièces du recueil">
@@ -379,6 +371,16 @@ export function RecueilDossierPanel({
         dossierId={dossierId}
         contexte={contexte}
         asideSection={(section) => lateral(section.title)}
+        pleineLargeurSection={(section) =>
+          estEtapeTarification(section.title) && userId ? (
+            <DossierDevisPanel
+              dossierId={dossierId}
+              branche={branche.value}
+              userId={userId}
+              onChanged={onSaved}
+            />
+          ) : null
+        }
       />
       {message && <p className="text-sm text-ink-muted">{message}</p>}
       {error && <p className="text-sm text-destructive">{error}</p>}
