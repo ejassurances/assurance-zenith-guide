@@ -236,12 +236,25 @@ export async function creerContratDepuisDossier(
   await client.from("activites").insert({
     client_id: dossier.client_id,
     type: "systeme",
-    titre: "Contrat créé au portefeuille (confirmation compagnie)",
+    titre:
+      contratsIds.length > 1
+        ? `Contrats créés au portefeuille (${contratsIds.length} assurés du prêt)`
+        : "Contrat créé au portefeuille (confirmation compagnie)",
     contenu: [
       `Dossier ${dossier.reference}`,
       `${compagnie.data?.nom ?? "Assureur à compléter"} — ${produit.data?.nom ?? dossier.type_assurance}`,
       `Effet ${dateEffet} · fin ${dateEcheance}`,
-      primeAnnuelle != null ? `Prime annuelle : ${primeAnnuelle} €` : null,
+      primeAnnuelle != null ? `Prime annuelle du prêt : ${primeAnnuelle} €` : null,
+      lignes.length > 1
+        ? `Un contrat par assuré : ${lignes
+            .map(
+              (l) =>
+                `${l.libelle ?? "assuré principal"}${l.quotite != null ? ` — quotité ${l.quotite} %` : ""}${
+                  l.prime != null ? ` — ${l.prime} €/an` : ""
+                }`,
+            )
+            .join(" ; ")}`
+        : null,
       manquants.length > 0 ? `Documents DDA à régulariser : ${manquants.join(" ; ")}` : "Dossier DDA complet.",
     ]
       .filter(Boolean)
@@ -250,7 +263,8 @@ export async function creerContratDepuisDossier(
   });
 
   return {
-    contrat_id: cree.id,
+    contrat_id: contratsIds[0]!,
+    contrats_ids: contratsIds,
     deja_existant: false,
     prime_annuelle: primeAnnuelle,
     date_effet: dateEffet,
