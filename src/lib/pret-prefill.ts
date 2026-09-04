@@ -48,22 +48,43 @@ export function prefillRecueilEmprunteur(
   options?: {
     /** Date de création du dossier : base du délai de 3 mois de substitution. */
     dossier_cree_le?: string | null;
+    /**
+     * Le document importé fait foi : une valeur lue sur l'offre de prêt corrige
+     * la valeur enregistrée si elle diffère (les valeurs dérivées, capital
+     * restant dû et mois restants, sont alors recalculées).
+     */
+    document_fait_foi?: boolean;
   },
 ): PrefillEmprunteurResultat {
   const recueil: Record<string, unknown> = { ...(recueilExistant ?? {}) };
   const ajouts: string[] = [];
+  const faitFoi = options?.document_fait_foi === true;
+  let pretCorrige = false;
 
   for (const champ of CHAMPS_PRET) {
     const valeur = extraction?.[champ.source];
     if (vide(valeur)) continue;
-    if (!vide(recueil[champ.cle])) continue;
+    const actuelle = recueil[champ.cle];
+    if (!vide(actuelle)) {
+      // Le document importé fait foi : correction si la valeur diffère.
+      if (!faitFoi) continue;
+      if (String(actuelle) === String(valeur)) continue;
+      pretCorrige = true;
+    }
     recueil[champ.cle] = valeur;
     ajouts.push(champ.cle);
   }
 
+  // Une caractéristique du prêt corrigée invalide les valeurs calculées : elles
+  // sont effacées ici pour être recalculées juste après.
+  if (pretCorrige) {
+    delete recueil["capital_restant_du"];
+    delete recueil["mois_restants"];
+  }
+
   // Capital restant dû et mois restants : calculés par amortissement à la date
   // d'effet prévue de la substitution (date communiquée par la compagnie, sinon
-  // création du dossier + 3 mois). Une saisie humaine n'est jamais écrasée.
+  // création du dossier + 3 mois).
   const situation = situationPret({
     capital: Number(recueil["capital"]) || null,
     taux_pret: Number(recueil["taux_pret"]) || null,
@@ -88,6 +109,7 @@ export function prefillRecueilEmprunteur(
     recueil["capital_restant_du"] = situation.capital_restant_du;
     ajouts.push("capital_restant_du");
   }
+
 
 
   const manquants = ["capital", "duree_mois"].filter((k) => vide(recueil[k]));
@@ -120,21 +142,24 @@ export interface EmprunteurLu {
 }
 
 /**
- * Complète les personnes assurées du recueil avec ce que l'offre de prêt
- * indique RÉELLEMENT (quotité, date de naissance, profession, statut fumeur).
- * Une valeur déjà renseignée n'est jamais remplacée, et rien n'est déduit :
- * une quotité absente du document reste vide.
+ * Renseigne et CORRIGE les personnes assurées d'après ce que l'offre de prêt
+ * indique réellement (quotité, date de naissance, profession, statut fumeur).
+ * Le document importé fait foi : une valeur enregistrée différente est
+ * remplacée. Rien n'est déduit : une donnée absente du document est conservée
+ * telle quelle.
  */
 export function completerAssuresDepuisOffre(
   recueil: Record<string, unknown>,
   emprunteurs: EmprunteurLu[],
-): { recueil: Record<string, unknown>; ajouts: string[] } {
+): { recueil: Record<string, unknown>; ajouts: string[]; corrections: string[] } {
   const assures = Array.isArray(recueil["assures"])
     ? (recueil["assures"] as Record<string, unknown>[]).map((a) => ({ ...a }))
     : [];
-  if (assures.length === 0 || emprunteurs.length === 0) return { recueil, ajouts: [] };
+  if (assures.length === 0 || emprunteurs.length === 0)
+    return { recueil, ajouts: [], corrections: [] };
 
   const ajouts: string[] = [];
+  const corrections: string[] = [];
   assures.forEach((a, i) => {
     const cibles = jetons(a["nom"] as string, a["prenom"] as string);
     let lu =
@@ -148,19 +173,24 @@ export function completerAssuresDepuisOffre(
 
     const poser = (cle: string, valeur: unknown) => {
       if (vide(valeur)) return;
-      if (!vide(a[cle])) return;
+      const actuelle = a[cle];
+      if (!vide(actuelle)) {
+        if (String(actuelle) === String(valeur)) return;
+        corrections.push(`${a["nom"] ?? "assuré"} ${cle} : ${String(actuelle)} → ${String(valeur)}`);
+      }
       a[cle] = valeur;
       ajouts.push(`assures[${i}].${cle}`);
     };
     poser("quotite_pct", typeof lu.quotite_pct === "number" ? lu.quotite_pct : null);
     poser("date_naissance", lu.date_naissance);
     poser("csp", lu.csp);
-    if (lu.fumeur === true && a["fumeur"] !== true) {
-      a["fumeur"] = true;
+    if (typeof lu.fumeur === "boolean" && a["fumeur"] !== lu.fumeur) {
+      a["fumeur"] = lu.fumeur;
       ajouts.push(`assures[${i}].fumeur`);
     }
   });
 
-  if (ajouts.length === 0) return { recueil, ajouts: [] };
-  return { recueil: { ...recueil, assures }, ajouts };
+
+  if (ajouts.length === 0) return { recueil, ajouts: [], corrections };
+  return { recueil: { ...recueil, assures }, ajouts, corrections };
 }

@@ -131,13 +131,15 @@ export const analyserDocumentRecueil = createServerFn({ method: "POST" })
       };
     }
 
+    // Le document importé fait foi : il complète ET corrige le recueil.
     const base = prefillRecueilEmprunteur(dossier.recueil_besoins, donneesCumul, {
       dossier_cree_le: dossier.created_at,
+      document_fait_foi: true,
     });
-    // Quotités et identités relevées sur le document, sans écraser une saisie.
     const complet = completerAssuresDepuisOffre(base.recueil, emprunteursLus);
     const recueil = complet.recueil;
     const ajouts = [...base.ajouts, ...complet.ajouts];
+    const corrections = complet.corrections;
     const manquants = base.manquants;
 
     if (ajouts.length > 0) {
@@ -150,15 +152,17 @@ export const analyserDocumentRecueil = createServerFn({ method: "POST" })
         dossier_id: data.dossier_id,
         ancienne_etape: dossier.statut,
         nouvelle_etape: dossier.statut,
-        commentaire:
-          `Document analysé depuis le recueil : ${ajouts.join(", ")} reportés au recueil des besoins.`.slice(
-            0,
-            500,
-          ),
+        commentaire: [
+          `Document analysé depuis le recueil : ${ajouts.join(", ")} reportés au recueil des besoins.`,
+          corrections.length > 0 ? `Corrigé d'après le document : ${corrections.join(" ; ")}` : "",
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .slice(0, 500),
         par: context.userId,
       } as never);
     }
 
-    return { statut, ajouts, manquants, recueil_json: JSON.stringify(recueil) };
+    return { statut, ajouts, corrections, manquants, recueil_json: JSON.stringify(recueil) };
   });
 
