@@ -199,7 +199,20 @@ export function DossierDevisPanel({
   };
 
   /** Têtes assurées issues du recueil des besoins (co-emprunteurs inclus). */
-  const [assuresRecueil, setAssuresRecueil] = useState<{ rang: number; label: string }[]>([]);
+  const [assuresRecueil, setAssuresRecueil] = useState<
+    {
+      rang: number;
+      label: string;
+      /** Identité telle que saisie / extraite des documents (jamais déduite). */
+      nom: string | null;
+      quotite: number | null;
+      garanties: string | null;
+      franchise: string | null;
+      options: string | null;
+      adhesion: string | null;
+    }[]
+  >([]);
+
 
   /** Mensuel moyen dérivé : montant total sur la durée ÷ mois restants du recueil. */
   const mensuelMoyenDerive =
