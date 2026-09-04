@@ -165,11 +165,14 @@ export function RecueilWorkflow({
               />
             ))}
 
+            {aside}
+
             {showErrors && missing.length > 0 && (
               <p className="text-sm text-destructive">
                 Merci de répondre aux questions obligatoires avant de continuer.
               </p>
             )}
+
           </div>
         )}
 
