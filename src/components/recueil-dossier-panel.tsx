@@ -153,7 +153,7 @@ export function RecueilDossierPanel({
       <dl className="space-y-1 text-xs">
         {client.reference && (
           <div className="flex justify-between gap-2">
-            <dt className="text-ink-muted">Référence</dt>
+            <dt className="text-ink-muted">Dossier</dt>
             <dd className="text-ink">{client.reference}</dd>
           </div>
         )}
