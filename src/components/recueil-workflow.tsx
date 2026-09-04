@@ -54,6 +54,7 @@ export function RecueilWorkflow({
   children,
   aside,
   asideSection,
+  contexte,
 
 }: {
   branche: BrancheConfig;
