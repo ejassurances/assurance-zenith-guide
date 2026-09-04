@@ -415,7 +415,7 @@ export async function retenirDevisDossier(
 
   const { data: devis, error: dErr } = await supabase
     .from("dossier_devis")
-    .select("id, dossier_id, compagnie_id, produit_id")
+    .select("id, dossier_id, compagnie_id, produit_id, cotisation_mensuelle, montant_total_saisi")
     .eq("id", devisId)
     .maybeSingle();
   if (dErr || !devis) throw new Error("Devis introuvable");
@@ -424,10 +424,32 @@ export async function retenirDevisDossier(
   if (d.dossier_id !== c.dossier_id) throw new Error("Ce devis n'appartient pas au dossier du classement");
   if (!d.compagnie_id || !d.produit_id) throw new Error("Ce devis n'a pas de compagnie / produit renseigné");
 
-  const { error: upErr } = await supabase
+  // Économie réalisée : coût restant de l'assurance bancaire (du mois prévu de
+  // substitution à la fin du crédit) moins le coût du devis recommandé. Rien
+  // n'est écrit si l'une des deux données manque.
+  const maj: Record<string, unknown> = { compagnie_id: d.compagnie_id, produit_id: d.produit_id };
+  const { data: dosRow } = await supabase
     .from("dossiers")
-    .update({ compagnie_id: d.compagnie_id, produit_id: d.produit_id })
-    .eq("id", c.dossier_id);
+    .select("type_assurance, recueil_besoins")
+    .eq("id", c.dossier_id)
+    .maybeSingle();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dos = dosRow as any;
+  if (dos?.type_assurance === "emprunteur") {
+    const { assuranceInitialeDepuisRecueil, economieDevis } = await import("./assurance-initiale");
+    const recueil = (dos.recueil_besoins ?? {}) as Record<string, unknown>;
+    const initiale = assuranceInitialeDepuisRecueil(recueil, null);
+    const coutDevis =
+      d.montant_total_saisi != null
+        ? Number(d.montant_total_saisi)
+        : d.cotisation_mensuelle != null && initiale.moisRestants
+          ? Number(d.cotisation_mensuelle) * initiale.moisRestants
+          : null;
+    const eco = economieDevis(initiale.coutRestant, coutDevis);
+    if (eco && eco.economie > 0) maj["economie_estimee"] = Math.round(eco.economie);
+  }
+
+  const { error: upErr } = await supabase.from("dossiers").update(maj as never).eq("id", c.dossier_id);
   if (upErr) throw new Error(upErr.message);
 
   // Sélection automatique : le classement reste 'propose' pour que le staff
