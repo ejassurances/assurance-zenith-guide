@@ -373,12 +373,22 @@ export function NewDossierForm({
     setAnalysing(false);
   };
 
-  /** Archive les offres déposées sur le dossier créé et coche la pièce requise. */
-  const archiverOffres = async (dossierId: string, clientDossierId: string | null) => {
-    for (const file of offreFiles) {
+  /**
+   * Archive les documents déposés sur le dossier créé et coche la pièce requise.
+   * `idsAssures` donne la fiche client de chaque emprunteur : un document affecté
+   * à Monsieur ou Madame est rattaché à sa fiche, sinon au prêt commun.
+   */
+  const archiverOffres = async (
+    dossierId: string,
+    clientDossierId: string | null,
+    idsAssures: (string | null)[] = [],
+  ) => {
+    for (const [index, file] of offreFiles.entries()) {
+      const cible = offreCibles[index] ?? -1;
+      const clientDoc = (cible >= 0 ? idsAssures[cible] : null) ?? clientDossierId;
       try {
         const safeName = file.name.replace(/[^\w.\-]+/g, "_").slice(0, 120);
-        const path = `${clientDossierId ?? dossierId}/${Date.now()}-${safeName}`;
+        const path = `${clientDoc ?? dossierId}/${Date.now()}-${safeName}`;
         const { error: upErr } = await supabase.storage
           .from("dossier-documents")
           .upload(path, file, { upsert: true });
@@ -387,7 +397,8 @@ export function NewDossierForm({
           .from("documents")
           .insert({
             dossier_id: dossierId,
-            client_id: clientDossierId,
+            client_id: clientDoc,
+
             uploader_id: userId,
             storage_path: path,
             file_name: file.name.slice(0, 200),
