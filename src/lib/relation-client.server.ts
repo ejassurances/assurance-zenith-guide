@@ -949,6 +949,16 @@ async function accuserReceptionPieces(
   const { client, classification } = params;
   if (!client.email || params.nb_pieces === 0) return;
   if (!(await adresseClientEnvoyable(client.email))) return;
+  if (
+    await reponseCabinetDejaPresente(
+      admin,
+      client,
+      params.gmail_thread_id ?? null,
+      params.gmail_message_id,
+      "pieces",
+    )
+  )
+    return;
   const tu = classification.tutoiement;
 
   // Anti-doublon : historique CRM (même message, même fil, fenêtre 72 h).
