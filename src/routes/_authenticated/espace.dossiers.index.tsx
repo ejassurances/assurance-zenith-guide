@@ -553,7 +553,7 @@ export function NewDossierForm({
     }
 
     // Offre de prêt déposée à la création : archivée sur le dossier.
-    if (offreFiles.length > 0) await archiverOffres(created.id, clientPrincipalId || null);
+    if (offreFiles.length > 0) await archiverOffres(created.id, clientPrincipalId || null, idsAssures);
 
     // Recueil validé → lettre de mission générée et envoyée automatiquement
     const res = await lancerLettreMission({ data: { dossier_id: created.id } });
