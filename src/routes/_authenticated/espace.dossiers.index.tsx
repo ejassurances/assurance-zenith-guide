@@ -243,9 +243,12 @@ export function NewDossierForm({
   // Offre de prêt déposée dès la création : analysée par l'IA puis archivée
   // sur le dossier une fois celui-ci créé.
   const [offreFiles, setOffreFiles] = useState<File[]>([]);
+  /** Destinataire de chaque document déposé : index de l'emprunteur, -1 = prêt commun. */
+  const [offreCibles, setOffreCibles] = useState<number[]>([]);
   const [analyseEtat, setAnalyseEtat] = useState<string | null>(null);
   const [analysing, setAnalysing] = useState(false);
   const [emprunteurs, setEmprunteurs] = useState<EmprunteurPropose[]>([]);
+
   const lancerLettreMission = useServerFn(declencherLettreMissionAuto);
   const analyserOffre = useServerFn(analyserOffrePretCreation);
   const creerFiches = useServerFn(creerFichesEmprunteurs);
