@@ -1,0 +1,51 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+
+/**
+ * NOTIFICATION OBLIGATOIRE DES ACTIONS DE L'AGENT (règle DG, CD-SI-001-B).
+ *
+ * Toute action de l'agent sur un dossier ou une fiche client existante
+ * (rattachement, ajout de pièce, mise à jour de statut) DOIT produire une
+ * notification visible : aucune modification silencieuse n'est acceptée, même
+ * lorsque l'agent est certain de son rattachement.
+ *
+ * La notification prend la forme d'une tâche (file de travail du cabinet).
+ * Idempotence : une seule tâche par (action, message Gmail).
+ */
+
+type Admin = SupabaseClient<Database>;
+
+export async function notifierActionAgent(
+  admin: Admin,
+  params: {
+    /** Message Gmail à l'origine de l'action (clé d'idempotence). */
+    gmail_message_id: string;
+    titre: string;
+    lignes: (string | null | undefined)[];
+    client_id?: string | null;
+    priorite?: Database["public"]["Enums"]["tache_priorite"];
+    created_by: string;
+  },
+): Promise<boolean> {
+  const titre = params.titre.slice(0, 200);
+  const { data: deja } = await admin
+    .from("taches")
+    .select("id, description")
+    .eq("titre", titre)
+    .limit(50);
+  if ((deja ?? []).some((t) => (t.description ?? "").includes(params.gmail_message_id))) return false;
+
+  const { creerTacheAdmin } = await import("@/lib/agent-taches.server");
+  const cree = await creerTacheAdmin(admin, {
+    titre,
+    description: [
+      ...params.lignes.filter((l): l is string => !!l),
+      `Email : https://mail.google.com/mail/u/0/#all/${params.gmail_message_id}`,
+      `Identifiant Gmail : ${params.gmail_message_id}`,
+    ].join("\n"),
+    client_id: params.client_id ?? null,
+    priorite: params.priorite ?? "normale",
+    created_by: params.created_by,
+  });
+  return !!cree;
+}

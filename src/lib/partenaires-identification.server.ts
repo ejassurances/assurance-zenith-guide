@@ -112,14 +112,25 @@ export interface CorrespondanceClient {
   motif: string;
 }
 
+export interface AbsenceCorrespondance {
+  client_id: null;
+  /** Clients dont le nom + prénom sont cités, sans preuve de dossier : à qualifier. */
+  candidats: string[];
+  raison: string;
+}
+
 /**
- * Correspondance fiable uniquement : numéro de contrat / référence exact, ou
- * nom ET prénom du client présents dans les personnes citées.
+ * PREUVE DÉTERMINISTE EXIGÉE (règle DG) : seul un numéro de contrat, de dossier
+ * ou d'adhésion cité dans le mail et retrouvé en base autorise un rattachement.
+ *
+ * Un nom + prénom cités NE SUFFISENT PAS : le mail reste à qualifier par un
+ * humain et aucune FK n'est écrite. L'adresse email de l'expéditeur partenaire
+ * n'est JAMAIS utilisée pour déduire un client.
  */
 export async function trouverClientConcerne(
   admin: Admin,
   refs: ReferencesEmailPartenaire,
-): Promise<CorrespondanceClient | null> {
+): Promise<CorrespondanceClient | AbsenceCorrespondance> {
   const references = refs.references.map(chiffres).filter((r) => r.length >= 5);
 
   if (references.length) {
@@ -142,46 +153,39 @@ export async function trouverClientConcerne(
       const ref = chiffres(d.reference ?? "");
       if (ref.length >= 5 && references.includes(ref) && d.client_id) {
         return { client_id: d.client_id, dossier_id: d.id, contrat_id: null, motif: `dossier ${d.reference}` };
-
       }
     }
   }
 
+  // Aucune preuve déterministe : on liste les candidats pour la qualification
+  // humaine, sans jamais écrire de client_id / dossier_id.
   const personnes = refs.personnes.map(normaliser).filter((p) => p.split(" ").length >= 2);
-  if (!personnes.length) return null;
+  if (!personnes.length) {
+    return { client_id: null, candidats: [], raison: "aucun nom complet ni référence exploitable dans le mail" };
+  }
 
   const { data: clients } = await admin.from("clients").select("id, nom, prenom").limit(5000);
-  const correspondances: { id: string; libelle: string }[] = [];
+  const candidats: string[] = [];
   for (const c of clients ?? []) {
     const nom = normaliser(c.nom ?? "");
     const prenom = normaliser(c.prenom ?? "");
     if (!nom || !prenom) continue;
-    const mots = (p: string) => p.split(" ");
     const ok = personnes.some((p) => {
-      const m = mots(p);
+      const m = p.split(" ");
       return m.includes(nom) && m.includes(prenom);
     });
-    if (ok) correspondances.push({ id: c.id, libelle: `${c.prenom} ${c.nom}` });
+    if (ok) candidats.push(`${c.prenom} ${c.nom}`);
   }
-  // Ambiguïté (homonymes) : on ne rattache rien.
-  if (correspondances.length !== 1) return null;
-
-  const client = correspondances[0]!;
-  const { data: dossier } = await admin
-    .from("dossiers")
-    .select("id")
-    .eq("client_id", client.id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
 
   return {
-    client_id: client.id,
-    dossier_id: dossier?.id ?? null,
-    contrat_id: null,
-    motif: `nom et prénom (${client.libelle})`,
+    client_id: null,
+    candidats,
+    raison: candidats.length
+      ? "nom et prénom cités mais aucun numéro de contrat / dossier ne confirme le rattachement"
+      : "client cité non identifié dans le CRM",
   };
 }
+
 
 /** Note de suivi sur la fiche client (une seule par email partenaire). */
 export async function noterCommunicationPartenaire(
@@ -245,7 +249,12 @@ export async function identifierClientEmailPartenaire(
     client_id_existant?: string | null;
     contrat_id_existant?: string | null;
   },
-): Promise<{ client_id: string | null; note_creee: boolean; motif: string | null }> {
+): Promise<{
+  client_id: string | null;
+  note_creee: boolean;
+  motif: string | null;
+  a_qualifier?: boolean;
+}> {
   let clientId = params.client_id_existant ?? null;
   let contratId = params.contrat_id_existant ?? null;
   let motif: string | null = clientId ? "rattachement préexistant" : null;
@@ -267,9 +276,14 @@ export async function identifierClientEmailPartenaire(
   const refs = await extraireReferencesPartenaire({ sujet, texte, compagnie: params.compagnie });
   if (refs) resume = refs.resume;
 
-  if (!clientId && refs) {
-    const trouve = await trouverClientConcerne(admin, refs);
-    if (trouve) {
+  const { notifierActionAgent } = await import("@/lib/agent-notifications.server");
+
+  if (!clientId) {
+    const trouve = refs
+      ? await trouverClientConcerne(admin, refs)
+      : ({ client_id: null, candidats: [], raison: "mail illisible par l'analyse" } as AbsenceCorrespondance);
+
+    if (trouve.client_id !== null) {
       clientId = trouve.client_id;
       contratId = contratId ?? trouve.contrat_id;
       motif = trouve.motif;
@@ -282,10 +296,35 @@ export async function identifierClientEmailPartenaire(
           updated_at: new Date().toISOString(),
         })
         .eq("gmail_message_id", params.gmail_message_id);
+    } else {
+      // A_QUALIFIER : aucune FK écrite, une tâche de qualification humaine est
+      // créée. L'adresse du partenaire n'est jamais prise pour celle d'un client.
+      await admin
+        .from("crm_emails")
+        .update({
+          notes: `Mail partenaire ${params.compagnie} — A_QUALIFIER : ${trouve.raison}`.slice(0, 2000),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("gmail_message_id", params.gmail_message_id);
+      await notifierActionAgent(admin, {
+        gmail_message_id: params.gmail_message_id,
+        titre: `Mail partenaire à qualifier — ${params.compagnie}`,
+        lignes: [
+          `Objet : ${sujet ?? "(sans objet)"}`,
+          resume ? `Résumé : ${resume}` : null,
+          `Motif : ${trouve.raison}.`,
+          trouve.candidats.length ? `Clients possibles : ${trouve.candidats.join(", ")}` : null,
+          "Aucun client ni dossier n'a été rattaché : rattachement manuel requis.",
+        ],
+        priorite: "haute",
+        created_by: params.userId,
+      }).catch((e: unknown) => {
+        console.error("[partenaires] notification de qualification impossible", e);
+        return false;
+      });
+      return { client_id: null, note_creee: false, motif: null, a_qualifier: true };
     }
   }
-
-  if (!clientId) return { client_id: null, note_creee: false, motif: null };
 
   const note = await noterCommunicationPartenaire(admin, {
     client_id: clientId,
@@ -297,5 +336,23 @@ export async function identifierClientEmailPartenaire(
     userId: params.userId,
   });
 
+  // NOTIFICATION OBLIGATOIRE : le rattachement automatique est toujours signalé.
+  await notifierActionAgent(admin, {
+    gmail_message_id: params.gmail_message_id,
+    titre: `Rattachement automatique d'un mail partenaire — ${params.compagnie}`,
+    lignes: [
+      `Objet : ${sujet ?? "(sans objet)"}`,
+      resume ? `Résumé : ${resume}` : null,
+      `Preuve du rattachement : ${motif ?? "rattachement préexistant"}.`,
+      "Vérifier que le mail est bien rattaché au bon client / dossier.",
+    ],
+    client_id: clientId,
+    created_by: params.userId,
+  }).catch((e: unknown) => {
+    console.error("[partenaires] notification de rattachement impossible", e);
+    return false;
+  });
+
   return { client_id: clientId, note_creee: note, motif };
 }
+
