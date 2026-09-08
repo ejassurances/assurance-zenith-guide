@@ -529,7 +529,7 @@ export function NewDossierForm({
 
     const { data: created, error: insErr } = await supabase.from("dossiers").insert({
       client_id: clientPrincipalId || null,
-      client_nom: clientNom,
+      client_nom: nomDossier,
       client_email: clientEmail || null,
       client_phone: clientPhone || null,
       type_assurance: type,
