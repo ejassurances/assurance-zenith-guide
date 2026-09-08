@@ -492,6 +492,42 @@ async function adresseClientEnvoyable(adresseBrute: string | null): Promise<bool
 }
 
 /**
+ * Garde-fou « humain d'abord » : si une réponse du cabinet existe déjà dans le
+ * fil Gmail, postérieure au message du client, aucun accusé automatique ne
+ * part. Le cas est journalisé dans le CRM pour traçabilité.
+ */
+async function reponseCabinetDejaPresente(
+  admin: Admin,
+  client: ClientMini,
+  gmailThreadId: string | null,
+  gmailMessageId: string | null,
+  genre: "message" | "pieces",
+): Promise<boolean> {
+  if (!gmailThreadId) return false;
+  const { reponseCabinetPosterieure } = await import("@/lib/gmail.server");
+  const dejaRepondu = await reponseCabinetPosterieure(gmailThreadId, gmailMessageId);
+  if (!dejaRepondu) return false;
+  console.info(`[agent-relation-client] accusé (${genre}) supprimé — réponse manuelle déjà présente dans le fil`);
+  await journaliser(
+    admin,
+    client.id,
+    genre === "pieces"
+      ? "Accusé de réception des pièces supprimé (réponse manuelle déjà envoyée)"
+      : "Accusé de réception automatique supprimé (réponse manuelle déjà envoyée)",
+    [
+      "Une réponse du cabinet postérieure au message du client existe déjà dans le fil Gmail.",
+      `Email : ${lienMail(gmailMessageId)}`,
+      gmailThreadId ? `Fil Gmail : ${gmailThreadId}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    "systeme",
+  );
+  return true;
+}
+
+
+/**
  * Accusé de réception générique envoyé immédiatement en niveau 2.
  * Strictement neutre : aucun conseil, aucune donnée de dossier.
  */
@@ -503,6 +539,12 @@ async function envoyerAccuseReception(
 ): Promise<void> {
   if (!client.email) return;
   if (!(await adresseClientEnvoyable(client.email))) return;
+
+  // Priorité à l'humain : si le cabinet a déjà répondu dans le fil après le
+  // message du client, aucun accusé automatique ne part.
+  if (await reponseCabinetDejaPresente(admin, client, gmailThreadId, gmailMessageId, "message")) return;
+
+
 
   // Anti-doublon : lecture de l'historique CRM (message, fil, fenêtre 72 h).
   const { accuseAutorise, TITRE_ACCUSE } = await import("@/lib/accuses-historique.server");
@@ -907,6 +949,16 @@ async function accuserReceptionPieces(
   const { client, classification } = params;
   if (!client.email || params.nb_pieces === 0) return;
   if (!(await adresseClientEnvoyable(client.email))) return;
+  if (
+    await reponseCabinetDejaPresente(
+      admin,
+      client,
+      params.gmail_thread_id ?? null,
+      params.gmail_message_id,
+      "pieces",
+    )
+  )
+    return;
   const tu = classification.tutoiement;
 
   // Anti-doublon : historique CRM (même message, même fil, fenêtre 72 h).
