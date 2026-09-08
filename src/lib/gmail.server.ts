@@ -249,6 +249,41 @@ export async function lireMessage(id: string): Promise<EmailDetail> {
   };
 }
 
+/**
+ * Vrai si le cabinet a déjà répondu dans le fil APRÈS le message du client
+ * (réponse manuelle envoyée avant classement). Sert de garde-fou : aucun
+ * accusé de réception automatique ne doit partir dans ce cas.
+ * Prudence : en cas d'erreur de lecture, renvoie `true` (on n'envoie pas).
+ */
+export async function reponseCabinetPosterieure(
+  threadId: string | null | undefined,
+  messageClientId: string | null | undefined,
+): Promise<boolean> {
+  if (!threadId) return false;
+  try {
+    const fil = await gmailFetch<{ messages?: GmailMessage[] }>(
+      `/users/me/threads/${threadId}?format=metadata&metadataHeaders=From&metadataHeaders=Date`,
+    );
+    const messages = fil.messages ?? [];
+    const reference = messages.find((m) => m.id === messageClientId);
+    const dateReference = reference?.internalDate ? Number(reference.internalDate) : 0;
+
+    const { estEmailInterne } = await import("@/lib/domaines-internes");
+    return messages.some((m) => {
+      if (m.id === messageClientId) return false;
+      const ts = m.internalDate ? Number(m.internalDate) : 0;
+      if (ts <= dateReference) return false;
+      const labels = m.labelIds ?? [];
+      if (labels.includes("DRAFT")) return false;
+      const from = parseFrom(header(m, "From")).email;
+      return labels.includes("SENT") || (!!from && estEmailInterne(from));
+    });
+  } catch (e) {
+    console.error(`[gmail] lecture du fil ${threadId} impossible — accusé bloqué par prudence`, e);
+    return true;
+  }
+}
+
 /** Télécharge une pièce jointe (contenu en base64 standard). */
 export async function telechargerPieceJointe(
   messageId: string,
