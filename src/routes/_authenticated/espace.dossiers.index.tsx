@@ -423,23 +423,54 @@ export function NewDossierForm({
   };
 
 
+  /** Emprunteurs réellement exploitables (un nom au minimum). */
+  const emprunteursValides = useMemo(() => emprunteurs.filter((e) => e.nom.trim() !== ""), [emprunteurs]);
+
+  /**
+   * Reporte la liste des emprunteurs du prêt dans les assurés du recueil, sans
+   * écraser ce qui a déjà été saisi dans le recueil pour l'assuré concerné.
+   */
+  const assuresSynchronises = (base: Record<string, unknown>): Record<string, unknown> => {
+    if (type !== "emprunteur" || emprunteursValides.length === 0) return base;
+    const existants = assuresEmprunteur(base["assures"]);
+    const rows = emprunteursValides.map((e, i) => {
+      const a = existants[i];
+      return {
+        lien: a?.lien || (i === 0 ? "principal" : "co_emprunteur"),
+        prenom: e.prenom || a?.prenom || "",
+        nom: e.nom || a?.nom || "",
+        date_naissance: e.date_naissance || a?.date_naissance || "",
+        quotite_pct: e.quotite_pct ?? a?.quotite_pct ?? null,
+        csp: e.csp || a?.csp || "",
+        fumeur: e.fumeur ?? a?.fumeur ?? false,
+      };
+    });
+    return { ...base, assures: [...rows, ...existants.slice(rows.length)] };
+  };
+
   const submit = async () => {
-    if (!clientNom.trim()) {
-      setError("Sélectionnez un client ou saisissez un nom.");
+    const nomDossier =
+      clientNom.trim() ||
+      (emprunteursValides[0]
+        ? [emprunteursValides[0].prenom, emprunteursValides[0].nom].filter(Boolean).join(" ").trim()
+        : "");
+    if (!nomDossier) {
+      setError("Sélectionnez un client, saisissez un nom ou ajoutez un emprunteur.");
       return;
     }
     setSaving(true);
     setError(null);
 
-    // Emprunteurs détectés dans l'offre de prêt : rapprochement ou création des
-    // fiches clients avant l'ouverture du dossier (un dossier = un prêt).
+    // Emprunteurs saisis ou détectés dans l'offre de prêt : rapprochement ou
+    // création des fiches clients avant l'ouverture du dossier (un dossier = un prêt).
     let clientPrincipalId = clientId;
-    let recueilFinal: Record<string, unknown> = recueil;
-    if (type === "emprunteur" && emprunteurs.length > 0) {
+    let recueilFinal: Record<string, unknown> = assuresSynchronises(recueil);
+    let idsAssures: (string | null)[] = [];
+    if (type === "emprunteur" && emprunteursValides.length > 0) {
       try {
         const res = await creerFiches({
           data: {
-            emprunteurs: emprunteurs.map((e) => ({
+            emprunteurs: emprunteursValides.map((e) => ({
               prenom: e.prenom,
               nom: e.nom,
               date_naissance: e.date_naissance,
@@ -453,11 +484,12 @@ export function NewDossierForm({
           },
         });
         const ids = res.resultats;
+        idsAssures = emprunteursValides.map((_, i) => ids[i]?.client_id ?? null);
         if (!clientPrincipalId && ids[0]) clientPrincipalId = ids[0].client_id;
-        const assures = assuresEmprunteur(recueil["assures"]);
+        const assures = assuresEmprunteur(recueilFinal["assures"]);
         if (assures.length > 0) {
           recueilFinal = {
-            ...recueil,
+            ...recueilFinal,
             assures: assures.map((a, i) => (ids[i] ? { ...a, client_id: ids[i]!.client_id } : a)),
           };
         }
@@ -468,6 +500,7 @@ export function NewDossierForm({
       }
     }
     const recueilSoumis = recueilFinal;
+
 
 
 
