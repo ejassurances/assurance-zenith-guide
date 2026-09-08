@@ -24,16 +24,18 @@ export const DOMAINES_PARTENAIRES: Record<string, string> = {
   "iassure.fr": "iChange (Kereis — service substitution)",
   "ichange.fr": "iChange (Kereis — service substitution)",
   "facileassur.fr": "Facile@ssur (Kereis)",
-  // NOTE : elois.fr NON répertorié — aucun partenariat confirmé au catalogue.
   // Un domaine n'entre ici qu'après confirmation d'un partenariat réel.
+
 
   // Néoliane.
   "neoliane.fr": "Néoliane",
   "neoliane.com": "Néoliane",
   "neoliane-sante.fr": "Néoliane",
-  // SimulAssur.
+  // SimulAssur (grossiste) — elois.fr est la plateforme SimulAssur,
+  // rattachée à la même entrée partenaire, pas un partenaire distinct.
   "simulassur.fr": "SimulAssur",
   "simulassur.com": "SimulAssur",
+  "elois.fr": "SimulAssur",
   // UGIP.
   "ugipassurances.com": "UGIP Assurances",
   "ugip-assurances.com": "UGIP Assurances",
