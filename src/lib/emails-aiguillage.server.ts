@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import type { EmailResume } from "@/lib/gmail.server";
-import { estEmailInterne } from "@/lib/domaines-internes";
+import { estEmailInterne, estAdresseAutomatique } from "@/lib/domaines-internes";
 import {
   adressesServices,
   chargerServices,
@@ -255,7 +255,7 @@ export async function aiguillerLot(
     const expediteur = (m.expediteur_email ?? "").toLowerCase().trim();
     if (!expediteur) continue;
     // Anti-boucle : jamais de renvoi d'un mail interne ou d'une adresse de service.
-    if (estEmailInterne(expediteur) || adresses.includes(expediteur)) continue;
+    if (estEmailInterne(expediteur) || estAdresseAutomatique(expediteur) || adresses.includes(expediteur)) continue;
 
     const arrivee = serviceDeEtiquettes(services, m.etiquettes);
     if (!arrivee) continue;

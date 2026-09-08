@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { estEmailInterne } from "@/lib/domaines-internes";
+import { estEmailInterne, estAdresseAutomatique } from "@/lib/domaines-internes";
 
 
 /**
@@ -265,6 +265,8 @@ export async function creerDossierDepuisEmail(
   const { triage, email } = params;
   if (!email.expediteur_email) throw new Error("Email expéditeur manquant");
   if (estEmailInterne(email.expediteur_email)) throw new Error("Expéditeur interne au cabinet — aucune fiche client créée");
+  if (estAdresseAutomatique(email.expediteur_email))
+    throw new Error("Expéditeur automatique (no-reply / notification) — aucune fiche client créée");
 
   // Garde-fou : jamais de fiche client pour une compagnie, un fournisseur ou
   // une adresse technique (service résiliation, no-reply, notifications…).
