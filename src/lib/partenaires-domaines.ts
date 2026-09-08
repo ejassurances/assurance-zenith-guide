@@ -24,8 +24,8 @@ export const DOMAINES_PARTENAIRES: Record<string, string> = {
   "iassure.fr": "iChange (Kereis — service substitution)",
   "ichange.fr": "iChange (Kereis — service substitution)",
   "facileassur.fr": "Facile@ssur (Kereis)",
-  // NOTE : elois.fr NON répertorié — aucun partenariat confirmé au catalogue.
   // Un domaine n'entre ici qu'après confirmation d'un partenariat réel.
+
 
   // Néoliane.
   "neoliane.fr": "Néoliane",
