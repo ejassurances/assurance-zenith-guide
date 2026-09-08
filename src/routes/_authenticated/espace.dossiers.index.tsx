@@ -243,9 +243,12 @@ export function NewDossierForm({
   // Offre de prêt déposée dès la création : analysée par l'IA puis archivée
   // sur le dossier une fois celui-ci créé.
   const [offreFiles, setOffreFiles] = useState<File[]>([]);
+  /** Destinataire de chaque document déposé : index de l'emprunteur, -1 = prêt commun. */
+  const [offreCibles, setOffreCibles] = useState<number[]>([]);
   const [analyseEtat, setAnalyseEtat] = useState<string | null>(null);
   const [analysing, setAnalysing] = useState(false);
   const [emprunteurs, setEmprunteurs] = useState<EmprunteurPropose[]>([]);
+
   const lancerLettreMission = useServerFn(declencherLettreMissionAuto);
   const analyserOffre = useServerFn(analyserOffrePretCreation);
   const creerFiches = useServerFn(creerFichesEmprunteurs);
@@ -303,8 +306,10 @@ export function NewDossierForm({
    * formulaire, sans jamais écraser une valeur déjà saisie.
    */
   const analyserOffreDeposee = async (files: File[]) => {
-    setOffreFiles(files);
+    setOffreFiles((prev) => [...prev, ...files]);
+    setOffreCibles((prev) => [...prev, ...files.map(() => -1)]);
     if (files.length === 0) return;
+
     setAnalysing(true);
     setAnalyseEtat("Lecture du document par l'IA…");
     try {
@@ -326,7 +331,20 @@ export function NewDossierForm({
         }
         return fusion;
       });
-      setEmprunteurs(res.emprunteurs);
+      // Les documents importés font foi : ils complètent et corrigent la saisie
+      // manuelle, sans supprimer un emprunteur ajouté à la main.
+      setEmprunteurs((prev) => {
+        const cle = (x: { nom: string; prenom: string }) => `${x.nom} ${x.prenom}`.trim().toLowerCase();
+        const out = prev.filter((e) => e.nom.trim() !== "");
+        for (const e of res.emprunteurs) {
+          const i = out.findIndex((x) => cle(x) === cle(e));
+          const existant = out[i];
+          if (existant) out[i] = { ...existant, ...e, client_id: e.client_id ?? existant.client_id };
+          else out.push(e);
+        }
+        return out;
+      });
+
       const principal = res.emprunteurs[0];
       if (principal) {
         if (!clientId) {
@@ -355,12 +373,22 @@ export function NewDossierForm({
     setAnalysing(false);
   };
 
-  /** Archive les offres déposées sur le dossier créé et coche la pièce requise. */
-  const archiverOffres = async (dossierId: string, clientDossierId: string | null) => {
-    for (const file of offreFiles) {
+  /**
+   * Archive les documents déposés sur le dossier créé et coche la pièce requise.
+   * `idsAssures` donne la fiche client de chaque emprunteur : un document affecté
+   * à Monsieur ou Madame est rattaché à sa fiche, sinon au prêt commun.
+   */
+  const archiverOffres = async (
+    dossierId: string,
+    clientDossierId: string | null,
+    idsAssures: (string | null)[] = [],
+  ) => {
+    for (const [index, file] of offreFiles.entries()) {
+      const cible = offreCibles[index] ?? -1;
+      const clientDoc = (cible >= 0 ? idsAssures[cible] : null) ?? clientDossierId;
       try {
         const safeName = file.name.replace(/[^\w.\-]+/g, "_").slice(0, 120);
-        const path = `${clientDossierId ?? dossierId}/${Date.now()}-${safeName}`;
+        const path = `${clientDoc ?? dossierId}/${Date.now()}-${safeName}`;
         const { error: upErr } = await supabase.storage
           .from("dossier-documents")
           .upload(path, file, { upsert: true });
@@ -369,7 +397,8 @@ export function NewDossierForm({
           .from("documents")
           .insert({
             dossier_id: dossierId,
-            client_id: clientDossierId,
+            client_id: clientDoc,
+
             uploader_id: userId,
             storage_path: path,
             file_name: file.name.slice(0, 200),
@@ -394,23 +423,54 @@ export function NewDossierForm({
   };
 
 
+  /** Emprunteurs réellement exploitables (un nom au minimum). */
+  const emprunteursValides = useMemo(() => emprunteurs.filter((e) => e.nom.trim() !== ""), [emprunteurs]);
+
+  /**
+   * Reporte la liste des emprunteurs du prêt dans les assurés du recueil, sans
+   * écraser ce qui a déjà été saisi dans le recueil pour l'assuré concerné.
+   */
+  const assuresSynchronises = (base: Record<string, unknown>): Record<string, unknown> => {
+    if (type !== "emprunteur" || emprunteursValides.length === 0) return base;
+    const existants = assuresEmprunteur(base["assures"]);
+    const rows = emprunteursValides.map((e, i) => {
+      const a = existants[i];
+      return {
+        lien: a?.lien || (i === 0 ? "principal" : "co_emprunteur"),
+        prenom: e.prenom || a?.prenom || "",
+        nom: e.nom || a?.nom || "",
+        date_naissance: e.date_naissance || a?.date_naissance || "",
+        quotite_pct: e.quotite_pct ?? a?.quotite_pct ?? null,
+        csp: e.csp || a?.csp || "",
+        fumeur: e.fumeur ?? a?.fumeur ?? false,
+      };
+    });
+    return { ...base, assures: [...rows, ...existants.slice(rows.length)] };
+  };
+
   const submit = async () => {
-    if (!clientNom.trim()) {
-      setError("Sélectionnez un client ou saisissez un nom.");
+    const nomDossier =
+      clientNom.trim() ||
+      (emprunteursValides[0]
+        ? [emprunteursValides[0].prenom, emprunteursValides[0].nom].filter(Boolean).join(" ").trim()
+        : "");
+    if (!nomDossier) {
+      setError("Sélectionnez un client, saisissez un nom ou ajoutez un emprunteur.");
       return;
     }
     setSaving(true);
     setError(null);
 
-    // Emprunteurs détectés dans l'offre de prêt : rapprochement ou création des
-    // fiches clients avant l'ouverture du dossier (un dossier = un prêt).
+    // Emprunteurs saisis ou détectés dans l'offre de prêt : rapprochement ou
+    // création des fiches clients avant l'ouverture du dossier (un dossier = un prêt).
     let clientPrincipalId = clientId;
-    let recueilFinal: Record<string, unknown> = recueil;
-    if (type === "emprunteur" && emprunteurs.length > 0) {
+    let recueilFinal: Record<string, unknown> = assuresSynchronises(recueil);
+    let idsAssures: (string | null)[] = [];
+    if (type === "emprunteur" && emprunteursValides.length > 0) {
       try {
         const res = await creerFiches({
           data: {
-            emprunteurs: emprunteurs.map((e) => ({
+            emprunteurs: emprunteursValides.map((e) => ({
               prenom: e.prenom,
               nom: e.nom,
               date_naissance: e.date_naissance,
@@ -424,11 +484,12 @@ export function NewDossierForm({
           },
         });
         const ids = res.resultats;
+        idsAssures = emprunteursValides.map((_, i) => ids[i]?.client_id ?? null);
         if (!clientPrincipalId && ids[0]) clientPrincipalId = ids[0].client_id;
-        const assures = assuresEmprunteur(recueil["assures"]);
+        const assures = assuresEmprunteur(recueilFinal["assures"]);
         if (assures.length > 0) {
           recueilFinal = {
-            ...recueil,
+            ...recueilFinal,
             assures: assures.map((a, i) => (ids[i] ? { ...a, client_id: ids[i]!.client_id } : a)),
           };
         }
@@ -439,6 +500,7 @@ export function NewDossierForm({
       }
     }
     const recueilSoumis = recueilFinal;
+
 
 
 
@@ -467,7 +529,7 @@ export function NewDossierForm({
 
     const { data: created, error: insErr } = await supabase.from("dossiers").insert({
       client_id: clientPrincipalId || null,
-      client_nom: clientNom,
+      client_nom: nomDossier,
       client_email: clientEmail || null,
       client_phone: clientPhone || null,
       type_assurance: type,
@@ -491,7 +553,7 @@ export function NewDossierForm({
     }
 
     // Offre de prêt déposée à la création : archivée sur le dossier.
-    if (offreFiles.length > 0) await archiverOffres(created.id, clientPrincipalId || null);
+    if (offreFiles.length > 0) await archiverOffres(created.id, clientPrincipalId || null, idsAssures);
 
     // Recueil validé → lettre de mission générée et envoyée automatiquement
     const res = await lancerLettreMission({ data: { dossier_id: created.id } });
@@ -523,56 +585,176 @@ export function NewDossierForm({
         </div>
 
         {type === "emprunteur" ? (
-          <div className="mt-6 rounded-2xl border border-line bg-background/40 p-4">
-            <p className="text-sm font-medium text-ink">Offre de prêt ou tableau d'amortissement (facultatif)</p>
-            <p className="mt-1 text-xs text-ink-muted">
-              Déposez le document : les caractéristiques du prêt et les emprunteurs sont relevés automatiquement, les
-              fiches clients manquantes sont créées à l'enregistrement. Aucune information déjà saisie n'est remplacée.
-            </p>
-            <input
-              type="file"
-              multiple
-              accept="application/pdf,image/*"
-              disabled={analysing}
-              onChange={(e) => {
-                const files = Array.from(e.target.files ?? []);
-                if (files.length > 0) void analyserOffreDeposee(files);
-              }}
-              className="mt-3 block w-full text-sm"
-            />
-            {offreFiles.length > 0 ? (
-              <ul className="mt-2 space-y-1 text-xs text-ink-muted">
-                {offreFiles.map((f) => (
-                  <li key={f.name}>{f.name}</li>
-                ))}
-              </ul>
-            ) : null}
-            {analyseEtat ? <p className="mt-3 text-xs text-ink">{analyseEtat}</p> : null}
-            {emprunteurs.length > 0 ? (
-              <ul className="mt-3 space-y-1 text-xs text-ink">
-                {emprunteurs.map((e, i) => (
-                  <li key={`${e.nom}-${i}`}>
-                    {[e.prenom, e.nom].filter(Boolean).join(" ")}
-                    {e.date_naissance ? ` · né(e) le ${e.date_naissance}` : ""}
-                    {e.quotite_pct !== null ? ` · quotité ${e.quotite_pct} %` : ""}
-                    {" — "}
-                    {e.client_id ? `fiche existante${e.client_reference ? ` ${e.client_reference}` : ""}` : "fiche à créer"}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
+          <>
+            {/* Un dossier = un prêt : Monsieur et Madame figurent dans le même dossier. */}
+            <div className="mt-6 rounded-2xl border border-line bg-background/40 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-medium text-ink">Emprunteurs du prêt</p>
+                  <p className="mt-1 text-xs text-ink-muted">
+                    Un seul dossier pour le prêt, avec le détail de chaque emprunteur. Les fiches clients manquantes sont
+                    créées à l'enregistrement.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setEmprunteurs((prev) => [
+                      ...prev,
+                      {
+                        prenom: "",
+                        nom: "",
+                        date_naissance: "",
+                        quotite_pct: null,
+                        csp: "",
+                        fumeur: null,
+                        email: null,
+                        telephone: null,
+                        client_id: null,
+                      },
+                    ])
+                  }
+                  className="rounded-full border border-[#B99B3F] px-4 py-1.5 text-xs font-medium text-ink hover:bg-[#B99B3F]/10"
+                >
+                  + Ajouter un emprunteur
+                </button>
+              </div>
+
+              {emprunteurs.length === 0 ? (
+                <p className="mt-3 text-xs text-ink-muted">
+                  Aucun emprunteur : ajoutez-les à la main ou déposez l'offre de prêt ci-dessous.
+                </p>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  {emprunteurs.map((e, i) => {
+                    const maj = (patch: Partial<EmprunteurPropose>) =>
+                      setEmprunteurs((prev) => prev.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+                    return (
+                      <div key={`emp-${i}`} className="rounded-xl border border-line bg-surface-elevated p-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-[#B99B3F]">
+                            {i === 0 ? "Assuré principal" : `Co-emprunteur ${i}`}
+                            {e.client_id
+                              ? ` · fiche existante${e.client_reference ? ` ${e.client_reference}` : ""}`
+                              : " · fiche à créer"}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEmprunteurs((prev) => prev.filter((_, j) => j !== i));
+                              setOffreCibles((prev) => prev.map((c) => (c === i ? -1 : c > i ? c - 1 : c)));
+                            }}
+                            className="text-xs text-destructive hover:underline"
+                          >
+                            Retirer
+                          </button>
+                        </div>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                          <TextInput label="Prénom" value={e.prenom} onChange={(v) => maj({ prenom: v })} />
+                          <TextInput label="Nom" value={e.nom} onChange={(v) => maj({ nom: v })} />
+                          <TextInput
+                            label="Date de naissance"
+                            type="date"
+                            value={e.date_naissance}
+                            onChange={(v) => maj({ date_naissance: v })}
+                          />
+                          <TextInput
+                            label="Quotité (%)"
+                            type="number"
+                            value={e.quotite_pct === null ? "" : String(e.quotite_pct)}
+                            onChange={(v) => maj({ quotite_pct: v.trim() === "" ? null : Number(v) })}
+                          />
+                          <TextInput
+                            label="Email"
+                            type="email"
+                            value={e.email ?? ""}
+                            onChange={(v) => maj({ email: v || null })}
+                          />
+                          <TextInput
+                            label="Téléphone"
+                            value={e.telephone ?? ""}
+                            onChange={(v) => maj({ telephone: v || null })}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-line bg-background/40 p-4">
+              <p className="text-sm font-medium text-ink">Offre de prêt ou tableau d'amortissement (facultatif)</p>
+              <p className="mt-1 text-xs text-ink-muted">
+                Déposez le document : les caractéristiques du prêt et les emprunteurs sont relevés automatiquement. Les
+                informations lues dans le document font foi et corrigent la saisie.
+              </p>
+              <input
+                type="file"
+                multiple
+                accept="application/pdf,image/*"
+                disabled={analysing}
+                onChange={(e) => {
+                  const files = Array.from(e.target.files ?? []);
+                  if (files.length > 0) void analyserOffreDeposee(files);
+                  e.target.value = "";
+                }}
+                className="mt-3 block w-full text-sm"
+              />
+              {offreFiles.length > 0 ? (
+                <ul className="mt-3 space-y-2 text-xs text-ink">
+                  {offreFiles.map((f, i) => (
+                    <li key={`${f.name}-${i}`} className="flex flex-wrap items-center gap-2">
+                      <span className="flex-1 truncate">{f.name}</span>
+                      <label className="flex items-center gap-1 text-ink-muted">
+                        Concerne
+                        <select
+                          value={String(offreCibles[i] ?? -1)}
+                          onChange={(ev) =>
+                            setOffreCibles((prev) => prev.map((c, j) => (j === i ? Number(ev.target.value) : c)))
+                          }
+                          className="rounded-md border border-line bg-background px-2 py-1 text-xs"
+                        >
+                          <option value="-1">Le prêt (commun)</option>
+                          {emprunteurs.map((e, j) => (
+                            <option key={`cible-${j}`} value={String(j)}>
+                              {[e.prenom, e.nom].filter(Boolean).join(" ") || `Emprunteur ${j + 1}`}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOffreFiles((prev) => prev.filter((_, j) => j !== i));
+                          setOffreCibles((prev) => prev.filter((_, j) => j !== i));
+                        }}
+                        className="text-destructive hover:underline"
+                      >
+                        Retirer
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {analyseEtat ? <p className="mt-3 text-xs text-ink">{analyseEtat}</p> : null}
+            </div>
+          </>
         ) : null}
 
         <div className="mt-6 flex justify-end">
 
           <button
-            onClick={() => setStep(2)}
+            onClick={() => {
+              setRecueil((r) => assuresSynchronises(r));
+              setStep(2);
+            }}
             className="rounded-full bg-[#0A192F] px-5 py-2 text-sm font-medium text-white"
           >
             Continuer → Recueil des besoins
           </button>
         </div>
+
       </div>
     );
   }
