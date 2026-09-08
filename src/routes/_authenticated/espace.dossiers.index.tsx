@@ -306,8 +306,10 @@ export function NewDossierForm({
    * formulaire, sans jamais écraser une valeur déjà saisie.
    */
   const analyserOffreDeposee = async (files: File[]) => {
-    setOffreFiles(files);
+    setOffreFiles((prev) => [...prev, ...files]);
+    setOffreCibles((prev) => [...prev, ...files.map(() => -1)]);
     if (files.length === 0) return;
+
     setAnalysing(true);
     setAnalyseEtat("Lecture du document par l'IA…");
     try {
