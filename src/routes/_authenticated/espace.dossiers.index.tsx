@@ -331,7 +331,20 @@ export function NewDossierForm({
         }
         return fusion;
       });
-      setEmprunteurs(res.emprunteurs);
+      // Les documents importés font foi : ils complètent et corrigent la saisie
+      // manuelle, sans supprimer un emprunteur ajouté à la main.
+      setEmprunteurs((prev) => {
+        const cle = (x: { nom: string; prenom: string }) => `${x.nom} ${x.prenom}`.trim().toLowerCase();
+        const out = prev.filter((e) => e.nom.trim() !== "");
+        for (const e of res.emprunteurs) {
+          const i = out.findIndex((x) => cle(x) === cle(e));
+          const existant = out[i];
+          if (existant) out[i] = { ...existant, ...e, client_id: e.client_id ?? existant.client_id };
+          else out.push(e);
+        }
+        return out;
+      });
+
       const principal = res.emprunteurs[0];
       if (principal) {
         if (!clientId) {
