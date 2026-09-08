@@ -315,6 +315,25 @@ export async function traiterPiecesJointesPartenaire(
           `Email : ${lienMail(params.gmail_message_id)}`,
         ].join("\n"),
       });
+
+      // NOTIFICATION OBLIGATOIRE : aucune pièce n'est ajoutée silencieusement à
+      // une fiche client ou à un dossier existant, même avec une identification sûre.
+      const { notifierActionAgent } = await import("@/lib/agent-notifications.server");
+      await notifierActionAgent(admin, {
+        gmail_message_id: params.gmail_message_id,
+        titre: `Pièce partenaire ajoutée automatiquement — ${piece.nom}`,
+        lignes: [
+          `Partenaire : ${params.compagnie ?? "inconnu"}`,
+          `Objet du mail : ${params.sujet ?? "(sans objet)"}`,
+          `Nature lue par l'IA : ${ident.nature ?? "indéterminée"}`,
+          resultat.detail,
+          resultat.dossier_id ? `Dossier rattaché : ${resultat.dossier_id}` : null,
+          "Vérifier le rattachement de la pièce.",
+        ],
+        client_id: trouve.client_id,
+        created_by: params.userId,
+      }).catch(() => false);
+
     } catch (e) {
       resultat.statut = "echec";
       resultat.detail = e instanceof Error ? e.message : "erreur inconnue";
