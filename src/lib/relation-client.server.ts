@@ -504,6 +504,12 @@ async function envoyerAccuseReception(
   if (!client.email) return;
   if (!(await adresseClientEnvoyable(client.email))) return;
 
+  // Priorité à l'humain : si le cabinet a déjà répondu dans le fil après le
+  // message du client, aucun accusé automatique ne part.
+  if (await reponseCabinetDejaPresente(admin, client, gmailThreadId, gmailMessageId, "message")) return;
+
+
+
   // Anti-doublon : lecture de l'historique CRM (message, fil, fenêtre 72 h).
   const { accuseAutorise, TITRE_ACCUSE } = await import("@/lib/accuses-historique.server");
   const decision = await accuseAutorise(admin, {
