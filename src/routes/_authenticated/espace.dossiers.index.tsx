@@ -585,56 +585,176 @@ export function NewDossierForm({
         </div>
 
         {type === "emprunteur" ? (
-          <div className="mt-6 rounded-2xl border border-line bg-background/40 p-4">
-            <p className="text-sm font-medium text-ink">Offre de prêt ou tableau d'amortissement (facultatif)</p>
-            <p className="mt-1 text-xs text-ink-muted">
-              Déposez le document : les caractéristiques du prêt et les emprunteurs sont relevés automatiquement, les
-              fiches clients manquantes sont créées à l'enregistrement. Aucune information déjà saisie n'est remplacée.
-            </p>
-            <input
-              type="file"
-              multiple
-              accept="application/pdf,image/*"
-              disabled={analysing}
-              onChange={(e) => {
-                const files = Array.from(e.target.files ?? []);
-                if (files.length > 0) void analyserOffreDeposee(files);
-              }}
-              className="mt-3 block w-full text-sm"
-            />
-            {offreFiles.length > 0 ? (
-              <ul className="mt-2 space-y-1 text-xs text-ink-muted">
-                {offreFiles.map((f) => (
-                  <li key={f.name}>{f.name}</li>
-                ))}
-              </ul>
-            ) : null}
-            {analyseEtat ? <p className="mt-3 text-xs text-ink">{analyseEtat}</p> : null}
-            {emprunteurs.length > 0 ? (
-              <ul className="mt-3 space-y-1 text-xs text-ink">
-                {emprunteurs.map((e, i) => (
-                  <li key={`${e.nom}-${i}`}>
-                    {[e.prenom, e.nom].filter(Boolean).join(" ")}
-                    {e.date_naissance ? ` · né(e) le ${e.date_naissance}` : ""}
-                    {e.quotite_pct !== null ? ` · quotité ${e.quotite_pct} %` : ""}
-                    {" — "}
-                    {e.client_id ? `fiche existante${e.client_reference ? ` ${e.client_reference}` : ""}` : "fiche à créer"}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
+          <>
+            {/* Un dossier = un prêt : Monsieur et Madame figurent dans le même dossier. */}
+            <div className="mt-6 rounded-2xl border border-line bg-background/40 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-medium text-ink">Emprunteurs du prêt</p>
+                  <p className="mt-1 text-xs text-ink-muted">
+                    Un seul dossier pour le prêt, avec le détail de chaque emprunteur. Les fiches clients manquantes sont
+                    créées à l'enregistrement.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setEmprunteurs((prev) => [
+                      ...prev,
+                      {
+                        prenom: "",
+                        nom: "",
+                        date_naissance: "",
+                        quotite_pct: null,
+                        csp: "",
+                        fumeur: null,
+                        email: null,
+                        telephone: null,
+                        client_id: null,
+                      },
+                    ])
+                  }
+                  className="rounded-full border border-[#B99B3F] px-4 py-1.5 text-xs font-medium text-ink hover:bg-[#B99B3F]/10"
+                >
+                  + Ajouter un emprunteur
+                </button>
+              </div>
+
+              {emprunteurs.length === 0 ? (
+                <p className="mt-3 text-xs text-ink-muted">
+                  Aucun emprunteur : ajoutez-les à la main ou déposez l'offre de prêt ci-dessous.
+                </p>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  {emprunteurs.map((e, i) => {
+                    const maj = (patch: Partial<EmprunteurPropose>) =>
+                      setEmprunteurs((prev) => prev.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+                    return (
+                      <div key={`emp-${i}`} className="rounded-xl border border-line bg-surface-elevated p-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-[#B99B3F]">
+                            {i === 0 ? "Assuré principal" : `Co-emprunteur ${i}`}
+                            {e.client_id
+                              ? ` · fiche existante${e.client_reference ? ` ${e.client_reference}` : ""}`
+                              : " · fiche à créer"}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEmprunteurs((prev) => prev.filter((_, j) => j !== i));
+                              setOffreCibles((prev) => prev.map((c) => (c === i ? -1 : c > i ? c - 1 : c)));
+                            }}
+                            className="text-xs text-destructive hover:underline"
+                          >
+                            Retirer
+                          </button>
+                        </div>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                          <TextInput label="Prénom" value={e.prenom} onChange={(v) => maj({ prenom: v })} />
+                          <TextInput label="Nom" value={e.nom} onChange={(v) => maj({ nom: v })} />
+                          <TextInput
+                            label="Date de naissance"
+                            type="date"
+                            value={e.date_naissance}
+                            onChange={(v) => maj({ date_naissance: v })}
+                          />
+                          <TextInput
+                            label="Quotité (%)"
+                            type="number"
+                            value={e.quotite_pct === null ? "" : String(e.quotite_pct)}
+                            onChange={(v) => maj({ quotite_pct: v.trim() === "" ? null : Number(v) })}
+                          />
+                          <TextInput
+                            label="Email"
+                            type="email"
+                            value={e.email ?? ""}
+                            onChange={(v) => maj({ email: v || null })}
+                          />
+                          <TextInput
+                            label="Téléphone"
+                            value={e.telephone ?? ""}
+                            onChange={(v) => maj({ telephone: v || null })}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-line bg-background/40 p-4">
+              <p className="text-sm font-medium text-ink">Offre de prêt ou tableau d'amortissement (facultatif)</p>
+              <p className="mt-1 text-xs text-ink-muted">
+                Déposez le document : les caractéristiques du prêt et les emprunteurs sont relevés automatiquement. Les
+                informations lues dans le document font foi et corrigent la saisie.
+              </p>
+              <input
+                type="file"
+                multiple
+                accept="application/pdf,image/*"
+                disabled={analysing}
+                onChange={(e) => {
+                  const files = Array.from(e.target.files ?? []);
+                  if (files.length > 0) void analyserOffreDeposee(files);
+                  e.target.value = "";
+                }}
+                className="mt-3 block w-full text-sm"
+              />
+              {offreFiles.length > 0 ? (
+                <ul className="mt-3 space-y-2 text-xs text-ink">
+                  {offreFiles.map((f, i) => (
+                    <li key={`${f.name}-${i}`} className="flex flex-wrap items-center gap-2">
+                      <span className="flex-1 truncate">{f.name}</span>
+                      <label className="flex items-center gap-1 text-ink-muted">
+                        Concerne
+                        <select
+                          value={String(offreCibles[i] ?? -1)}
+                          onChange={(ev) =>
+                            setOffreCibles((prev) => prev.map((c, j) => (j === i ? Number(ev.target.value) : c)))
+                          }
+                          className="rounded-md border border-line bg-background px-2 py-1 text-xs"
+                        >
+                          <option value="-1">Le prêt (commun)</option>
+                          {emprunteurs.map((e, j) => (
+                            <option key={`cible-${j}`} value={String(j)}>
+                              {[e.prenom, e.nom].filter(Boolean).join(" ") || `Emprunteur ${j + 1}`}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOffreFiles((prev) => prev.filter((_, j) => j !== i));
+                          setOffreCibles((prev) => prev.filter((_, j) => j !== i));
+                        }}
+                        className="text-destructive hover:underline"
+                      >
+                        Retirer
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {analyseEtat ? <p className="mt-3 text-xs text-ink">{analyseEtat}</p> : null}
+            </div>
+          </>
         ) : null}
 
         <div className="mt-6 flex justify-end">
 
           <button
-            onClick={() => setStep(2)}
+            onClick={() => {
+              setRecueil((r) => assuresSynchronises(r));
+              setStep(2);
+            }}
             className="rounded-full bg-[#0A192F] px-5 py-2 text-sm font-medium text-white"
           >
             Continuer → Recueil des besoins
           </button>
         </div>
+
       </div>
     );
   }
