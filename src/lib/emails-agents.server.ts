@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import type { EmailResume } from "@/lib/gmail.server";
-import { estEmailInterne } from "@/lib/domaines-internes";
+import { estEmailInterne, estAdresseAutomatique } from "@/lib/domaines-internes";
 import {
   brancherContexteEmail,
   cloturerContexteEmail,
@@ -474,12 +474,16 @@ export async function executerAgents(
           // Garde-fou INTERNE : un mail envoyé depuis une adresse du cabinet
           // (transfert, note interne) n'est jamais un prospect. Aucune fiche
           // client, aucun dossier : on dépose une tâche d'arbitrage humain.
-          if (estEmailInterne(entree.expediteur_email)) {
+          const estInterne = estEmailInterne(entree.expediteur_email);
+          const estAutomate = !estInterne && estAdresseAutomatique(entree.expediteur_email);
+          if (estInterne || estAutomate) {
             await creerTacheAdmin(admin, {
-              titre: `Mail interne à qualifier — ${entree.sujet ?? "(sans objet)"}`.slice(0, 200),
+              titre: `${estInterne ? "Mail interne" : "Expéditeur automatique non répertorié"} à qualifier — ${entree.sujet ?? "(sans objet)"}`.slice(0, 200),
               description: [
                 `Objet de la demande : ${entree.sujet ?? "(sans objet)"}`,
-                `Motif : mail envoyé depuis une adresse interne du cabinet (${entree.expediteur_email}) — probable transfert.`,
+                estInterne
+                  ? `Motif : mail envoyé depuis une adresse interne du cabinet (${entree.expediteur_email}) — probable transfert.`
+                  : `Motif : adresse automatique d'un domaine NON répertorié (${entree.expediteur_email}) — ni partenaire connu, ni client. À répertorier si c'est un partenaire.`,
                 `Ce qui bloque : aucun agent ne peut décider à partir d'un expéditeur interne (ni prospect, ni client, ni partenaire identifiable automatiquement).`,
                 `Conseil : ouvrir le mail et indiquer la suite à donner (rattacher au client concerné, transmettre au service partenaire, ou saisir en comptabilité). Aucune fiche client n'a été créée.`,
                 `Email : https://mail.google.com/mail/u/0/#all/${m.id}`,
@@ -493,9 +497,11 @@ export async function executerAgents(
                 gmail_thread_id: detail.thread_id ?? m.thread_id ?? null,
                 direction: "entrant",
                 recu_le: m.date ?? detail.date ?? null,
-                notes: "Mail interne (expéditeur du cabinet) — aucune fiche client créée",
+                notes: estInterne
+                  ? "Mail interne (expéditeur du cabinet) — aucune fiche client créée"
+                  : "Expéditeur automatique d'un domaine non répertorié — à qualifier (aucune fiche client créée)",
                 triage_ia: JSON.parse(
-                  JSON.stringify({ agent: "interne", expediteur: entree.expediteur_email, sujet: entree.sujet }),
+                  JSON.stringify({ agent: estInterne ? "interne" : "automate_non_repertorie", expediteur: entree.expediteur_email, sujet: entree.sujet }),
                 ),
                 triage_le: new Date().toISOString(),
                 created_by: userId,
