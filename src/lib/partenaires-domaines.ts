@@ -19,9 +19,14 @@ export const DOMAINES_PARTENAIRES: Record<string, string> = {
   "substitutions.fr": "Cardif (service résiliation)",
   "cardif.fr": "Cardif",
   "cardif.com": "Cardif",
-  // iChange — service de substitution / accompagnement (groupe Kereis).
-  "iassure.fr": "iChange (service substitution)",
-  "ichange.fr": "iChange (service substitution)",
+  // iChange / Facile@ssur — plateformes de substitution du groupe Kereis.
+  // iChange@iassure.fr est bien un partenaire, jamais une adresse du cabinet.
+  "iassure.fr": "iChange (Kereis — service substitution)",
+  "ichange.fr": "iChange (Kereis — service substitution)",
+  "facileassur.fr": "Facile@ssur (Kereis)",
+  // Elois — gestion des adhésions assurance de prêt (no_reply@elois.fr).
+  "elois.fr": "Elois (gestion assurance de prêt)",
+
   // Néoliane.
   "neoliane.fr": "Néoliane",
   "neoliane.com": "Néoliane",
