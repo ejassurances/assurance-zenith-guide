@@ -237,6 +237,7 @@ export function DocumentsPretPanel({
 
   /** Reclassement d'une pièce déjà déposée (liste déroulante de l'étape). */
   async function changerNature(doc: Doc, valeur: string) {
+    if (!valeur) return;
     setError(null);
     setDocs((prev) => prev.map((d) => (d.id === doc.id ? { ...d, type_document: valeur } : d)));
     const { error: err } = await supabase
