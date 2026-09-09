@@ -575,7 +575,9 @@ function StageContent({
           <span className="text-xs text-ink-muted">Étape précédente</span>
         )}
       </div>
-      {canEdit && (
+      {/* À l'étape 0, l'interface structurée passe en premier ; la synthèse IA
+          et le copilote sont regroupés en fin d'écran. */}
+      {parcours !== "import" && canEdit && (
         <AnalyseRecueilPanel
           dossierId={dossierId}
           analyseInitiale={(dossier.analyse_ia ?? null) as never}
@@ -586,8 +588,20 @@ function StageContent({
       {canEdit && dossier.type_assurance === "epargne_retraite" && (
         <EtudeEpargnePanel dossierId={dossierId} />
       )}
-      {canEdit && <CopilotePanel dossierId={dossierId} />}
+      {parcours !== "import" && canEdit && <CopilotePanel dossierId={dossierId} />}
       {content}
+      {parcours === "import" && canEdit && (
+        <>
+          <AnalyseRecueilPanel
+            dossierId={dossierId}
+            analyseInitiale={(dossier.analyse_ia ?? null) as never}
+            analyseLe={dossier.analyse_ia_le}
+            onAnalyse={onChanged}
+          />
+          <CopilotePanel dossierId={dossierId} />
+        </>
+      )}
+
     </section>
   );
 }
