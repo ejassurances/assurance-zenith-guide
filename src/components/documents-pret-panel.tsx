@@ -45,8 +45,12 @@ export function DocumentsPretPanel({
   dossierId: string;
   /** Intitulé du bloc. */
   titre?: string;
-  /** « pret » : seuls les documents de prêt ; « tous » : toutes les pièces du dossier. */
-  filtre?: "pret" | "tous";
+  /**
+   * « pret » : offre de prêt et tableau d'amortissement ; « devis_conseil » :
+   * devis et devoir de conseil ; « tous » : toutes les pièces du dossier
+   * (réservé à la vue globale de traçabilité).
+   */
+  filtre?: "pret" | "devis_conseil" | "tous";
   /** Type enregistré lors du dépôt. */
   typeDocument?: string;
   /**
