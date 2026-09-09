@@ -787,7 +787,14 @@ export function DevoirConseilPanel({
             />
           </Field>
 
-          {emprunteur && <DocumentsPretPanel dossierId={dossierId} />}
+          {emprunteur && (
+            <DocumentsPretPanel
+              dossierId={dossierId}
+              titre="Devis et devoir de conseil de cette étape"
+              filtre="devis_conseil"
+              typeDocument="devis"
+            />
+          )}
 
 
 

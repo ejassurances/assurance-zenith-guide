@@ -143,6 +143,8 @@ function DossierDetail() {
   );
   /** Étape visible du parcours emprunteur (présentation en 12 étapes). */
   const [parcours, setParcours] = useState<ParcoursKey | null>(null);
+  /** Vue globale ACPR : onglet distinct du déroulé des étapes. */
+  const [vueGlobale, setVueGlobale] = useState(false);
   const completude = useCompletudeDossier(id, dossier?.client_id ?? null);
   /** Score de conformité KYC du client (0-100) : sous 50 %, le dossier est gelé. */
   const [scoreKyc, setScoreKyc] = useState<number | null>(null);
@@ -256,12 +258,43 @@ function DossierDetail() {
       </div>
 
       {parcoursActif && (
-        <ParcoursEmprunteurNav
-          statut={dossier.statut}
-          active={parcoursActif}
-          onSelect={setParcours}
-        />
+        <>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setVueGlobale(false)}
+              className={
+                "rounded-full border px-4 py-1.5 text-xs transition " +
+                (vueGlobale
+                  ? "border-line bg-background text-ink-muted hover:border-ink/40"
+                  : "border-ink bg-ink text-primary-foreground")
+              }
+            >
+              Parcours par étapes
+            </button>
+            <button
+              type="button"
+              onClick={() => setVueGlobale(true)}
+              className={
+                "rounded-full border px-4 py-1.5 text-xs transition " +
+                (vueGlobale
+                  ? "border-ink bg-ink text-primary-foreground"
+                  : "border-line bg-background text-ink-muted hover:border-ink/40")
+              }
+            >
+              Vue globale du dossier (traçabilité ACPR)
+            </button>
+          </div>
+          {!vueGlobale && (
+            <ParcoursEmprunteurNav
+              statut={dossier.statut}
+              active={parcoursActif}
+              onSelect={setParcours}
+            />
+          )}
+        </>
       )}
+
 
       <DossierPipeline
         dossierId={id}
@@ -272,27 +305,50 @@ function DossierDetail() {
         onChanged={handlePipelineChanged}
         onStepClick={(k) => {
           setParcours(null);
+          setVueGlobale(false);
           setSelectedStep(k);
         }}
       />
 
 
       <div className="min-w-0">
-        {userId && (
-          <StageContent
-            step={displayedStep}
-            parcours={parcoursActif}
-            dossier={dossier}
-            userId={userId}
-            canEdit={canEdit}
-            contreProposition={contreProposition}
-            onChanged={load}
-            onContreProposition={(suggestion, motif) => {
-              setContreProposition({ suggestion, motif, key: Date.now() });
-            }}
-          />
+        {userId && vueGlobale ? (
+          <section className="space-y-6" aria-label="Vue globale du dossier">
+            <div className="border-b border-line pb-3">
+              <h2 className="font-serif text-xl font-medium text-ink">
+                Vue globale du dossier — traçabilité ACPR
+              </h2>
+              <p className="mt-1 text-xs text-ink-muted">
+                Ensemble des pièces et échanges du dossier, tous types confondus. Cette vue est
+                distincte du déroulé des étapes : chaque document reste rattaché à son étape.
+              </p>
+            </div>
+            <PiecesSection
+              dossierId={id}
+              clientEmail={dossier.client_email}
+              canValidate={canEdit}
+            />
+            <DocumentsPanel dossierId={id} userId={userId} />
+            <MessagesPanel dossierId={id} userId={userId} />
+          </section>
+        ) : (
+          userId && (
+            <StageContent
+              step={displayedStep}
+              parcours={parcoursActif}
+              dossier={dossier}
+              userId={userId}
+              canEdit={canEdit}
+              contreProposition={contreProposition}
+              onChanged={load}
+              onContreProposition={(suggestion, motif) => {
+                setContreProposition({ suggestion, motif, key: Date.now() });
+              }}
+            />
+          )
         )}
       </div>
+
 
     </div>
   );
@@ -319,8 +375,10 @@ function StageContent({
   onContreProposition: (suggestion: string, motif: string) => void;
 }) {
   const dossierId = dossier.id;
-  const documents = <DocumentsPanel dossierId={dossierId} userId={userId} />;
-  const messages = <MessagesPanel dossierId={dossierId} userId={userId} />;
+  // Une étape = une vue : dans le parcours emprunteur, les blocs transverses
+  // (tous les documents, tous les messages) sont réservés à la vue globale.
+  const documents = parcours ? null : <DocumentsPanel dossierId={dossierId} userId={userId} />;
+  const messages = parcours ? null : <MessagesPanel dossierId={dossierId} userId={userId} />;
   const pieces = (
     <div id="section-pieces">
       <PiecesSection
@@ -498,20 +556,6 @@ function StageContent({
             reference: dossier.reference,
           }}
         />
-        <RecueilDossierPanel
-          dossierId={dossierId}
-          typeAssurance={dossier.type_assurance}
-          recueil={dossier.recueil_besoins}
-          canEdit={canEdit}
-          onSaved={onChanged}
-          client={{
-            id: dossier.client_id,
-            nom: dossier.client_nom,
-            email: dossier.client_email,
-            telephone: dossier.client_phone,
-            reference: dossier.reference,
-          }}
-        />
       </>
     );
   }
@@ -554,7 +598,7 @@ function StageContent({
         <DocumentsPretPanel
           dossierId={dossierId}
           titre="Devis final, lettre de mission signée, devoir de conseil signé"
-          filtre="tous"
+          filtre="assureur"
           typeDocument="document_assureur"
         />
         {pieces}
@@ -575,9 +619,9 @@ function StageContent({
           <span className="text-xs text-ink-muted">Étape précédente</span>
         )}
       </div>
-      {/* À l'étape 0, l'interface structurée passe en premier ; la synthèse IA
-          et le copilote sont regroupés en fin d'écran. */}
-      {parcours !== "import" && canEdit && (
+      {/* Une étape = une vue : l'analyse IA transverse et le copilote ne
+          s'affichent que hors parcours (vue réglementaire classique). */}
+      {!parcours && canEdit && (
         <AnalyseRecueilPanel
           dossierId={dossierId}
           analyseInitiale={(dossier.analyse_ia ?? null) as never}
@@ -588,19 +632,9 @@ function StageContent({
       {canEdit && dossier.type_assurance === "epargne_retraite" && (
         <EtudeEpargnePanel dossierId={dossierId} />
       )}
-      {parcours !== "import" && canEdit && <CopilotePanel dossierId={dossierId} />}
+      {!parcours && canEdit && <CopilotePanel dossierId={dossierId} />}
       {content}
-      {parcours === "import" && canEdit && (
-        <>
-          <AnalyseRecueilPanel
-            dossierId={dossierId}
-            analyseInitiale={(dossier.analyse_ia ?? null) as never}
-            analyseLe={dossier.analyse_ia_le}
-            onAnalyse={onChanged}
-          />
-          <CopilotePanel dossierId={dossierId} />
-        </>
-      )}
+
 
     </section>
   );

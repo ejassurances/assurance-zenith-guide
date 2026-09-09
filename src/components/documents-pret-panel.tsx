@@ -23,9 +23,21 @@ type Doc = {
 /** Motifs reconnus : offre de prêt, tableau d'amortissement, échéancier. */
 const MOTIF = /(offre[-_ ]?de[-_ ]?pret|offre[-_ ]?pret|amortissement|amort|echeancier|échéancier|pret[-_ ]?immo)/i;
 
-function estDocumentPret(d: Doc): boolean {
-  return MOTIF.test(d.type_document ?? "") || MOTIF.test(d.categorie ?? "") || MOTIF.test(d.file_name ?? "");
+/** Motifs de l'étape « Devoir de conseil » : devis et devoir de conseil. */
+const MOTIF_DEVIS = /(devis|proposition|tarification|devoir[-_ ]?de[-_ ]?conseil|devoir_conseil|recommandation)/i;
+
+/** Motifs de l'étape « Analyse et décision » : documents reçus de l'assureur. */
+const MOTIF_ASSUREUR =
+  /(document_assureur|assureur|certificat|attestation|adhesion|adhésion|lettre[-_ ]?de[-_ ]?mission|lettre_mission|devis|devoir[-_ ]?de[-_ ]?conseil|devoir_conseil)/i;
+
+function correspond(d: Doc, motif: RegExp): boolean {
+  return motif.test(d.type_document ?? "") || motif.test(d.categorie ?? "") || motif.test(d.file_name ?? "");
 }
+
+function estDocumentPret(d: Doc): boolean {
+  return correspond(d, MOTIF);
+}
+
 
 export function DocumentsPretPanel({
   dossierId,
@@ -37,8 +49,12 @@ export function DocumentsPretPanel({
   dossierId: string;
   /** Intitulé du bloc. */
   titre?: string;
-  /** « pret » : seuls les documents de prêt ; « tous » : toutes les pièces du dossier. */
-  filtre?: "pret" | "tous";
+  /**
+   * « pret » : offre de prêt et tableau d'amortissement ; « devis_conseil » :
+   * devis et devoir de conseil ; « assureur » : documents reçus de la
+   * compagnie ; « tous » : toutes les pièces (vue globale de traçabilité).
+   */
+  filtre?: "pret" | "devis_conseil" | "assureur" | "tous";
   /** Type enregistré lors du dépôt. */
   typeDocument?: string;
   /**
@@ -71,7 +87,15 @@ export function DocumentsPretPanel({
       supabase.from("dossiers").select("client_id").eq("id", dossierId).maybeSingle(),
     ]);
     const tous = (rows ?? []) as Doc[];
-    setDocs(filtre === "tous" ? tous : tous.filter(estDocumentPret));
+    setDocs(
+      filtre === "tous"
+        ? tous
+        : filtre === "devis_conseil"
+          ? tous.filter((d) => correspond(d, MOTIF_DEVIS))
+          : filtre === "assureur"
+            ? tous.filter((d) => correspond(d, MOTIF_ASSUREUR))
+            : tous.filter(estDocumentPret),
+    );
     setClientId(((dossier as { client_id: string | null } | null)?.client_id) ?? null);
   }, [dossierId, filtre]);
 
@@ -228,7 +252,9 @@ export function DocumentsPretPanel({
         <p className="mt-2 text-xs text-ink-muted">
           {filtre === "pret"
             ? "Aucune offre de prêt ni tableau d'amortissement rattaché à ce dossier."
-            : "Aucun document rattaché à ce dossier."}
+            : filtre === "devis_conseil"
+              ? "Aucun devis ni devoir de conseil rattaché à ce dossier."
+              : "Aucun document rattaché à ce dossier."}
         </p>
 
       ) : (
