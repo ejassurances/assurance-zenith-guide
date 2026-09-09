@@ -164,9 +164,12 @@ function DossierDetail() {
 
   useEffect(() => {
     setSelectedStep(etape && estEtapeValide(etape) ? etape : null);
+    // Lien direct vers une étape du parcours emprunteur (?etape=coordonnees…).
+    if (etape && parcoursEtape(etape)) setParcours(etape as ParcoursKey);
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, etape]);
+
 
   useEffect(() => {
     const clientId = dossier?.client_id;
