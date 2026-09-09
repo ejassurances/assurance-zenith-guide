@@ -92,7 +92,9 @@ export function DocumentsPretPanel({
         ? tous
         : filtre === "devis_conseil"
           ? tous.filter((d) => correspond(d, MOTIF_DEVIS))
-          : tous.filter(estDocumentPret),
+          : filtre === "assureur"
+            ? tous.filter((d) => correspond(d, MOTIF_ASSUREUR))
+            : tous.filter(estDocumentPret),
     );
     setClientId(((dossier as { client_id: string | null } | null)?.client_id) ?? null);
   }, [dossierId, filtre]);
