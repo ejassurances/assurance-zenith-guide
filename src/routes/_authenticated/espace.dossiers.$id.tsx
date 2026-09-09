@@ -143,6 +143,8 @@ function DossierDetail() {
   );
   /** Étape visible du parcours emprunteur (présentation en 12 étapes). */
   const [parcours, setParcours] = useState<ParcoursKey | null>(null);
+  /** Vue globale ACPR : onglet distinct du déroulé des étapes. */
+  const [vueGlobale, setVueGlobale] = useState(false);
   const completude = useCompletudeDossier(id, dossier?.client_id ?? null);
   /** Score de conformité KYC du client (0-100) : sous 50 %, le dossier est gelé. */
   const [scoreKyc, setScoreKyc] = useState<number | null>(null);
