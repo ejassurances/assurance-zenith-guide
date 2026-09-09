@@ -23,9 +23,17 @@ type Doc = {
 /** Motifs reconnus : offre de prêt, tableau d'amortissement, échéancier. */
 const MOTIF = /(offre[-_ ]?de[-_ ]?pret|offre[-_ ]?pret|amortissement|amort|echeancier|échéancier|pret[-_ ]?immo)/i;
 
-function estDocumentPret(d: Doc): boolean {
-  return MOTIF.test(d.type_document ?? "") || MOTIF.test(d.categorie ?? "") || MOTIF.test(d.file_name ?? "");
+/** Motifs de l'étape « Devoir de conseil » : devis et devoir de conseil. */
+const MOTIF_DEVIS = /(devis|proposition|tarification|devoir[-_ ]?de[-_ ]?conseil|devoir_conseil|recommandation)/i;
+
+function correspond(d: Doc, motif: RegExp): boolean {
+  return motif.test(d.type_document ?? "") || motif.test(d.categorie ?? "") || motif.test(d.file_name ?? "");
 }
+
+function estDocumentPret(d: Doc): boolean {
+  return correspond(d, MOTIF);
+}
+
 
 export function DocumentsPretPanel({
   dossierId,
