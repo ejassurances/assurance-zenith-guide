@@ -35,6 +35,7 @@ import { EtudeEpargnePanel } from "@/components/etude-epargne-panel";
 import { traiterDocumentDepose } from "@/lib/etudes.functions";
 import { ETAPES, etapeLabel, estEtapeValide, type EtapeKey } from "@/lib/pipeline-dossier";
 import { ParcoursEmprunteurNav } from "@/components/parcours-emprunteur-nav";
+import { ImportDocumentsEmprunteur } from "@/components/import-documents-emprunteur";
 import {
   etapeCouranteParcours,
   parcoursEtape,
@@ -267,12 +268,14 @@ function DossierDetail() {
         statut={dossier.statut}
         selectedStep={displayedStep}
         canEdit={canEdit}
+        masquerPhases={!!parcoursActif}
         onChanged={handlePipelineChanged}
         onStepClick={(k) => {
           setParcours(null);
           setSelectedStep(k);
         }}
       />
+
 
       <div className="min-w-0">
         {userId && (
@@ -483,19 +486,18 @@ function StageContent({
   if (parcours === "import") {
     content = (
       <>
-        <div className="rounded-2xl border border-line bg-surface-elevated p-5">
-          <h3 className="font-serif text-lg font-medium text-ink">
-            Import de l'offre de prêt et du tableau d'amortissement
-          </h3>
-          <p className="mt-2 text-sm text-ink-soft">
-            Déposez l'offre de prêt et/ou le tableau d'amortissement : les informations lues
-            (banque, capital, capital restant dû, taux, durée, emprunteurs et quotités) sont
-            reportées dans le recueil des besoins et rapprochées de la fiche client existante. Le
-            document importé fait foi : une valeur divergente est corrigée et l'écart est tracé dans
-            l'historique du dossier.
-          </p>
-        </div>
-        <DocumentsPretPanel dossierId={dossierId} onAnalyse={() => onChanged()} />
+        <ImportDocumentsEmprunteur
+          dossierId={dossierId}
+          recueil={dossier.recueil_besoins}
+          onChanged={onChanged}
+          client={{
+            id: dossier.client_id,
+            nom: dossier.client_nom,
+            email: dossier.client_email,
+            telephone: dossier.client_phone,
+            reference: dossier.reference,
+          }}
+        />
         <RecueilDossierPanel
           dossierId={dossierId}
           typeAssurance={dossier.type_assurance}
@@ -513,6 +515,7 @@ function StageContent({
       </>
     );
   }
+
 
   // Étape 5 du parcours emprunteur : lettre de mission, objectif fixe rappelé.
   if (parcours === "lettre_mission") {
@@ -572,7 +575,9 @@ function StageContent({
           <span className="text-xs text-ink-muted">Étape précédente</span>
         )}
       </div>
-      {canEdit && (
+      {/* À l'étape 0, l'interface structurée passe en premier ; la synthèse IA
+          et le copilote sont regroupés en fin d'écran. */}
+      {parcours !== "import" && canEdit && (
         <AnalyseRecueilPanel
           dossierId={dossierId}
           analyseInitiale={(dossier.analyse_ia ?? null) as never}
@@ -583,8 +588,20 @@ function StageContent({
       {canEdit && dossier.type_assurance === "epargne_retraite" && (
         <EtudeEpargnePanel dossierId={dossierId} />
       )}
-      {canEdit && <CopilotePanel dossierId={dossierId} />}
+      {parcours !== "import" && canEdit && <CopilotePanel dossierId={dossierId} />}
       {content}
+      {parcours === "import" && canEdit && (
+        <>
+          <AnalyseRecueilPanel
+            dossierId={dossierId}
+            analyseInitiale={(dossier.analyse_ia ?? null) as never}
+            analyseLe={dossier.analyse_ia_le}
+            onAnalyse={onChanged}
+          />
+          <CopilotePanel dossierId={dossierId} />
+        </>
+      )}
+
     </section>
   );
 }

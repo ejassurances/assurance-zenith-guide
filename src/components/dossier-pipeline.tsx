@@ -20,6 +20,7 @@ export function DossierPipeline({
   canEdit,
   onChanged,
   onStepClick,
+  masquerPhases = false,
 }: {
   dossierId: string;
   statut: string;
@@ -27,7 +28,14 @@ export function DossierPipeline({
   canEdit: boolean;
   onChanged: () => void;
   onStepClick?: (key: EtapeKey) => void;
+  /**
+   * Masque les 4 cartes macro : utilisé pour la branche emprunteur, où la barre
+   * des 12 étapes tient ce rôle. Le bloc reste affiché pour le changement
+   * d'étape réglementaire et l'historique ACPR (une seule vue, pas de doublon).
+   */
+  masquerPhases?: boolean;
 }) {
+
   const changer = useServerFn(changerEtapeDossier);
   const [histo, setHisto] = useState<HistoRow[]>([]);
   const [busy, setBusy] = useState(false);
@@ -69,13 +77,16 @@ export function DossierPipeline({
   return (
     <div className="rounded-2xl border border-line bg-surface-elevated p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-serif text-lg font-medium text-ink">Pipeline du projet</h2>
+        <h2 className="font-serif text-lg font-medium text-ink">
+          {masquerPhases ? "Suivi réglementaire et historique" : "Pipeline du projet"}
+        </h2>
         <span className="rounded-full border border-line px-3 py-1 text-xs text-ink-soft">
           Étape actuelle : {def?.label ?? statut}
         </span>
       </div>
 
-      <div className="mt-5 grid gap-3 md:grid-cols-4">
+      <div className={"mt-5 grid gap-3 md:grid-cols-4" + (masquerPhases ? " hidden" : "")}>
+
         {PHASES_CLIENT.map((phase, pi) => {
           const phaseCourante = phaseClientIndex(statut);
           const phasePassee = phaseCourante >= 0 && pi < phaseCourante;
