@@ -305,27 +305,50 @@ function DossierDetail() {
         onChanged={handlePipelineChanged}
         onStepClick={(k) => {
           setParcours(null);
+          setVueGlobale(false);
           setSelectedStep(k);
         }}
       />
 
 
       <div className="min-w-0">
-        {userId && (
-          <StageContent
-            step={displayedStep}
-            parcours={parcoursActif}
-            dossier={dossier}
-            userId={userId}
-            canEdit={canEdit}
-            contreProposition={contreProposition}
-            onChanged={load}
-            onContreProposition={(suggestion, motif) => {
-              setContreProposition({ suggestion, motif, key: Date.now() });
-            }}
-          />
+        {userId && vueGlobale ? (
+          <section className="space-y-6" aria-label="Vue globale du dossier">
+            <div className="border-b border-line pb-3">
+              <h2 className="font-serif text-xl font-medium text-ink">
+                Vue globale du dossier — traçabilité ACPR
+              </h2>
+              <p className="mt-1 text-xs text-ink-muted">
+                Ensemble des pièces et échanges du dossier, tous types confondus. Cette vue est
+                distincte du déroulé des étapes : chaque document reste rattaché à son étape.
+              </p>
+            </div>
+            <PiecesSection
+              dossierId={id}
+              clientEmail={dossier.client_email}
+              canValidate={canEdit}
+            />
+            <DocumentsPanel dossierId={id} userId={userId} />
+            <MessagesPanel dossierId={id} userId={userId} />
+          </section>
+        ) : (
+          userId && (
+            <StageContent
+              step={displayedStep}
+              parcours={parcoursActif}
+              dossier={dossier}
+              userId={userId}
+              canEdit={canEdit}
+              contreProposition={contreProposition}
+              onChanged={load}
+              onContreProposition={(suggestion, motif) => {
+                setContreProposition({ suggestion, motif, key: Date.now() });
+              }}
+            />
+          )
         )}
       </div>
+
 
     </div>
   );
