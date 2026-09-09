@@ -39,6 +39,31 @@ function estDocumentPret(d: Doc): boolean {
 }
 
 
+/** Natures de document proposées par étape du parcours emprunteur. */
+export const TYPES_DOCUMENT: Record<string, { value: string; label: string }[]> = {
+  pret: [
+    { value: "offre_pret", label: "Offre de prêt" },
+    { value: "tableau_amortissement", label: "Tableau d'amortissement" },
+    { value: "echeancier_pret", label: "Échéancier de prêt" },
+    { value: "contrat_pret", label: "Contrat / acte de prêt" },
+    { value: "attestation_assurance_pret", label: "Attestation d'assurance actuelle" },
+  ],
+  devis_conseil: [
+    { value: "devis", label: "Devis d'assurance" },
+    { value: "proposition_tarification", label: "Proposition tarifaire" },
+    { value: "devoir_conseil", label: "Devoir de conseil" },
+    { value: "recommandation", label: "Recommandation" },
+  ],
+  assureur: [
+    { value: "devis_final", label: "Devis final retenu" },
+    { value: "lettre_mission_signee", label: "Lettre de mission signée" },
+    { value: "devoir_conseil_signe", label: "Devoir de conseil signé" },
+    { value: "certificat_adhesion", label: "Certificat d'adhésion" },
+    { value: "attestation_assureur", label: "Attestation de l'assureur" },
+    { value: "document_assureur", label: "Autre document de l'assureur" },
+  ],
+};
+
 export function DocumentsPretPanel({
   dossierId,
   titre = "Offre de prêt et tableau d'amortissement",
