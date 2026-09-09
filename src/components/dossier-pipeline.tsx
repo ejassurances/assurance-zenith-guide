@@ -20,6 +20,7 @@ export function DossierPipeline({
   canEdit,
   onChanged,
   onStepClick,
+  masquerPhases = false,
 }: {
   dossierId: string;
   statut: string;
@@ -27,7 +28,14 @@ export function DossierPipeline({
   canEdit: boolean;
   onChanged: () => void;
   onStepClick?: (key: EtapeKey) => void;
+  /**
+   * Masque les 4 cartes macro : utilisé pour la branche emprunteur, où la barre
+   * des 12 étapes tient ce rôle. Le bloc reste affiché pour le changement
+   * d'étape réglementaire et l'historique ACPR (une seule vue, pas de doublon).
+   */
+  masquerPhases?: boolean;
 }) {
+
   const changer = useServerFn(changerEtapeDossier);
   const [histo, setHisto] = useState<HistoRow[]>([]);
   const [busy, setBusy] = useState(false);

@@ -268,12 +268,14 @@ function DossierDetail() {
         statut={dossier.statut}
         selectedStep={displayedStep}
         canEdit={canEdit}
+        masquerPhases={!!parcoursActif}
         onChanged={handlePipelineChanged}
         onStepClick={(k) => {
           setParcours(null);
           setSelectedStep(k);
         }}
       />
+
 
       <div className="min-w-0">
         {userId && (
