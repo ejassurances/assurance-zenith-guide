@@ -235,6 +235,18 @@ export function DocumentsPretPanel({
     setBusy(false);
   }
 
+  /** Reclassement d'une pièce déjà déposée (liste déroulante de l'étape). */
+  async function changerNature(doc: Doc, valeur: string) {
+    setError(null);
+    setDocs((prev) => prev.map((d) => (d.id === doc.id ? { ...d, type_document: valeur } : d)));
+    const { error: err } = await supabase
+      .from("documents")
+      .update({ type_document: valeur })
+      .eq("id", doc.id);
+    if (err) setError(err.message);
+    await load();
+  }
+
   return (
     <div className="rounded-xl border border-line p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
