@@ -176,7 +176,7 @@ export function DocumentsPretPanel({
 
       // Marque la pièce requise « Offre de prêt / tableau d'amortissement ».
       const docId = (inserted as { id: string } | null)?.id ?? null;
-      if (docId && typeDocument === "offre_pret") {
+      if (docId && (nature === "offre_pret" || nature === "tableau_amortissement")) {
         await supabase
           .from("dossier_pieces_requises")
           .update({ statut: "recue", recue_le: new Date().toISOString(), document_id: docId })
