@@ -319,8 +319,10 @@ function StageContent({
   onContreProposition: (suggestion: string, motif: string) => void;
 }) {
   const dossierId = dossier.id;
-  const documents = <DocumentsPanel dossierId={dossierId} userId={userId} />;
-  const messages = <MessagesPanel dossierId={dossierId} userId={userId} />;
+  // Une étape = une vue : dans le parcours emprunteur, les blocs transverses
+  // (tous les documents, tous les messages) sont réservés à la vue globale.
+  const documents = parcours ? null : <DocumentsPanel dossierId={dossierId} userId={userId} />;
+  const messages = parcours ? null : <MessagesPanel dossierId={dossierId} userId={userId} />;
   const pieces = (
     <div id="section-pieces">
       <PiecesSection
