@@ -60,9 +60,10 @@ function Bloc({
           </span>
         )}
         <div className="min-w-0">
-          <h3 className="truncate font-serif text-base font-medium text-ink">{titre}</h3>
+          <h3 className="font-serif text-base font-medium text-ink">{titre}</h3>
           {sousTitre && <p className="text-xs text-ink-muted">{sousTitre}</p>}
         </div>
+
       </header>
       <div className="p-5">{children}</div>
     </section>
