@@ -115,14 +115,19 @@ export function DocumentsPretPanel({
       supabase.from("dossiers").select("client_id").eq("id", dossierId).maybeSingle(),
     ]);
     const tous = (rows ?? []) as Doc[];
+    // Une nature explicitement choisie dans la liste de l'étape suffit à
+    // rattacher la pièce à cette étape, même si le nom du fichier ne dit rien.
+    const codes = new Set((TYPES_DOCUMENT[filtre] ?? []).map((n) => n.value));
+    const retenu = (d: Doc, motif: RegExp) =>
+      (d.type_document != null && codes.has(d.type_document)) || correspond(d, motif);
     setDocs(
       filtre === "tous"
         ? tous
         : filtre === "devis_conseil"
-          ? tous.filter((d) => correspond(d, MOTIF_DEVIS))
+          ? tous.filter((d) => retenu(d, MOTIF_DEVIS))
           : filtre === "assureur"
-            ? tous.filter((d) => correspond(d, MOTIF_ASSUREUR))
-            : tous.filter(estDocumentPret),
+            ? tous.filter((d) => retenu(d, MOTIF_ASSUREUR))
+            : tous.filter((d) => retenu(d, MOTIF) && (estDocumentPret(d) || codes.has(d.type_document ?? ""))),
     );
     setClientId(((dossier as { client_id: string | null } | null)?.client_id) ?? null);
   }, [dossierId, filtre]);
