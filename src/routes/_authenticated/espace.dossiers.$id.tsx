@@ -296,19 +296,22 @@ function DossierDetail() {
       )}
 
 
-      <DossierPipeline
-        dossierId={id}
-        statut={dossier.statut}
-        selectedStep={displayedStep}
-        canEdit={canEdit}
-        masquerPhases={!!parcoursActif}
-        onChanged={handlePipelineChanged}
-        onStepClick={(k) => {
-          setParcours(null);
-          setVueGlobale(false);
-          setSelectedStep(k);
-        }}
-      />
+      {/* Suivi réglementaire : réservé à la vue globale et à la dernière étape. */}
+      {(!parcoursActif || vueGlobale || parcoursActif === "analyse") && (
+        <DossierPipeline
+          dossierId={id}
+          statut={dossier.statut}
+          selectedStep={displayedStep}
+          canEdit={canEdit}
+          masquerPhases={!!parcoursActif}
+          onChanged={handlePipelineChanged}
+          onStepClick={(k) => {
+            setParcours(null);
+            setVueGlobale(false);
+            setSelectedStep(k);
+          }}
+        />
+      )}
 
 
       <div className="min-w-0">
