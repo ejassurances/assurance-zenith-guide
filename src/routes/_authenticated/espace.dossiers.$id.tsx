@@ -500,20 +500,6 @@ function StageContent({
             reference: dossier.reference,
           }}
         />
-        <RecueilDossierPanel
-          dossierId={dossierId}
-          typeAssurance={dossier.type_assurance}
-          recueil={dossier.recueil_besoins}
-          canEdit={canEdit}
-          onSaved={onChanged}
-          client={{
-            id: dossier.client_id,
-            nom: dossier.client_nom,
-            email: dossier.client_email,
-            telephone: dossier.client_phone,
-            reference: dossier.reference,
-          }}
-        />
       </>
     );
   }
