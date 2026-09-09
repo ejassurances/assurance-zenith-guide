@@ -56,8 +56,9 @@ export function RecueilWorkflow({
   asideSection,
   pleineLargeurSection,
   contexte,
-
-
+  filtreSections,
+  sectionUnique = false,
+  titreEntete,
 }: {
   branche: BrancheConfig;
   values: Record<string, unknown>;
@@ -77,16 +78,21 @@ export function RecueilWorkflow({
   pleineLargeurSection?: (section: SectionConfig, index: number) => React.ReactNode;
   /** Rappel permanent du contexte (client, dossier) en tête de colonne latérale. */
   contexte?: React.ReactNode;
-
+  /** Restreint les sections affichées (parcours emprunteur : une étape = une vue). */
+  filtreSections?: (titre: string) => boolean;
+  /** Mode « une seule section » : ni sous-parcours, ni récapitulatif. */
+  sectionUnique?: boolean;
+  /** Titre affiché en tête (par défaut « Devoir de conseil · branche »). */
+  titreEntete?: string;
 }) {
-
-  const steps = branche.sections;
-  const total = steps.length + 1; // + récapitulatif
+  const toutes = branche.sections;
+  const steps = filtreSections ? toutes.filter((s) => filtreSections(s.title)) : toutes;
+  const total = sectionUnique ? steps.length : steps.length + 1; // + récapitulatif
   const [index, setIndex] = useState(0);
   const [showErrors, setShowErrors] = useState(false);
 
-  const isRecap = index === steps.length;
-  const section = steps[index];
+  const isRecap = !sectionUnique && index === steps.length;
+  const section = steps[Math.min(index, steps.length - 1)];
   const missing = useMemo(
     () => (section ? missingRequired(section, values) : []),
     [section, values],
@@ -111,50 +117,54 @@ export function RecueilWorkflow({
 
   return (
     <div className="rounded-2xl border border-line bg-surface-elevated">
-      {/* En-tête + progression */}
-      <div className="border-b border-line px-6 py-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="font-serif text-lg text-ink">Devoir de conseil · {branche.label}</h2>
-          <span className="text-xs text-ink-muted">
-            Étape {index + 1} / {total}
-          </span>
-        </div>
-        <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-line">
-          <div
-            className="h-full rounded-full bg-accent transition-all duration-300"
-            style={{ width: `${((index + 1) / total) * 100}%` }}
-          />
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {steps.map((s, i) => (
-            <button
-              key={s.title}
-              type="button"
-              onClick={() => {
-                setShowErrors(false);
-                setIndex(i);
-              }}
-              className={`rounded-full border px-3 py-1 text-xs transition ${
-                i === index
-                  ? "border-ink bg-ink text-primary-foreground"
-                  : i < index
-                    ? "border-line bg-background text-ink"
-                    : "border-line bg-background/40 text-ink-muted"
+      {/* En-tête + progression (masqués en mode « une seule section ») */}
+      {!sectionUnique && (
+        <div className="border-b border-line px-6 py-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="font-serif text-lg text-ink">
+              {titreEntete ?? `Devoir de conseil · ${branche.label}`}
+            </h2>
+            <span className="text-xs text-ink-muted">
+              Étape {index + 1} / {total}
+            </span>
+          </div>
+          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-line">
+            <div
+              className="h-full rounded-full bg-accent transition-all duration-300"
+              style={{ width: `${((index + 1) / total) * 100}%` }}
+            />
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {steps.map((s, i) => (
+              <button
+                key={s.title}
+                type="button"
+                onClick={() => {
+                  setShowErrors(false);
+                  setIndex(i);
+                }}
+                className={`rounded-full border px-3 py-1 text-xs transition ${
+                  i === index
+                    ? "border-ink bg-ink text-primary-foreground"
+                    : i < index
+                      ? "border-line bg-background text-ink"
+                      : "border-line bg-background/40 text-ink-muted"
+                }`}
+              >
+                {i < index ? "✓ " : ""}
+                {s.title}
+              </button>
+            ))}
+            <span
+              className={`rounded-full border px-3 py-1 text-xs ${
+                isRecap ? "border-ink bg-ink text-primary-foreground" : "border-line bg-background/40 text-ink-muted"
               }`}
             >
-              {i < index ? "✓ " : ""}
-              {s.title}
-            </button>
-          ))}
-          <span
-            className={`rounded-full border px-3 py-1 text-xs ${
-              isRecap ? "border-ink bg-ink text-primary-foreground" : "border-line bg-background/40 text-ink-muted"
-            }`}
-          >
-            Récapitulatif
-          </span>
+              Récapitulatif
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="px-6 py-6">
         {!isRecap && section && (
@@ -242,11 +252,17 @@ export function RecueilWorkflow({
         )}
       </div>
 
-      <div className="flex items-center justify-between border-t border-line px-6 py-4">
-        <button type="button" onClick={prev} className="text-sm text-ink-muted underline">
-          ← {index === 0 ? "Changer de branche" : "Précédent"}
-        </button>
-        {isRecap ? (
+      <div className="flex items-center justify-end gap-4 border-t border-line px-6 py-4">
+        {!sectionUnique && (
+          <button
+            type="button"
+            onClick={prev}
+            className="mr-auto text-sm text-ink-muted underline"
+          >
+            ← {index === 0 ? "Changer de branche" : "Précédent"}
+          </button>
+        )}
+        {sectionUnique || isRecap ? (
           onComplete && (
             <button
               type="button"
