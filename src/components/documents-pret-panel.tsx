@@ -316,8 +316,26 @@ export function DocumentsPretPanel({
       ) : (
         <ul className="mt-2 space-y-1 text-sm">
           {docs.map((d) => (
-            <li key={d.id} className="flex items-center justify-between gap-2">
-              <span className="truncate">{d.file_name}</span>
+            <li key={d.id} className="flex flex-wrap items-center justify-between gap-2">
+              <span className="min-w-0 flex-1 truncate">{d.file_name}</span>
+              {natures.length > 0 && (
+                <select
+                  value={
+                    natures.some((n) => n.value === d.type_document)
+                      ? (d.type_document as string)
+                      : ""
+                  }
+                  onChange={(e) => void changerNature(d, e.target.value)}
+                  className="shrink-0 rounded-full border border-line bg-surface px-2 py-1 text-xs text-ink"
+                >
+                  <option value="">Nature à préciser…</option>
+                  {natures.map((n) => (
+                    <option key={n.value} value={n.value}>
+                      {n.label}
+                    </option>
+                  ))}
+                </select>
+              )}
               <button
                 type="button"
                 onClick={() => void telecharger(d)}
