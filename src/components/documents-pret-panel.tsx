@@ -168,7 +168,7 @@ export function DocumentsPretPanel({
           file_size: file.size,
           mime_type: file.type || null,
           categorie: "dossier",
-          type_document: typeDocument,
+          type_document: nature || typeDocument,
         })
         .select("id")
         .maybeSingle();
