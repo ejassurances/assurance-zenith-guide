@@ -100,6 +100,9 @@ export function DocumentsPretPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const input = useRef<HTMLInputElement | null>(null);
+  /** Natures proposées pour cette étape (liste déroulante propre à l'étape). */
+  const natures = TYPES_DOCUMENT[filtre] ?? [];
+  const [nature, setNature] = useState<string>(natures[0]?.value ?? typeDocument);
 
 
   const load = useCallback(async () => {
