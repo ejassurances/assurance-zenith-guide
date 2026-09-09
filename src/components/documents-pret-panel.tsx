@@ -83,7 +83,13 @@ export function DocumentsPretPanel({
       supabase.from("dossiers").select("client_id").eq("id", dossierId).maybeSingle(),
     ]);
     const tous = (rows ?? []) as Doc[];
-    setDocs(filtre === "tous" ? tous : tous.filter(estDocumentPret));
+    setDocs(
+      filtre === "tous"
+        ? tous
+        : filtre === "devis_conseil"
+          ? tous.filter((d) => correspond(d, MOTIF_DEVIS))
+          : tous.filter(estDocumentPret),
+    );
     setClientId(((dossier as { client_id: string | null } | null)?.client_id) ?? null);
   }, [dossierId, filtre]);
 
