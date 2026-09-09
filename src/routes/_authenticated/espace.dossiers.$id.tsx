@@ -598,7 +598,7 @@ function StageContent({
         <DocumentsPretPanel
           dossierId={dossierId}
           titre="Devis final, lettre de mission signée, devoir de conseil signé"
-          filtre="tous"
+          filtre="assureur"
           typeDocument="document_assureur"
         />
         {pieces}
