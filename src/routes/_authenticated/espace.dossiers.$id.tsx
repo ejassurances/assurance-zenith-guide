@@ -35,6 +35,7 @@ import { EtudeEpargnePanel } from "@/components/etude-epargne-panel";
 import { traiterDocumentDepose } from "@/lib/etudes.functions";
 import { ETAPES, etapeLabel, estEtapeValide, type EtapeKey } from "@/lib/pipeline-dossier";
 import { ParcoursEmprunteurNav } from "@/components/parcours-emprunteur-nav";
+import { ImportDocumentsEmprunteur } from "@/components/import-documents-emprunteur";
 import {
   etapeCouranteParcours,
   parcoursEtape,
