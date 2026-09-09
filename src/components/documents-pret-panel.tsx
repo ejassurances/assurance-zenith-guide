@@ -127,7 +127,7 @@ export function DocumentsPretPanel({
           ? tous.filter((d) => retenu(d, MOTIF_DEVIS))
           : filtre === "assureur"
             ? tous.filter((d) => retenu(d, MOTIF_ASSUREUR))
-            : tous.filter((d) => retenu(d, MOTIF) && (estDocumentPret(d) || codes.has(d.type_document ?? ""))),
+            : tous.filter((d) => retenu(d, MOTIF)),
     );
     setClientId(((dossier as { client_id: string | null } | null)?.client_id) ?? null);
   }, [dossierId, filtre]);
