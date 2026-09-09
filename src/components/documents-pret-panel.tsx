@@ -39,6 +39,31 @@ function estDocumentPret(d: Doc): boolean {
 }
 
 
+/** Natures de document proposées par étape du parcours emprunteur. */
+export const TYPES_DOCUMENT: Record<string, { value: string; label: string }[]> = {
+  pret: [
+    { value: "offre_pret", label: "Offre de prêt" },
+    { value: "tableau_amortissement", label: "Tableau d'amortissement" },
+    { value: "echeancier_pret", label: "Échéancier de prêt" },
+    { value: "contrat_pret", label: "Contrat / acte de prêt" },
+    { value: "attestation_assurance_pret", label: "Attestation d'assurance actuelle" },
+  ],
+  devis_conseil: [
+    { value: "devis", label: "Devis d'assurance" },
+    { value: "proposition_tarification", label: "Proposition tarifaire" },
+    { value: "devoir_conseil", label: "Devoir de conseil" },
+    { value: "recommandation", label: "Recommandation" },
+  ],
+  assureur: [
+    { value: "devis_final", label: "Devis final retenu" },
+    { value: "lettre_mission_signee", label: "Lettre de mission signée" },
+    { value: "devoir_conseil_signe", label: "Devoir de conseil signé" },
+    { value: "certificat_adhesion", label: "Certificat d'adhésion" },
+    { value: "attestation_assureur", label: "Attestation de l'assureur" },
+    { value: "document_assureur", label: "Autre document de l'assureur" },
+  ],
+};
+
 export function DocumentsPretPanel({
   dossierId,
   titre = "Offre de prêt et tableau d'amortissement",
@@ -75,6 +100,9 @@ export function DocumentsPretPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const input = useRef<HTMLInputElement | null>(null);
+  /** Natures proposées pour cette étape (liste déroulante propre à l'étape). */
+  const natures = TYPES_DOCUMENT[filtre] ?? [];
+  const [nature, setNature] = useState<string>(natures[0]?.value ?? typeDocument);
 
 
   const load = useCallback(async () => {
@@ -87,14 +115,19 @@ export function DocumentsPretPanel({
       supabase.from("dossiers").select("client_id").eq("id", dossierId).maybeSingle(),
     ]);
     const tous = (rows ?? []) as Doc[];
+    // Une nature explicitement choisie dans la liste de l'étape suffit à
+    // rattacher la pièce à cette étape, même si le nom du fichier ne dit rien.
+    const codes = new Set((TYPES_DOCUMENT[filtre] ?? []).map((n) => n.value));
+    const retenu = (d: Doc, motif: RegExp) =>
+      (d.type_document != null && codes.has(d.type_document)) || correspond(d, motif);
     setDocs(
       filtre === "tous"
         ? tous
         : filtre === "devis_conseil"
-          ? tous.filter((d) => correspond(d, MOTIF_DEVIS))
+          ? tous.filter((d) => retenu(d, MOTIF_DEVIS))
           : filtre === "assureur"
-            ? tous.filter((d) => correspond(d, MOTIF_ASSUREUR))
-            : tous.filter(estDocumentPret),
+            ? tous.filter((d) => retenu(d, MOTIF_ASSUREUR))
+            : tous.filter((d) => retenu(d, MOTIF)),
     );
     setClientId(((dossier as { client_id: string | null } | null)?.client_id) ?? null);
   }, [dossierId, filtre]);
@@ -140,7 +173,7 @@ export function DocumentsPretPanel({
           file_size: file.size,
           mime_type: file.type || null,
           categorie: "dossier",
-          type_document: typeDocument,
+          type_document: nature || typeDocument,
         })
         .select("id")
         .maybeSingle();
@@ -148,7 +181,7 @@ export function DocumentsPretPanel({
 
       // Marque la pièce requise « Offre de prêt / tableau d'amortissement ».
       const docId = (inserted as { id: string } | null)?.id ?? null;
-      if (docId && typeDocument === "offre_pret") {
+      if (docId && (nature === "offre_pret" || nature === "tableau_amortissement")) {
         await supabase
           .from("dossier_pieces_requises")
           .update({ statut: "recue", recue_le: new Date().toISOString(), document_id: docId })
@@ -207,11 +240,40 @@ export function DocumentsPretPanel({
     setBusy(false);
   }
 
+  /** Reclassement d'une pièce déjà déposée (liste déroulante de l'étape). */
+  async function changerNature(doc: Doc, valeur: string) {
+    if (!valeur) return;
+    setError(null);
+    setDocs((prev) => prev.map((d) => (d.id === doc.id ? { ...d, type_document: valeur } : d)));
+    const { error: err } = await supabase
+      .from("documents")
+      .update({ type_document: valeur })
+      .eq("id", doc.id);
+    if (err) setError(err.message);
+    await load();
+  }
+
   return (
     <div className="rounded-xl border border-line p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs uppercase tracking-wide text-ink-muted">{titre}</p>
         <div className="flex flex-wrap items-center gap-2">
+          {natures.length > 0 && (
+            <label className="flex items-center gap-1 text-xs text-ink-muted">
+              Nature
+              <select
+                value={nature}
+                onChange={(e) => setNature(e.target.value)}
+                className="rounded-full border border-line bg-surface px-2 py-1 text-xs text-ink"
+              >
+                {natures.map((n) => (
+                  <option key={n.value} value={n.value}>
+                    {n.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           {docs.length > 0 && (
             <button
               type="button"
@@ -260,8 +322,26 @@ export function DocumentsPretPanel({
       ) : (
         <ul className="mt-2 space-y-1 text-sm">
           {docs.map((d) => (
-            <li key={d.id} className="flex items-center justify-between gap-2">
-              <span className="truncate">{d.file_name}</span>
+            <li key={d.id} className="flex flex-wrap items-center justify-between gap-2">
+              <span className="min-w-0 flex-1 truncate">{d.file_name}</span>
+              {natures.length > 0 && (
+                <select
+                  value={
+                    natures.some((n) => n.value === d.type_document)
+                      ? (d.type_document as string)
+                      : ""
+                  }
+                  onChange={(e) => void changerNature(d, e.target.value)}
+                  className="shrink-0 rounded-full border border-line bg-surface px-2 py-1 text-xs text-ink"
+                >
+                  <option value="">Nature à préciser…</option>
+                  {natures.map((n) => (
+                    <option key={n.value} value={n.value}>
+                      {n.label}
+                    </option>
+                  ))}
+                </select>
+              )}
               <button
                 type="button"
                 onClick={() => void telecharger(d)}
