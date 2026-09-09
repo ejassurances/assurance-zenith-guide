@@ -357,6 +357,56 @@ function DossierDetail() {
   );
 }
 
+/**
+ * Étape 1 du parcours emprunteur — Coordonnées : identité et coordonnées de
+ * contact de chaque emprunteur. Les données de situation (naissance,
+ * profession, quotité) appartiennent à l'étape « Informations personnelles ».
+ */
+function CoordonneesEtape({ dossier }: { dossier: Dossier }) {
+  const assures = assuresEmprunteur(dossier.recueil_besoins?.["assures"]);
+  return (
+    <div className="space-y-4">
+      <Section title="Titulaire du dossier">
+        <Row label="Nom">{dossier.client_nom}</Row>
+        <Row label="Email">{dossier.client_email ?? "—"}</Row>
+        <Row label="Téléphone">{dossier.client_phone ?? "—"}</Row>
+        {dossier.client_id && (
+          <Row label="Fiche client">
+            <Link
+              to="/espace/clients/$id"
+              params={{ id: dossier.client_id }}
+              className="text-sm text-ink underline"
+            >
+              Ouvrir la fiche pour modifier l'adresse et les coordonnées →
+            </Link>
+          </Row>
+        )}
+      </Section>
+
+      <Section title="Emprunteurs du prêt">
+        {assures.length === 0 ? (
+          <p className="text-sm text-ink-muted">
+            Aucun emprunteur enregistré. Les emprunteurs sont identifiés à l'étape « Import
+            documents » puis complétés à l'étape « Informations personnelles ».
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {assures.map((a, i) => (
+              <li key={`${a.nom}-${i}`} className="text-sm text-ink">
+                {`${a.prenom} ${a.nom}`.trim() || "Emprunteur sans nom"}
+                <span className="text-ink-muted">
+                  {" · "}
+                  {LIENS_EMPRUNTEUR.find((l) => l.value === a.lien)?.label ?? a.lien}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
+    </div>
+  );
+}
+
 function StageContent({
   step,
   parcours = null,
@@ -562,6 +612,111 @@ function StageContent({
       </>
     );
   }
+
+  /** Une section du recueil rendue seule (une étape = une vue). */
+  const sectionRecueil = (motif: RegExp) => (
+    <RecueilDossierPanel
+      dossierId={dossierId}
+      typeAssurance={dossier.type_assurance}
+      recueil={dossier.recueil_besoins}
+      canEdit={canEdit}
+      onSaved={onChanged}
+      sectionUnique
+      filtreSections={(titre) => motif.test(titre)}
+      client={{
+        id: dossier.client_id,
+        nom: dossier.client_nom,
+        email: dossier.client_email,
+        telephone: dossier.client_phone,
+        reference: dossier.reference,
+      }}
+    />
+  );
+
+  // Étape 1 — Coordonnées : identité et contacts, sans les champs du prêt.
+  if (parcours === "coordonnees") {
+    content = <CoordonneesEtape dossier={dossier} />;
+  }
+
+  // Étape 2 — Informations personnelles : les assurés à couvrir uniquement.
+  if (parcours === "informations") {
+    content = sectionRecueil(/assur/i);
+  }
+
+  // Étape 3 — Prêts : capital, taux, durée, date d'effet.
+  if (parcours === "prets") {
+    content = sectionRecueil(/pr[eê]t/i);
+  }
+
+  // Étape 4 — Prêteur : contrat d'assurance actuel de la banque.
+  if (parcours === "preteur") {
+    content = sectionRecueil(/contrat actuel/i);
+  }
+
+  // Étape 6 — Simulations : produits notés, prix saisis, classement.
+  if (parcours === "simulations") {
+    content = canEdit ? (
+      <DossierDevisPanel
+        dossierId={dossierId}
+        branche={dossier.type_assurance}
+        userId={userId}
+        onChanged={onChanged}
+      />
+    ) : null;
+  }
+
+  // Étape 7 — Devoir de conseil : le seul endroit où ce composant s'affiche.
+  if (parcours === "devoir_conseil") {
+    content = canEdit ? (
+      <>
+        <DevoirConseilRefusAnalysePanel
+          dossierId={dossierId}
+          userId={userId}
+          onContreProposition={onContreProposition}
+          onChanged={onChanged}
+        />
+        <DevoirConseilPanel
+          dossierId={dossierId}
+          clientEmail={dossier.client_email}
+          branche={dossier.type_assurance}
+          onChanged={onChanged}
+          contreProposition={contreProposition}
+        />
+      </>
+    ) : null;
+  }
+
+  // Étape 8 — Informations adhésion : pièces d'adhésion par assuré.
+  if (parcours === "adhesion") {
+    content = <>{pieces}</>;
+  }
+
+  // Étape 9 — Substitution : demande auprès de la banque et du contrat résilié.
+  if (parcours === "substitution") {
+    content = (
+      <>
+        <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+          <h3 className="font-serif text-lg font-medium text-ink">Demande de substitution</h3>
+          <p className="mt-2 text-sm text-ink-soft">
+            Demande adressée à la banque prêteuse et au contrat à résilier, à la date d'effet
+            retenue. Déposez ici les courriers et accusés liés à la substitution.
+          </p>
+        </div>
+        <DocumentsPretPanel
+          dossierId={dossierId}
+          titre="Courriers de substitution"
+          filtre="assureur"
+          typeDocument="substitution"
+        />
+      </>
+    );
+  }
+
+  // Étape 10 — Souscription : transmission à la compagnie et relances.
+  if (parcours === "souscription") {
+    content = <>{souscription}</>;
+  }
+
 
 
   // Étape 5 du parcours emprunteur : lettre de mission, objectif fixe rappelé.

@@ -206,6 +206,8 @@ export function RecueilDossierPanel({
   canEdit,
   onSaved,
   client,
+  filtreSections,
+  sectionUnique = false,
 }: {
   dossierId: string;
   typeAssurance: string;
@@ -220,6 +222,10 @@ export function RecueilDossierPanel({
     telephone: string | null;
     reference?: string | null;
   };
+  /** Restreint les sections du recueil (parcours emprunteur : une étape = une vue). */
+  filtreSections?: (titre: string) => boolean;
+  /** Affiche une seule section, sans sous-parcours ni récapitulatif. */
+  sectionUnique?: boolean;
 }) {
   const branche = getBranche(typeAssurance) as BrancheConfig | null;
   const [values, setValues] = useState<Record<string, unknown>>(recueil ?? {});
@@ -367,9 +373,11 @@ export function RecueilDossierPanel({
         values={values}
         onChange={setValues}
         onComplete={canEdit ? () => void enregistrer() : undefined}
-        completeLabel={saving ? "Enregistrement…" : "Enregistrer le recueil"}
+        completeLabel={saving ? "Enregistrement…" : "Enregistrer cette étape"}
         dossierId={dossierId}
         contexte={contexte}
+        filtreSections={filtreSections}
+        sectionUnique={sectionUnique}
         asideSection={(section) => lateral(section.title)}
         pleineLargeurSection={(section) =>
           estEtapeTarification(section.title) && userId ? (
