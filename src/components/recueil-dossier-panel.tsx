@@ -258,8 +258,6 @@ export function RecueilDossierPanel({
   const clientId = client?.id ?? null;
   useEffect(() => {
     if (typeAssurance !== "emprunteur" || !clientId) return;
-    const dejaSaisis = Array.isArray(values["assures"]) && (values["assures"] as unknown[]).length > 0;
-    if (dejaSaisis) return;
     void (async () => {
       const { data } = await supabase
         .from("clients")
@@ -267,27 +265,54 @@ export function RecueilDossierPanel({
         .eq("id", clientId)
         .maybeSingle();
       if (!data?.nom) return;
+      const fiche = {
+        nom: (data.nom as string) ?? "",
+        prenom: (data.prenom as string | null) ?? "",
+        date_naissance: (data.date_naissance as string | null) ?? "",
+      };
       setValues((prev) => {
-        const liste = prev["assures"];
-        if (Array.isArray(liste) && liste.length > 0) return prev;
-        return {
-          ...prev,
-          assures: [
-            {
-              lien: "principal",
-              prenom: (data.prenom as string | null) ?? "",
-              nom: data.nom as string,
-              date_naissance: (data.date_naissance as string | null) ?? "",
-              quotite_pct: 100,
-              csp: "",
-              fumeur: false,
-            },
-          ],
-        };
+        const liste = Array.isArray(prev["assures"]) ? (prev["assures"] as Record<string, unknown>[]) : [];
+        // Aucun assuré : l'assuré principal est créé depuis la fiche client.
+        if (liste.length === 0) {
+          return {
+            ...prev,
+            assures: [
+              {
+                lien: "principal",
+                prenom: fiche.prenom,
+                nom: fiche.nom,
+                date_naissance: fiche.date_naissance,
+                quotite_pct: 100,
+                csp: "",
+                fumeur: false,
+              },
+            ],
+          };
+        }
+        // Assurés déjà présents : seuls les champs d'identité VIDES de l'assuré
+        // principal sont complétés depuis la fiche client. Rien n'est écrasé.
+        const iPrincipal = liste.findIndex((a) => a["lien"] === "principal");
+        const index = iPrincipal >= 0 ? iPrincipal : 0;
+        const cible = liste[index] ?? {};
+        const complete: Record<string, unknown> = { ...cible };
+        let modifie = false;
+        for (const cle of ["prenom", "nom", "date_naissance"] as const) {
+          const actuel = complete[cle];
+          const vide = actuel === null || actuel === undefined || actuel === "";
+          if (vide && fiche[cle]) {
+            complete[cle] = fiche[cle];
+            modifie = true;
+          }
+        }
+        if (!modifie) return prev;
+        const maj = [...liste];
+        maj[index] = complete;
+        return { ...prev, assures: maj };
       });
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId, typeAssurance]);
+
 
   if (!branche) return null;
 
