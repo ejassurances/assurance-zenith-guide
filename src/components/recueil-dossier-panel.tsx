@@ -250,6 +250,45 @@ export function RecueilDossierPanel({
     })();
   }, []);
 
+  /**
+   * Assuré principal repris de la fiche client liée au dossier quand aucun
+   * assuré n'est encore enregistré : l'identité connue en base fait référence,
+   * les documents importés la corrigent ensuite. Rien n'est écrasé.
+   */
+  const clientId = client?.id ?? null;
+  useEffect(() => {
+    if (typeAssurance !== "emprunteur" || !clientId) return;
+    const dejaSaisis = Array.isArray(values["assures"]) && (values["assures"] as unknown[]).length > 0;
+    if (dejaSaisis) return;
+    void (async () => {
+      const { data } = await supabase
+        .from("clients")
+        .select("nom, prenom, date_naissance")
+        .eq("id", clientId)
+        .maybeSingle();
+      if (!data?.nom) return;
+      setValues((prev) => {
+        const liste = prev["assures"];
+        if (Array.isArray(liste) && liste.length > 0) return prev;
+        return {
+          ...prev,
+          assures: [
+            {
+              lien: "principal",
+              prenom: (data.prenom as string | null) ?? "",
+              nom: data.nom as string,
+              date_naissance: (data.date_naissance as string | null) ?? "",
+              quotite_pct: 100,
+              csp: "",
+              fumeur: false,
+            },
+          ],
+        };
+      });
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientId, typeAssurance]);
+
   if (!branche) return null;
 
   const enregistrer = async () => {
