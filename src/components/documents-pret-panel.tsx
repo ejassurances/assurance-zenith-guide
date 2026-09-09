@@ -51,10 +51,10 @@ export function DocumentsPretPanel({
   titre?: string;
   /**
    * « pret » : offre de prêt et tableau d'amortissement ; « devis_conseil » :
-   * devis et devoir de conseil ; « tous » : toutes les pièces du dossier
-   * (réservé à la vue globale de traçabilité).
+   * devis et devoir de conseil ; « assureur » : documents reçus de la
+   * compagnie ; « tous » : toutes les pièces (vue globale de traçabilité).
    */
-  filtre?: "pret" | "devis_conseil" | "tous";
+  filtre?: "pret" | "devis_conseil" | "assureur" | "tous";
   /** Type enregistré lors du dépôt. */
   typeDocument?: string;
   /**
