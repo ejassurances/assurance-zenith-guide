@@ -359,17 +359,75 @@ function DossierDetail() {
 
 /**
  * Étape 1 du parcours emprunteur — Coordonnées : identité et coordonnées de
- * contact de chaque emprunteur. Les données de situation (naissance,
- * profession, quotité) appartiennent à l'étape « Informations personnelles ».
+ * contact de chaque emprunteur. L'identité connue en base PRIME toujours : elle
+ * est reprise de la fiche client liée (titulaire et fiche de chaque assuré), et
+ * le recueil ne sert qu'à compléter ce qui manque encore.
  */
 function CoordonneesEtape({ dossier }: { dossier: Dossier }) {
   const assures = assuresEmprunteur(dossier.recueil_besoins?.["assures"]);
+  const brut = Array.isArray(dossier.recueil_besoins?.["assures"])
+    ? (dossier.recueil_besoins?.["assures"] as Record<string, unknown>[])
+    : [];
+  type Fiche = { id: string; nom: string; prenom: string | null; email: string | null; telephone: string | null };
+  const [fiches, setFiches] = useState<Record<string, Fiche>>({});
+
+  const ids = [
+    dossier.client_id,
+    ...brut.map((a) => (typeof a["client_id"] === "string" ? (a["client_id"] as string) : null)),
+  ].filter((v): v is string => Boolean(v));
+
+  useEffect(() => {
+    if (ids.length === 0) return;
+    void (async () => {
+      const { data } = await supabase
+        .from("clients")
+        .select("id, nom, prenom, email, telephone")
+        .in("id", Array.from(new Set(ids)));
+      const map: Record<string, Fiche> = {};
+      for (const c of (data ?? []) as Fiche[]) map[c.id] = c;
+      setFiches(map);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ids.join(",")]);
+
+  const titulaire = dossier.client_id ? fiches[dossier.client_id] : undefined;
+
+  /** Identité affichée : fiche client d'abord, recueil ensuite. */
+  const lignes = (assures.length > 0 ? assures : [{ lien: "principal", prenom: "", nom: "" }]).map(
+    (a, i) => {
+      const clientId =
+        (typeof brut[i]?.["client_id"] === "string" ? (brut[i]!["client_id"] as string) : null) ??
+        (String(a.lien) === "principal" ? dossier.client_id : null);
+      const fiche = clientId ? fiches[clientId] : undefined;
+      const nomFiche = fiche ? `${fiche.prenom ?? ""} ${fiche.nom}`.trim() : "";
+      const nomRecueil = `${a.prenom ?? ""} ${a.nom ?? ""}`.trim();
+      const nom =
+        nomFiche ||
+        nomRecueil ||
+        (String(a.lien) === "principal" ? dossier.client_nom : "") ||
+        "Emprunteur sans nom";
+      const email = fiche?.email ?? (String(a.lien) === "principal" ? dossier.client_email : null);
+      const tel = fiche?.telephone ?? (String(a.lien) === "principal" ? dossier.client_phone : null);
+      return {
+        cle: `${nom}-${i}`,
+        nom,
+        source: nomFiche ? "fiche client" : nomRecueil ? "recueil" : "fiche du dossier",
+        lien: LIENS_EMPRUNTEUR.find((l) => l.value === a.lien)?.label ?? String(a.lien),
+        email,
+        tel,
+        clientId,
+      };
+    },
+  );
+
   return (
     <div className="space-y-4">
       <Section title="Titulaire du dossier">
-        <Row label="Nom">{dossier.client_nom}</Row>
-        <Row label="Email">{dossier.client_email ?? "—"}</Row>
-        <Row label="Téléphone">{dossier.client_phone ?? "—"}</Row>
+        <Row label="Nom">
+          {titulaire ? `${titulaire.prenom ?? ""} ${titulaire.nom}`.trim() : dossier.client_nom}
+        </Row>
+        <Row label="Email">{titulaire?.email ?? dossier.client_email ?? "—"}</Row>
+        <Row label="Téléphone">{titulaire?.telephone ?? dossier.client_phone ?? "—"}</Row>
         {dossier.client_id && (
           <Row label="Fiche client">
             <Link
@@ -384,24 +442,29 @@ function CoordonneesEtape({ dossier }: { dossier: Dossier }) {
       </Section>
 
       <Section title="Emprunteurs du prêt">
-        {assures.length === 0 ? (
-          <p className="text-sm text-ink-muted">
-            Aucun emprunteur enregistré. Les emprunteurs sont identifiés à l'étape « Import
-            documents » puis complétés à l'étape « Informations personnelles ».
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {assures.map((a, i) => (
-              <li key={`${a.nom}-${i}`} className="text-sm text-ink">
-                {`${a.prenom} ${a.nom}`.trim() || "Emprunteur sans nom"}
-                <span className="text-ink-muted">
-                  {" · "}
-                  {LIENS_EMPRUNTEUR.find((l) => l.value === a.lien)?.label ?? a.lien}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <ul className="space-y-3">
+          {lignes.map((l) => (
+            <li key={l.cle} className="rounded-xl border border-line bg-background/40 p-3">
+              <p className="text-sm font-medium text-ink">
+                {l.nom}
+                <span className="text-ink-muted">{` · ${l.lien}`}</span>
+              </p>
+              <p className="mt-1 text-xs text-ink-muted">
+                {l.email ?? "email à compléter"} · {l.tel ?? "téléphone à compléter"} · identité
+                reprise de la {l.source}
+              </p>
+              {l.clientId && (
+                <Link
+                  to="/espace/clients/$id"
+                  params={{ id: l.clientId }}
+                  className="mt-1 inline-block text-xs text-ink underline"
+                >
+                  Ouvrir la fiche client →
+                </Link>
+              )}
+            </li>
+          ))}
+        </ul>
       </Section>
     </div>
   );
