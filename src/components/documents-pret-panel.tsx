@@ -240,6 +240,22 @@ export function DocumentsPretPanel({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs uppercase tracking-wide text-ink-muted">{titre}</p>
         <div className="flex flex-wrap items-center gap-2">
+          {natures.length > 0 && (
+            <label className="flex items-center gap-1 text-xs text-ink-muted">
+              Nature
+              <select
+                value={nature}
+                onChange={(e) => setNature(e.target.value)}
+                className="rounded-full border border-line bg-surface px-2 py-1 text-xs text-ink"
+              >
+                {natures.map((n) => (
+                  <option key={n.value} value={n.value}>
+                    {n.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           {docs.length > 0 && (
             <button
               type="button"
