@@ -34,6 +34,13 @@ import { SimulassurConsole } from "@/components/simulassur-console";
 import { EtudeEpargnePanel } from "@/components/etude-epargne-panel";
 import { traiterDocumentDepose } from "@/lib/etudes.functions";
 import { ETAPES, etapeLabel, estEtapeValide, type EtapeKey } from "@/lib/pipeline-dossier";
+import { ParcoursEmprunteurNav } from "@/components/parcours-emprunteur-nav";
+import {
+  etapeCouranteParcours,
+  parcoursEtape,
+  type ParcoursKey,
+} from "@/lib/parcours-emprunteur";
+import { DocumentsPretPanel } from "@/components/documents-pret-panel";
 import { CompletudeRings } from "@/components/completude-rings";
 import { useCompletudeDossier } from "@/hooks/use-completude";
 
@@ -133,6 +140,8 @@ function DossierDetail() {
   const [selectedStep, setSelectedStep] = useState<EtapeKey | null>(() =>
     etape && estEtapeValide(etape) ? etape : null,
   );
+  /** Étape visible du parcours emprunteur (présentation en 12 étapes). */
+  const [parcours, setParcours] = useState<ParcoursKey | null>(null);
   const completude = useCompletudeDossier(id, dossier?.client_id ?? null);
   /** Score de conformité KYC du client (0-100) : sous 50 %, le dossier est gelé. */
   const [scoreKyc, setScoreKyc] = useState<number | null>(null);
@@ -178,10 +187,17 @@ function DossierDetail() {
   const canEdit =
     (role === "admin" || role === "mandataire" || role === "prescripteur") && !kycBloquant;
 
-  const displayedStep = selectedStep ?? dossier.statut;
+  const estEmprunteur = dossier.type_assurance === "emprunteur";
+  const parcoursActif: ParcoursKey | null = estEmprunteur
+    ? (parcours ?? etapeCouranteParcours(dossier.statut))
+    : null;
+  const displayedStep = parcoursActif
+    ? (parcoursEtape(parcoursActif)?.statut ?? dossier.statut)
+    : (selectedStep ?? dossier.statut);
   const userId = user?.id;
   const handlePipelineChanged = () => {
     setSelectedStep(null);
+    setParcours(null);
     load();
   };
 
@@ -238,19 +254,31 @@ function DossierDetail() {
         </div>
       </div>
 
+      {parcoursActif && (
+        <ParcoursEmprunteurNav
+          statut={dossier.statut}
+          active={parcoursActif}
+          onSelect={setParcours}
+        />
+      )}
+
       <DossierPipeline
         dossierId={id}
         statut={dossier.statut}
         selectedStep={displayedStep}
         canEdit={canEdit}
         onChanged={handlePipelineChanged}
-        onStepClick={setSelectedStep}
+        onStepClick={(k) => {
+          setParcours(null);
+          setSelectedStep(k);
+        }}
       />
 
       <div className="min-w-0">
         {userId && (
           <StageContent
             step={displayedStep}
+            parcours={parcoursActif}
             dossier={dossier}
             userId={userId}
             canEdit={canEdit}
@@ -269,6 +297,7 @@ function DossierDetail() {
 
 function StageContent({
   step,
+  parcours = null,
   dossier,
   userId,
   canEdit,
@@ -277,6 +306,8 @@ function StageContent({
   onContreProposition,
 }: {
   step: string;
+  /** Étape visible du parcours emprunteur (présentation), si applicable. */
+  parcours?: ParcoursKey | null;
   dossier: Dossier;
   userId: string;
   canEdit: boolean;
@@ -448,11 +479,96 @@ function StageContent({
       );
   }
 
+  // Étape 0 du parcours emprunteur : import initial des documents de prêt.
+  if (parcours === "import") {
+    content = (
+      <>
+        <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+          <h3 className="font-serif text-lg font-medium text-ink">
+            Import de l'offre de prêt et du tableau d'amortissement
+          </h3>
+          <p className="mt-2 text-sm text-ink-soft">
+            Déposez l'offre de prêt et/ou le tableau d'amortissement : les informations lues
+            (banque, capital, capital restant dû, taux, durée, emprunteurs et quotités) sont
+            reportées dans le recueil des besoins et rapprochées de la fiche client existante. Le
+            document importé fait foi : une valeur divergente est corrigée et l'écart est tracé dans
+            l'historique du dossier.
+          </p>
+        </div>
+        <DocumentsPretPanel dossierId={dossierId} onAnalyse={() => onChanged()} />
+        <RecueilDossierPanel
+          dossierId={dossierId}
+          typeAssurance={dossier.type_assurance}
+          recueil={dossier.recueil_besoins}
+          canEdit={canEdit}
+          onSaved={onChanged}
+          client={{
+            id: dossier.client_id,
+            nom: dossier.client_nom,
+            email: dossier.client_email,
+            telephone: dossier.client_phone,
+            reference: dossier.reference,
+          }}
+        />
+      </>
+    );
+  }
+
+  // Étape 5 du parcours emprunteur : lettre de mission, objectif fixe rappelé.
+  if (parcours === "lettre_mission") {
+    content = (
+      <>
+        <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+          <h3 className="font-serif text-lg font-medium text-ink">Objectif de la mission</h3>
+          <p className="mt-2 text-sm text-ink-soft">
+            Faire des économies en conservant l'équivalence des garanties. La lettre de mission est
+            générée à partir des informations du client et du prêt déjà enregistrées, puis envoyée
+            au client pour signature.
+          </p>
+        </div>
+        {canEdit && (
+          <LettreMissionPanel dossierId={dossierId} clientEmail={dossier.client_email} />
+        )}
+        {documents}
+      </>
+    );
+  }
+
+  // Étape 11 du parcours emprunteur : documents reçus de l'assureur.
+  if (parcours === "analyse") {
+    content = (
+      <>
+        {souscription}
+        <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+          <h3 className="font-serif text-lg font-medium text-ink">
+            Documents reçus de l'assureur
+          </h3>
+          <p className="mt-2 text-sm text-ink-soft">
+            Déposez ici le devis final, la lettre de mission signée et le devoir de conseil signé
+            reçus de la compagnie : chaque document est classé et rattaché au dossier.
+          </p>
+        </div>
+        <DocumentsPretPanel
+          dossierId={dossierId}
+          titre="Devis final, lettre de mission signée, devoir de conseil signé"
+          filtre="tous"
+          typeDocument="document_assureur"
+        />
+        {pieces}
+        {documents}
+      </>
+    );
+  }
+
+  const titreEtape = parcours
+    ? `${parcoursEtape(parcours)?.numero}. ${parcoursEtape(parcours)?.label}`
+    : etapeLabel(step);
+
   return (
-    <section className="space-y-6" aria-label={`Contenu de l'étape ${etapeLabel(step)}`}>
+    <section className="space-y-6" aria-label={`Contenu de l'étape ${titreEtape}`}>
       <div className="flex items-center justify-between border-b border-line pb-3">
-        <h2 className="font-serif text-xl font-medium text-ink">{etapeLabel(step)}</h2>
-        {step !== dossier.statut && (
+        <h2 className="font-serif text-xl font-medium text-ink">{titreEtape}</h2>
+        {!parcours && step !== dossier.statut && (
           <span className="text-xs text-ink-muted">Étape précédente</span>
         )}
       </div>
