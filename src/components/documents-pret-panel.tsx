@@ -26,6 +26,10 @@ const MOTIF = /(offre[-_ ]?de[-_ ]?pret|offre[-_ ]?pret|amortissement|amort|eche
 /** Motifs de l'étape « Devoir de conseil » : devis et devoir de conseil. */
 const MOTIF_DEVIS = /(devis|proposition|tarification|devoir[-_ ]?de[-_ ]?conseil|devoir_conseil|recommandation)/i;
 
+/** Motifs de l'étape « Analyse et décision » : documents reçus de l'assureur. */
+const MOTIF_ASSUREUR =
+  /(document_assureur|assureur|certificat|attestation|adhesion|adhésion|lettre[-_ ]?de[-_ ]?mission|lettre_mission|devis|devoir[-_ ]?de[-_ ]?conseil|devoir_conseil)/i;
+
 function correspond(d: Doc, motif: RegExp): boolean {
   return motif.test(d.type_document ?? "") || motif.test(d.categorie ?? "") || motif.test(d.file_name ?? "");
 }
