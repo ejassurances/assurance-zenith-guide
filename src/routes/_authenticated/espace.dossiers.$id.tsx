@@ -258,12 +258,43 @@ function DossierDetail() {
       </div>
 
       {parcoursActif && (
-        <ParcoursEmprunteurNav
-          statut={dossier.statut}
-          active={parcoursActif}
-          onSelect={setParcours}
-        />
+        <>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setVueGlobale(false)}
+              className={
+                "rounded-full border px-4 py-1.5 text-xs transition " +
+                (vueGlobale
+                  ? "border-line bg-background text-ink-muted hover:border-ink/40"
+                  : "border-ink bg-ink text-primary-foreground")
+              }
+            >
+              Parcours par étapes
+            </button>
+            <button
+              type="button"
+              onClick={() => setVueGlobale(true)}
+              className={
+                "rounded-full border px-4 py-1.5 text-xs transition " +
+                (vueGlobale
+                  ? "border-ink bg-ink text-primary-foreground"
+                  : "border-line bg-background text-ink-muted hover:border-ink/40")
+              }
+            >
+              Vue globale du dossier (traçabilité ACPR)
+            </button>
+          </div>
+          {!vueGlobale && (
+            <ParcoursEmprunteurNav
+              statut={dossier.statut}
+              active={parcoursActif}
+              onSelect={setParcours}
+            />
+          )}
+        </>
       )}
+
 
       <DossierPipeline
         dossierId={id}
