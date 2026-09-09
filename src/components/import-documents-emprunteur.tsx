@@ -53,7 +53,7 @@ function Bloc({
 }) {
   return (
     <section className="rounded-2xl border border-line bg-surface-elevated">
-      <header className="flex flex-wrap items-center gap-3 border-b border-line px-5 py-3">
+      <header className="flex items-start gap-3 border-b border-line px-5 py-3">
         {numero && (
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-accent bg-accent/10 text-[11px] font-medium text-ink">
             {numero}
