@@ -246,7 +246,9 @@ export function DocumentsPretPanel({
         <p className="mt-2 text-xs text-ink-muted">
           {filtre === "pret"
             ? "Aucune offre de prêt ni tableau d'amortissement rattaché à ce dossier."
-            : "Aucun document rattaché à ce dossier."}
+            : filtre === "devis_conseil"
+              ? "Aucun devis ni devoir de conseil rattaché à ce dossier."
+              : "Aucun document rattaché à ce dossier."}
         </p>
 
       ) : (
