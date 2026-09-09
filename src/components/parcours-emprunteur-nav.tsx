@@ -31,7 +31,7 @@ export function ParcoursEmprunteurNav({
         </span>
       </div>
 
-      <ol className="mt-4 flex gap-2 overflow-x-auto pb-2">
+      <ol className="mt-4 flex flex-wrap gap-2">
         {PARCOURS_EMPRUNTEUR.map((e) => {
           const atteinte = etapeAtteinte(e.key, statut);
           const courante = e.key === active;
