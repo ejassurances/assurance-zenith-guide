@@ -825,6 +825,7 @@ function StageContent({
           filtre="assureur"
           typeDocument="document_assureur"
         />
+        <DossierReferencesExternesPanel dossierId={dossierId} />
         {pieces}
         {documents}
       </>
