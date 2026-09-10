@@ -416,12 +416,28 @@ export function RecueilDossierPanel({
             }}
           />
         </PanneauLateral>
-        <CoherencePret values={values} dossierCreeLe={dossierCreeLe} />
+        <CoherencePret
+          values={values}
+          dossierCreeLe={dossierCreeLe}
+          onAppliquer={(maj) => {
+            setValues((prev) => ({ ...prev, ...maj }));
+            setMessage("Capital restant dû et mois restants reportés — enregistrez l'étape pour les conserver.");
+          }}
+        />
         </div>
       );
     }
     if (branche.value === "emprunteur" && /montant|dur[eé]e|substitut|capital/i.test(titre)) {
-      return <CoherencePret values={values} dossierCreeLe={dossierCreeLe} />;
+      return (
+        <CoherencePret
+          values={values}
+          dossierCreeLe={dossierCreeLe}
+          onAppliquer={(maj) => {
+            setValues((prev) => ({ ...prev, ...maj }));
+            setMessage("Capital restant dû et mois restants reportés — enregistrez l'étape pour les conserver.");
+          }}
+        />
+      );
     }
     if (estEtapeAssures(titre)) {
       return <FichesAssures dossierId={dossierId} canEdit={canEdit} />;
