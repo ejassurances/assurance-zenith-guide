@@ -1490,6 +1490,11 @@ export function DossierDevisPanel({
                         Quotité {d.quotite_pct} %
                       </span>
                     )}
+                    {d.taux_commission != null && (
+                      <span className="rounded-full border border-line px-2 py-0.5 text-ink-muted">
+                        Commission {d.taux_commission} %
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="text-right">
@@ -2156,6 +2161,25 @@ export function DossierDevisPanel({
             </span>
           </label>
         )}
+        <label className="block">
+          <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+            Taux de commission (%)
+          </span>
+          <input
+            type="number"
+            step="0.01"
+            min={0}
+            max={100}
+            value={form.taux_commission}
+            onChange={(e) => setForm({ ...form, taux_commission: e.target.value })}
+            className={inp}
+            placeholder="5"
+          />
+          <span className="mt-1 block text-xs text-ink-muted">
+            Taux négocié avec le partenaire sur ce devis. Repris sur le contrat et sur la commission
+            prévisionnelle du module comptabilité. Vide : barème du cabinet.
+          </span>
+        </label>
         <label className="block sm:col-span-2">
           <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Résumé des garanties</span>
           <textarea
