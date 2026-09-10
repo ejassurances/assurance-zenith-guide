@@ -2937,6 +2937,7 @@ export type Database = {
         Row: {
           assure_rang: number | null
           compagnie_id: string | null
+          contrat_id: string | null
           created_at: string
           created_by: string | null
           dossier_id: string
@@ -2947,6 +2948,7 @@ export type Database = {
         Insert: {
           assure_rang?: number | null
           compagnie_id?: string | null
+          contrat_id?: string | null
           created_at?: string
           created_by?: string | null
           dossier_id: string
@@ -2957,6 +2959,7 @@ export type Database = {
         Update: {
           assure_rang?: number | null
           compagnie_id?: string | null
+          contrat_id?: string | null
           created_at?: string
           created_by?: string | null
           dossier_id?: string
@@ -2970,6 +2973,13 @@ export type Database = {
             columns: ["compagnie_id"]
             isOneToOne: false
             referencedRelation: "compagnies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dossier_references_externes_contrat_id_fkey"
+            columns: ["contrat_id"]
+            isOneToOne: false
+            referencedRelation: "contrats"
             referencedColumns: ["id"]
           },
           {
