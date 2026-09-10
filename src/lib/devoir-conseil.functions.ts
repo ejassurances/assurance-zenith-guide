@@ -285,7 +285,14 @@ export const changerEtapeDossier = createServerFn({ method: "POST" })
     if (data.etape === "contrat_valide" || data.etape === "contrat_actif") {
       const { creerContratDepuisDossier } = await import("./contrat-depuis-dossier.server");
       const contrat = await creerContratDepuisDossier(supabase, data.dossier_id, userId);
-      return { ok: true, contrat_id: contrat.contrat_id, dda_a_regulariser: contrat.dda_a_regulariser };
+      // Un contrat par assuré du prêt : chacun porte sa référence assureur,
+      // son statut et sa commission prévisionnelle.
+      return {
+        ok: true,
+        contrat_id: contrat.contrat_id,
+        contrats_ids: contrat.contrats_ids,
+        dda_a_regulariser: contrat.dda_a_regulariser,
+      };
     }
 
     return { ok: true };
