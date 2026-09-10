@@ -43,6 +43,8 @@ export type DossierDevis = {
   source: "manuel" | "api" | "pdf";
   garanties_resume: string | null;
   quotite_pct: number | null;
+  /** Taux de commission cabinet (%) applicable à ce devis : repris en comptabilité. */
+  taux_commission: number | null;
   /** Tête assurée visée par ce devis (1 = assuré principal, 2 = co-emprunteur). Un devis = une tête. */
   assure_rang: number | null;
   assureur_porteur: string | null;
@@ -188,6 +190,7 @@ export function DossierDevisPanel({
     cotisation_min: "",
     cotisation_max: "",
     quotite_pct: "",
+    taux_commission: "",
     garanties_resume: "",
     assure_rang: "1",
   });
@@ -247,7 +250,7 @@ export function DossierDevisPanel({
     const [d, c, p, cl, dos] = await Promise.all([
       supabase
         .from("dossier_devis")
-        .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,type_cotisation,cotisation_min,cotisation_max,montant_total_saisi,source,garanties_resume,quotite_pct,assure_rang,assureur_porteur,created_at")
+        .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,type_cotisation,cotisation_min,cotisation_max,montant_total_saisi,source,garanties_resume,quotite_pct,taux_commission,assure_rang,assureur_porteur,created_at")
         .eq("dossier_id", dossierId)
         .is("archive_le", null)
         .order("created_at", { ascending: true }),
