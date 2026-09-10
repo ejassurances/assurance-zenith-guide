@@ -2662,6 +2662,7 @@ export type Database = {
           quotite_pct: number | null
           saisi_par: string | null
           source: string
+          taux_commission: number | null
           type_cotisation: string | null
           updated_at: string
         }
@@ -2685,6 +2686,7 @@ export type Database = {
           quotite_pct?: number | null
           saisi_par?: string | null
           source?: string
+          taux_commission?: number | null
           type_cotisation?: string | null
           updated_at?: string
         }
@@ -2708,6 +2710,7 @@ export type Database = {
           quotite_pct?: number | null
           saisi_par?: string | null
           source?: string
+          taux_commission?: number | null
           type_cotisation?: string | null
           updated_at?: string
         }
