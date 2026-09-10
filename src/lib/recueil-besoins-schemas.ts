@@ -21,6 +21,8 @@ export type BrancheAssurance =
 export type FieldType =
   | "text"
   | "number"
+  /** Date (jour/mois/année) */
+  | "date"
   | "textarea"
   | "select"
   | "checkbox"
@@ -245,11 +247,17 @@ const BRANCHES_BASE: BrancheConfig[] = [
           { key: "capital", label: "Capital emprunté", type: "number", suffix: "€", required: true },
           { key: "duree_mois", label: "Durée restante", type: "number", suffix: "mois", required: true },
           {
+            key: "date_effet",
+            label: "Date de prise en compte (substitution)",
+            type: "date",
+            help: "Date d'effet retenue pour la substitution. Vide : création du dossier + 3 mois. À modifier si la compagnie communique une autre date.",
+          },
+          {
             key: "capital_restant_du",
             label: "Capital restant dû",
             type: "number",
             suffix: "€",
-            help: "Montant du prêt restant à rembourser — utile en cas de substitution d'assurance sur un prêt en cours.",
+            help: "Montant du prêt restant à rembourser à la date de prise en compte — le bloc « Cohérence du prêt » propose la valeur calculée.",
           },
           {
             key: "mois_restants",
