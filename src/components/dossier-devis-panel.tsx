@@ -521,6 +521,7 @@ export function DossierDevisPanel({
         cotisation_min: form.type_cotisation === "CRD" && form.cotisation_min ? Number(form.cotisation_min) : null,
         cotisation_max: form.type_cotisation === "CRD" && form.cotisation_max ? Number(form.cotisation_max) : null,
         quotite_pct: form.quotite_pct ? Number(form.quotite_pct) : null,
+        taux_commission: form.taux_commission ? Number(form.taux_commission) : null,
         assure_rang: form.assure_rang ? Number(form.assure_rang) : 1,
         garanties_resume: resume || null,
         source: importDocId ? "pdf" : "manuel",
@@ -555,6 +556,7 @@ export function DossierDevisPanel({
       cotisation_min: "",
       cotisation_max: "",
       quotite_pct: "",
+      taux_commission: "",
       garanties_resume: "",
       assure_rang: "1",
     });
