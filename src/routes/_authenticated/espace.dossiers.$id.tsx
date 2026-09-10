@@ -42,6 +42,7 @@ import {
   type ParcoursKey,
 } from "@/lib/parcours-emprunteur";
 import { DocumentsPretPanel } from "@/components/documents-pret-panel";
+import { DossierReferencesExternesPanel } from "@/components/dossier-references-externes-panel";
 import { CompletudeRings } from "@/components/completude-rings";
 import { useCompletudeDossier } from "@/hooks/use-completude";
 
