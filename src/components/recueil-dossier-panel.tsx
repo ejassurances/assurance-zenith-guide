@@ -142,9 +142,12 @@ function AssuranceBancaire({
 function CoherencePret({
   values,
   dossierCreeLe,
+  onAppliquer,
 }: {
   values: Record<string, unknown>;
   dossierCreeLe: string | null;
+  /** Reporte le capital restant dû et les mois restants calculés dans le recueil. */
+  onAppliquer?: (maj: { capital_restant_du: number; mois_restants: number }) => void;
 }) {
   const nombre = (cle: string): number | null => {
     const n = Number(values[cle]);
