@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { lireReferentiel, type LecteurLot3, type LectureBornee } from "./email-context-resolver.server";
-import type { EmailContext } from "./email-context";
+import type { EmailContext } from "./email-context-types";
 
 const CTR_A = "11111111-1111-4111-8111-111111111111";
 const CTR_B = "22222222-2222-4222-8222-222222222222";
@@ -60,22 +60,22 @@ function lecteur(): LecteurLot3 {
 
 describe("référence assureur portée par le contrat individuel", () => {
   test("la référence de l'assuré A ne remonte que son contrat", async () => {
-    const ref = await lireReferentiel(lecteur(), contexte("ADH-2026-000A"), []);
+    const ref = await lireReferentiel(lecteur(), contexte("ADH-2026-000A"));
     expect(ref.contrats.map((c) => c.id)).toEqual([CTR_A]);
   });
 
   test("la référence de l'assuré B ne remonte jamais le contrat de A", async () => {
-    const ref = await lireReferentiel(lecteur(), contexte("ADH-2026-000B"), []);
+    const ref = await lireReferentiel(lecteur(), contexte("ADH-2026-000B"));
     expect(ref.contrats.map((c) => c.id)).toEqual([CTR_B]);
   });
 
   test("référence inconnue : aucun contrat candidat, le mail reste à qualifier", async () => {
-    const ref = await lireReferentiel(lecteur(), contexte("ADH-INCONNUE-999"), []);
+    const ref = await lireReferentiel(lecteur(), contexte("ADH-INCONNUE-999"));
     expect(ref.contrats).toEqual([]);
   });
 
   test("référence trop courte : jamais utilisée comme preuve", async () => {
-    const ref = await lireReferentiel(lecteur(), contexte("A26"), []);
+    const ref = await lireReferentiel(lecteur(), contexte("A26"));
     expect(ref.contrats).toEqual([]);
   });
 });
