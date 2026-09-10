@@ -188,6 +188,20 @@ function CoherencePret({
           <dd className="text-ink">{euros(calcul.mensualite)}</dd>
         </div>
       </dl>
+      {onAppliquer && calcul.capital_restant_du != null && calcul.mois_restants != null && (
+        <button
+          type="button"
+          onClick={() =>
+            onAppliquer({
+              capital_restant_du: Math.round(calcul.capital_restant_du as number),
+              mois_restants: calcul.mois_restants as number,
+            })
+          }
+          className="w-full rounded-full border border-line px-3 py-1 text-xs hover:bg-surface"
+        >
+          Reporter dans le recueil (capital restant dû et mois restants)
+        </button>
+      )}
       <AssuranceBancaire values={values} moisRestants={calcul.mois_restants} />
       {alertes.length > 0 ? (
         <ul className="space-y-1 text-xs text-destructive">
