@@ -142,9 +142,12 @@ function AssuranceBancaire({
 function CoherencePret({
   values,
   dossierCreeLe,
+  onAppliquer,
 }: {
   values: Record<string, unknown>;
   dossierCreeLe: string | null;
+  /** Reporte le capital restant dû et les mois restants calculés dans le recueil. */
+  onAppliquer?: (maj: { capital_restant_du: number; mois_restants: number }) => void;
 }) {
   const nombre = (cle: string): number | null => {
     const n = Number(values[cle]);
@@ -185,6 +188,20 @@ function CoherencePret({
           <dd className="text-ink">{euros(calcul.mensualite)}</dd>
         </div>
       </dl>
+      {onAppliquer && calcul.capital_restant_du != null && calcul.mois_restants != null && (
+        <button
+          type="button"
+          onClick={() =>
+            onAppliquer({
+              capital_restant_du: Math.round(calcul.capital_restant_du as number),
+              mois_restants: calcul.mois_restants as number,
+            })
+          }
+          className="w-full rounded-full border border-line px-3 py-1 text-xs hover:bg-surface"
+        >
+          Reporter dans le recueil (capital restant dû et mois restants)
+        </button>
+      )}
       <AssuranceBancaire values={values} moisRestants={calcul.mois_restants} />
       {alertes.length > 0 ? (
         <ul className="space-y-1 text-xs text-destructive">
@@ -399,12 +416,28 @@ export function RecueilDossierPanel({
             }}
           />
         </PanneauLateral>
-        <CoherencePret values={values} dossierCreeLe={dossierCreeLe} />
+        <CoherencePret
+          values={values}
+          dossierCreeLe={dossierCreeLe}
+          onAppliquer={(maj) => {
+            setValues((prev) => ({ ...prev, ...maj }));
+            setMessage("Capital restant dû et mois restants reportés — enregistrez l'étape pour les conserver.");
+          }}
+        />
         </div>
       );
     }
     if (branche.value === "emprunteur" && /montant|dur[eé]e|substitut|capital/i.test(titre)) {
-      return <CoherencePret values={values} dossierCreeLe={dossierCreeLe} />;
+      return (
+        <CoherencePret
+          values={values}
+          dossierCreeLe={dossierCreeLe}
+          onAppliquer={(maj) => {
+            setValues((prev) => ({ ...prev, ...maj }));
+            setMessage("Capital restant dû et mois restants reportés — enregistrez l'étape pour les conserver.");
+          }}
+        />
+      );
     }
     if (estEtapeAssures(titre)) {
       return <FichesAssures dossierId={dossierId} canEdit={canEdit} />;

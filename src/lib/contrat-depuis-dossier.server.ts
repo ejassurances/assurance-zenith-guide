@@ -111,12 +111,13 @@ export async function creerContratDepuisDossier(
     cotisation_mensuelle: number | null;
     montant_total_saisi: number | null;
     quotite_pct: number | null;
+    taux_commission: number | null;
   } | null = null;
 
   if (classement?.devis_retenu_id) {
     const { data } = await client
       .from("dossier_devis")
-      .select("compagnie_id, produit_id, cotisation_mensuelle, montant_total_saisi, quotite_pct")
+      .select("compagnie_id, produit_id, cotisation_mensuelle, montant_total_saisi, quotite_pct, taux_commission")
       .eq("id", classement.devis_retenu_id)
       .maybeSingle();
     devis = data ?? null;
@@ -124,7 +125,7 @@ export async function creerContratDepuisDossier(
   if (!devis) {
     const { data } = await client
       .from("dossier_devis")
-      .select("compagnie_id, produit_id, cotisation_mensuelle, montant_total_saisi, quotite_pct")
+      .select("compagnie_id, produit_id, cotisation_mensuelle, montant_total_saisi, quotite_pct, taux_commission")
       .eq("dossier_id", dossierId)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -194,6 +195,9 @@ export async function creerContratDepuisDossier(
         is_emprunteur: estEmprunteur,
         capital_initial: estEmprunteur ? dossier.capital : null,
         quotite: ligne.quotite,
+        // Taux négocié sur le devis retenu : il prime sur le barème du cabinet
+        // pour la commission prévisionnelle (module comptabilité).
+        commission_cabinet_taux: devis?.taux_commission ?? null,
         co_emprunteur: ligne.libelle,
         created_by: userId,
       })

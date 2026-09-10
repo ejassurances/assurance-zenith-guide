@@ -142,6 +142,12 @@ export interface LecteurLot3 {
   clientsParIdentite(filtre: string): Promise<LectureBornee<ClientRef>>;
   dossiersParFiltre(filtre: string): Promise<LectureBornee<DossierRef>>;
   dossiersParClients(clientIds: readonly string[]): Promise<LectureBornee<DossierRef>>;
+  /**
+   * Références internes communiquées par l'assureur (table
+   * `dossier_references_externes`) : rattachement sur preuve EXACTE uniquement.
+   * Optionnel pour rester compatible avec les lecteurs de test existants.
+   */
+  dossiersParReferencesExternes?(references: readonly string[]): Promise<LectureBornee<DossierRef>>;
   contratsParFiltre(filtre: string): Promise<LectureBornee<ContratRef>>;
   contratsParClients(clientIds: readonly string[]): Promise<LectureBornee<ContratRef>>;
   compagniesToutes(): Promise<LectureBornee<CompagnieRef>>;
@@ -314,6 +320,23 @@ export function lecteurSupabase(client: SupabaseClient<Database>): LecteurLot3 {
         .limit(PLAFOND_CIBLE + 1);
       return borne(data, PLAFOND_CIBLE);
     },
+    async dossiersParReferencesExternes(references) {
+      const refs = [...references];
+      if (refs.length === 0) return borne([], PLAFOND_CIBLE);
+      const { data: liens } = await client
+        .from("dossier_references_externes")
+        .select("dossier_id, reference")
+        .in("reference", refs)
+        .limit(PLAFOND_CIBLE + 1);
+      const ids = [...new Set(((liens ?? []) as { dossier_id: string }[]).map((l) => l.dossier_id))];
+      if (ids.length === 0) return borne([], PLAFOND_CIBLE);
+      const { data } = await client
+        .from("dossiers")
+        .select("id, reference, client_id, statut")
+        .in("id", ids)
+        .limit(PLAFOND_CIBLE + 1);
+      return borne(data, PLAFOND_CIBLE);
+    },
     async dossiersParClients(clientIds) {
       const { data } = await client
         .from("dossiers")
@@ -467,6 +490,14 @@ export async function lireReferentiel(
           .filter(Boolean)
           .join(","),
       );
+      dossiers.push(...lecture.lignes);
+      if (lecture.tronquee) tronques.add("dossiers");
+    }
+    // Référence interne de l'assureur citée dans l'e-mail : preuve exacte
+    // (au moins 5 caractères), jamais une simple ressemblance de nom.
+    const refsExternes = [...refsDossier].filter((r) => r.length >= 5 && !UUID.test(r));
+    if (refsExternes.length > 0 && db.dossiersParReferencesExternes) {
+      const lecture = await db.dossiersParReferencesExternes(refsExternes);
       dossiers.push(...lecture.lignes);
       if (lecture.tronquee) tronques.add("dossiers");
     }

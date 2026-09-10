@@ -2662,6 +2662,7 @@ export type Database = {
           quotite_pct: number | null
           saisi_par: string | null
           source: string
+          taux_commission: number | null
           type_cotisation: string | null
           updated_at: string
         }
@@ -2685,6 +2686,7 @@ export type Database = {
           quotite_pct?: number | null
           saisi_par?: string | null
           source?: string
+          taux_commission?: number | null
           type_cotisation?: string | null
           updated_at?: string
         }
@@ -2708,6 +2710,7 @@ export type Database = {
           quotite_pct?: number | null
           saisi_par?: string | null
           source?: string
+          taux_commission?: number | null
           type_cotisation?: string | null
           updated_at?: string
         }
@@ -2926,6 +2929,54 @@ export type Database = {
             columns: ["kyc_document_id"]
             isOneToOne: false
             referencedRelation: "client_kyc_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dossier_references_externes: {
+        Row: {
+          assure_rang: number | null
+          compagnie_id: string | null
+          created_at: string
+          created_by: string | null
+          dossier_id: string
+          id: string
+          libelle: string | null
+          reference: string
+        }
+        Insert: {
+          assure_rang?: number | null
+          compagnie_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          dossier_id: string
+          id?: string
+          libelle?: string | null
+          reference: string
+        }
+        Update: {
+          assure_rang?: number | null
+          compagnie_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          dossier_id?: string
+          id?: string
+          libelle?: string | null
+          reference?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dossier_references_externes_compagnie_id_fkey"
+            columns: ["compagnie_id"]
+            isOneToOne: false
+            referencedRelation: "compagnies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dossier_references_externes_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
             referencedColumns: ["id"]
           },
         ]

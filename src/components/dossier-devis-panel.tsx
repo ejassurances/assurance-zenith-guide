@@ -43,6 +43,8 @@ export type DossierDevis = {
   source: "manuel" | "api" | "pdf";
   garanties_resume: string | null;
   quotite_pct: number | null;
+  /** Taux de commission cabinet (%) applicable à ce devis : repris en comptabilité. */
+  taux_commission: number | null;
   /** Tête assurée visée par ce devis (1 = assuré principal, 2 = co-emprunteur). Un devis = une tête. */
   assure_rang: number | null;
   assureur_porteur: string | null;
@@ -188,6 +190,7 @@ export function DossierDevisPanel({
     cotisation_min: "",
     cotisation_max: "",
     quotite_pct: "",
+    taux_commission: "",
     garanties_resume: "",
     assure_rang: "1",
   });
@@ -247,7 +250,7 @@ export function DossierDevisPanel({
     const [d, c, p, cl, dos] = await Promise.all([
       supabase
         .from("dossier_devis")
-        .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,type_cotisation,cotisation_min,cotisation_max,montant_total_saisi,source,garanties_resume,quotite_pct,assure_rang,assureur_porteur,created_at")
+        .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,type_cotisation,cotisation_min,cotisation_max,montant_total_saisi,source,garanties_resume,quotite_pct,taux_commission,assure_rang,assureur_porteur,created_at")
         .eq("dossier_id", dossierId)
         .is("archive_le", null)
         .order("created_at", { ascending: true }),
@@ -518,6 +521,7 @@ export function DossierDevisPanel({
         cotisation_min: form.type_cotisation === "CRD" && form.cotisation_min ? Number(form.cotisation_min) : null,
         cotisation_max: form.type_cotisation === "CRD" && form.cotisation_max ? Number(form.cotisation_max) : null,
         quotite_pct: form.quotite_pct ? Number(form.quotite_pct) : null,
+        taux_commission: form.taux_commission ? Number(form.taux_commission) : null,
         assure_rang: form.assure_rang ? Number(form.assure_rang) : 1,
         garanties_resume: resume || null,
         source: importDocId ? "pdf" : "manuel",
@@ -552,6 +556,7 @@ export function DossierDevisPanel({
       cotisation_min: "",
       cotisation_max: "",
       quotite_pct: "",
+      taux_commission: "",
       garanties_resume: "",
       assure_rang: "1",
     });
@@ -1485,6 +1490,11 @@ export function DossierDevisPanel({
                         Quotité {d.quotite_pct} %
                       </span>
                     )}
+                    {d.taux_commission != null && (
+                      <span className="rounded-full border border-line px-2 py-0.5 text-ink-muted">
+                        Commission {d.taux_commission} %
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="text-right">
@@ -2151,6 +2161,25 @@ export function DossierDevisPanel({
             </span>
           </label>
         )}
+        <label className="block">
+          <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+            Taux de commission (%)
+          </span>
+          <input
+            type="number"
+            step="0.01"
+            min={0}
+            max={100}
+            value={form.taux_commission}
+            onChange={(e) => setForm({ ...form, taux_commission: e.target.value })}
+            className={inp}
+            placeholder="5"
+          />
+          <span className="mt-1 block text-xs text-ink-muted">
+            Taux négocié avec le partenaire sur ce devis. Repris sur le contrat et sur la commission
+            prévisionnelle du module comptabilité. Vide : barème du cabinet.
+          </span>
+        </label>
         <label className="block sm:col-span-2">
           <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Résumé des garanties</span>
           <textarea

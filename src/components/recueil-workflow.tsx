@@ -789,6 +789,21 @@ export function WorkflowField({
         </label>
       )}
 
+      {field.type === "date" && (
+        <label className="block">
+          <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+            {field.label}
+            {field.required && <span className="text-accent"> *</span>}
+          </span>
+          <input
+            type="date"
+            value={(value as string) ?? ""}
+            onChange={(e) => onChange(e.target.value)}
+            className={`${inputCls} ${error ? "border-destructive" : ""}`}
+          />
+        </label>
+      )}
+
       {(field.type === "text" || field.type === "number") && (
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
