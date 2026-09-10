@@ -148,6 +148,13 @@ export interface LecteurLot3 {
    * Optionnel pour rester compatible avec les lecteurs de test existants.
    */
   dossiersParReferencesExternes?(references: readonly string[]): Promise<LectureBornee<DossierRef>>;
+  /**
+   * Références portées par un CONTRAT individuel (un assuré du prêt) :
+   * un dossier emprunteur à deux assurés produit deux contrats, chacun avec sa
+   * référence propre. Un e-mail citant la référence de l'assuré A ne doit
+   * jamais viser le contrat de l'assuré B.
+   */
+  contratsParReferencesExternes?(references: readonly string[]): Promise<LectureBornee<ContratRef>>;
   contratsParFiltre(filtre: string): Promise<LectureBornee<ContratRef>>;
   contratsParClients(clientIds: readonly string[]): Promise<LectureBornee<ContratRef>>;
   compagniesToutes(): Promise<LectureBornee<CompagnieRef>>;
@@ -337,6 +344,30 @@ export function lecteurSupabase(client: SupabaseClient<Database>): LecteurLot3 {
         .limit(PLAFOND_CIBLE + 1);
       return borne(data, PLAFOND_CIBLE);
     },
+    async contratsParReferencesExternes(references) {
+      const refs = [...references];
+      if (refs.length === 0) return borne([], PLAFOND_CIBLE);
+      const { data: liens } = await client
+        .from("dossier_references_externes")
+        .select("contrat_id, reference")
+        .in("reference", refs)
+        .not("contrat_id", "is", null)
+        .limit(PLAFOND_CIBLE + 1);
+      const ids = [
+        ...new Set(
+          ((liens ?? []) as { contrat_id: string | null }[])
+            .map((l) => l.contrat_id)
+            .filter((v): v is string => !!v),
+        ),
+      ];
+      if (ids.length === 0) return borne([], PLAFOND_CIBLE);
+      const { data } = await client
+        .from("contrats")
+        .select("id, numero, client_id, dossier_id, compagnie_id, produit_id, statut")
+        .in("id", ids)
+        .limit(PLAFOND_CIBLE + 1);
+      return borne(data, PLAFOND_CIBLE);
+    },
     async dossiersParClients(clientIds) {
       const { data } = await client
         .from("dossiers")
@@ -510,11 +541,20 @@ export async function lireReferentiel(
     referentiel.dossiers = dossiers.filter((d) => (vus.has(d.id) ? false : (vus.add(d.id), true)));
   }
 
-  // contrats — par numéro de police cité, puis contrats des clients candidats
-  if (numerosContrat.size > 0 || clientIds.length > 0) {
+  // contrats — par numéro de police cité, par référence assureur du contrat
+  // individuel (preuve exacte), puis contrats des clients candidats
+  const refsContrat = [...new Set([...refsDossier, ...numerosContrat])].filter(
+    (r) => r.length >= 5 && !UUID.test(r),
+  );
+  if (numerosContrat.size > 0 || refsContrat.length > 0 || clientIds.length > 0) {
     const contrats: ReferentielCroisement["contrats"] = [];
     if (numerosContrat.size > 0) {
       const lecture = await db.contratsParFiltre(ou(["numero"], numerosContrat));
+      contrats.push(...lecture.lignes);
+      if (lecture.tronquee) tronques.add("contrats");
+    }
+    if (refsContrat.length > 0 && db.contratsParReferencesExternes) {
+      const lecture = await db.contratsParReferencesExternes(refsContrat);
       contrats.push(...lecture.lignes);
       if (lecture.tronquee) tronques.add("contrats");
     }

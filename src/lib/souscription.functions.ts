@@ -94,6 +94,39 @@ export const enregistrerRetourCompagnie = createServerFn({ method: "POST" })
       numero: data.numero_contrat ?? null,
     });
 
-    return { ok: true, contrat_id: contrat.contrat_id, dda_a_regulariser: contrat.dda_a_regulariser };
+    return {
+      ok: true,
+      contrat_id: contrat.contrat_id,
+      // Un contrat par assuré du prêt : la référence assureur, le statut et la
+      // commission prévisionnelle se suivent contrat par contrat.
+      contrats_ids: contrat.contrats_ids,
+      dda_a_regulariser: contrat.dda_a_regulariser,
+    };
+  });
+
+/**
+ * Création (ou reprise) des contrats individuels par assuré pour un dossier
+ * emprunteur, déclenchée depuis l'étape « Analyse et décision ». Idempotent :
+ * si les contrats existent déjà, ils sont simplement renvoyés.
+ */
+export const creerContratsAssuresFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ dossier_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: dossier, error } = await supabase
+      .from("dossiers")
+      .select("id")
+      .eq("id", data.dossier_id)
+      .maybeSingle();
+    if (error || !dossier) throw new Error("Dossier introuvable ou accès refusé");
+    const { creerContratDepuisDossier } = await import("./contrat-depuis-dossier.server");
+    const res = await creerContratDepuisDossier(supabase, data.dossier_id, userId);
+    return {
+      ok: true,
+      contrats_ids: res.contrats_ids,
+      deja_existant: res.deja_existant,
+      dda_a_regulariser: res.dda_a_regulariser,
+    };
   });
 
