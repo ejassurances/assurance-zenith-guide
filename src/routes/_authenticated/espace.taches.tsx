@@ -79,11 +79,13 @@ function TachesPage() {
         {(
           [
             ["a_faire", "À faire"],
+            ["a_qualifier", "À qualifier"],
             ["en_cours", "En cours"],
             ["terminee", "Terminées"],
             ["all", "Toutes"],
           ] as const
         ).map(([k, l]) => (
+
           <button
             key={k}
             onClick={() => setFilter(k)}
