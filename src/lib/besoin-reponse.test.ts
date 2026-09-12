@@ -47,11 +47,13 @@ describe("classerBesoinReponse", () => {
   });
 
   it("laisse en ambigu un message sans signal clair", () => {
-    expect(classerBesoinReponse({ sujet: "Dossier Dupont", texte: "Bonjour, ci-joint." }).categorie).toBe(
-      "reponse_attendue",
-    );
+    expect(
+      classerBesoinReponse({ sujet: "Dossier Dupont", texte: "Bonjour, ci-joint.", pieces_jointes: 1 })
+        .categorie,
+    ).toBe("reponse_attendue");
     expect(classerBesoinReponse({ sujet: "Dossier Dupont", texte: "Bonjour." }).categorie).toBe("ambigu");
   });
+
 
   it("ne classe rien sans contenu", () => {
     expect(classerBesoinReponse({}).categorie).toBe("ambigu");
