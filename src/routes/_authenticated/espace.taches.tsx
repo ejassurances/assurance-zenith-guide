@@ -16,6 +16,8 @@ export const Route = createFileRoute("/_authenticated/espace/taches")({
 type Tache = {
   id: string;
   client_id: string | null;
+  dossier_id: string | null;
+  type: string | null;
   titre: string;
   description: string | null;
   echeance: string | null;
@@ -23,14 +25,17 @@ type Tache = {
   statut: string;
   created_at: string;
   clients: { reference: string; prenom: string | null; nom: string } | null;
+  dossiers: { reference: string | null } | null;
 };
 
 const SELECT =
-  "id,client_id,titre,description,echeance,priorite,statut,created_at,clients(reference,prenom,nom)";
+  "id,client_id,dossier_id,type,titre,description,echeance,priorite,statut,created_at,clients(reference,prenom,nom),dossiers(reference)";
 
 function TachesPage() {
   const [items, setItems] = useState<Tache[]>([]);
-  const [filter, setFilter] = useState<"all" | "a_faire" | "en_cours" | "terminee">("a_faire");
+  const [filter, setFilter] = useState<"all" | "a_faire" | "a_qualifier" | "en_cours" | "terminee">(
+    "a_faire",
+  );
   const [selected, setSelected] = useState<Tache | null>(null);
   const changerStatut = useServerFn(majTache);
 
@@ -41,6 +46,7 @@ function TachesPage() {
       .order("echeance", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: false });
     if (filter !== "all") q = q.eq("statut", filter);
+
     const { data } = await q;
     const rows = (data ?? []) as unknown as Tache[];
     setItems(rows);
