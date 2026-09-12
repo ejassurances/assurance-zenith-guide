@@ -96,6 +96,34 @@ export const synchroniserAssuresClients = createServerFn({ method: "POST" })
         continue;
       }
       const { prenom, nom } = decouperNom(nomComplet);
+
+      // DÉDOUBLONNAGE OBLIGATOIRE : on rattache la fiche déjà connue (email, ou
+      // nom + prénom, ou nom + date de naissance) au lieu d'ouvrir un doublon.
+      const { trouverClientExistant, normaliserIdentite } = await import("@/lib/client-dedoublonnage.server");
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const email = typeof a["email"] === "string" ? (a["email"] as string) : null;
+      let existant =
+        (await trouverClientExistant(supabaseAdmin, { email, nom, prenom: prenom ?? undefined }))?.client_id ?? null;
+
+      if (!existant && !vide(a["date_naissance"])) {
+        // Homonyme sans prénom identique : la date de naissance tranche.
+        const { data: candidats } = await supabaseAdmin
+          .from("clients")
+          .select("id, nom, date_naissance")
+          .eq("date_naissance", a["date_naissance"] as string)
+          .limit(20);
+        const cible = normaliserIdentite(nom);
+        existant = (candidats ?? []).find((c) => normaliserIdentite(c.nom) === cible)?.id ?? null;
+      }
+
+      if (existant) {
+        a["client_id"] = existant;
+        assures[i] = a;
+        recueilModifie = true;
+        if (await completer(existant, a)) misAJour++;
+        continue;
+      }
+
       const { data: cree, error: errC } = await sb
         .from("clients")
         .insert({
