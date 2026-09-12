@@ -315,6 +315,7 @@ export async function traiterOffrePretEmail(
       lignes,
       client_id: idsClients[0] ?? null,
       dossier_id: dossierId,
+      created_by: params.userId,
     }).catch((e: unknown) => console.error("[offre-pret-email] notification impossible", e));
 
     await creerTacheAdmin(admin, {
