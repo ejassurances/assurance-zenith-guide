@@ -43,6 +43,8 @@ import {
 } from "@/lib/parcours-emprunteur";
 import { DocumentsPretPanel } from "@/components/documents-pret-panel";
 import { DossierReferencesExternesPanel } from "@/components/dossier-references-externes-panel";
+import { DossierTachesPanel } from "@/components/dossier-taches-panel";
+
 import { CompletudeRings } from "@/components/completude-rings";
 import { useCompletudeDossier } from "@/hooks/use-completude";
 
@@ -833,6 +835,8 @@ function StageContent({
           typeDocument="document_assureur"
         />
         <DossierReferencesExternesPanel dossierId={dossierId} />
+        <DossierTachesPanel dossierId={dossierId} />
+
         {pieces}
         {documents}
       </>

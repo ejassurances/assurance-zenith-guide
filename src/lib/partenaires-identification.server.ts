@@ -116,8 +116,15 @@ export interface AbsenceCorrespondance {
   client_id: null;
   /** Clients dont le nom + prénom sont cités, sans preuve de dossier : à qualifier. */
   candidats: string[];
+  /**
+   * Dossier PROBABLE (jamais écrit en FK) : renseigné seulement si un unique
+   * client candidat possède un unique dossier. Sert uniquement à rendre la
+   * tâche de qualification visible sur la fiche du dossier.
+   */
+  dossier_probable?: string | null;
   raison: string;
 }
+
 
 /**
  * PREUVE DÉTERMINISTE EXIGÉE (règle DG) : seul un numéro de contrat, de dossier
@@ -166,6 +173,7 @@ export async function trouverClientConcerne(
 
   const { data: clients } = await admin.from("clients").select("id, nom, prenom").limit(5000);
   const candidats: string[] = [];
+  const candidatsIds: string[] = [];
   for (const c of clients ?? []) {
     const nom = normaliser(c.nom ?? "");
     const prenom = normaliser(c.prenom ?? "");
@@ -174,17 +182,33 @@ export async function trouverClientConcerne(
       const m = p.split(" ");
       return m.includes(nom) && m.includes(prenom);
     });
-    if (ok) candidats.push(`${c.prenom} ${c.nom}`);
+    if (ok) {
+      candidats.push(`${c.prenom} ${c.nom}`);
+      candidatsIds.push(c.id);
+    }
+  }
+
+  // Dossier probable : uniquement si un seul client candidat n'a qu'un dossier.
+  let dossierProbable: string | null = null;
+  if (candidatsIds.length === 1) {
+    const { data: dossiersClient } = await admin
+      .from("dossiers")
+      .select("id")
+      .eq("client_id", candidatsIds[0]!)
+      .limit(3);
+    if ((dossiersClient ?? []).length === 1) dossierProbable = dossiersClient![0]!.id;
   }
 
   return {
     client_id: null,
     candidats,
+    dossier_probable: dossierProbable,
     raison: candidats.length
       ? "nom et prénom cités mais aucun numéro de contrat / dossier ne confirme le rattachement"
       : "client cité non identifié dans le CRM",
   };
 }
+
 
 
 /** Note de suivi sur la fiche client (une seule par email partenaire). */
@@ -314,14 +338,23 @@ export async function identifierClientEmailPartenaire(
           resume ? `Résumé : ${resume}` : null,
           `Motif : ${trouve.raison}.`,
           trouve.candidats.length ? `Clients possibles : ${trouve.candidats.join(", ")}` : null,
+          trouve.dossier_probable
+            ? "Dossier probable identifié : cette demande est aussi visible sur sa fiche."
+            : null,
           "Aucun client ni dossier n'a été rattaché : rattachement manuel requis.",
         ],
+        // Tâche interne « à qualifier » : visible dans le module Demandes et,
+        // si un dossier probable existe, sur la fiche de ce dossier (même ligne).
+        dossier_id: trouve.dossier_probable ?? null,
+        statut: "a_qualifier",
+        type: "interne",
         priorite: "haute",
         created_by: params.userId,
       }).catch((e: unknown) => {
         console.error("[partenaires] notification de qualification impossible", e);
         return false;
       });
+
       return { client_id: null, note_creee: false, motif: null, a_qualifier: true };
     }
   }

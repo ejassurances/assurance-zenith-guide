@@ -23,6 +23,11 @@ export async function notifierActionAgent(
     titre: string;
     lignes: (string | null | undefined)[];
     client_id?: string | null;
+    /** Dossier probable : la notification apparaît aussi sur sa fiche. */
+    dossier_id?: string | null;
+    /** Statut initial : « a_qualifier » pour un rattachement ambigu. */
+    statut?: Database["public"]["Enums"]["tache_statut"];
+    type?: string;
     priorite?: Database["public"]["Enums"]["tache_priorite"];
     created_by: string;
   },
@@ -44,8 +49,12 @@ export async function notifierActionAgent(
       `Identifiant Gmail : ${params.gmail_message_id}`,
     ].join("\n"),
     client_id: params.client_id ?? null,
+    dossier_id: params.dossier_id ?? null,
+    statut: params.statut,
+    type: params.type ?? "interne",
     priorite: params.priorite ?? "normale",
     created_by: params.created_by,
   });
   return !!cree;
 }
+
