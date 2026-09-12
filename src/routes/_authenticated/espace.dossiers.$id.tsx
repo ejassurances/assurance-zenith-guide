@@ -721,15 +721,16 @@ function StageContent({
   }
 
   // Étape 6 — Simulations : produits notés, prix saisis, classement.
+  // Toujours affichée : sans droit d'édition, le comparatif reste consultable.
   if (parcours === "simulations") {
-    content = canEdit ? (
+    content = (
       <DossierDevisPanel
         dossierId={dossierId}
         branche={dossier.type_assurance}
         userId={userId}
         onChanged={onChanged}
       />
-    ) : null;
+    );
   }
 
   // Étape 7 — Devoir de conseil : le seul endroit où ce composant s'affiche.
@@ -750,7 +751,12 @@ function StageContent({
           contreProposition={contreProposition}
         />
       </>
-    ) : null;
+    ) : (
+      <p className="rounded-2xl border border-line bg-surface p-5 text-sm text-ink-muted">
+        Devoir de conseil indisponible : le dossier est gelé tant que la conformité du client est
+        insuffisante.
+      </p>
+    );
   }
 
   // Étape 8 — Informations adhésion : pièces d'adhésion par assuré.
