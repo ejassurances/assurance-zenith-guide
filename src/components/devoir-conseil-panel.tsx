@@ -116,6 +116,8 @@ export function DevoirConseilPanel({
     periodicite: "mensuelle",
   });
   const [prevIgnoree, setPrevIgnoree] = useState(false);
+  /** Un devis du dossier porte un taux de commission : source unique du prévisionnel. */
+  const [tauxDevisPresent, setTauxDevisPresent] = useState(false);
 
   const emprunteur = branche === "emprunteur";
 
