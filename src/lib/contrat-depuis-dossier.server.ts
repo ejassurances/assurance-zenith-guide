@@ -69,7 +69,7 @@ export async function creerContratDepuisDossier(
   const { data: dossier, error } = await client
     .from("dossiers")
     .select(
-      "id, reference, client_id, type_assurance, duree_mois, capital, compagnie_id, produit_id, recueil_besoins",
+      "id, reference, client_id, type_assurance, duree_mois, capital, compagnie_id, produit_id, recueil_besoins, economie_estimee",
     )
     .eq("id", dossierId)
     .maybeSingle();
@@ -112,12 +112,15 @@ export async function creerContratDepuisDossier(
     montant_total_saisi: number | null;
     quotite_pct: number | null;
     taux_commission: number | null;
+    commission_base: string | null;
   } | null = null;
 
   if (classement?.devis_retenu_id) {
     const { data } = await client
       .from("dossier_devis")
-      .select("compagnie_id, produit_id, cotisation_mensuelle, montant_total_saisi, quotite_pct, taux_commission")
+      .select(
+        "compagnie_id, produit_id, cotisation_mensuelle, montant_total_saisi, quotite_pct, taux_commission, commission_base",
+      )
       .eq("id", classement.devis_retenu_id)
       .maybeSingle();
     devis = data ?? null;
@@ -125,7 +128,9 @@ export async function creerContratDepuisDossier(
   if (!devis) {
     const { data } = await client
       .from("dossier_devis")
-      .select("compagnie_id, produit_id, cotisation_mensuelle, montant_total_saisi, quotite_pct, taux_commission")
+      .select(
+        "compagnie_id, produit_id, cotisation_mensuelle, montant_total_saisi, quotite_pct, taux_commission, commission_base",
+      )
       .eq("dossier_id", dossierId)
       .order("created_at", { ascending: false })
       .limit(1)
