@@ -116,8 +116,15 @@ export interface AbsenceCorrespondance {
   client_id: null;
   /** Clients dont le nom + prénom sont cités, sans preuve de dossier : à qualifier. */
   candidats: string[];
+  /**
+   * Dossier PROBABLE (jamais écrit en FK) : renseigné seulement si un unique
+   * client candidat possède un unique dossier. Sert uniquement à rendre la
+   * tâche de qualification visible sur la fiche du dossier.
+   */
+  dossier_probable?: string | null;
   raison: string;
 }
+
 
 /**
  * PREUVE DÉTERMINISTE EXIGÉE (règle DG) : seul un numéro de contrat, de dossier
