@@ -1561,12 +1561,89 @@ export function DossierDevisPanel({
                         Quotité {d.quotite_pct} %
                       </span>
                     )}
-                    {d.taux_commission != null && (
-                      <span className="rounded-full border border-line px-2 py-0.5 text-ink-muted">
-                        Commission {d.taux_commission} %
-                      </span>
-                    )}
                   </div>
+
+                  {/* Rémunération du cabinet — interne, jamais visible client ni apporteur. */}
+                  {staff &&
+                    (() => {
+                      const c = commissionPourDevis(d);
+                      const enEdition = commEdit?.id === d.id;
+                      return (
+                        <div className="mt-2 rounded-lg border border-dashed border-[color:var(--crm-gold)]/60 bg-background p-2 text-xs">
+                          {enEdition ? (
+                            <div className="flex flex-wrap items-end gap-2">
+                              <label className="block">
+                                <span className="text-ink-muted">Taux (%)</span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min={0}
+                                  max={100}
+                                  value={commEdit.taux}
+                                  onChange={(e) => setCommEdit({ ...commEdit, taux: e.target.value })}
+                                  className="mt-0.5 block w-24 rounded-md border border-line bg-surface px-2 py-1"
+                                />
+                              </label>
+                              <label className="block">
+                                <span className="text-ink-muted">Assiette</span>
+                                <select
+                                  value={commEdit.base}
+                                  onChange={(e) =>
+                                    setCommEdit({ ...commEdit, base: e.target.value as BaseCommission })
+                                  }
+                                  className="mt-0.5 block rounded-md border border-line bg-surface px-2 py-1"
+                                >
+                                  <option value="economie_realisee">Économie réalisée</option>
+                                  <option value="prime">Cotisation</option>
+                                </select>
+                              </label>
+                              <button
+                                onClick={() => void enregistrerCommission()}
+                                disabled={commBusy}
+                                className="rounded-full bg-ink px-3 py-1 text-primary-foreground disabled:opacity-60"
+                              >
+                                {commBusy ? "Enregistrement…" : "Enregistrer"}
+                              </button>
+                              <button
+                                onClick={() => setCommEdit(null)}
+                                className="text-ink-muted underline underline-offset-4"
+                              >
+                                Annuler
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-ink">
+                                Commission cabinet :{" "}
+                                <strong>
+                                  {c.taux != null ? `${c.taux} %` : "à définir"}
+                                  {c.base === "economie_realisee" ? " des économies" : " de la cotisation"}
+                                </strong>
+                                {c.prevu.total != null && (
+                                  <>
+                                    {" · "}
+                                    {Math.round(c.prevu.total).toLocaleString("fr-FR")} € prévisionnels
+                                  </>
+                                )}
+                              </span>
+                              <span className="rounded-full border border-line px-2 py-0.5 text-ink-muted">
+                                {c.applique ? c.origine : `Proposé — ${c.origine}`}
+                              </span>
+                              <button
+                                onClick={() => ouvrirCommission(d)}
+                                className="text-ink underline underline-offset-4"
+                              >
+                                {c.applique ? "Modifier le taux" : "Saisir le taux"}
+                              </button>
+                            </div>
+                          )}
+                          <p className="mt-1 text-[11px] text-ink-muted">
+                            Donnée interne (dashboard et comptabilité) : ce taux devient la commission
+                            prévisionnelle du contrat de l'assuré si ce devis est retenu.
+                          </p>
+                        </div>
+                      );
+                    })()}
                 </div>
                 <div className="text-right">
                   <p className="font-serif text-lg text-ink">
