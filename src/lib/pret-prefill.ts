@@ -48,6 +48,8 @@ export function prefillRecueilEmprunteur(
   options?: {
     /** Date de création du dossier : base du délai de 3 mois de substitution. */
     dossier_cree_le?: string | null;
+    /** Date d'édition du document : point de départ du prêt si la première échéance est absente. */
+    date_document?: string | null;
     /**
      * Le document importé fait foi : une valeur lue sur l'offre de prêt corrige
      * la valeur enregistrée si elle diffère (les valeurs dérivées, capital
@@ -90,6 +92,7 @@ export function prefillRecueilEmprunteur(
     taux_pret: Number(recueil["taux_pret"]) || null,
     duree_mois: Number(recueil["duree_mois"]) || null,
     date_premiere_echeance: typeof recueil["date_premiere_echeance"] === "string" ? (recueil["date_premiere_echeance"] as string) : null,
+    date_document: options?.date_document ?? null,
     date_effet: typeof recueil["date_effet"] === "string" ? (recueil["date_effet"] as string) : null,
     dossier_cree_le: options?.dossier_cree_le ?? null,
   });
