@@ -150,13 +150,13 @@ function normaliserEmprunteurs(brut: unknown): EmprunteurDetecte[] {
     const o = item as Record<string, unknown>;
     const nom = texteOuNull(o["nom"]);
     if (!nom) continue; // sans nom écrit, aucune fiche n'est proposée
-    const dn = texteOuNull(o["date_naissance"]);
+    const csp = texteOuNull(o["csp"]);
     out.push({
       nom,
       prenom: texteOuNull(o["prenom"]) ?? "",
-      date_naissance: dn && ISO.test(dn) && !Number.isNaN(Date.parse(dn)) ? dn : "",
+      date_naissance: dateIsoOuNull(o["date_naissance"]) ?? "",
       quotite_pct: nombreOuNull(o["quotite_pct"]),
-      csp: texteOuNull(o["csp"]) ?? "",
+      csp: csp && !NON_CSP.test(csp) ? csp : "",
       fumeur: typeof o["fumeur"] === "boolean" ? (o["fumeur"] as boolean) : null,
       email: texteOuNull(o["email"]),
       telephone: texteOuNull(o["telephone"]),
