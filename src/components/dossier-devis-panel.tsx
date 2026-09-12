@@ -592,7 +592,14 @@ export function DossierDevisPanel({
         cotisation_min: form.type_cotisation === "CRD" && form.cotisation_min ? Number(form.cotisation_min) : null,
         cotisation_max: form.type_cotisation === "CRD" && form.cotisation_max ? Number(form.cotisation_max) : null,
         quotite_pct: form.quotite_pct ? Number(form.quotite_pct) : null,
-        taux_commission: form.taux_commission ? Number(form.taux_commission) : null,
+        // Taux saisi, sinon défaut du barème (compagnie > branche > cabinet).
+        taux_commission: form.taux_commission
+          ? Number(form.taux_commission)
+          : tauxDefaut(form.compagnie_id || null).taux,
+        commission_base: form.taux_commission
+          ? form.commission_base
+          : tauxDefaut(form.compagnie_id || null).base,
+        commission_source: form.taux_commission ? "manuel" : "bareme",
         assure_rang: form.assure_rang ? Number(form.assure_rang) : 1,
         garanties_resume: resume || null,
         source: importDocId ? "pdf" : "manuel",
