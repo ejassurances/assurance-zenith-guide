@@ -200,9 +200,9 @@ export async function creerContratDepuisDossier(
         is_emprunteur: estEmprunteur,
         capital_initial: estEmprunteur ? dossier.capital : null,
         quotite: ligne.quotite,
-        // Taux négocié sur le devis retenu : il prime sur le barème du cabinet
-        // pour la commission prévisionnelle (module comptabilité).
-        commission_cabinet_taux: devis?.taux_commission ?? null,
+        // Source UNIQUE de la rémunération : le taux saisi sur le devis retenu.
+        // Stocké en fraction sur la fiche contrat (5 % → 0,05).
+        commission_cabinet_taux: tauxEnFraction(devis?.taux_commission ?? null),
         co_emprunteur: ligne.libelle,
         created_by: userId,
       })
@@ -210,7 +210,47 @@ export async function creerContratDepuisDossier(
       .single();
     if (insErr || !cree) throw new Error(insErr?.message ?? "Création du contrat impossible");
     contratsIds.push(cree.id);
+
+    // Commission prévisionnelle du contrat de CET assuré, dérivée du seul taux
+    // du devis (aucun second calcul). Donnée interne : table staff uniquement.
+    if (devis?.taux_commission != null) {
+      const base: BaseCommission = devis.commission_base === "economie_realisee" ? "economie_realisee" : "prime";
+      const prevu = commissionDepuisDevis(
+        { taux: Number(devis.taux_commission), base },
+        {
+          cotisationMensuelle: ligne.prime != null ? Math.round((Number(ligne.prime) / 12) * 100) / 100 : null,
+          economie: dossier.economie_estimee != null ? Number(dossier.economie_estimee) : null,
+          moisRestants:
+            moisRestantsRecueil(dossier.type_assurance ?? null, dossier.recueil_besoins as Record<string, unknown>) ??
+            dureeMois,
+          quotitePct: ligne.quotite,
+          totalQuotites: totalQuotites > 0 ? totalQuotites : null,
+        },
+      );
+      if (prevu.mensuel != null) {
+        const { data: dejaPrevu } = await client
+          .from("commission_previsions")
+          .select("id")
+          .eq("contrat_id", cree.id)
+          .maybeSingle();
+        if (!dejaPrevu) {
+          await client.from("commission_previsions").insert({
+            dossier_id: dossierId,
+            contrat_id: cree.id,
+            branche: dossier.type_assurance ?? null,
+            compagnie_id: compagnieId,
+            montant_mensuel_estime: prevu.mensuel,
+            mois_restants_initial: prevu.mois,
+            montant_previsionnel_total: prevu.total,
+            date_estimation: new Date().toISOString().slice(0, 10),
+            periodicite: "mensuelle",
+            statut: "estime",
+          } as never);
+        }
+      }
+    }
   }
+
 
   // Le client produit du chiffre d'affaires : il n'est plus un prospect.
   await client.from("clients").update({ statut: "actif" }).eq("id", dossier.client_id).eq("statut", "prospect");
