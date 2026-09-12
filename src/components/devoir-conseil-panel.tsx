@@ -436,7 +436,9 @@ export function DevoirConseilPanel({
       await doSubmit(true);
       return;
     }
-    if (staff && !prevision && !prevIgnoree && regleApplicable) {
+    // Repli uniquement : si un devis porte un taux de commission, la prévision
+    // est dérivée de ce taux au moment de la création du contrat de l'assuré.
+    if (staff && !prevision && !prevIgnoree && !tauxDevisPresent && regleApplicable) {
       const periodicite: Periodicite = regleApplicable.regle.periodicite === "annuelle" ? "annuelle" : "mensuelle";
       // En annuel, l'assiette est la cotisation de l'année (12 × la mensuelle saisie).
       const cotisation = form.cotisation_mensuelle ? Number(form.cotisation_mensuelle) : null;
