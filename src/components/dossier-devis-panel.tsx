@@ -2330,12 +2330,33 @@ export function DossierDevisPanel({
             value={form.taux_commission}
             onChange={(e) => setForm({ ...form, taux_commission: e.target.value })}
             className={inp}
-            placeholder="5"
+            placeholder={
+              tauxDefaut(form.compagnie_id || null).taux != null
+                ? String(tauxDefaut(form.compagnie_id || null).taux)
+                : "5"
+            }
           />
           <span className="mt-1 block text-xs text-ink-muted">
-            Taux négocié avec le partenaire sur ce devis. Repris sur le contrat et sur la commission
-            prévisionnelle du module comptabilité. Vide : barème du cabinet.
+            Taux négocié avec le partenaire sur ce devis. Vide : valeur du barème du cabinet (
+            {tauxDefaut(form.compagnie_id || null).taux ?? "—"} %{" "}
+            {tauxDefaut(form.compagnie_id || null).base === "economie_realisee"
+              ? "des économies"
+              : "de la cotisation"}
+            ). Ce taux est la seule source de la commission prévisionnelle du contrat.
           </span>
+        </label>
+        <label className="block">
+          <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+            Assiette de la commission
+          </span>
+          <select
+            value={form.commission_base}
+            onChange={(e) => setForm({ ...form, commission_base: e.target.value as BaseCommission })}
+            className={inp}
+          >
+            <option value="economie_realisee">Économie réalisée</option>
+            <option value="prime">Cotisation (prime)</option>
+          </select>
         </label>
         <label className="block sm:col-span-2">
           <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Résumé des garanties</span>
