@@ -308,7 +308,7 @@ export function DossierDevisPanel({
       { taux, base },
       {
         cotisationMensuelle: d.cotisation_mensuelle,
-        economie: economiePourDevis(d).economie,
+        economie: economiePourDevis(d)?.economie ?? null,
         moisRestants,
         quotitePct: d.quotite_pct,
         totalQuotites: d.quotite_pct != null ? d.quotite_pct : null,
