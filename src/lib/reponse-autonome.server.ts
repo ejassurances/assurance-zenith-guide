@@ -28,6 +28,8 @@ const MODELE = "openai/gpt-5.6-sol";
 export interface DemandeReponseAutonome {
   canal: CanalReponse;
   gmail_message_id: string;
+  /** Fil Gmail : sert à vérifier qu'aucune réponse du cabinet n'existe déjà. */
+  gmail_thread_id?: string | null;
   destinataire: string | null;
   /** Nom affiché du correspondant (client, partenaire, fournisseur). */
   correspondant: string;
@@ -36,6 +38,8 @@ export interface DemandeReponseAutonome {
   intention?: IntentionEmail | null;
   confiance?: number | null;
   recu_le?: string | null;
+  /** Nombre de pièces jointes reçues (entre dans le besoin de réponse). */
+  pieces_jointes?: number;
   /** Éléments factuels vérifiés du CRM que la réponse peut citer. */
   faits?: { libelle: string; valeur: string }[];
   liens?: { client_id?: string | null; dossier_id?: string | null; contrat_id?: string | null; compagnie_id?: string | null };
@@ -43,10 +47,13 @@ export interface DemandeReponseAutonome {
 
 export interface ResultatReponseAutonome {
   planifiee: boolean;
+  /** Brouillon en attente de validation humaine (aucun envoi programmé). */
+  brouillon?: boolean;
   motif: string;
   envoyer_le?: string;
   titre?: string;
 }
+
 
 /** Rédaction du corps de la réponse par l'IA, à partir des seuls faits fournis. */
 async function redigerReponse(d: DemandeReponseAutonome): Promise<{ titre: string; paragraphes: string[] } | null> {
