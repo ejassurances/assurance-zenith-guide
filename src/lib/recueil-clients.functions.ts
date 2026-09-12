@@ -31,6 +31,8 @@ export const synchroniserAssuresClients = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ dossier_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const sb = context.supabase;
+    const { trouverClientExistant, normaliserIdentite } = await import("@/lib/client-dedoublonnage.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: dossier, error: errD } = await sb
       .from("dossiers")
