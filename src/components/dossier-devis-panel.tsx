@@ -18,6 +18,9 @@ import { brancheTarifableNeoliane, nbAssuresNeoliane } from "@/lib/neoliane/bran
 import { ugipTariferDossier } from "@/lib/ugip.functions";
 import { nbAssuresUgip } from "@/lib/ugip/eligibilite";
 import { simulassurTariferDossier } from "@/lib/simulassur.functions";
+import { useCommissionBareme } from "@/hooks/use-commission-bareme";
+import { commissionDepuisDevis, tauxDefautDevis, type BaseCommission } from "@/lib/commission-devis";
+import { LIBELLE_SOURCE } from "@/lib/commissions-bareme";
 import { brancheTarifableSimulassur, nbAssuresSimulassur } from "@/lib/simulassur/eligibilite";
 
 
@@ -45,6 +48,10 @@ export type DossierDevis = {
   quotite_pct: number | null;
   /** Taux de commission cabinet (%) applicable à ce devis : repris en comptabilité. */
   taux_commission: number | null;
+  /** Assiette du taux : cotisation (prime) ou économie réalisée. */
+  commission_base?: string | null;
+  /** Origine du taux : « bareme » (défaut compagnie/branche) ou « manuel ». */
+  commission_source?: string | null;
   /** Tête assurée visée par ce devis (1 = assuré principal, 2 = co-emprunteur). Un devis = une tête. */
   assure_rang: number | null;
   assureur_porteur: string | null;
@@ -191,6 +198,7 @@ export function DossierDevisPanel({
     cotisation_max: "",
     quotite_pct: "",
     taux_commission: "",
+    commission_base: "economie_realisee" as BaseCommission,
     garanties_resume: "",
     assure_rang: "1",
   });
@@ -246,11 +254,75 @@ export function DossierDevisPanel({
     [assuranceInit, moisRestants],
   );
 
+  /**
+   * Barème du cabinet : sert à PRÉREMPLIR le taux de commission d'un devis
+   * (compagnie > branche > défaut). Lecture réservée au staff — le client et le
+   * prescripteur ne voient jamais ce bloc.
+   */
+  const { staff, regles: reglesBareme } = useCommissionBareme();
+  const brancheCommission = branche ?? brancheDossierEtat ?? null;
+  const tauxDefaut = useCallback(
+    (compagnieId: string | null) => tauxDefautDevis(reglesBareme, brancheCommission, compagnieId),
+    [reglesBareme, brancheCommission],
+  );
+
+  /** Édition en place du taux de commission d'un devis déjà enregistré. */
+  const [commEdit, setCommEdit] = useState<{ id: string; taux: string; base: BaseCommission } | null>(null);
+  const [commBusy, setCommBusy] = useState(false);
+
+  const ouvrirCommission = (d: DossierDevis) => {
+    const defaut = tauxDefaut(d.compagnie_id);
+    setCommEdit({
+      id: d.id,
+      taux: d.taux_commission != null ? String(d.taux_commission) : defaut.taux != null ? String(defaut.taux) : "",
+      base: (d.commission_base as BaseCommission | null) ?? defaut.base,
+    });
+  };
+
+  const enregistrerCommission = async () => {
+    if (!commEdit) return;
+    setCommBusy(true);
+    const { error } = await supabase
+      .from("dossier_devis")
+      .update({
+        taux_commission: commEdit.taux ? Number(commEdit.taux) : null,
+        commission_base: commEdit.base,
+        commission_source: "manuel",
+      } as never)
+      .eq("id", commEdit.id);
+    setCommBusy(false);
+    if (error) return setErr(error.message);
+    setCommEdit(null);
+    await load();
+  };
+
+  /** Commission prévisionnelle interne d'un devis, calculée depuis son seul taux. */
+  const commissionPourDevis = (d: DossierDevis) => {
+    const defaut = tauxDefaut(d.compagnie_id);
+    const taux = d.taux_commission ?? defaut.taux;
+    const base = ((d.commission_base as BaseCommission | null) ?? defaut.base) as BaseCommission;
+    const origine =
+      d.taux_commission != null && d.commission_source === "manuel"
+        ? "Taux saisi sur ce devis"
+        : LIBELLE_SOURCE[defaut.source === "manuel" ? "defaut" : defaut.source];
+    const prevu = commissionDepuisDevis(
+      { taux, base },
+      {
+        cotisationMensuelle: d.cotisation_mensuelle,
+        economie: economiePourDevis(d)?.economie ?? null,
+        moisRestants,
+        quotitePct: d.quotite_pct,
+        totalQuotites: d.quotite_pct != null ? d.quotite_pct : null,
+      },
+    );
+    return { taux, base, origine, prevu, applique: d.taux_commission != null };
+  };
+
   const load = useCallback(async () => {
     const [d, c, p, cl, dos] = await Promise.all([
       supabase
         .from("dossier_devis")
-        .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,type_cotisation,cotisation_min,cotisation_max,montant_total_saisi,source,garanties_resume,quotite_pct,taux_commission,assure_rang,assureur_porteur,created_at")
+        .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,type_cotisation,cotisation_min,cotisation_max,montant_total_saisi,source,garanties_resume,quotite_pct,taux_commission,commission_base,commission_source,assure_rang,assureur_porteur,created_at")
         .eq("dossier_id", dossierId)
         .is("archive_le", null)
         .order("created_at", { ascending: true }),
@@ -521,7 +593,14 @@ export function DossierDevisPanel({
         cotisation_min: form.type_cotisation === "CRD" && form.cotisation_min ? Number(form.cotisation_min) : null,
         cotisation_max: form.type_cotisation === "CRD" && form.cotisation_max ? Number(form.cotisation_max) : null,
         quotite_pct: form.quotite_pct ? Number(form.quotite_pct) : null,
-        taux_commission: form.taux_commission ? Number(form.taux_commission) : null,
+        // Taux saisi, sinon défaut du barème (compagnie > branche > cabinet).
+        taux_commission: form.taux_commission
+          ? Number(form.taux_commission)
+          : tauxDefaut(form.compagnie_id || null).taux,
+        commission_base: form.taux_commission
+          ? form.commission_base
+          : tauxDefaut(form.compagnie_id || null).base,
+        commission_source: form.taux_commission ? "manuel" : "bareme",
         assure_rang: form.assure_rang ? Number(form.assure_rang) : 1,
         garanties_resume: resume || null,
         source: importDocId ? "pdf" : "manuel",
@@ -557,6 +636,7 @@ export function DossierDevisPanel({
       cotisation_max: "",
       quotite_pct: "",
       taux_commission: "",
+      commission_base: "economie_realisee",
       garanties_resume: "",
       assure_rang: "1",
     });
@@ -1490,12 +1570,89 @@ export function DossierDevisPanel({
                         Quotité {d.quotite_pct} %
                       </span>
                     )}
-                    {d.taux_commission != null && (
-                      <span className="rounded-full border border-line px-2 py-0.5 text-ink-muted">
-                        Commission {d.taux_commission} %
-                      </span>
-                    )}
                   </div>
+
+                  {/* Rémunération du cabinet — interne, jamais visible client ni apporteur. */}
+                  {staff &&
+                    (() => {
+                      const c = commissionPourDevis(d);
+                      const enEdition = commEdit?.id === d.id;
+                      return (
+                        <div className="mt-2 rounded-lg border border-dashed border-[color:var(--crm-gold)]/60 bg-background p-2 text-xs">
+                          {enEdition ? (
+                            <div className="flex flex-wrap items-end gap-2">
+                              <label className="block">
+                                <span className="text-ink-muted">Taux (%)</span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min={0}
+                                  max={100}
+                                  value={commEdit.taux}
+                                  onChange={(e) => setCommEdit({ ...commEdit, taux: e.target.value })}
+                                  className="mt-0.5 block w-24 rounded-md border border-line bg-surface px-2 py-1"
+                                />
+                              </label>
+                              <label className="block">
+                                <span className="text-ink-muted">Assiette</span>
+                                <select
+                                  value={commEdit.base}
+                                  onChange={(e) =>
+                                    setCommEdit({ ...commEdit, base: e.target.value as BaseCommission })
+                                  }
+                                  className="mt-0.5 block rounded-md border border-line bg-surface px-2 py-1"
+                                >
+                                  <option value="economie_realisee">Économie réalisée</option>
+                                  <option value="prime">Cotisation</option>
+                                </select>
+                              </label>
+                              <button
+                                onClick={() => void enregistrerCommission()}
+                                disabled={commBusy}
+                                className="rounded-full bg-ink px-3 py-1 text-primary-foreground disabled:opacity-60"
+                              >
+                                {commBusy ? "Enregistrement…" : "Enregistrer"}
+                              </button>
+                              <button
+                                onClick={() => setCommEdit(null)}
+                                className="text-ink-muted underline underline-offset-4"
+                              >
+                                Annuler
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-ink">
+                                Commission cabinet :{" "}
+                                <strong>
+                                  {c.taux != null ? `${c.taux} %` : "à définir"}
+                                  {c.base === "economie_realisee" ? " des économies" : " de la cotisation"}
+                                </strong>
+                                {c.prevu.total != null && (
+                                  <>
+                                    {" · "}
+                                    {Math.round(c.prevu.total).toLocaleString("fr-FR")} € prévisionnels
+                                  </>
+                                )}
+                              </span>
+                              <span className="rounded-full border border-line px-2 py-0.5 text-ink-muted">
+                                {c.applique ? c.origine : `Proposé — ${c.origine}`}
+                              </span>
+                              <button
+                                onClick={() => ouvrirCommission(d)}
+                                className="text-ink underline underline-offset-4"
+                              >
+                                {c.applique ? "Modifier le taux" : "Saisir le taux"}
+                              </button>
+                            </div>
+                          )}
+                          <p className="mt-1 text-[11px] text-ink-muted">
+                            Donnée interne (dashboard et comptabilité) : ce taux devient la commission
+                            prévisionnelle du contrat de l'assuré si ce devis est retenu.
+                          </p>
+                        </div>
+                      );
+                    })()}
                 </div>
                 <div className="text-right">
                   <p className="font-serif text-lg text-ink">
@@ -2173,12 +2330,33 @@ export function DossierDevisPanel({
             value={form.taux_commission}
             onChange={(e) => setForm({ ...form, taux_commission: e.target.value })}
             className={inp}
-            placeholder="5"
+            placeholder={
+              tauxDefaut(form.compagnie_id || null).taux != null
+                ? String(tauxDefaut(form.compagnie_id || null).taux)
+                : "5"
+            }
           />
           <span className="mt-1 block text-xs text-ink-muted">
-            Taux négocié avec le partenaire sur ce devis. Repris sur le contrat et sur la commission
-            prévisionnelle du module comptabilité. Vide : barème du cabinet.
+            Taux négocié avec le partenaire sur ce devis. Vide : valeur du barème du cabinet (
+            {tauxDefaut(form.compagnie_id || null).taux ?? "—"} %{" "}
+            {tauxDefaut(form.compagnie_id || null).base === "economie_realisee"
+              ? "des économies"
+              : "de la cotisation"}
+            ). Ce taux est la seule source de la commission prévisionnelle du contrat.
           </span>
+        </label>
+        <label className="block">
+          <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+            Assiette de la commission
+          </span>
+          <select
+            value={form.commission_base}
+            onChange={(e) => setForm({ ...form, commission_base: e.target.value as BaseCommission })}
+            className={inp}
+          >
+            <option value="economie_realisee">Économie réalisée</option>
+            <option value="prime">Cotisation (prime)</option>
+          </select>
         </label>
         <label className="block sm:col-span-2">
           <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Résumé des garanties</span>

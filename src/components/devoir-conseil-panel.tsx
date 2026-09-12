@@ -116,6 +116,8 @@ export function DevoirConseilPanel({
     periodicite: "mensuelle",
   });
   const [prevIgnoree, setPrevIgnoree] = useState(false);
+  /** Un devis du dossier porte un taux de commission : source unique du prévisionnel. */
+  const [tauxDevisPresent, setTauxDevisPresent] = useState(false);
 
   const emprunteur = branche === "emprunteur";
 
@@ -263,7 +265,7 @@ export function DevoirConseilPanel({
         supabase
           .from("dossier_devis")
           .select(
-            "id, cotisation_mensuelle, type_cotisation, cotisation_min, cotisation_max, montant_total_saisi, garanties_resume, compagnies:compagnie_id(nom), produits:produit_id(nom), produit_formules:formule_id(nom)",
+            "id, cotisation_mensuelle, type_cotisation, cotisation_min, cotisation_max, montant_total_saisi, garanties_resume, taux_commission, compagnies:compagnie_id(nom), produits:produit_id(nom), produit_formules:formule_id(nom)",
           )
           .eq("dossier_id", dossierId)
           .order("created_at", { ascending: true }),
@@ -287,6 +289,11 @@ export function DevoirConseilPanel({
         garanties_resume: (d.garanties_resume as string | null) ?? null,
       }));
       setDevisDossier(list);
+      // Un devis porte déjà un taux de commission : c'est la SEULE source de la
+      // commission prévisionnelle (calculée à la création du contrat de l'assuré),
+      // aucune estimation indépendante n'est demandée ici.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setTauxDevisPresent(((data as any[]) ?? []).some((d) => d.taux_commission != null));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const dosRow = (dos.data as any) ?? null;
       if (dosRow) {
@@ -429,7 +436,9 @@ export function DevoirConseilPanel({
       await doSubmit(true);
       return;
     }
-    if (staff && !prevision && !prevIgnoree && regleApplicable) {
+    // Repli uniquement : si un devis porte un taux de commission, la prévision
+    // est dérivée de ce taux au moment de la création du contrat de l'assuré.
+    if (staff && !prevision && !prevIgnoree && !tauxDevisPresent && regleApplicable) {
       const periodicite: Periodicite = regleApplicable.regle.periodicite === "annuelle" ? "annuelle" : "mensuelle";
       // En annuel, l'assiette est la cotisation de l'année (12 × la mensuelle saisie).
       const cotisation = form.cotisation_mensuelle ? Number(form.cotisation_mensuelle) : null;
