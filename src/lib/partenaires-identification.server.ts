@@ -338,14 +338,23 @@ export async function identifierClientEmailPartenaire(
           resume ? `Résumé : ${resume}` : null,
           `Motif : ${trouve.raison}.`,
           trouve.candidats.length ? `Clients possibles : ${trouve.candidats.join(", ")}` : null,
+          trouve.dossier_probable
+            ? "Dossier probable identifié : cette demande est aussi visible sur sa fiche."
+            : null,
           "Aucun client ni dossier n'a été rattaché : rattachement manuel requis.",
         ],
+        // Tâche interne « à qualifier » : visible dans le module Demandes et,
+        // si un dossier probable existe, sur la fiche de ce dossier (même ligne).
+        dossier_id: trouve.dossier_probable ?? null,
+        statut: "a_qualifier",
+        type: "interne",
         priorite: "haute",
         created_by: params.userId,
       }).catch((e: unknown) => {
         console.error("[partenaires] notification de qualification impossible", e);
         return false;
       });
+
       return { client_id: null, note_creee: false, motif: null, a_qualifier: true };
     }
   }
