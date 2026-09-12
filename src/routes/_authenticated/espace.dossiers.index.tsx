@@ -474,17 +474,24 @@ export function NewDossierForm({
       try {
         const res = await creerFiches({
           data: {
-            emprunteurs: emprunteursValides.map((e) => ({
-              prenom: e.prenom,
-              nom: e.nom,
-              date_naissance: e.date_naissance,
-              quotite_pct: e.quotite_pct,
-              csp: e.csp,
-              fumeur: e.fumeur,
-              email: e.email,
-              telephone: e.telephone,
-              client_id: e.client_id,
-            })),
+            // Les fiches clients reçoivent la valeur corrigée dans le recueil
+            // (assuresSynchronises), jamais celle de l'étape 1 si elle a été rectifiée.
+            emprunteurs: emprunteursValides.map((e, i) => {
+              const a = (assuresEmprunteur(recueilFinal["assures"])[i] ?? null) as
+                | ({ prenom?: string; nom?: string; date_naissance?: string; quotite_pct?: number | null; csp?: string; fumeur?: boolean; client_id?: string | null })
+                | null;
+              return {
+                prenom: a?.prenom || e.prenom,
+                nom: a?.nom || e.nom,
+                date_naissance: a?.date_naissance || e.date_naissance,
+                quotite_pct: a?.quotite_pct ?? e.quotite_pct,
+                csp: a?.csp || e.csp,
+                fumeur: a?.fumeur ?? e.fumeur,
+                email: e.email,
+                telephone: e.telephone,
+                client_id: a?.client_id ?? e.client_id,
+              };
+            }),
           },
         });
         const ids = res.resultats;
