@@ -179,7 +179,7 @@ export async function ecrireNumeroContratAutomatique(
         ancienne,
         nouvelle: valeur,
         libelle: "Numéro de contrat",
-        assure: data.co_emprunteur ?? "Assuré principal",
+        assure: typeof data.co_emprunteur === "string" ? data.co_emprunteur : "Assuré principal",
         source: params.source,
       }),
       dossier_id: data.dossier_id ?? null,
