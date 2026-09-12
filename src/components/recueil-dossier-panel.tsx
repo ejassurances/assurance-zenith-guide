@@ -142,10 +142,13 @@ function AssuranceBancaire({
 function CoherencePret({
   values,
   dossierCreeLe,
+  dateDocument,
   onAppliquer,
 }: {
   values: Record<string, unknown>;
   dossierCreeLe: string | null;
+  /** Date d'édition de l'offre/tableau importé : point de départ du prêt si la première échéance est absente. */
+  dateDocument?: string | null;
   /** Reporte le capital restant dû et les mois restants calculés dans le recueil. */
   onAppliquer?: (maj: { capital_restant_du: number; mois_restants: number }) => void;
 }) {
@@ -159,6 +162,7 @@ function CoherencePret({
     duree_mois: nombre("duree_mois"),
     date_premiere_echeance:
       typeof values["date_premiere_echeance"] === "string" ? (values["date_premiere_echeance"] as string) : null,
+    date_document: dateDocument ?? null,
     date_effet: typeof values["date_effet"] === "string" ? (values["date_effet"] as string) : null,
     dossier_cree_le: dossierCreeLe,
   });
@@ -252,11 +256,28 @@ export function RecueilDossierPanel({
   const [userId, setUserId] = useState<string | null>(null);
   const syncClients = useServerFn(synchroniserAssuresClients);
   const [dossierCreeLe, setDossierCreeLe] = useState<string | null>(null);
+  const [dateDocumentPret, setDateDocumentPret] = useState<string | null>(null);
 
   useEffect(() => {
     void (async () => {
       const { data } = await supabase.from("dossiers").select("created_at").eq("id", dossierId).maybeSingle();
       setDossierCreeLe((data?.created_at as string | null) ?? null);
+    })();
+  }, [dossierId]);
+
+  // Date d'édition du document de prêt (offre ou tableau d'amortissement) :
+  // point de départ du prêt quand la première échéance n'y figure pas.
+  useEffect(() => {
+    void (async () => {
+      const { data } = await supabase
+        .from("documents")
+        .select("created_at")
+        .eq("dossier_id", dossierId)
+        .in("type_document", ["offre_pret", "tableau_amortissement"])
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      setDateDocumentPret((data?.created_at as string | null) ?? null);
     })();
   }, [dossierId]);
 
@@ -419,6 +440,7 @@ export function RecueilDossierPanel({
         <CoherencePret
           values={values}
           dossierCreeLe={dossierCreeLe}
+          dateDocument={dateDocumentPret}
           onAppliquer={(maj) => {
             setValues((prev) => ({ ...prev, ...maj }));
             setMessage("Capital restant dû et mois restants reportés — enregistrez l'étape pour les conserver.");
@@ -432,6 +454,7 @@ export function RecueilDossierPanel({
         <CoherencePret
           values={values}
           dossierCreeLe={dossierCreeLe}
+          dateDocument={dateDocumentPret}
           onAppliquer={(maj) => {
             setValues((prev) => ({ ...prev, ...maj }));
             setMessage("Capital restant dû et mois restants reportés — enregistrez l'étape pour les conserver.");
