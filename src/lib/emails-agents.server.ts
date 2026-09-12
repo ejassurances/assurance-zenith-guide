@@ -292,6 +292,8 @@ export async function executerAgents(
               const auto = await planifierReponseAutonome(admin, {
                 canal: "partenaire",
                 gmail_message_id: m.id,
+                gmail_thread_id: detail.thread_id ?? m.thread_id ?? null,
+                pieces_jointes: detail.pieces_jointes.length,
                 destinataire: entree.expediteur_email ?? null,
                 correspondant: compagnieExp.nom ?? entree.expediteur_email ?? "Madame, Monsieur",
                 sujet: entree.sujet,
@@ -775,6 +777,8 @@ export async function executerAgents(
             const auto = await planifierReponseAutonome(admin, {
               canal: "client",
               gmail_message_id: messageId,
+              gmail_thread_id: detail.thread_id ?? resume?.thread_id ?? null,
+              pieces_jointes: detail.pieces_jointes.length,
               destinataire: detail.expediteur_email ?? null,
               correspondant: detail.expediteur_nom ?? detail.expediteur_email ?? "Madame, Monsieur",
               sujet: detail.sujet ?? null,

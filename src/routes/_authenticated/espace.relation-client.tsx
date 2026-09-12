@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
 import { SectionNav } from "@/components/section-nav";
 import { ReponsesIaPanel } from "@/components/reponses-ia-panel";
+import { ReponsesBrouillonsPanel } from "@/components/reponses-brouillons-panel";
+
 import { EmailContextQualificationPanel } from "@/components/email-context-qualification-panel";
 
 export const Route = createFileRoute("/_authenticated/espace/relation-client")({
@@ -182,12 +184,14 @@ function RelationClientPage() {
 
           {section === "brouillons" && (
             <>
+              <ReponsesBrouillonsPanel />
               <ReponsesIaPanel />
               <p className="text-xs text-ink-muted">
                 Les brouillons validés partent au client depuis cet écran, sans passer par l'onglet Emails de la fiche.
               </p>
             </>
           )}
+
 
           {section === "qualification" && <EmailContextQualificationPanel />}
 

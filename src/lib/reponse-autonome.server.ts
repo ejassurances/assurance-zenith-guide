@@ -19,6 +19,8 @@ import type { Database } from "@/integrations/supabase/types";
 import type { IntentionEmail } from "@/lib/email-intention-types";
 import { autorisationReponseAutonome, type CanalReponse } from "@/lib/actes-reglementaires";
 import { prochaineSortieAutorisee } from "@/lib/heures-ouverture";
+import { classerBesoinReponse } from "@/lib/besoin-reponse";
+
 
 type Admin = SupabaseClient<Database>;
 
@@ -28,6 +30,8 @@ const MODELE = "openai/gpt-5.6-sol";
 export interface DemandeReponseAutonome {
   canal: CanalReponse;
   gmail_message_id: string;
+  /** Fil Gmail : sert à vérifier qu'aucune réponse du cabinet n'existe déjà. */
+  gmail_thread_id?: string | null;
   destinataire: string | null;
   /** Nom affiché du correspondant (client, partenaire, fournisseur). */
   correspondant: string;
@@ -36,6 +40,8 @@ export interface DemandeReponseAutonome {
   intention?: IntentionEmail | null;
   confiance?: number | null;
   recu_le?: string | null;
+  /** Nombre de pièces jointes reçues (entre dans le besoin de réponse). */
+  pieces_jointes?: number;
   /** Éléments factuels vérifiés du CRM que la réponse peut citer. */
   faits?: { libelle: string; valeur: string }[];
   liens?: { client_id?: string | null; dossier_id?: string | null; contrat_id?: string | null; compagnie_id?: string | null };
@@ -43,10 +49,13 @@ export interface DemandeReponseAutonome {
 
 export interface ResultatReponseAutonome {
   planifiee: boolean;
+  /** Brouillon en attente de validation humaine (aucun envoi programmé). */
+  brouillon?: boolean;
   motif: string;
   envoyer_le?: string;
   titre?: string;
 }
+
 
 /** Rédaction du corps de la réponse par l'IA, à partir des seuls faits fournis. */
 async function redigerReponse(d: DemandeReponseAutonome): Promise<{ titre: string; paragraphes: string[] } | null> {
@@ -147,6 +156,28 @@ export async function planifierReponseAutonome(
     });
     if (!autorisation.autorise) return { planifiee: false, motif: autorisation.motif };
 
+    // 1. AUCUN MAIL SI LE CABINET A DÉJÀ RÉPONDU DANS LE FIL (règle DG).
+    //    En cas de fil illisible, la fonction renvoie `true` : on n'envoie pas.
+    if (d.gmail_thread_id) {
+      const { reponseCabinetPosterieure } = await import("@/lib/gmail.server");
+      const dejaRepondu = await reponseCabinetPosterieure(d.gmail_thread_id, d.gmail_message_id);
+      if (dejaRepondu) {
+        return { planifiee: false, motif: "Le cabinet a déjà répondu dans ce fil — aucun envoi" };
+      }
+    }
+
+    // 2. BESOIN DE RÉPONSE : un message informationnel ne reçoit jamais de
+    //    réponse automatique ; un cas ambigu part en brouillon à valider.
+    const besoin = classerBesoinReponse({
+      sujet: d.sujet,
+      texte: d.texte,
+      expediteur_email: d.destinataire,
+      pieces_jointes: d.pieces_jointes ?? 0,
+    });
+    if (besoin.categorie === "informationnel") {
+      return { planifiee: false, motif: `Email informationnel — ${besoin.motif}` };
+    }
+
     // Idempotence : une seule réponse autonome par message Gmail.
     const cle = `reponse-autonome-${d.gmail_message_id}`;
     const { data: deja } = await admin
@@ -163,6 +194,9 @@ export async function planifierReponseAutonome(
 
     const recu = d.recu_le ? new Date(d.recu_le) : new Date();
     const envoyerLe = prochaineSortieAutorisee(Number.isNaN(recu.getTime()) ? new Date() : recu);
+    // Un brouillon n'est jamais repris par le job d'envoi (qui ne lit que
+    // `en_attente`) : il attend la validation humaine dans Relation client.
+    const brouillon = besoin.categorie === "ambigu";
 
     const { error } = await admin.from("emails_planifies").insert({
       lot: `reponse-autonome-${d.canal}`,
@@ -170,7 +204,7 @@ export async function planifierReponseAutonome(
       destinataire: d.destinataire,
       idempotency_key: cle,
       envoyer_le: envoyerLe.toISOString(),
-      statut: "en_attente",
+      statut: brouillon ? "brouillon" : "en_attente",
       donnees: JSON.parse(
         JSON.stringify({
           clientName: d.correspondant,
@@ -185,12 +219,42 @@ export async function planifierReponseAutonome(
           agent: "reponse_autonome",
           canal: d.canal,
           gmail_message_id: d.gmail_message_id,
+          gmail_thread_id: d.gmail_thread_id ?? null,
+          besoin_reponse: besoin.categorie,
+          besoin_motif: besoin.motif,
+          sujet_recu: d.sujet ?? null,
           modele: MODELE,
           liens: d.liens ?? {},
         }),
       ),
     } as never);
     if (error) return { planifiee: false, motif: `Programmation impossible : ${error.message}` };
+
+    if (brouillon) {
+      if (d.liens?.client_id) {
+        await admin
+          .from("activites")
+          .insert({
+            client_id: d.liens.client_id,
+            type: "systeme",
+            titre: "Brouillon de réponse à valider",
+            contenu: [
+              `Canal : ${d.canal}`,
+              `Objet proposé : ${redige.titre}`,
+              `Motif : ${besoin.motif}`,
+              "Aucun envoi : le brouillon attend une validation humaine (Relation client).",
+              "",
+              redige.paragraphes.join("\n\n"),
+            ].join("\n"),
+          })
+          .then(
+            () => undefined,
+            (e: unknown) => console.error("[reponse-autonome] activité non enregistrée", e),
+          );
+      }
+      return { planifiee: false, brouillon: true, motif: `Cas ambigu — ${besoin.motif}`, titre: redige.titre };
+    }
+
 
     if (d.liens?.client_id) {
       await admin
