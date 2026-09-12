@@ -2647,6 +2647,8 @@ export type Database = {
           assure_personne_id: string | null
           assure_rang: number | null
           assureur_porteur: string | null
+          commission_base: string
+          commission_source: string
           compagnie_id: string | null
           cotisation_max: number | null
           cotisation_mensuelle: number | null
@@ -2671,6 +2673,8 @@ export type Database = {
           assure_personne_id?: string | null
           assure_rang?: number | null
           assureur_porteur?: string | null
+          commission_base?: string
+          commission_source?: string
           compagnie_id?: string | null
           cotisation_max?: number | null
           cotisation_mensuelle?: number | null
@@ -2695,6 +2699,8 @@ export type Database = {
           assure_personne_id?: string | null
           assure_rang?: number | null
           assureur_porteur?: string | null
+          commission_base?: string
+          commission_source?: string
           compagnie_id?: string | null
           cotisation_max?: number | null
           cotisation_mensuelle?: number | null
