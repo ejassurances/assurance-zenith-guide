@@ -205,6 +205,8 @@ export async function traiterOffrePretEmail(
           client_email: principal?.email ?? null,
           client_phone: principal?.telephone ?? null,
           type_assurance: "emprunteur",
+          // Créé par un agent automatique : ce marqueur doit toujours être fiable.
+          cree_automatiquement: true,
           notes: `Dossier créé automatiquement depuis l'offre de prêt reçue par email (${params.expediteur_email ?? "expéditeur inconnu"}).`,
           created_by: params.userId,
           apporteur_id: params.userId,
