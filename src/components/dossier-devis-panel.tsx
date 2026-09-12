@@ -257,7 +257,7 @@ export function DossierDevisPanel({
     const [d, c, p, cl, dos] = await Promise.all([
       supabase
         .from("dossier_devis")
-        .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,type_cotisation,cotisation_min,cotisation_max,montant_total_saisi,source,garanties_resume,quotite_pct,taux_commission,assure_rang,assureur_porteur,created_at")
+        .select("id,dossier_id,compagnie_id,produit_id,formule_id,cotisation_mensuelle,type_cotisation,cotisation_min,cotisation_max,montant_total_saisi,source,garanties_resume,quotite_pct,taux_commission,commission_base,commission_source,assure_rang,assureur_porteur,created_at")
         .eq("dossier_id", dossierId)
         .is("archive_le", null)
         .order("created_at", { ascending: true }),
