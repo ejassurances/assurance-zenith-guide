@@ -636,6 +636,7 @@ export function DossierDevisPanel({
       cotisation_max: "",
       quotite_pct: "",
       taux_commission: "",
+      commission_base: "economie_realisee",
       garanties_resume: "",
       assure_rang: "1",
     });
