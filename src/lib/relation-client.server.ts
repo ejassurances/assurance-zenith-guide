@@ -1145,6 +1145,39 @@ async function traiterEmailClientInterne(
 
   const classification = await analyserEmailClient(email);
 
+  // BESOIN DE RÉPONSE : un message purement informationnel (confirmation, avis,
+  // notification) n'appelle aucune réponse ni accusé automatique. Sans pièce
+  // jointe à traiter, le message est simplement journalisé.
+  const { classerBesoinReponse } = await import("@/lib/besoin-reponse");
+  const besoin = classerBesoinReponse({
+    sujet: email.sujet,
+    texte: email.texte,
+    expediteur_email: client.email,
+    pieces_jointes: email.pieces_jointes.length,
+  });
+  if (
+    besoin.categorie === "informationnel" &&
+    classification.niveau !== "niveau_0" &&
+    email.pieces_jointes.length === 0
+  ) {
+    await journaliser(
+      admin,
+      client.id,
+      "Email informationnel — aucune réponse automatique",
+      [besoin.motif, `Objet : ${email.sujet ?? "—"}`, `Email : ${lienMail(gmail_message_id)}`].join("\n"),
+      "systeme",
+    );
+    return {
+      niveau: classification.niveau,
+      intention: classification.intention,
+      action: "rien",
+      pieces_kyc: 0,
+      motif: `Message informationnel : ${besoin.motif}`,
+    };
+  }
+
+
+
 
 
   const base = {
