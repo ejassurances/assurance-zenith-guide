@@ -225,7 +225,8 @@ export async function analyserOffrePretFichier(fichier: {
       const s = texteOuNull(v);
       if (!s) continue;
       if (nom === "date_premiere_echeance") {
-        if (ISO.test(s) && !Number.isNaN(Date.parse(s))) pret[nom] = s;
+        const iso = dateIsoOuNull(s);
+        if (iso) pret[nom] = iso;
         continue;
       }
       pret[nom] = s;
