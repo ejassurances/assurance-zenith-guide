@@ -215,7 +215,24 @@ function TachesPage() {
                     )}
                   </dd>
                 </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-ink-muted">Dossier</dt>
+                  <dd className="text-right text-ink">
+                    {selected.dossier_id ? (
+                      <Link
+                        to="/espace/dossiers/$id"
+                        params={{ id: selected.dossier_id }}
+                        className="hover:underline"
+                      >
+                        {selected.dossiers?.reference ?? "Voir le dossier"}
+                      </Link>
+                    ) : (
+                      "—"
+                    )}
+                  </dd>
+                </div>
               </dl>
+
 
               <div className="mt-4 border-t border-line pt-4">
                 <p className="crm-eyebrow">
