@@ -1,6 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { creerTacheAdmin } from "@/lib/agent-taches.server";
+import {
+  commissionDepuisDevis,
+  tauxEnFraction,
+  type BaseCommission,
+} from "@/lib/commission-devis";
+import { moisRestantsRecueil } from "@/lib/commission-previsions";
 
 /**
  * Transformation d'un dossier confirmé par la compagnie en contrat du
