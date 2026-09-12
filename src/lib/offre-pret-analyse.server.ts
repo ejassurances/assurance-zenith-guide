@@ -122,6 +122,26 @@ function nombreOuNull(v: unknown): number | null {
   return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
+/**
+ * Normalise une date écrite en clair (JJ/MM/AAAA, JJ-MM-AAAA, JJ.MM.AAAA) vers
+ * le format ISO AAAA-MM-JJ. Retourne null si la date est absente ou invalide.
+ */
+export function dateIsoOuNull(v: unknown): string | null {
+  const s = texteOuNull(v);
+  if (!s) return null;
+  const valide = (iso: string) => (!Number.isNaN(Date.parse(iso)) ? iso : null);
+  if (ISO.test(s)) return valide(s);
+  const fr = s.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/);
+  if (fr) {
+    const [, j, m, a] = fr as unknown as [string, string, string, string];
+    return valide(`${a}-${m.padStart(2, "0")}-${j.padStart(2, "0")}`);
+  }
+  return null;
+}
+
+/** Une situation de famille n'est jamais une catégorie socio-professionnelle. */
+const NON_CSP = /^(marié|mariée|célibataire|divorcé|divorcée|veuf|veuve|pacsé|pacsée|concubin)/i;
+
 function normaliserEmprunteurs(brut: unknown): EmprunteurDetecte[] {
   if (!Array.isArray(brut)) return [];
   const out: EmprunteurDetecte[] = [];
