@@ -684,6 +684,8 @@ function ContratDetail() {
           />
         </F>
       </section>
+      )}
+
 
       {editable && !verrouille && (
         <div className="flex justify-end">
