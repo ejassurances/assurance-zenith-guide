@@ -253,6 +253,70 @@ export function DossierDevisPanel({
     [assuranceInit, moisRestants],
   );
 
+  /**
+   * Barème du cabinet : sert à PRÉREMPLIR le taux de commission d'un devis
+   * (compagnie > branche > défaut). Lecture réservée au staff — le client et le
+   * prescripteur ne voient jamais ce bloc.
+   */
+  const { staff, regles: reglesBareme } = useCommissionBareme();
+  const brancheCommission = branche ?? brancheDossierEtat ?? null;
+  const tauxDefaut = useCallback(
+    (compagnieId: string | null) => tauxDefautDevis(reglesBareme, brancheCommission, compagnieId),
+    [reglesBareme, brancheCommission],
+  );
+
+  /** Édition en place du taux de commission d'un devis déjà enregistré. */
+  const [commEdit, setCommEdit] = useState<{ id: string; taux: string; base: BaseCommission } | null>(null);
+  const [commBusy, setCommBusy] = useState(false);
+
+  const ouvrirCommission = (d: DossierDevis) => {
+    const defaut = tauxDefaut(d.compagnie_id);
+    setCommEdit({
+      id: d.id,
+      taux: d.taux_commission != null ? String(d.taux_commission) : defaut.taux != null ? String(defaut.taux) : "",
+      base: (d.commission_base as BaseCommission | null) ?? defaut.base,
+    });
+  };
+
+  const enregistrerCommission = async () => {
+    if (!commEdit) return;
+    setCommBusy(true);
+    const { error } = await supabase
+      .from("dossier_devis")
+      .update({
+        taux_commission: commEdit.taux ? Number(commEdit.taux) : null,
+        commission_base: commEdit.base,
+        commission_source: "manuel",
+      } as never)
+      .eq("id", commEdit.id);
+    setCommBusy(false);
+    if (error) return setErr(error.message);
+    setCommEdit(null);
+    await load();
+  };
+
+  /** Commission prévisionnelle interne d'un devis, calculée depuis son seul taux. */
+  const commissionPourDevis = (d: DossierDevis) => {
+    const defaut = tauxDefaut(d.compagnie_id);
+    const taux = d.taux_commission ?? defaut.taux;
+    const base = ((d.commission_base as BaseCommission | null) ?? defaut.base) as BaseCommission;
+    const origine =
+      d.taux_commission != null && d.commission_source === "manuel"
+        ? "Taux saisi sur ce devis"
+        : LIBELLE_SOURCE[defaut.source === "manuel" ? "defaut" : defaut.source];
+    const prevu = commissionDepuisDevis(
+      { taux, base },
+      {
+        cotisationMensuelle: d.cotisation_mensuelle,
+        economie: economiePourDevis(d).economie,
+        moisRestants,
+        quotitePct: d.quotite_pct,
+        totalQuotites: d.quotite_pct != null ? d.quotite_pct : null,
+      },
+    );
+    return { taux, base, origine, prevu, applique: d.taux_commission != null };
+  };
+
   const load = useCallback(async () => {
     const [d, c, p, cl, dos] = await Promise.all([
       supabase
