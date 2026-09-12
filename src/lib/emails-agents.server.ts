@@ -478,6 +478,51 @@ export async function executerAgents(
           // client, aucun dossier : on dépose une tâche d'arbitrage humain.
           const estInterne = estEmailInterne(entree.expediteur_email);
           const estAutomate = !estInterne && estAdresseAutomatique(entree.expediteur_email);
+
+          // EXCEPTION offre de prêt : un mail (même interne, ex. transfert par
+          // le dirigeant) portant une offre de prêt ou un tableau
+          // d'amortissement alimente le métier — dossier emprunteur créé ou
+          // complété, pièces archivées, tâche de vérification humaine.
+          if (detail.pieces_jointes.length > 0) {
+            const { traiterOffrePretEmail } = await import("@/lib/offre-pret-email.server");
+            const pret = await traiterOffrePretEmail(admin, {
+              gmail_message_id: m.id,
+              sujet: entree.sujet,
+              expediteur_email: entree.expediteur_email,
+              pieces_jointes: detail.pieces_jointes.map((p) => ({
+                nom: p.nom,
+                mime: p.mime,
+                attachment_id: p.attachment_id,
+              })),
+              userId,
+            });
+            if (pret.action !== "ignore") {
+              await admin.from("crm_emails").upsert(
+                {
+                  gmail_message_id: m.id,
+                  gmail_thread_id: detail.thread_id ?? m.thread_id ?? null,
+                  dossier_id: pret.dossier_id,
+                  direction: "entrant",
+                  recu_le: m.date ?? detail.date ?? null,
+                  notes: pret.motif,
+                  triage_ia: JSON.parse(
+                    JSON.stringify({ agent: "offre_pret", action: pret.action, documents: pret.documents }),
+                  ),
+                  triage_le: new Date().toISOString(),
+                  created_by: userId,
+                  updated_at: new Date().toISOString(),
+                },
+                { onConflict: "gmail_message_id" },
+              );
+              await marquerEtat(m.id, "a_valider");
+              if (rattrapage.has(m.id)) {
+                await retirerLabelRattrapage(m.id);
+                rattrapagesTraites++;
+              }
+              continue;
+            }
+          }
+
           if (estInterne || estAutomate) {
             await creerTacheAdmin(admin, {
               titre: `${estInterne ? "Mail interne" : "Expéditeur automatique non répertorié"} à qualifier — ${entree.sujet ?? "(sans objet)"}`.slice(0, 200),
