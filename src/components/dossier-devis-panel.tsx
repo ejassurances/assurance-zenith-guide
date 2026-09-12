@@ -18,6 +18,9 @@ import { brancheTarifableNeoliane, nbAssuresNeoliane } from "@/lib/neoliane/bran
 import { ugipTariferDossier } from "@/lib/ugip.functions";
 import { nbAssuresUgip } from "@/lib/ugip/eligibilite";
 import { simulassurTariferDossier } from "@/lib/simulassur.functions";
+import { useCommissionBareme } from "@/hooks/use-commission-bareme";
+import { commissionDepuisDevis, tauxDefautDevis, type BaseCommission } from "@/lib/commission-devis";
+import { LIBELLE_SOURCE } from "@/lib/commissions-bareme";
 import { brancheTarifableSimulassur, nbAssuresSimulassur } from "@/lib/simulassur/eligibilite";
 
 
@@ -45,6 +48,10 @@ export type DossierDevis = {
   quotite_pct: number | null;
   /** Taux de commission cabinet (%) applicable à ce devis : repris en comptabilité. */
   taux_commission: number | null;
+  /** Assiette du taux : cotisation (prime) ou économie réalisée. */
+  commission_base?: string | null;
+  /** Origine du taux : « bareme » (défaut compagnie/branche) ou « manuel ». */
+  commission_source?: string | null;
   /** Tête assurée visée par ce devis (1 = assuré principal, 2 = co-emprunteur). Un devis = une tête. */
   assure_rang: number | null;
   assureur_porteur: string | null;
