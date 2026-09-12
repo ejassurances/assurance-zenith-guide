@@ -70,6 +70,12 @@ export async function creerTacheAdmin(
     titre: string;
     description?: string | null;
     client_id?: string | null;
+    /** Dossier concerné : la tâche devient visible sur la fiche du dossier. */
+    dossier_id?: string | null;
+    /** Type de demande (module Demandes) — « interne » par défaut. */
+    type?: string;
+    /** Statut initial — « a_qualifier » pour un rattachement ambigu. */
+    statut?: Database["public"]["Enums"]["tache_statut"];
     priorite?: Database["public"]["Enums"]["tache_priorite"];
     assignee_id?: string | null;
     created_by?: string | null;
@@ -87,14 +93,17 @@ export async function creerTacheAdmin(
         titre: params.titre.slice(0, 300),
         description: params.description?.slice(0, 4000) ?? null,
         client_id: params.client_id ?? null,
+        dossier_id: params.dossier_id ?? null,
+        type: params.type ?? "interne",
         priorite: params.priorite ?? "haute",
-        statut: "a_faire",
+        statut: params.statut ?? "a_faire",
         assignee_id: assignee,
         created_by: params.created_by ?? assignee,
         echeance: echeance.toISOString().slice(0, 10),
       })
       .select("id")
       .maybeSingle();
+
     if (error) throw new Error(error.message);
     return (data as { id: string } | null)?.id ?? null;
   } catch (e) {

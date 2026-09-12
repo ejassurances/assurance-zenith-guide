@@ -55,15 +55,17 @@ export const STATUTS_DOSSIER_AMONT_ANALYSE: readonly EtapeKey[] = [
 export const PRIORITES_TACHE = ["basse", "normale", "haute", "urgente"] as const;
 export type PrioriteTache = (typeof PRIORITES_TACHE)[number];
 
-export const STATUTS_TACHE = ["a_faire", "en_cours", "terminee", "annulee"] as const;
+export const STATUTS_TACHE = ["a_faire", "a_qualifier", "en_cours", "terminee", "annulee"] as const;
 export type StatutTache = (typeof STATUTS_TACHE)[number];
 
 export const STATUT_TACHE_LABEL: Record<StatutTache, string> = {
   a_faire: "À faire",
+  a_qualifier: "À qualifier",
   en_cours: "En cours",
   terminee: "Terminée",
   annulee: "Annulée",
 };
+
 
 export const PRIORITE_TACHE_LABEL: Record<PrioriteTache, string> = {
   basse: "Basse",
