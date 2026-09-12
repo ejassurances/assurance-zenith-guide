@@ -19,6 +19,8 @@ import type { Database } from "@/integrations/supabase/types";
 import type { IntentionEmail } from "@/lib/email-intention-types";
 import { autorisationReponseAutonome, type CanalReponse } from "@/lib/actes-reglementaires";
 import { prochaineSortieAutorisee } from "@/lib/heures-ouverture";
+import { classerBesoinReponse } from "@/lib/besoin-reponse";
+
 
 type Admin = SupabaseClient<Database>;
 
