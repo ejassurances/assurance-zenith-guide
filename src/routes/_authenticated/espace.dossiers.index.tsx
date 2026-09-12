@@ -433,16 +433,20 @@ export function NewDossierForm({
   const assuresSynchronises = (base: Record<string, unknown>): Record<string, unknown> => {
     if (type !== "emprunteur" || emprunteursValides.length === 0) return base;
     const existants = assuresEmprunteur(base["assures"]);
+    // PRIORITÉ À LA DERNIÈRE CORRECTION DU CONSEILLER : la valeur saisie dans le
+    // recueil des besoins prime toujours sur celle de l'étape 1, qui ne sert que
+    // de repli quand le recueil ne renseigne pas le champ.
     const rows = emprunteursValides.map((e, i) => {
-      const a = existants[i];
+      const a = existants[i] as (typeof existants)[number] & { client_id?: string | null };
       return {
         lien: a?.lien || (i === 0 ? "principal" : "co_emprunteur"),
-        prenom: e.prenom || a?.prenom || "",
-        nom: e.nom || a?.nom || "",
-        date_naissance: e.date_naissance || a?.date_naissance || "",
-        quotite_pct: e.quotite_pct ?? a?.quotite_pct ?? null,
-        csp: e.csp || a?.csp || "",
-        fumeur: e.fumeur ?? a?.fumeur ?? false,
+        prenom: a?.prenom || e.prenom || "",
+        nom: a?.nom || e.nom || "",
+        date_naissance: a?.date_naissance || e.date_naissance || "",
+        quotite_pct: a?.quotite_pct ?? e.quotite_pct ?? null,
+        csp: a?.csp || e.csp || "",
+        fumeur: a?.fumeur ?? e.fumeur ?? false,
+        ...(a?.client_id || e.client_id ? { client_id: a?.client_id ?? e.client_id } : {}),
       };
     });
     return { ...base, assures: [...rows, ...existants.slice(rows.length)] };
