@@ -596,7 +596,8 @@ function ContratDetail() {
         </section>
       )}
 
-      {/* Bloc commissionnement */}
+      {/* Bloc commissionnement — interne : jamais visible côté client ni prescripteur. */}
+      {canEdit && (
       <section className="crm-card grid gap-4 p-5 md:grid-cols-3">
         <div className="md:col-span-3">
           <h3 className="font-serif text-lg">Commissionnement</h3>
