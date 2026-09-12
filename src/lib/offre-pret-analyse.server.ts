@@ -76,6 +76,16 @@ function prompt(): string {
     "csp (profession écrite), fumeur (true/false seulement si écrit, sinon null),",
     "email, telephone. Toute valeur non écrite vaut null.",
     "",
+    "Où chercher ces informations (parcours TOUTES les pages, y compris les annexes) :",
+    "- date_naissance : mentions du type « Né(e) le 26/02/1971 », « né le », « date de naissance »",
+    "  dans le bloc EMPRUNTEUR(S) / EMPRUNTEUR(S) SOLIDAIRE(S) ou sur la fiche d'assurance.",
+    "  Convertis toujours JJ/MM/AAAA en AAAA-MM-JJ.",
+    "- quotite_pct : mentions du type « Quotité de prêt assuré : 100 % », « quotité assurée »,",
+    "  « part d'assurance » du paragraphe ASSURANCES, rattachée au nom de la personne concernée.",
+    "- csp : profession ou catégorie socio-professionnelle écrite (salarié, cadre, artisan…).",
+    "  La situation de famille (marié, divorcé) n'est PAS une csp : dans ce cas csp vaut null.",
+    "Ne renvoie ces champs à null que si tu as vraiment parcouru le document sans les trouver.",
+    "",
     "Réponds STRICTEMENT en JSON, sans texte autour :",
     `{"pret":{${CHAMPS_PRET.map(([n]) => `"${n}":null`).join(",")}},"emprunteurs":[{"prenom":null,"nom":null,"date_naissance":null,"quotite_pct":null,"csp":null,"fumeur":null,"email":null,"telephone":null}],"confidence":0.00,"document_lisible":true}`,
     "",
@@ -112,6 +122,26 @@ function nombreOuNull(v: unknown): number | null {
   return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
+/**
+ * Normalise une date écrite en clair (JJ/MM/AAAA, JJ-MM-AAAA, JJ.MM.AAAA) vers
+ * le format ISO AAAA-MM-JJ. Retourne null si la date est absente ou invalide.
+ */
+export function dateIsoOuNull(v: unknown): string | null {
+  const s = texteOuNull(v);
+  if (!s) return null;
+  const valide = (iso: string) => (!Number.isNaN(Date.parse(iso)) ? iso : null);
+  if (ISO.test(s)) return valide(s);
+  const fr = s.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/);
+  if (fr) {
+    const [, j, m, a] = fr as unknown as [string, string, string, string];
+    return valide(`${a}-${m.padStart(2, "0")}-${j.padStart(2, "0")}`);
+  }
+  return null;
+}
+
+/** Une situation de famille n'est jamais une catégorie socio-professionnelle. */
+const NON_CSP = /^(marié|mariée|célibataire|divorcé|divorcée|veuf|veuve|pacsé|pacsée|concubin)/i;
+
 function normaliserEmprunteurs(brut: unknown): EmprunteurDetecte[] {
   if (!Array.isArray(brut)) return [];
   const out: EmprunteurDetecte[] = [];
@@ -120,13 +150,13 @@ function normaliserEmprunteurs(brut: unknown): EmprunteurDetecte[] {
     const o = item as Record<string, unknown>;
     const nom = texteOuNull(o["nom"]);
     if (!nom) continue; // sans nom écrit, aucune fiche n'est proposée
-    const dn = texteOuNull(o["date_naissance"]);
+    const csp = texteOuNull(o["csp"]);
     out.push({
       nom,
       prenom: texteOuNull(o["prenom"]) ?? "",
-      date_naissance: dn && ISO.test(dn) && !Number.isNaN(Date.parse(dn)) ? dn : "",
+      date_naissance: dateIsoOuNull(o["date_naissance"]) ?? "",
       quotite_pct: nombreOuNull(o["quotite_pct"]),
-      csp: texteOuNull(o["csp"]) ?? "",
+      csp: csp && !NON_CSP.test(csp) ? csp : "",
       fumeur: typeof o["fumeur"] === "boolean" ? (o["fumeur"] as boolean) : null,
       email: texteOuNull(o["email"]),
       telephone: texteOuNull(o["telephone"]),
@@ -195,7 +225,8 @@ export async function analyserOffrePretFichier(fichier: {
       const s = texteOuNull(v);
       if (!s) continue;
       if (nom === "date_premiere_echeance") {
-        if (ISO.test(s) && !Number.isNaN(Date.parse(s))) pret[nom] = s;
+        const iso = dateIsoOuNull(s);
+        if (iso) pret[nom] = iso;
         continue;
       }
       pret[nom] = s;
