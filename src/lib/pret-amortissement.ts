@@ -70,6 +70,8 @@ export interface SituationPretEntree {
   duree_mois?: number | null;
   /** Première échéance du prêt (offre de prêt / tableau d'amortissement). */
   date_premiere_echeance?: string | null;
+  /** Date d'édition du document (offre/tableau) : point de départ du prêt si la première échéance est absente. */
+  date_document?: string | null;
   /** Date d'effet communiquée par la compagnie, si elle existe. */
   date_effet?: string | null;
   /** Date de création du dossier (base du délai de 3 mois). */
@@ -97,9 +99,9 @@ export function situationPret(e: SituationPretEntree): SituationPret {
   const duree = Number(e.duree_mois) > 0 ? Math.round(Number(e.duree_mois)) : null;
   const taux = Number.isFinite(Number(e.taux_pret)) ? Number(e.taux_pret) : 0;
 
-  // Sans date de première échéance, la création du dossier sert de point de
-  // départ approximatif du prêt (substitution = création + 3 mois par défaut).
-  const debutPret = e.date_premiere_echeance ?? e.dossier_cree_le ?? null;
+  // Point de départ du prêt : première échéance si elle figure sur le
+  // document, sinon date d'édition du document, sinon création du dossier.
+  const debutPret = e.date_premiere_echeance ?? e.date_document ?? e.dossier_cree_le ?? null;
   const ecoules = moisEntre(debutPret, dateEffet);
   const moisRestants = duree !== null && ecoules !== null ? Math.max(0, duree - ecoules) : null;
   const crd =
