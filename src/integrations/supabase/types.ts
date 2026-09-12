@@ -5441,11 +5441,13 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          dossier_id: string | null
           echeance: string | null
           id: string
           priorite: Database["public"]["Enums"]["tache_priorite"]
           statut: Database["public"]["Enums"]["tache_statut"]
           titre: string
+          type: string
           updated_at: string
         }
         Insert: {
@@ -5454,11 +5456,13 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          dossier_id?: string | null
           echeance?: string | null
           id?: string
           priorite?: Database["public"]["Enums"]["tache_priorite"]
           statut?: Database["public"]["Enums"]["tache_statut"]
           titre: string
+          type?: string
           updated_at?: string
         }
         Update: {
@@ -5467,11 +5471,13 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          dossier_id?: string | null
           echeance?: string | null
           id?: string
           priorite?: Database["public"]["Enums"]["tache_priorite"]
           statut?: Database["public"]["Enums"]["tache_statut"]
           titre?: string
+          type?: string
           updated_at?: string
         }
         Relationships: [
@@ -5480,6 +5486,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "taches_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
             referencedColumns: ["id"]
           },
         ]
@@ -5821,7 +5834,12 @@ export type Database = {
         | "ccsf"
       produit_statut: "actif" | "en_test" | "retire"
       tache_priorite: "basse" | "normale" | "haute" | "urgente"
-      tache_statut: "a_faire" | "en_cours" | "terminee" | "annulee"
+      tache_statut:
+        | "a_faire"
+        | "en_cours"
+        | "terminee"
+        | "annulee"
+        | "a_qualifier"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -6011,7 +6029,13 @@ export const Constants = {
       ],
       produit_statut: ["actif", "en_test", "retire"],
       tache_priorite: ["basse", "normale", "haute", "urgente"],
-      tache_statut: ["a_faire", "en_cours", "terminee", "annulee"],
+      tache_statut: [
+        "a_faire",
+        "en_cours",
+        "terminee",
+        "annulee",
+        "a_qualifier",
+      ],
     },
   },
 } as const
