@@ -220,6 +220,7 @@ export async function traiterOffrePretEmail(
     //    les caractéristiques du prêt, jamais sur les étapes réglementaires).
     const { recueil, ajouts } = prefillRecueilEmprunteur(recueilExistant, pret, {
       dossier_cree_le: dossierCreeLe,
+      date_document: new Date().toISOString(),
       document_fait_foi: true,
     });
     const assuresExistants = Array.isArray((recueil as any).assures) ? ((recueil as any).assures as any[]) : [];

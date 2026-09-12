@@ -97,7 +97,10 @@ export const analyserOffrePretCreation = createServerFn({ method: "POST" })
       if (e.fumeur === null && typeof fiche?.fumeur === "boolean") e.fumeur = fiche.fumeur;
     }
 
-    const { recueil, ajouts, manquants } = prefillRecueilEmprunteur(null, pret, { dossier_cree_le: null });
+    const { recueil, ajouts, manquants } = prefillRecueilEmprunteur(null, pret, {
+      dossier_cree_le: null,
+      date_document: new Date().toISOString(),
+    });
 
     // Détail par personne assurée : un dossier = un prêt, un assuré = une ligne.
     if (emprunteurs.length > 0) {

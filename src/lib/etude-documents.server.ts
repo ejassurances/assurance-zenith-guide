@@ -64,7 +64,10 @@ async function exploiterOffrePret(
   const { recueil, ajouts, manquants } = prefillRecueilEmprunteur(
     (dossier.recueil_besoins ?? null) as Record<string, unknown> | null,
     params.donnees,
-    { dossier_cree_le: (dossier.created_at ?? null) as string | null },
+    {
+      dossier_cree_le: (dossier.created_at ?? null) as string | null,
+      date_document: new Date().toISOString(),
+    },
   );
 
   if (ajouts.length > 0) {

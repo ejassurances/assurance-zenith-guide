@@ -134,6 +134,7 @@ export const analyserDocumentRecueil = createServerFn({ method: "POST" })
     // Le document importé fait foi : il complète ET corrige le recueil.
     const base = prefillRecueilEmprunteur(dossier.recueil_besoins, donneesCumul, {
       dossier_cree_le: dossier.created_at,
+      date_document: new Date().toISOString(),
       document_fait_foi: true,
     });
     const complet = completerAssuresDepuisOffre(base.recueil, emprunteursLus);
