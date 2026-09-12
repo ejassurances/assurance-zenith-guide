@@ -99,8 +99,6 @@ export const synchroniserAssuresClients = createServerFn({ method: "POST" })
 
       // DÉDOUBLONNAGE OBLIGATOIRE : on rattache la fiche déjà connue (email, ou
       // nom + prénom, ou nom + date de naissance) au lieu d'ouvrir un doublon.
-      const { trouverClientExistant, normaliserIdentite } = await import("@/lib/client-dedoublonnage.server");
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const email = typeof a["email"] === "string" ? (a["email"] as string) : null;
       let existant =
         (await trouverClientExistant(supabaseAdmin, { email, nom, prenom: prenom ?? undefined }))?.client_id ?? null;
