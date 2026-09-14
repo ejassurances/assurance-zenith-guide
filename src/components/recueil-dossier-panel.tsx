@@ -513,6 +513,7 @@ export function RecueilDossierPanel({
         values={values}
         onChange={setValues}
         onComplete={canEdit ? () => void enregistrer() : undefined}
+        onSaveStep={canEdit ? () => void enregistrer() : undefined}
         completeLabel={saving ? "Enregistrement…" : "Enregistrer cette étape"}
         dossierId={dossierId}
         contexte={contexte}
