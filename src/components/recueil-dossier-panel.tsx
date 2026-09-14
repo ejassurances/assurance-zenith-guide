@@ -166,7 +166,7 @@ function CoherencePret({
     date_effet: typeof values["date_effet"] === "string" ? (values["date_effet"] as string) : null,
     dossier_cree_le: dossierCreeLe,
   });
-  const alertes = incoherencesPret(values, dossierCreeLe);
+  const alertes = incoherencesPret(values, dossierCreeLe, dateDocument ?? null);
   const euros = (v: number | null) => (v === null ? "—" : `${Math.round(v).toLocaleString("fr-FR")} €`);
   const dateFr = (v: string | null) => (v ? new Date(v).toLocaleDateString("fr-FR") : "—");
 

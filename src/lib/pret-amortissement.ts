@@ -169,6 +169,7 @@ export function incoherencesPret(
     taux_pret: nb("taux_pret"),
     duree_mois: duree,
     date_premiere_echeance: typeof r["date_premiere_echeance"] === "string" ? (r["date_premiere_echeance"] as string) : null,
+    date_document: dateDocument ?? null,
     date_effet: typeof r["date_effet"] === "string" ? (r["date_effet"] as string) : null,
     dossier_cree_le: dossierCreeLe ?? null,
   });
