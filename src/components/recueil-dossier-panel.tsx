@@ -251,7 +251,8 @@ function SynthesePret({
     dossier_cree_le: dossierCreeLe,
   });
   const assurance = assuranceInitialeDepuisRecueil(values, calcul.mois_restants);
-  const euros = (v: number | null) =>
+  const euros = (v: number | null) => (v === null ? "—" : `${Math.round(v).toLocaleString("fr-FR")} €`);
+  const eurosAssurance = (v: number | null) =>
     v === null
       ? "—"
       : `${v.toLocaleString("fr-FR", { minimumFractionDigits: assurance.origine === "document" ? 2 : 0, maximumFractionDigits: 2 })} €`;
@@ -261,8 +262,8 @@ function SynthesePret({
     ["Échéances déjà payées", calcul.mois_ecoules === null ? "—" : String(calcul.mois_ecoules)],
     ["Échéances restantes", calcul.mois_restants === null ? "—" : String(calcul.mois_restants)],
     [assurance.origine === "document" ? "Première cotisation d’assurance" : "Cotisation d’assurance mensuelle", assurance.mensuel === null ? "—" : `${assurance.mensuel.toLocaleString("fr-FR")} €`],
-    ["Montant total de l’assurance", euros(assurance.coutTotal)],
-    ["Montant d’assurance restant", assurance.coutRestant === null && assurance.origine === "document" ? "Non disponible" : euros(assurance.coutRestant)],
+    ["Montant total de l’assurance", eurosAssurance(assurance.coutTotal)],
+    ["Montant d’assurance restant", assurance.coutRestant === null && assurance.origine === "document" ? "Non disponible" : eurosAssurance(assurance.coutRestant)],
   ];
 
   return (
