@@ -113,7 +113,7 @@ function AssuranceBancaire({
       <dl className="mt-1 space-y-1 text-xs">
         <div className="flex justify-between gap-2">
           <dt className="text-ink-muted">
-            Cotisation {a.origine === "offre" ? "(offre de prêt)" : "(calcul par taux)"}
+            Cotisation mensuelle {a.origine === "offre" ? "(offre de prêt)" : "(calcul par taux)"}
           </dt>
           <dd className="text-ink">{a.mensuel.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} € / mois</dd>
         </div>
@@ -122,10 +122,10 @@ function AssuranceBancaire({
           <dd className="text-ink">{euros(a.coutTotal)}</dd>
         </div>
         <div className="flex justify-between gap-2">
-          <dt className="text-ink-muted">Coût restant (substitution → fin)</dt>
+          <dt className="text-ink-muted">Cotisation totale restante (substitution → fin)</dt>
           <dd className="font-medium text-ink">
             {euros(a.coutRestant)}
-            {a.moisRestants ? ` · ${a.moisRestants} mois` : ""}
+            {a.moisRestants ? ` · ${a.moisRestants} mois restants` : ""}
           </dd>
         </div>
       </dl>
@@ -195,6 +195,10 @@ function CoherencePret({
         <div className="flex justify-between gap-2">
           <dt className="text-ink-muted">Capital restant dû calculé</dt>
           <dd className="text-ink">{euros(calcul.capital_restant_du)}</dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt className="text-ink-muted">Mois déjà écoulés</dt>
+          <dd className="text-ink">{calcul.mois_ecoules ?? "—"}</dd>
         </div>
         <div className="flex justify-between gap-2">
           <dt className="text-ink-muted">Mois restants calculés</dt>
