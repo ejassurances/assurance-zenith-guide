@@ -197,11 +197,14 @@ function CoherencePret({
           <dd className="text-ink">{euros(calcul.capital_restant_du)}</dd>
         </div>
         <div className="flex justify-between gap-2">
-          <dt className="text-ink-muted">Mois déjà écoulés</dt>
-          <dd className="text-ink">{calcul.mois_ecoules ?? "—"}</dd>
+          <dt className="text-ink-muted">Échéances déjà payées</dt>
+          <dd className="font-medium text-ink">
+            {calcul.mois_ecoules ?? "—"}
+            {nombre("duree_mois") ? ` / ${nombre("duree_mois")}` : ""}
+          </dd>
         </div>
         <div className="flex justify-between gap-2">
-          <dt className="text-ink-muted">Mois restants calculés</dt>
+          <dt className="text-ink-muted">Échéances restantes</dt>
           <dd className="text-ink">{calcul.mois_restants ?? "—"}</dd>
         </div>
         <div className="flex justify-between gap-2">
