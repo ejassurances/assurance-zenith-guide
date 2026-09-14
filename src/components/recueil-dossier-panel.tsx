@@ -113,18 +113,18 @@ function AssuranceBancaire({
       <dl className="mt-1 space-y-1 text-xs">
         <div className="flex justify-between gap-2">
           <dt className="text-ink-muted">
-            Cotisation mensuelle {a.origine === "offre" ? "(offre de prêt)" : "(calcul par taux)"}
+            {a.origine === "document" ? "Première cotisation (document)" : `Cotisation mensuelle ${a.origine === "offre" ? "(offre de prêt)" : "(calcul par taux)"}`}
           </dt>
           <dd className="text-ink">{a.mensuel.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} € / mois</dd>
         </div>
         <div className="flex justify-between gap-2">
-          <dt className="text-ink-muted">Coût sur toute la durée</dt>
+          <dt className="text-ink-muted">Coût total {a.origine === "document" ? "(document bancaire)" : "(calculé)"}</dt>
           <dd className="text-ink">{euros(a.coutTotal)}</dd>
         </div>
         <div className="flex justify-between gap-2">
           <dt className="text-ink-muted">Cotisation totale restante (substitution → fin)</dt>
           <dd className="font-medium text-ink">
-            {euros(a.coutRestant)}
+            {a.coutRestant === null && a.origine === "document" ? "Non disponible sans échéancier détaillé" : euros(a.coutRestant)}
             {a.moisRestants ? ` · ${a.moisRestants} mois restants` : ""}
           </dd>
         </div>
@@ -255,9 +255,9 @@ function SynthesePret({
     ["Capital restant dû", euros(calcul.capital_restant_du)],
     ["Échéances déjà payées", calcul.mois_ecoules === null ? "—" : String(calcul.mois_ecoules)],
     ["Échéances restantes", calcul.mois_restants === null ? "—" : String(calcul.mois_restants)],
-    ["Cotisation d’assurance mensuelle", assurance.mensuel === null ? "—" : `${assurance.mensuel.toLocaleString("fr-FR")} €`],
+    [assurance.origine === "document" ? "Première cotisation d’assurance" : "Cotisation d’assurance mensuelle", assurance.mensuel === null ? "—" : `${assurance.mensuel.toLocaleString("fr-FR")} €`],
     ["Montant total de l’assurance", euros(assurance.coutTotal)],
-    ["Montant d’assurance restant", euros(assurance.coutRestant)],
+    ["Montant d’assurance restant", assurance.coutRestant === null && assurance.origine === "document" ? "Non disponible" : euros(assurance.coutRestant)],
   ];
 
   return (

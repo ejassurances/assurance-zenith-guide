@@ -35,6 +35,7 @@ const CHAMPS_PRET: { cle: string; source: string }[] = [
   // coût initial et de l'économie réalisée par la substitution.
   { cle: "taux_assurance_banque", source: "taux_assurance" },
   { cle: "assurance_banque_mensuelle", source: "cotisation_assurance_mensuelle" },
+  { cle: "assurance_banque_cout_total", source: "cout_assurance_total" },
 ];
 
 

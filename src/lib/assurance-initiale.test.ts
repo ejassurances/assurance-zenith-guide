@@ -32,6 +32,21 @@ describe("assuranceInitiale", () => {
     const r = assuranceInitialeDepuisRecueil({ capital: 100_000, taux_assurance_banque: 0.3, duree_mois: 120 }, 60);
     expect(r.coutRestant).toBe(1_500);
   });
+
+  it("privilégie le coût total écrit et n'extrapole pas une première cotisation dégressive", () => {
+    const r = assuranceInitialeDepuisRecueil(
+      {
+        capital: 215_000,
+        duree_mois: 300,
+        assurance_banque_mensuelle: 132.58,
+        assurance_banque_cout_total: 21_553.78,
+      },
+      243,
+    );
+    expect(r.origine).toBe("document");
+    expect(r.coutTotal).toBe(21_553.78);
+    expect(r.coutRestant).toBeNull();
+  });
 });
 
 describe("economieDevis", () => {

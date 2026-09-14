@@ -59,7 +59,12 @@ const SCHEMAS: Record<string, { libelle: string; champs: Champ[] }> = {
       {
         nom: "cotisation_assurance_mensuelle",
         description:
-          "cotisation mensuelle d'assurance emprunteur en euros (nombre), telle qu'indiquée sur l'offre ou l'échéancier",
+          "première cotisation mensuelle d'assurance emprunteur en euros (nombre), telle qu'indiquée sur l'offre ou l'échéancier ; ne pas la présenter comme constante si elle diminue",
+      },
+      {
+        nom: "cout_assurance_total",
+        description:
+          "coût total de l'assurance emprunteur en euros (nombre), écrit dans l'offre ou sur la ligne Total de la colonne COUT ASSURANCES du tableau d'amortissement",
       },
       { nom: "date_document", description: "date du document au format AAAA-MM-JJ" },
       { nom: "date_premiere_echeance", description: "date de la première échéance AAAA-MM-JJ" },
@@ -140,6 +145,7 @@ const NOMBRES = new Set([
   "mensualite",
   "taux_assurance",
   "cotisation_assurance_mensuelle",
+  "cout_assurance_total",
   "nombre_echeances",
   "valeur_acquise",
   "valeur_debut_periode",
