@@ -98,7 +98,10 @@ function AssuranceBancaire({
   moisRestants: number | null;
 }) {
   const a = assuranceInitialeDepuisRecueil(values, moisRestants);
-  const euros = (v: number | null) => (v === null ? "—" : `${Math.round(v).toLocaleString("fr-FR")} €`);
+  const euros = (v: number | null) =>
+    v === null
+      ? "—"
+      : `${v.toLocaleString("fr-FR", { minimumFractionDigits: a.origine === "document" ? 2 : 0, maximumFractionDigits: 2 })} €`;
   if (a.mensuel === null) {
     return (
       <p className="rounded-md bg-surface-elevated/70 px-2 py-1 text-xs text-ink-muted">
@@ -249,7 +252,9 @@ function SynthesePret({
   });
   const assurance = assuranceInitialeDepuisRecueil(values, calcul.mois_restants);
   const euros = (v: number | null) =>
-    v === null ? "—" : `${Math.round(v).toLocaleString("fr-FR")} €`;
+    v === null
+      ? "—"
+      : `${v.toLocaleString("fr-FR", { minimumFractionDigits: assurance.origine === "document" ? 2 : 0, maximumFractionDigits: 2 })} €`;
 
   const lignes = [
     ["Capital restant dû", euros(calcul.capital_restant_du)],
