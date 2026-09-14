@@ -143,14 +143,11 @@ function CoherencePret({
   values,
   dossierCreeLe,
   dateDocument,
-  onAppliquer,
 }: {
   values: Record<string, unknown>;
   dossierCreeLe: string | null;
   /** Date d'édition de l'offre/tableau importé : point de départ du prêt si la première échéance est absente. */
   dateDocument?: string | null;
-  /** Reporte le capital restant dû et les mois restants calculés dans le recueil. */
-  onAppliquer?: (maj: { capital_restant_du: number; mois_restants: number }) => void;
 }) {
   const nombre = (cle: string): number | null => {
     const n = Number(values[cle]);
@@ -212,20 +209,6 @@ function CoherencePret({
           <dd className="text-ink">{euros(calcul.mensualite)}</dd>
         </div>
       </dl>
-      {onAppliquer && calcul.capital_restant_du != null && calcul.mois_restants != null && (
-        <button
-          type="button"
-          onClick={() =>
-            onAppliquer({
-              capital_restant_du: Math.round(calcul.capital_restant_du as number),
-              mois_restants: calcul.mois_restants as number,
-            })
-          }
-          className="w-full rounded-full border border-line px-3 py-1 text-xs hover:bg-surface"
-        >
-          Reporter dans le recueil (capital restant dû et mois restants)
-        </button>
-      )}
       <AssuranceBancaire values={values} moisRestants={calcul.mois_restants} />
       {alertes.length > 0 ? (
         <ul className="space-y-1 text-xs text-destructive">
@@ -332,6 +315,7 @@ export function RecueilDossierPanel({
   const valuesRef = useRef(values);
   const initialRender = useRef(true);
   const saveSequence = useRef(0);
+  const dirtyRef = useRef(false);
 
   useEffect(() => {
     void (async () => {
@@ -441,8 +425,6 @@ export function RecueilDossierPanel({
   }, [clientId, typeAssurance]);
 
 
-  if (!branche) return null;
-
   useEffect(() => {
     valuesRef.current = values;
   }, [values]);
@@ -488,14 +470,30 @@ export function RecueilDossierPanel({
       initialRender.current = false;
       return;
     }
+    dirtyRef.current = true;
     setMessage("Enregistrement automatique…");
-    const timer = window.setTimeout(() => void enregistrerValeurs(values), 650);
+    const timer = window.setTimeout(() => {
+      dirtyRef.current = false;
+      void enregistrerValeurs(values);
+    }, 650);
     return () => window.clearTimeout(timer);
   }, [canEdit, enregistrerValeurs, values]);
 
+  // La barre des 12 étapes démonte cette vue. Une dernière écriture est donc
+  // déclenchée au départ si la temporisation n'a pas encore eu le temps d'agir.
+  useEffect(() => {
+    return () => {
+      if (!canEdit || !dirtyRef.current) return;
+      void supabase
+        .from("dossiers")
+        .update({ recueil_besoins: valuesRef.current as never })
+        .eq("id", dossierId);
+    };
+  }, [canEdit, dossierId]);
+
   // Les résultats déterministes du calcul alimentent directement le recueil.
   useEffect(() => {
-    if (!canEdit || branche.value !== "emprunteur") return;
+    if (!canEdit || branche?.value !== "emprunteur") return;
     const nombre = (cle: string): number | null => {
       const n = Number(values[cle]);
       return Number.isFinite(n) && n > 0 ? n : null;
@@ -514,7 +512,9 @@ export function RecueilDossierPanel({
     const capitalRestant = Math.round(calcul.capital_restant_du);
     if (Number(values["capital_restant_du"]) === capitalRestant && Number(values["mois_restants"]) === calcul.mois_restants) return;
     setValues((prev) => ({ ...prev, capital_restant_du: capitalRestant, mois_restants: calcul.mois_restants }));
-  }, [branche.value, canEdit, dateDocumentPret, dossierCreeLe, values]);
+  }, [branche?.value, canEdit, dateDocumentPret, dossierCreeLe, values]);
+
+  if (!branche) return null;
 
   const contexte = client ? (
     <PanneauLateral titre="Client du dossier">
