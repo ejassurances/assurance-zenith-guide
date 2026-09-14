@@ -48,6 +48,7 @@ export function RecueilWorkflow({
   values,
   onChange,
   onComplete,
+  onSaveStep,
   onBack,
   completeLabel = "Terminer le recueil",
   dossierId,
@@ -64,6 +65,8 @@ export function RecueilWorkflow({
   values: Record<string, unknown>;
   onChange: (values: Record<string, unknown>) => void;
   onComplete?: () => void;
+  /** Enregistre les réponses de l'étape en cours (changement d'étape, bouton dédié). */
+  onSaveStep?: () => void;
   onBack?: () => void;
   completeLabel?: string;
   /** Dossier d'origine, quand il existe déjà (traçabilité des CG déposées) */
