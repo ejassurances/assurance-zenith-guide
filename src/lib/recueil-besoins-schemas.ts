@@ -245,7 +245,7 @@ const BRANCHES_BASE: BrancheConfig[] = [
             ],
           },
           { key: "capital", label: "Capital emprunté", type: "number", suffix: "€", required: true },
-          { key: "duree_mois", label: "Durée restante", type: "number", suffix: "mois", required: true },
+          { key: "duree_mois", label: "Durée totale du prêt", type: "number", suffix: "mois", required: true },
           {
             key: "date_premiere_echeance",
             label: "Date de début du prêt",

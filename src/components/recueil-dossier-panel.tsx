@@ -9,7 +9,7 @@
  * assurés, devis (API partenaires + catalogue, notation IA) à l'étape de
  * tarification, pièces diverses ensuite.
  */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
@@ -143,14 +143,11 @@ function CoherencePret({
   values,
   dossierCreeLe,
   dateDocument,
-  onAppliquer,
 }: {
   values: Record<string, unknown>;
   dossierCreeLe: string | null;
   /** Date d'édition de l'offre/tableau importé : point de départ du prêt si la première échéance est absente. */
   dateDocument?: string | null;
-  /** Reporte le capital restant dû et les mois restants calculés dans le recueil. */
-  onAppliquer?: (maj: { capital_restant_du: number; mois_restants: number }) => void;
 }) {
   const nombre = (cle: string): number | null => {
     const n = Number(values[cle]);
@@ -212,20 +209,6 @@ function CoherencePret({
           <dd className="text-ink">{euros(calcul.mensualite)}</dd>
         </div>
       </dl>
-      {onAppliquer && calcul.capital_restant_du != null && calcul.mois_restants != null && (
-        <button
-          type="button"
-          onClick={() =>
-            onAppliquer({
-              capital_restant_du: Math.round(calcul.capital_restant_du as number),
-              mois_restants: calcul.mois_restants as number,
-            })
-          }
-          className="w-full rounded-full border border-line px-3 py-1 text-xs hover:bg-surface"
-        >
-          Reporter dans le recueil (capital restant dû et mois restants)
-        </button>
-      )}
       <AssuranceBancaire values={values} moisRestants={calcul.mois_restants} />
       {alertes.length > 0 ? (
         <ul className="space-y-1 text-xs text-destructive">
@@ -237,6 +220,58 @@ function CoherencePret({
         <p className="text-xs text-ink-muted">Aucune incohérence détectée entre les montants et les durées saisis.</p>
       )}
     </PanneauLateral>
+  );
+}
+
+/** Chiffres utiles affichés dans le corps de l'étape Prêts, pas seulement dans la colonne latérale. */
+function SynthesePret({
+  values,
+  dossierCreeLe,
+  dateDocument,
+}: {
+  values: Record<string, unknown>;
+  dossierCreeLe: string | null;
+  dateDocument: string | null;
+}) {
+  const nombre = (cle: string): number | null => {
+    const n = Number(values[cle]);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+  const calcul = situationPret({
+    capital: nombre("capital"),
+    taux_pret: nombre("taux_pret"),
+    duree_mois: nombre("duree_mois"),
+    date_premiere_echeance:
+      typeof values["date_premiere_echeance"] === "string" ? String(values["date_premiere_echeance"]) : null,
+    date_document: dateDocument,
+    date_effet: typeof values["date_effet"] === "string" ? String(values["date_effet"]) : null,
+    dossier_cree_le: dossierCreeLe,
+  });
+  const assurance = assuranceInitialeDepuisRecueil(values, calcul.mois_restants);
+  const euros = (v: number | null) =>
+    v === null ? "—" : `${Math.round(v).toLocaleString("fr-FR")} €`;
+
+  const lignes = [
+    ["Capital restant dû", euros(calcul.capital_restant_du)],
+    ["Échéances déjà payées", calcul.mois_ecoules === null ? "—" : String(calcul.mois_ecoules)],
+    ["Échéances restantes", calcul.mois_restants === null ? "—" : String(calcul.mois_restants)],
+    ["Cotisation d’assurance mensuelle", assurance.mensuel === null ? "—" : `${assurance.mensuel.toLocaleString("fr-FR")} €`],
+    ["Montant total de l’assurance", euros(assurance.coutTotal)],
+    ["Montant d’assurance restant", euros(assurance.coutRestant)],
+  ];
+
+  return (
+    <section className="border-t border-line pt-5" aria-label="Synthèse calculée du prêt">
+      <h4 className="font-serif text-lg text-ink">Synthèse calculée</h4>
+      <dl className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {lignes.map(([label, valeur]) => (
+          <div key={label} className="rounded-md border border-line bg-background p-3">
+            <dt className="text-xs text-ink-muted">{label}</dt>
+            <dd className="mt-1 text-base font-medium text-ink">{valeur}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
 
@@ -277,6 +312,10 @@ export function RecueilDossierPanel({
   const syncClients = useServerFn(synchroniserAssuresClients);
   const [dossierCreeLe, setDossierCreeLe] = useState<string | null>(null);
   const [dateDocumentPret, setDateDocumentPret] = useState<string | null>(null);
+  const valuesRef = useRef(values);
+  const initialRender = useRef(true);
+  const saveSequence = useRef(0);
+  const dirtyRef = useRef(false);
 
   useEffect(() => {
     void (async () => {
@@ -285,19 +324,33 @@ export function RecueilDossierPanel({
     })();
   }, [dossierId]);
 
-  // Date d'édition du document de prêt (offre ou tableau d'amortissement) :
-  // point de départ du prêt quand la première échéance n'y figure pas.
+  // Date d'édition réellement lue dans l'offre/tableau. La date d'import du
+  // fichier n'est pas une date de début du prêt et ne doit jamais la remplacer.
   useEffect(() => {
     void (async () => {
-      const { data } = await supabase
+      const { data: documents } = await supabase
         .from("documents")
-        .select("created_at")
+        .select("id")
         .eq("dossier_id", dossierId)
         .in("type_document", ["offre_pret", "tableau_amortissement"])
         .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      setDateDocumentPret((data?.created_at as string | null) ?? null);
+        .limit(10);
+      const ids = (documents ?? []).map((d) => d.id);
+      if (ids.length === 0) return setDateDocumentPret(null);
+      const { data: extractions } = await supabase
+        .from("doc_extractions")
+        .select("extracted_data, created_at")
+        .in("document_id", ids)
+        .order("created_at", { ascending: true });
+      const date = (extractions ?? [])
+        .map((e) => {
+          const extrait = e.extracted_data;
+          if (!extrait || Array.isArray(extrait) || typeof extrait !== "object") return null;
+          const valeur = (extrait as Record<string, unknown>)["date_edition_document"];
+          return typeof valeur === "string" && valeur ? valeur : null;
+        })
+        .find((v): v is string => Boolean(v));
+      setDateDocumentPret(date ?? null);
     })();
   }, [dossierId]);
 
@@ -372,32 +425,96 @@ export function RecueilDossierPanel({
   }, [clientId, typeAssurance]);
 
 
-  if (!branche) return null;
+  useEffect(() => {
+    valuesRef.current = values;
+  }, [values]);
 
-  const enregistrer = async () => {
+  const enregistrerValeurs = useCallback(async (aEnregistrer: Record<string, unknown>, synchroniser = false) => {
+    const sequence = ++saveSequence.current;
     setSaving(true);
     setError(null);
-    setMessage(null);
     const { error: err } = await supabase
       .from("dossiers")
-      .update({ recueil_besoins: values as never })
+      .update({ recueil_besoins: aEnregistrer as never })
       .eq("id", dossierId);
     if (err) {
       setError(err.message);
-      setSaving(false);
+      if (sequence === saveSequence.current) setSaving(false);
       return;
     }
     let complement = "";
-    try {
-      const res = await syncClients({ data: { dossier_id: dossierId } });
-      complement = ` ${res.message}`;
-    } catch {
-      complement = " Fiches clients non mises à jour.";
+    if (synchroniser) {
+      try {
+        const res = await syncClients({ data: { dossier_id: dossierId } });
+        complement = ` ${res.message}`;
+      } catch {
+        complement = " Fiches clients non mises à jour.";
+      }
     }
-    setMessage(`Recueil enregistré.${complement}`);
+    if (sequence === saveSequence.current) {
+      setMessage(`Enregistré automatiquement.${complement}`);
+      setSaving(false);
+    }
+  }, [dossierId, syncClients]);
+
+  const enregistrer = useCallback(async () => {
+    await enregistrerValeurs(valuesRef.current, true);
     onSaved?.();
-    setSaving(false);
-  };
+  }, [enregistrerValeurs, onSaved]);
+
+  // Sauvegarde réelle après chaque modification, y compris quand l'utilisateur
+  // quitte l'étape depuis la barre principale du parcours 0–11.
+  useEffect(() => {
+    if (!canEdit) return;
+    if (initialRender.current) {
+      initialRender.current = false;
+      return;
+    }
+    dirtyRef.current = true;
+    setMessage("Enregistrement automatique…");
+    const timer = window.setTimeout(() => {
+      dirtyRef.current = false;
+      void enregistrerValeurs(values);
+    }, 650);
+    return () => window.clearTimeout(timer);
+  }, [canEdit, enregistrerValeurs, values]);
+
+  // La barre des 12 étapes démonte cette vue. Une dernière écriture est donc
+  // déclenchée au départ si la temporisation n'a pas encore eu le temps d'agir.
+  useEffect(() => {
+    return () => {
+      if (!canEdit || !dirtyRef.current) return;
+      void supabase
+        .from("dossiers")
+        .update({ recueil_besoins: valuesRef.current as never })
+        .eq("id", dossierId);
+    };
+  }, [canEdit, dossierId]);
+
+  // Les résultats déterministes du calcul alimentent directement le recueil.
+  useEffect(() => {
+    if (!canEdit || branche?.value !== "emprunteur") return;
+    const nombre = (cle: string): number | null => {
+      const n = Number(values[cle]);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    };
+    const calcul = situationPret({
+      capital: nombre("capital"),
+      taux_pret: nombre("taux_pret"),
+      duree_mois: nombre("duree_mois"),
+      date_premiere_echeance:
+        typeof values["date_premiere_echeance"] === "string" ? String(values["date_premiere_echeance"]) : null,
+      date_document: dateDocumentPret,
+      date_effet: typeof values["date_effet"] === "string" ? String(values["date_effet"]) : null,
+      dossier_cree_le: dossierCreeLe,
+    });
+    if (calcul.capital_restant_du === null || calcul.mois_restants === null) return;
+    const capitalRestant = Math.round(calcul.capital_restant_du);
+    if (Number(values["capital_restant_du"]) === capitalRestant && Number(values["mois_restants"]) === calcul.mois_restants) return;
+    setValues((prev) => ({ ...prev, capital_restant_du: capitalRestant, mois_restants: calcul.mois_restants }));
+  }, [branche?.value, canEdit, dateDocumentPret, dossierCreeLe, values]);
+
+  if (!branche) return null;
 
   const contexte = client ? (
     <PanneauLateral titre="Client du dossier">
@@ -461,10 +578,6 @@ export function RecueilDossierPanel({
           values={values}
           dossierCreeLe={dossierCreeLe}
           dateDocument={dateDocumentPret}
-          onAppliquer={(maj) => {
-            setValues((prev) => ({ ...prev, ...maj }));
-            setMessage("Capital restant dû et mois restants reportés — enregistrez l'étape pour les conserver.");
-          }}
         />
         </div>
       );
@@ -475,10 +588,6 @@ export function RecueilDossierPanel({
           values={values}
           dossierCreeLe={dossierCreeLe}
           dateDocument={dateDocumentPret}
-          onAppliquer={(maj) => {
-            setValues((prev) => ({ ...prev, ...maj }));
-            setMessage("Capital restant dû et mois restants reportés — enregistrez l'étape pour les conserver.");
-          }}
         />
       );
     }
@@ -521,7 +630,9 @@ export function RecueilDossierPanel({
         sectionUnique={sectionUnique}
         asideSection={(section) => lateral(section.title)}
         pleineLargeurSection={(section) =>
-          estEtapeTarification(section.title) && userId ? (
+          branche.value === "emprunteur" && estEtapePret(section.title) ? (
+            <SynthesePret values={values} dossierCreeLe={dossierCreeLe} dateDocument={dateDocumentPret} />
+          ) : estEtapeTarification(section.title) && userId ? (
             <DossierDevisPanel
               dossierId={dossierId}
               branche={branche.value}
@@ -531,6 +642,7 @@ export function RecueilDossierPanel({
           ) : null
         }
       />
+      {saving && <p className="text-sm text-ink-muted">Enregistrement automatique…</p>}
       {message && <p className="text-sm text-ink-muted">{message}</p>}
       {error && <p className="text-sm text-destructive">{error}</p>}
     </div>
