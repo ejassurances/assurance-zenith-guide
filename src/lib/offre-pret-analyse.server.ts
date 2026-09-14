@@ -44,6 +44,10 @@ const CHAMPS_PRET = [
   ["taux_assurance", "taux annuel de l'assurance emprunteur de la banque en % (nombre)"],
   ["cotisation_assurance_mensuelle", "cotisation mensuelle d'assurance emprunteur en euros (nombre)"],
   ["date_premiere_echeance", "date de la première échéance AAAA-MM-JJ"],
+  [
+    "date_edition_document",
+    "date d'édition / d'établissement du document (offre de prêt, tableau d'amortissement) AAAA-MM-JJ",
+  ],
   ["objet_pret", "objet du financement tel qu'écrit (résidence principale, locatif…)"],
 ] as const;
 
@@ -224,7 +228,7 @@ export async function analyserOffrePretFichier(fichier: {
       }
       const s = texteOuNull(v);
       if (!s) continue;
-      if (nom === "date_premiere_echeance") {
+      if (nom === "date_premiere_echeance" || nom === "date_edition_document") {
         const iso = dateIsoOuNull(s);
         if (iso) pret[nom] = iso;
         continue;
