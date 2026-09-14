@@ -130,8 +130,17 @@ export const creerFichesEmprunteurs = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ emprunteurs: z.array(emprunteurSchema).min(1).max(6) }).parse(d))
   .handler(async ({ data, context }) => {
-    const { data: role } = await context.supabase.rpc("current_user_role");
-    if (role !== "admin" && role !== "mandataire" && role !== "prescripteur") {
+    // Un utilisateur peut porter plusieurs rôles : l'autorisation est vérifiée
+    // rôle par rôle (has_role), et non sur un rôle unique.
+    let autorise = false;
+    for (const r of ["admin", "mandataire", "prescripteur"] as const) {
+      const { data: ok } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: r });
+      if (ok === true) {
+        autorise = true;
+        break;
+      }
+    }
+    if (!autorise) {
       throw new Error("Création de fiche client non autorisée.");
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
