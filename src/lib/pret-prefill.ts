@@ -97,6 +97,14 @@ export function prefillRecueilEmprunteur(
     dossier_cree_le: options?.dossier_cree_le ?? null,
   });
 
+  // Date de début du prêt : si la première échéance ne figure pas sur le
+  // document, la date d'édition du tableau d'amortissement / de l'offre est
+  // retenue (jamais la date de création du dossier, qui reste un dernier
+  // recours pour les calculs uniquement).
+  if (vide(recueil["date_premiere_echeance"]) && situation.origine_debut_pret === "document" && situation.debut_pret) {
+    recueil["date_premiere_echeance"] = situation.debut_pret;
+    ajouts.push("date_premiere_echeance");
+  }
   if (vide(recueil["date_effet"]) && situation.date_effet) {
     recueil["date_effet"] = situation.date_effet;
     ajouts.push("date_effet");

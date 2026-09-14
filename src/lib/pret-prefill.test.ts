@@ -39,4 +39,32 @@ describe("pré-remplissage du recueil emprunteur", () => {
     );
     expect(r.manquants).toEqual([]);
   });
+
+  it("retient la date de début lue sur le tableau d'amortissement", () => {
+    const r = prefillRecueilEmprunteur(
+      null,
+      { montant_capital: 200000, duree_mois: 180, date_premiere_echeance: "2025-03-05" },
+      { date_document: "2025-06-01" },
+    );
+    expect(r.recueil["date_premiere_echeance"]).toBe("2025-03-05");
+  });
+
+  it("retient la date d'édition du document quand aucune échéance n'est indiquée", () => {
+    const r = prefillRecueilEmprunteur(
+      null,
+      { montant_capital: 200000, duree_mois: 180 },
+      { date_document: "2025-06-01" },
+    );
+    expect(r.recueil["date_premiere_echeance"]).toBe("2025-06-01");
+    expect(r.ajouts).toContain("date_premiere_echeance");
+  });
+
+  it("n'utilise jamais la création du dossier comme date de début du prêt", () => {
+    const r = prefillRecueilEmprunteur(
+      null,
+      { montant_capital: 200000, duree_mois: 180 },
+      { dossier_cree_le: "2026-01-10" },
+    );
+    expect(r.recueil["date_premiere_echeance"]).toBeUndefined();
+  });
 });

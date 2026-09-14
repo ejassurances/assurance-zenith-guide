@@ -83,6 +83,13 @@ export interface SituationPret {
   date_effet: string | null;
   /** "compagnie" = date communiquée, "defaut" = création + 3 mois. */
   origine_date_effet: "compagnie" | "defaut" | "inconnue";
+  /**
+   * Date de début du prêt : première échéance du tableau d'amortissement ou de
+   * l'offre de prêt, sinon date d'édition du document.
+   */
+  debut_pret: string | null;
+  /** "echeance" = début lu sur le document, "document" = date d'édition, "dossier" = création du dossier. */
+  origine_debut_pret: "echeance" | "document" | "dossier" | "inconnue";
   mois_ecoules: number | null;
   mois_restants: number | null;
   capital_restant_du: number | null;
@@ -101,7 +108,17 @@ export function situationPret(e: SituationPretEntree): SituationPret {
 
   // Point de départ du prêt : première échéance si elle figure sur le
   // document, sinon date d'édition du document, sinon création du dossier.
-  const debutPret = e.date_premiere_echeance ?? e.date_document ?? e.dossier_cree_le ?? null;
+  const echeance = jour(e.date_premiere_echeance) ? String(e.date_premiere_echeance).slice(0, 10) : null;
+  const edition = jour(e.date_document) ? String(e.date_document).slice(0, 10) : null;
+  const creation = jour(e.dossier_cree_le) ? String(e.dossier_cree_le).slice(0, 10) : null;
+  const debutPret = echeance ?? edition ?? creation;
+  const origineDebut: SituationPret["origine_debut_pret"] = echeance
+    ? "echeance"
+    : edition
+      ? "document"
+      : creation
+        ? "dossier"
+        : "inconnue";
   const ecoules = moisEntre(debutPret, dateEffet);
   const moisRestants = duree !== null && ecoules !== null ? Math.max(0, duree - ecoules) : null;
   const crd =
@@ -112,6 +129,8 @@ export function situationPret(e: SituationPretEntree): SituationPret {
   return {
     date_effet: dateEffet,
     origine_date_effet: dateCompagnie ? "compagnie" : dateDefaut ? "defaut" : "inconnue",
+    debut_pret: debutPret,
+    origine_debut_pret: origineDebut,
     mois_ecoules: ecoules,
     mois_restants: moisRestants,
     capital_restant_du: crd,

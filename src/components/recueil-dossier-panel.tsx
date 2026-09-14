@@ -175,6 +175,19 @@ function CoherencePret({
       <dl className="space-y-1 text-xs">
         <div className="flex justify-between gap-2">
           <dt className="text-ink-muted">
+            Début du prêt{" "}
+            {calcul.origine_debut_pret === "echeance"
+              ? "(tableau / offre)"
+              : calcul.origine_debut_pret === "document"
+                ? "(édition du document)"
+                : calcul.origine_debut_pret === "dossier"
+                  ? "(création du dossier)"
+                  : ""}
+          </dt>
+          <dd className="text-ink">{dateFr(calcul.debut_pret)}</dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt className="text-ink-muted">
             Date d'effet {calcul.origine_date_effet === "compagnie" ? "(compagnie)" : "(création + 3 mois)"}
           </dt>
           <dd className="text-ink">{dateFr(calcul.date_effet)}</dd>

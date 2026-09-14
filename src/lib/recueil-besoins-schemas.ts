@@ -247,6 +247,12 @@ const BRANCHES_BASE: BrancheConfig[] = [
           { key: "capital", label: "Capital emprunté", type: "number", suffix: "€", required: true },
           { key: "duree_mois", label: "Durée restante", type: "number", suffix: "mois", required: true },
           {
+            key: "date_premiere_echeance",
+            label: "Date de début du prêt",
+            type: "date",
+            help: "Date de début lue sur le tableau d'amortissement ou l'offre de prêt ; à défaut, la date d'édition du document est retenue.",
+          },
+          {
             key: "date_effet",
             label: "Date de prise en compte (substitution)",
             type: "date",
