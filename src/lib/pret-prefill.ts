@@ -92,7 +92,12 @@ export function prefillRecueilEmprunteur(
     taux_pret: Number(recueil["taux_pret"]) || null,
     duree_mois: Number(recueil["duree_mois"]) || null,
     date_premiere_echeance: typeof recueil["date_premiere_echeance"] === "string" ? (recueil["date_premiere_echeance"] as string) : null,
-    date_document: options?.date_document ?? null,
+    // La date d'édition LUE sur le document prime toujours sur la date d'import
+    // transmise par l'appelant (qui n'est qu'un dernier recours).
+    date_document:
+      (typeof extraction?.["date_edition_document"] === "string"
+        ? (extraction["date_edition_document"] as string)
+        : null) ?? options?.date_document ?? null,
     date_effet: typeof recueil["date_effet"] === "string" ? (recueil["date_effet"] as string) : null,
     dossier_cree_le: options?.dossier_cree_le ?? null,
   });
