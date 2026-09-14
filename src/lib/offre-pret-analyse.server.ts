@@ -43,6 +43,10 @@ const CHAMPS_PRET = [
   ["mensualite", "mensualité hors assurance en euros (nombre)"],
   ["taux_assurance", "taux annuel de l'assurance emprunteur de la banque en % (nombre)"],
   ["cotisation_assurance_mensuelle", "cotisation mensuelle d'assurance emprunteur en euros (nombre)"],
+  [
+    "cout_assurance_total",
+    "coût total de l'assurance emprunteur écrit dans l'offre ou sur la ligne Total du tableau d'amortissement, en euros (nombre)",
+  ],
   ["date_premiere_echeance", "date de la première échéance AAAA-MM-JJ"],
   [
     "date_edition_document",
@@ -58,6 +62,7 @@ const NOMBRES = new Set([
   "mensualite",
   "taux_assurance",
   "cotisation_assurance_mensuelle",
+  "cout_assurance_total",
 ]);
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 

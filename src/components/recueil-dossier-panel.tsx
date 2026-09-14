@@ -98,7 +98,10 @@ function AssuranceBancaire({
   moisRestants: number | null;
 }) {
   const a = assuranceInitialeDepuisRecueil(values, moisRestants);
-  const euros = (v: number | null) => (v === null ? "—" : `${Math.round(v).toLocaleString("fr-FR")} €`);
+  const euros = (v: number | null) =>
+    v === null
+      ? "—"
+      : `${v.toLocaleString("fr-FR", { minimumFractionDigits: a.origine === "document" ? 2 : 0, maximumFractionDigits: 2 })} €`;
   if (a.mensuel === null) {
     return (
       <p className="rounded-md bg-surface-elevated/70 px-2 py-1 text-xs text-ink-muted">
@@ -113,18 +116,18 @@ function AssuranceBancaire({
       <dl className="mt-1 space-y-1 text-xs">
         <div className="flex justify-between gap-2">
           <dt className="text-ink-muted">
-            Cotisation mensuelle {a.origine === "offre" ? "(offre de prêt)" : "(calcul par taux)"}
+            {a.origine === "document" ? "Première cotisation (document)" : `Cotisation mensuelle ${a.origine === "offre" ? "(offre de prêt)" : "(calcul par taux)"}`}
           </dt>
           <dd className="text-ink">{a.mensuel.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} € / mois</dd>
         </div>
         <div className="flex justify-between gap-2">
-          <dt className="text-ink-muted">Coût sur toute la durée</dt>
+          <dt className="text-ink-muted">Coût total {a.origine === "document" ? "(document bancaire)" : "(calculé)"}</dt>
           <dd className="text-ink">{euros(a.coutTotal)}</dd>
         </div>
         <div className="flex justify-between gap-2">
           <dt className="text-ink-muted">Cotisation totale restante (substitution → fin)</dt>
           <dd className="font-medium text-ink">
-            {euros(a.coutRestant)}
+            {a.coutRestant === null && a.origine === "document" ? "Non disponible sans échéancier détaillé" : euros(a.coutRestant)}
             {a.moisRestants ? ` · ${a.moisRestants} mois restants` : ""}
           </dd>
         </div>
@@ -248,16 +251,19 @@ function SynthesePret({
     dossier_cree_le: dossierCreeLe,
   });
   const assurance = assuranceInitialeDepuisRecueil(values, calcul.mois_restants);
-  const euros = (v: number | null) =>
-    v === null ? "—" : `${Math.round(v).toLocaleString("fr-FR")} €`;
+  const euros = (v: number | null) => (v === null ? "—" : `${Math.round(v).toLocaleString("fr-FR")} €`);
+  const eurosAssurance = (v: number | null) =>
+    v === null
+      ? "—"
+      : `${v.toLocaleString("fr-FR", { minimumFractionDigits: assurance.origine === "document" ? 2 : 0, maximumFractionDigits: 2 })} €`;
 
   const lignes = [
     ["Capital restant dû", euros(calcul.capital_restant_du)],
     ["Échéances déjà payées", calcul.mois_ecoules === null ? "—" : String(calcul.mois_ecoules)],
     ["Échéances restantes", calcul.mois_restants === null ? "—" : String(calcul.mois_restants)],
-    ["Cotisation d’assurance mensuelle", assurance.mensuel === null ? "—" : `${assurance.mensuel.toLocaleString("fr-FR")} €`],
-    ["Montant total de l’assurance", euros(assurance.coutTotal)],
-    ["Montant d’assurance restant", euros(assurance.coutRestant)],
+    [assurance.origine === "document" ? "Première cotisation d’assurance" : "Cotisation d’assurance mensuelle", assurance.mensuel === null ? "—" : `${assurance.mensuel.toLocaleString("fr-FR")} €`],
+    ["Montant total de l’assurance", eurosAssurance(assurance.coutTotal)],
+    ["Montant d’assurance restant", assurance.coutRestant === null && assurance.origine === "document" ? "Non disponible" : eurosAssurance(assurance.coutRestant)],
   ];
 
   return (
