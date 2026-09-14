@@ -145,6 +145,8 @@ export function situationPret(e: SituationPretEntree): SituationPret {
 export function incoherencesPret(
   recueil: Record<string, unknown> | null | undefined,
   dossierCreeLe?: string | null,
+  /** Date d'édition du document de prêt : même base de calcul que l'affichage. */
+  dateDocument?: string | null,
 ): string[] {
   const r = recueil ?? {};
   const nb = (k: string): number | null => {
