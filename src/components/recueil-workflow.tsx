@@ -152,10 +152,7 @@ export function RecueilWorkflow({
               <button
                 key={s.title}
                 type="button"
-                onClick={() => {
-                  setShowErrors(false);
-                  setIndex(i);
-                }}
+                onClick={() => allerA(i)}
                 className={`rounded-full border px-3 py-1 text-xs transition ${
                   i === index
                     ? "border-ink bg-ink text-primary-foreground"
