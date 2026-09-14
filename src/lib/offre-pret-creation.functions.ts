@@ -42,7 +42,7 @@ export type EmprunteurPropose = z.infer<typeof emprunteurSchema> & {
 
 export const analyserOffrePretCreation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ fichiers: z.array(fichierSchema).min(1).max(4) }).parse(d))
+  .inputValidator((d) => z.object({ fichiers: z.array(fichierSchema).min(1).max(10) }).parse(d))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { analyserOffrePretFichier } = await import("@/lib/offre-pret-analyse.server");
