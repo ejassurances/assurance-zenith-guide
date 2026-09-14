@@ -99,7 +99,7 @@ export const analyserOffrePretCreation = createServerFn({ method: "POST" })
 
     const { recueil, ajouts, manquants } = prefillRecueilEmprunteur(null, pret, {
       dossier_cree_le: null,
-      date_document: new Date().toISOString(),
+      date_document: null, // aucune date d'édition inventée : seule la date lue sur le document sert de départ
     });
 
     // Détail par personne assurée : un dossier = un prêt, un assuré = une ligne.
