@@ -48,6 +48,7 @@ export function RecueilWorkflow({
   values,
   onChange,
   onComplete,
+  onSaveStep,
   onBack,
   completeLabel = "Terminer le recueil",
   dossierId,
@@ -64,6 +65,8 @@ export function RecueilWorkflow({
   values: Record<string, unknown>;
   onChange: (values: Record<string, unknown>) => void;
   onComplete?: () => void;
+  /** Enregistre les réponses de l'étape en cours (changement d'étape, bouton dédié). */
+  onSaveStep?: () => void;
   onBack?: () => void;
   completeLabel?: string;
   /** Dossier d'origine, quand il existe déjà (traçabilité des CG déposées) */
@@ -100,19 +103,29 @@ export function RecueilWorkflow({
 
   const set = (key: string, v: unknown) => onChange({ ...values, [key]: v });
 
+  // Les réponses saisies sont enregistrées à chaque changement d'étape : rien
+  // n'est perdu en naviguant dans le parcours.
   const next = () => {
     if (missing.length > 0) {
       setShowErrors(true);
       return;
     }
     setShowErrors(false);
+    onSaveStep?.();
     setIndex((i) => Math.min(i + 1, steps.length));
   };
 
   const prev = () => {
     setShowErrors(false);
+    onSaveStep?.();
     if (index === 0) onBack?.();
     else setIndex((i) => i - 1);
+  };
+
+  const allerA = (i: number) => {
+    setShowErrors(false);
+    onSaveStep?.();
+    setIndex(i);
   };
 
   return (
@@ -139,10 +152,7 @@ export function RecueilWorkflow({
               <button
                 key={s.title}
                 type="button"
-                onClick={() => {
-                  setShowErrors(false);
-                  setIndex(i);
-                }}
+                onClick={() => allerA(i)}
                 className={`rounded-full border px-3 py-1 text-xs transition ${
                   i === index
                     ? "border-ink bg-ink text-primary-foreground"
@@ -224,7 +234,7 @@ export function RecueilWorkflow({
                     <p className="text-sm font-medium text-ink">{s.title}</p>
                     <button
                       type="button"
-                      onClick={() => setIndex(i)}
+                      onClick={() => allerA(i)}
                       className="text-xs text-ink-muted underline"
                     >
                       Modifier
@@ -273,13 +283,24 @@ export function RecueilWorkflow({
             </button>
           )
         ) : (
-          <button
-            type="button"
-            onClick={next}
-            className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground"
-          >
-            Continuer →
-          </button>
+          <>
+            {onSaveStep && (
+              <button
+                type="button"
+                onClick={onSaveStep}
+                className="rounded-full border border-line px-4 py-2 text-sm text-ink hover:bg-background"
+              >
+                Enregistrer
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={next}
+              className="rounded-full bg-ink px-5 py-2 text-sm font-medium text-primary-foreground"
+            >
+              Continuer →
+            </button>
+          </>
         )}
       </div>
     </div>
