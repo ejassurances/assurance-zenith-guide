@@ -103,19 +103,29 @@ export function RecueilWorkflow({
 
   const set = (key: string, v: unknown) => onChange({ ...values, [key]: v });
 
+  // Les réponses saisies sont enregistrées à chaque changement d'étape : rien
+  // n'est perdu en naviguant dans le parcours.
   const next = () => {
     if (missing.length > 0) {
       setShowErrors(true);
       return;
     }
     setShowErrors(false);
+    onSaveStep?.();
     setIndex((i) => Math.min(i + 1, steps.length));
   };
 
   const prev = () => {
     setShowErrors(false);
+    onSaveStep?.();
     if (index === 0) onBack?.();
     else setIndex((i) => i - 1);
+  };
+
+  const allerA = (i: number) => {
+    setShowErrors(false);
+    onSaveStep?.();
+    setIndex(i);
   };
 
   return (
