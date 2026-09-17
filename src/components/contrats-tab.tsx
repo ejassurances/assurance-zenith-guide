@@ -47,24 +47,24 @@ export function ContratsTab({ clientId, canEdit }: { clientId: string; canEdit: 
     if (list.length > 0) await loadCommissions(list);
   }
 
-  /** Commission prévisionnelle du dossier et commissions déjà versées par contrat. */
+  /**
+   * Commission prévisionnelle et commissions versées, strictement PAR CONTRAT.
+   * Sur un prêt à plusieurs emprunteurs, chaque assuré a son contrat : une
+   * estimation enregistrée au niveau du prêt n'est jamais attribuée à un assuré.
+   */
   async function loadCommissions(list: Row[]) {
-    const dossierIds = list.map((r) => r.dossier_id).filter((v): v is string => !!v);
     const contratIds = list.map((r) => r.id);
     const [prev, com] = await Promise.all([
-      dossierIds.length > 0
-        ? supabase
-            .from("commission_previsions")
-            .select("dossier_id,contrat_id,montant_previsionnel_total")
-            .in("dossier_id", dossierIds)
-        : Promise.resolve({ data: [] as never[] }),
+      supabase
+        .from("commission_previsions")
+        .select("contrat_id,montant_previsionnel_total")
+        .in("contrat_id", contratIds),
       supabase.from("commissions").select("contrat_id,montant,statut").in("contrat_id", contratIds),
     ]);
     const parContrat: Record<string, number | null> = {};
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const p of ((prev.data as any[]) ?? [])) {
-      const contrat = list.find((r) => r.id === p.contrat_id || r.dossier_id === p.dossier_id);
-      if (contrat) parContrat[contrat.id] = p.montant_previsionnel_total ?? null;
+      if (p.contrat_id) parContrat[p.contrat_id] = p.montant_previsionnel_total ?? null;
     }
     const sommes: Record<string, number> = {};
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
