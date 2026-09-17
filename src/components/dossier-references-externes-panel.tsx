@@ -220,6 +220,22 @@ export function DossierReferencesExternesPanel({
           )}
         </div>
       ) : (
+        <>
+        {canEdit && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void lancerRecalcul()}
+              disabled={recalcul}
+              className="rounded-full border border-line px-3 py-1.5 text-xs font-medium disabled:opacity-60"
+            >
+              {recalcul ? "Recalcul…" : "Recalculer la commission par assuré"}
+            </button>
+            <span className="text-xs text-ink-muted">
+              Reprend le taux du devis retenu et la quotité de chaque assuré.
+            </span>
+          </div>
+        )}
         <ul className="mt-3 space-y-3">
           {contrats.map((c) => {
             const refsContrat = refs.filter((r) => r.contrat_id === c.id);
