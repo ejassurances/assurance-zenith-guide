@@ -13,6 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { creerContratsAssuresFn } from "@/lib/souscription.functions";
+import { recalculerPrevisionsAssuresFn } from "@/lib/commission-contrats.functions";
 
 type Ref = {
   id: string;
@@ -64,6 +65,8 @@ export function DossierReferencesExternesPanel({
   const [info, setInfo] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const creerContrats = useServerFn(creerContratsAssuresFn);
+  const recalculer = useServerFn(recalculerPrevisionsAssuresFn);
+  const [recalcul, setRecalcul] = useState(false);
 
   const load = useCallback(async () => {
     const [{ data: rows }, { data: comp }, { data: ctr }] = await Promise.all([
@@ -124,6 +127,27 @@ export function DossierReferencesExternesPanel({
       setErr(e instanceof Error ? e.message : "Création des contrats impossible");
     } finally {
       setCreation(false);
+    }
+  };
+
+  const lancerRecalcul = async () => {
+    setErr(null);
+    setInfo(null);
+    setRecalcul(true);
+    try {
+      const res = await recalculer({ data: { dossier_id: dossierId } });
+      setInfo(
+        res.previsions_enregistrees > 0
+          ? `Commission recalculée pour ${res.previsions_enregistrees} contrat(s) d'assuré.${
+              res.prevision_dossier_reprise ? " L'ancienne estimation globale du prêt a été reprise par assuré." : ""
+            }`
+          : `Aucune commission enregistrée : ${res.motif ?? "données insuffisantes"}.`,
+      );
+      await load();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Recalcul impossible");
+    } finally {
+      setRecalcul(false);
     }
   };
 
@@ -196,6 +220,22 @@ export function DossierReferencesExternesPanel({
           )}
         </div>
       ) : (
+        <>
+        {canEdit && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void lancerRecalcul()}
+              disabled={recalcul}
+              className="rounded-full border border-line px-3 py-1.5 text-xs font-medium disabled:opacity-60"
+            >
+              {recalcul ? "Recalcul…" : "Recalculer la commission par assuré"}
+            </button>
+            <span className="text-xs text-ink-muted">
+              Reprend le taux du devis retenu et la quotité de chaque assuré.
+            </span>
+          </div>
+        )}
         <ul className="mt-3 space-y-3">
           {contrats.map((c) => {
             const refsContrat = refs.filter((r) => r.contrat_id === c.id);
@@ -255,6 +295,7 @@ export function DossierReferencesExternesPanel({
             );
           })}
         </ul>
+        </>
       )}
 
       {refsSansContrat.length > 0 && (
