@@ -295,6 +295,7 @@ export function DossierReferencesExternesPanel({
             );
           })}
         </ul>
+        </>
       )}
 
       {refsSansContrat.length > 0 && (
