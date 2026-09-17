@@ -13,6 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { creerContratsAssuresFn } from "@/lib/souscription.functions";
+import { recalculerPrevisionsAssuresFn } from "@/lib/commission-contrats.functions";
 
 type Ref = {
   id: string;
@@ -64,6 +65,8 @@ export function DossierReferencesExternesPanel({
   const [info, setInfo] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const creerContrats = useServerFn(creerContratsAssuresFn);
+  const recalculer = useServerFn(recalculerPrevisionsAssuresFn);
+  const [recalcul, setRecalcul] = useState(false);
 
   const load = useCallback(async () => {
     const [{ data: rows }, { data: comp }, { data: ctr }] = await Promise.all([
