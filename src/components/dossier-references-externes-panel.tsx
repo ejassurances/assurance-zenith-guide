@@ -130,6 +130,27 @@ export function DossierReferencesExternesPanel({
     }
   };
 
+  const lancerRecalcul = async () => {
+    setErr(null);
+    setInfo(null);
+    setRecalcul(true);
+    try {
+      const res = await recalculer({ data: { dossier_id: dossierId } });
+      setInfo(
+        res.previsions_enregistrees > 0
+          ? `Commission recalculée pour ${res.previsions_enregistrees} contrat(s) d'assuré.${
+              res.prevision_dossier_reprise ? " L'ancienne estimation globale du prêt a été reprise par assuré." : ""
+            }`
+          : `Aucune commission enregistrée : ${res.motif ?? "données insuffisantes"}.`,
+      );
+      await load();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Recalcul impossible");
+    } finally {
+      setRecalcul(false);
+    }
+  };
+
   const ajouter = async () => {
     const valeur = reference.trim();
     setErr(null);
