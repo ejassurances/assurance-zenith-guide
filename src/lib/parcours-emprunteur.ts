@@ -164,3 +164,49 @@ export function etapeAtteinte(key: ParcoursKey, statut: string): boolean {
   if (!e) return false;
   return rangStatut(e.statut) <= rangStatut(statut);
 }
+
+/**
+ * Preuves réellement présentes dans le logiciel pour un dossier. Une étape
+ * réglementaire n'est cochée que si sa preuve existe : un dossier repris du
+ * portefeuille (statut avancé, aucun acte produit) ne doit pas afficher de
+ * fausses validations.
+ */
+export type PreuvesParcours = {
+  lettreMissionSignee: boolean;
+  devisEnregistres: boolean;
+  devoirConseilSigne: boolean;
+  contrats: boolean;
+};
+
+export type EtatEtape = "terminee" | "reprise" | "a_faire";
+
+/** Preuve attendue par étape (null = étape de saisie, sans acte à archiver). */
+function preuveRequise(key: ParcoursKey, p: PreuvesParcours): boolean | null {
+  switch (key) {
+    case "lettre_mission":
+      return p.lettreMissionSignee;
+    case "simulations":
+      return p.devisEnregistres;
+    case "devoir_conseil":
+    case "adhesion":
+    case "substitution":
+      return p.devoirConseilSigne;
+    case "souscription":
+    case "analyse":
+      return p.contrats;
+    default:
+      return null;
+  }
+}
+
+export function etatEtape(
+  key: ParcoursKey,
+  statut: string,
+  preuves?: PreuvesParcours | null,
+): EtatEtape {
+  if (!etapeAtteinte(key, statut)) return "a_faire";
+  if (!preuves) return "terminee";
+  const requise = preuveRequise(key, preuves);
+  if (requise === null) return "terminee";
+  return requise ? "terminee" : "reprise";
+}
