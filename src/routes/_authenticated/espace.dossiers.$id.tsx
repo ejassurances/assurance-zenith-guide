@@ -47,6 +47,7 @@ import { DossierTachesPanel } from "@/components/dossier-taches-panel";
 
 import { CompletudeRings } from "@/components/completude-rings";
 import { useCompletudeDossier } from "@/hooks/use-completude";
+import { usePreuvesParcours } from "@/hooks/use-preuves-parcours";
 
 
 export const Route = createFileRoute("/_authenticated/espace/dossiers/$id")({
@@ -149,6 +150,8 @@ function DossierDetail() {
   /** Vue globale ACPR : onglet distinct du déroulé des étapes. */
   const [vueGlobale, setVueGlobale] = useState(false);
   const completude = useCompletudeDossier(id, dossier?.client_id ?? null);
+  /** Actes réellement archivés : une étape réglementaire n'est cochée que s'ils existent. */
+  const preuvesParcours = usePreuvesParcours(id, dossier?.type_assurance === "emprunteur");
   /** Score de conformité KYC du client (0-100) : sous 50 %, le dossier est gelé. */
   const [scoreKyc, setScoreKyc] = useState<number | null>(null);
   const [contreProposition, setContreProposition] = useState<{
@@ -296,6 +299,8 @@ function DossierDetail() {
               statut={dossier.statut}
               active={parcoursActif}
               onSelect={setParcours}
+              preuves={preuvesParcours}
+              gele={kycBloquant}
             />
           )}
         </>
