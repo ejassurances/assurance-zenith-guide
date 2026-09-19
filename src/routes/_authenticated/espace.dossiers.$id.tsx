@@ -47,6 +47,7 @@ import { DossierTachesPanel } from "@/components/dossier-taches-panel";
 
 import { CompletudeRings } from "@/components/completude-rings";
 import { useCompletudeDossier } from "@/hooks/use-completude";
+import { usePreuvesParcours } from "@/hooks/use-preuves-parcours";
 
 
 export const Route = createFileRoute("/_authenticated/espace/dossiers/$id")({
@@ -298,6 +299,8 @@ function DossierDetail() {
               statut={dossier.statut}
               active={parcoursActif}
               onSelect={setParcours}
+              preuves={preuvesParcours}
+              gele={kycBloquant}
             />
           )}
         </>
