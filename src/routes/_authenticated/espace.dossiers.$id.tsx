@@ -149,6 +149,8 @@ function DossierDetail() {
   /** Vue globale ACPR : onglet distinct du déroulé des étapes. */
   const [vueGlobale, setVueGlobale] = useState(false);
   const completude = useCompletudeDossier(id, dossier?.client_id ?? null);
+  /** Actes réellement archivés : une étape réglementaire n'est cochée que s'ils existent. */
+  const preuvesParcours = usePreuvesParcours(id, dossier?.type_assurance === "emprunteur");
   /** Score de conformité KYC du client (0-100) : sous 50 %, le dossier est gelé. */
   const [scoreKyc, setScoreKyc] = useState<number | null>(null);
   const [contreProposition, setContreProposition] = useState<{
