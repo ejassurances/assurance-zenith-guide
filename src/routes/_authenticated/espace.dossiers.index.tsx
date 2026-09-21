@@ -225,7 +225,7 @@ export function NewDossierForm({
   presetClient?: ClientOption;
 }) {
   const [step, setStep] = useState<1 | 2>(1);
-  const [type, setType] = useState<BrancheAssurance>("emprunteur");
+  const [type, setType] = useState<BrancheAssurance | null>(null);
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [clientId, setClientId] = useState<string>(presetClient?.id ?? "");
   const [clientQuery, setClientQuery] = useState("");
@@ -462,6 +462,10 @@ export function NewDossierForm({
       setError("Sélectionnez un client, saisissez un nom ou ajoutez un emprunteur.");
       return;
     }
+    if (!type) {
+      setError("Choisissez une branche d'assurance avant de créer le dossier.");
+      return;
+    }
     setSaving(true);
     setError(null);
 
@@ -594,6 +598,12 @@ export function NewDossierForm({
             </button>
           ))}
         </div>
+
+        {type === null && (
+          <p className="mt-6 text-sm text-ink-muted">
+            Choisissez une branche ci-dessus pour afficher le formulaire correspondant.
+          </p>
+        )}
 
         {type === "emprunteur" ? (
           <>
@@ -760,7 +770,8 @@ export function NewDossierForm({
               setRecueil((r) => assuresSynchronises(r));
               setStep(2);
             }}
-            className="rounded-full bg-[#0A192F] px-5 py-2 text-sm font-medium text-white"
+            disabled={!type}
+            className="rounded-full bg-[#0A192F] px-5 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
             Continuer → Recueil des besoins
           </button>
