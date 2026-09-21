@@ -412,6 +412,15 @@ export function ConformiteClientTab({
                           <button onClick={() => telecharger(doc.storage_path)} className="text-xs underline">
                             Voir
                           </button>
+                          {canEdit && doc.type === "cni" && (
+                            <button
+                              onClick={() => relire(doc.id)}
+                              disabled={lecture === doc.id}
+                              className="text-xs font-medium text-[color:var(--crm-navy)] underline disabled:opacity-50"
+                            >
+                              {lecture === doc.id ? "Lecture…" : "Remplir la fiche"}
+                            </button>
+                          )}
                           {doc.drive_url && (
                             <a
                               href={doc.drive_url}
