@@ -1744,11 +1744,12 @@ export function DossierDevisPanel({
                     <span className="rounded-full border border-line px-2 py-0.5 text-ink-muted">
                       {d.source === "api" ? "Tarif automatique (API)" : d.source === "pdf" ? "Devis PDF" : "Saisie manuelle"}
                     </span>
-                    {d.quotite_pct != null && (
+                    {estEmprunteur && d.quotite_pct != null && (
                       <span className="rounded-full border border-line px-2 py-0.5 text-ink-muted">
                         Quotité {d.quotite_pct} %
                       </span>
                     )}
+
                   </div>
 
                   {/* Rémunération du cabinet — interne, jamais visible client ni apporteur. */}
