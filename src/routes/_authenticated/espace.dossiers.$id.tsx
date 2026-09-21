@@ -43,7 +43,6 @@ import {
   type ParcoursEtape,
   type ParcoursKey,
 } from "@/lib/parcours-emprunteur";
-import { ParcoursEmprunteurNav } from "@/components/parcours-emprunteur-nav";
 
 import { DocumentsPretPanel } from "@/components/documents-pret-panel";
 import { DossierReferencesExternesPanel } from "@/components/dossier-references-externes-panel";
@@ -325,17 +324,6 @@ function DossierDetail() {
           )}
         </div>
       </div>
-
-      {parcoursActif && etapesParcours && (
-        <ParcoursEmprunteurNav
-          statut={dossier.statut}
-          active={parcoursActif}
-          onSelect={(k) => setParcours(k)}
-          preuves={preuvesParcours ?? undefined}
-          gele={scoreKyc !== null && scoreKyc < 50}
-          etapes={etapesParcours}
-        />
-      )}
 
       {parcoursActif && (
         <div className="flex gap-5 overflow-x-auto border-b border-line pb-0 text-sm">
