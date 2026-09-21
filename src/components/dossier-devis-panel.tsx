@@ -1165,6 +1165,76 @@ export function DossierDevisPanel({
           : `Saisie manuelle des devis étudiés pour ce dossier${branche ? ` (${branche})` : ""}. Ils alimentent le tableau des offres comparées du devoir de conseil. La saisie manuelle couvre les compagnies sans API de tarification et les contrats déjà validés par la compagnie (import rétroactif).`}
       </p>
 
+      {/* Ajout d'un devis : dépôt direct ou reprise d'une pièce déjà au dossier. */}
+      <div className="mt-4 rounded-xl border border-line bg-surface p-4">
+        <h3 className="text-sm font-medium text-ink">Ajouter un devis</h3>
+        <p className="mt-1 text-xs text-ink-muted">
+          Déposez le devis reçu, ou reprenez une pièce déjà présente sur le dossier (reçue par e-mail, scannée). La
+          pièce est lue automatiquement : partenaire, produit, tarif, quotité et garanties sont seulement proposés.
+          Rien n'est enregistré sans votre validation.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-ink px-4 py-2 text-xs text-primary-foreground disabled:opacity-60">
+            <input
+              type="file"
+              accept="application/pdf,image/*"
+              className="hidden"
+              disabled={importBusy}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f) void importerDevis(f);
+              }}
+            />
+            {importBusy ? "Lecture en cours…" : "Déposer un devis (PDF ou photo)"}
+          </label>
+          <button
+            type="button"
+            onClick={() => setPiecesOuvertes((v) => !v)}
+            disabled={importBusy}
+            className="rounded-full border border-line px-4 py-2 text-xs text-ink hover:bg-surface disabled:opacity-60"
+          >
+            Reprendre un devis du dossier ({piecesCandidates.length})
+          </button>
+        </div>
+
+        {piecesOuvertes && (
+          <div className="mt-3 space-y-2">
+            {piecesCandidates.length === 0 ? (
+              <p className="text-xs text-ink-muted">
+                Aucune pièce du dossier ne ressemble à un devis. Déposez le fichier ci-dessus, ou classez la pièce en
+                « devis » depuis l'onglet des pièces du dossier.
+              </p>
+            ) : (
+              piecesCandidates.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-surface-elevated/60 px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-medium text-ink">{p.file_name ?? "Pièce sans nom"}</p>
+                    <p className="text-[11px] text-ink-muted">
+                      Déposée le {new Date(p.created_at).toLocaleDateString("fr-FR")}
+                      {p.type_document ? ` · ${p.type_document.replace(/_/g, " ")}` : ""}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void reprendreDocument(p.id, p.file_name ?? "cette pièce")}
+                    disabled={importBusy}
+                    className="shrink-0 rounded-full border border-line px-3 py-1.5 text-xs text-ink hover:bg-surface disabled:opacity-60"
+                  >
+                    Lire et préremplir
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {importMsg && <p className="mt-2 text-xs text-emerald-700">{importMsg}</p>}
+      </div>
+
 
 
 
