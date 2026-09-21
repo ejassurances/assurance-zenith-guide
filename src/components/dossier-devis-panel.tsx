@@ -1686,7 +1686,21 @@ export function DossierDevisPanel({
         </div>
       )}
 
-
+      {/* Hors emprunteur : comparatif sur la grille de garanties de la branche du dossier. */}
+      {!estEmprunteur && familleCodeDossier && (
+        <DevisComparatifTable
+          familleCode={familleCodeDossier}
+          devis={devisAffiches}
+          nomCompagnie={(id) => compagnies.find((c) => c.id === id)?.nom ?? "Compagnie non renseignée"}
+          nomProduit={(id) => produits.find((p) => p.id === id)?.nom ?? "Produit non renseigné"}
+          grillesProduits={grillesProduits}
+          coutTotal={() => null}
+          coutHuitAns={() => null}
+          economie={() => null}
+          estRetenu={(d) => estDevisRetenu(d as DossierDevis)}
+          labelAssure={(rang) => `Assuré ${rang ?? 1}`}
+        />
+      )}
 
 
       <div className={`mt-4 space-y-2 ${estEmprunteur && !detailOuvert ? "hidden" : ""}`}>
