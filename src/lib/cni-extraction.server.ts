@@ -142,11 +142,12 @@ async function telecharger(admin: Admin, path: string): Promise<{ blob: Blob } |
 export type ResultatCni =
   | { statut: "ignore"; raison: string }
   | { statut: "ecart"; raison: string }
-  | { statut: "complete"; date_naissance: string; lcb: string | null };
+  | { statut: "complete"; date_naissance: string | null; champs: string[]; lcb: string | null };
 
 /**
- * Traite une pièce d'identité déposée : extraction IA, complétion de la fiche
- * et relance du contrôle LCB-FT si celui-ci attendait des informations.
+ * Traite une pièce d'identité déposée : extraction IA, complétion des champs
+ * d'état civil encore vides de la fiche client, et relance du contrôle LCB-FT
+ * si celui-ci attendait justement ces informations.
  */
 export async function traiterPieceIdentiteEtRelancerLcb(
   admin: Admin,
@@ -154,7 +155,7 @@ export async function traiterPieceIdentiteEtRelancerLcb(
 ): Promise<ResultatCni> {
   const { data: doc } = await admin
     .from("client_kyc_documents")
-    .select("id, client_id, type, nom, storage_path")
+    .select("id, client_id, type, nom, storage_path, date_expiration")
     .eq("id", kycDocumentId)
     .maybeSingle();
   if (!doc) return { statut: "ignore", raison: "Document introuvable" };
@@ -163,10 +164,11 @@ export async function traiterPieceIdentiteEtRelancerLcb(
     type: string;
     nom: string | null;
     storage_path: string;
+    date_expiration: string | null;
   };
   if (d.type !== "cni") return { statut: "ignore", raison: "Type de document non exploitable" };
 
-  // On n'agit que si le contrôle LCB-FT attend justement ces informations.
+  // La relance du contrôle LCB-FT n'a lieu que s'il attendait ces informations.
   const { data: derniere } = await admin
     .from("client_lcb_verifications")
     .select("id, statut")
@@ -174,22 +176,27 @@ export async function traiterPieceIdentiteEtRelancerLcb(
     .order("verifie_le", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if ((derniere as { statut: string } | null)?.statut !== "en_attente_infos") {
-    return { statut: "ignore", raison: "Aucun contrôle LCB-FT en attente d'informations" };
-  }
+  const lcbEnAttente = (derniere as { statut: string } | null)?.statut === "en_attente_infos";
 
   const { data: client } = await admin
     .from("clients")
-    .select("id, nom, prenom, date_naissance, lieu_naissance")
+    .select(
+      "id, civilite, nom, prenom, nom_naissance, date_naissance, lieu_naissance, ville_naissance, pays_naissance, nationalite",
+    )
     .eq("id", d.client_id)
     .maybeSingle();
   if (!client) return { statut: "ignore", raison: "Fiche client introuvable" };
   const c = client as {
     id: string;
+    civilite: string | null;
     nom: string | null;
     prenom: string | null;
+    nom_naissance: string | null;
     date_naissance: string | null;
     lieu_naissance: string | null;
+    ville_naissance: string | null;
+    pays_naissance: string | null;
+    nationalite: string | null;
   };
 
   let extraction: Extraction;
