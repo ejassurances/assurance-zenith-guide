@@ -1871,8 +1871,10 @@ export function DossierDevisPanel({
 
 
               {(() => {
+                if (!estEmprunteur) return null;
                 const eco = economiePourDevis(d);
                 if (!eco) return null;
+
                 return (
                   <p
                     className={`mt-2 rounded-md px-2 py-1 text-xs ${
