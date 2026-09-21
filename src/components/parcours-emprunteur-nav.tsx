@@ -98,14 +98,15 @@ export function ParcoursEmprunteurNav({
       </ol>
 
       {def && <p className="mt-1 text-xs text-ink-muted">{def.description}</p>}
-      {preuves && def && etatEtape(def.key, statut, preuves) === "reprise" && (
+      {preuves && def && etatEtape(def.key, statut, preuves, etapes) === "reprise" && (
         <p className="mt-3 rounded-md border border-line bg-background px-3 py-2 text-xs text-ink-soft">
           Dossier repris de l'existant : cette étape n'a pas d'acte archivé dans le logiciel
           (lettre de mission, devis ou devoir de conseil). Elle n'est donc pas comptée comme
           réalisée.
         </p>
       )}
-      {def && !etapeAtteinte(def.key, statut) && (
+      {def && !etapeAtteinte(def.key, statut, etapes) && (
+
         <p className="mt-3 rounded-md border border-accent/50 bg-accent/10 px-3 py-2 text-xs text-ink">
           Étape non encore atteinte : consultation possible, mais les étapes réglementaires
           (lettre de mission, devoir de conseil, signature) restent validées manuellement.
