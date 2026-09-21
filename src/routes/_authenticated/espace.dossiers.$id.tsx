@@ -326,24 +326,49 @@ function DossierDetail() {
         </div>
       </div>
 
+      {parcoursActif && etapesParcours && (
+        <ParcoursEmprunteurNav
+          statut={dossier.statut}
+          active={parcoursActif}
+          onSelect={(k) => setParcours(k)}
+          preuves={preuvesParcours ?? undefined}
+          gele={scoreKyc !== null && scoreKyc < 50}
+          etapes={etapesParcours}
+        />
+      )}
+
       {parcoursActif && (
         <div className="flex gap-5 overflow-x-auto border-b border-line pb-0 text-sm">
-          {(
-            [
-              { mode: "synthese", label: "Synthèse" },
-              { mode: "modifier", label: "Modifier" },
-              { mode: "assures", label: "Info Assuré(s)" },
-              { mode: "configuration", label: "Configuration" },
-              { mode: "pret", label: "Prêt(s)" },
-              { mode: "garanties", label: "Garanties" },
-              { mode: "banque", label: "Banque" },
-              { mode: "fichiers", label: "Fichiers" },
-              { mode: "taches", label: "Tâches" },
-              { mode: "activite", label: "Activité" },
-              { mode: "simulations", label: "Simulation(s)" },
-              { mode: "devis", label: "Études et devis" },
-              { mode: "pieces", label: "Pièces" },
-            ] as const
+          {(estEdpm
+            ? ([
+                { mode: "synthese", label: "Synthèse" },
+                { mode: "modifier", label: "Modifier" },
+                { mode: "assures", label: "Info Assuré(s)" },
+                { mode: "configuration", label: "Configuration" },
+                { mode: "engin", label: "L'engin" },
+                { mode: "usage", label: "Usage" },
+                { mode: "garanties", label: "Garanties" },
+                { mode: "fichiers", label: "Fichiers" },
+                { mode: "taches", label: "Tâches" },
+                { mode: "activite", label: "Activité" },
+                { mode: "devis", label: "Études et devis" },
+                { mode: "pieces", label: "Pièces" },
+              ] as const)
+            : ([
+                { mode: "synthese", label: "Synthèse" },
+                { mode: "modifier", label: "Modifier" },
+                { mode: "assures", label: "Info Assuré(s)" },
+                { mode: "configuration", label: "Configuration" },
+                { mode: "pret", label: "Prêt(s)" },
+                { mode: "garanties", label: "Garanties" },
+                { mode: "banque", label: "Banque" },
+                { mode: "fichiers", label: "Fichiers" },
+                { mode: "taches", label: "Tâches" },
+                { mode: "activite", label: "Activité" },
+                { mode: "simulations", label: "Simulation(s)" },
+                { mode: "devis", label: "Études et devis" },
+                { mode: "pieces", label: "Pièces" },
+              ] as const)
           ).map((t) => (
             <button
               key={t.mode}
@@ -361,6 +386,7 @@ function DossierDetail() {
           ))}
         </div>
       )}
+
 
       {!parcoursActif && (
         <DossierPipeline
