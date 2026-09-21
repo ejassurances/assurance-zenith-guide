@@ -147,8 +147,10 @@ function DossierDetail() {
   );
   /** Étape visible du parcours emprunteur (présentation en 12 étapes). */
   const [parcours, setParcours] = useState<ParcoursKey | null>(null);
-  /** Vue du dossier : Synthèse (nouvelle vue par défaut), Parcours détaillé, ou Vue globale ACPR. */
-  const [modeAffichage, setModeAffichage] = useState<"synthese" | "parcours" | "global">("synthese");
+  /** Vue du dossier : onglets façon Courtigo, chacun réutilisant un composant déjà existant. */
+  const [modeAffichage, setModeAffichage] = useState<
+    "synthese" | "assures" | "devis" | "taches" | "fichiers" | "parcours" | "global"
+  >("synthese");
   const completude = useCompletudeDossier(id, dossier?.client_id ?? null);
   /** Actes réellement archivés : une étape réglementaire n'est cochée que s'ils existent. */
   const preuvesParcours = usePreuvesParcours(id, dossier?.type_assurance === "emprunteur");
@@ -274,43 +276,32 @@ function DossierDetail() {
 
       {parcoursActif && (
         <>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setModeAffichage("synthese")}
-              className={
-                "rounded-full border px-4 py-1.5 text-xs transition " +
-                (modeAffichage === "synthese"
-                  ? "border-ink bg-ink text-primary-foreground"
-                  : "border-line bg-background text-ink-muted hover:border-ink/40")
-              }
-            >
-              Synthèse
-            </button>
-            <button
-              type="button"
-              onClick={() => setModeAffichage("parcours")}
-              className={
-                "rounded-full border px-4 py-1.5 text-xs transition " +
-                (modeAffichage === "parcours"
-                  ? "border-ink bg-ink text-primary-foreground"
-                  : "border-line bg-background text-ink-muted hover:border-ink/40")
-              }
-            >
-              Parcours par étapes
-            </button>
-            <button
-              type="button"
-              onClick={() => setModeAffichage("global")}
-              className={
-                "rounded-full border px-4 py-1.5 text-xs transition " +
-                (modeAffichage === "global"
-                  ? "border-ink bg-ink text-primary-foreground"
-                  : "border-line bg-background text-ink-muted hover:border-ink/40")
-              }
-            >
-              Vue globale du dossier (traçabilité ACPR)
-            </button>
+          <div className="flex gap-5 overflow-x-auto border-b border-line pb-0 text-sm">
+            {(
+              [
+                { mode: "synthese", label: "Synthèse" },
+                { mode: "assures", label: "Assurés" },
+                { mode: "devis", label: "Études et devis" },
+                { mode: "taches", label: "Tâches" },
+                { mode: "fichiers", label: "Fichiers" },
+                { mode: "parcours", label: "Parcours détaillé" },
+                { mode: "global", label: "Vue globale ACPR" },
+              ] as const
+            ).map((t) => (
+              <button
+                key={t.mode}
+                type="button"
+                onClick={() => setModeAffichage(t.mode)}
+                className={
+                  "shrink-0 whitespace-nowrap border-b-2 px-1 pb-3 transition " +
+                  (modeAffichage === t.mode
+                    ? "border-ink font-medium text-ink"
+                    : "border-transparent text-ink-muted hover:text-ink")
+                }
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
           {modeAffichage === "parcours" && (
             <ParcoursEmprunteurNav
@@ -357,6 +348,22 @@ function DossierDetail() {
             onVoirVueGlobale={() => setModeAffichage("global")}
             onSaved={load}
           />
+        ) : modeAffichage === "assures" && parcoursActif ? (
+          <CoordonneesEtape dossier={dossier} />
+        ) : userId && modeAffichage === "devis" && parcoursActif ? (
+          <DossierDevisPanel
+            dossierId={id}
+            branche={dossier.type_assurance}
+            userId={userId}
+            onChanged={load}
+          />
+        ) : modeAffichage === "taches" && parcoursActif ? (
+          <DossierTachesPanel dossierId={id} />
+        ) : userId && modeAffichage === "fichiers" && parcoursActif ? (
+          <section className="space-y-6" aria-label="Fichiers du dossier">
+            <PiecesSection dossierId={id} clientEmail={dossier.client_email} canValidate={canEdit} />
+            <DocumentsPanel dossierId={id} userId={userId} />
+          </section>
         ) : userId && modeAffichage === "global" ? (
           <section className="space-y-6" aria-label="Vue globale du dossier">
             <div className="border-b border-line pb-3">
