@@ -59,14 +59,22 @@ export function DevisComparatifTable({
   coutHuitAns: (d: DevisColonne) => number | null;
   economie: (d: DevisColonne) => { economie: number; pourcentage: number } | null;
   estRetenu: (d: DevisColonne) => boolean;
-  pret: { moisRestants: number | null; crd: number | null; coutBanque: number | null };
+  pret?: { moisRestants: number | null; crd: number | null; coutBanque: number | null };
   labelAssure: (rang: number | null) => string;
 }) {
   const grille = grillePourFamille(familleCode);
+  const estEmprunteur = familleCode === "emprunteur";
   if (devis.length === 0) return null;
 
   const valeurs = (d: DevisColonne): ValeursGrille | null =>
     (d.produit_id ? grillesProduits[d.produit_id] : null) ?? null;
+
+  /** Cotisation annuelle : total annuel saisi, à défaut 12 × la cotisation mensuelle. */
+  const coutAnnuel = (d: DevisColonne): number | null => {
+    if (d.montant_total_saisi != null) return Number(d.montant_total_saisi);
+    if (d.cotisation_mensuelle != null) return Number(d.cotisation_mensuelle) * 12;
+    return null;
+  };
 
   const th = "border-b border-line px-2 py-2 text-left align-bottom";
   const td = "border-b border-line/70 px-2 py-1.5 align-top";
@@ -77,20 +85,27 @@ export function DevisComparatifTable({
       <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line px-4 py-3">
         <div>
           <h4 className="font-serif text-base text-ink">Rapprochement des devis importés</h4>
-          <p className="text-xs text-ink-muted">
-            Prêt : {pret.crd != null ? `capital restant dû ${euro(pret.crd)}` : "capital restant dû non disponible"}
-            {" · "}
-            {pret.moisRestants ? `${pret.moisRestants} mois restants` : "durée restante non disponible"}
-            {" · "}
-            {pret.coutBanque != null
-              ? `assurance bancaire actuelle ${euro(pret.coutBanque)}`
-              : "coût bancaire actuel non disponible"}
-          </p>
+          {estEmprunteur && pret ? (
+            <p className="text-xs text-ink-muted">
+              Prêt : {pret.crd != null ? `capital restant dû ${euro(pret.crd)}` : "capital restant dû non disponible"}
+              {" · "}
+              {pret.moisRestants ? `${pret.moisRestants} mois restants` : "durée restante non disponible"}
+              {" · "}
+              {pret.coutBanque != null
+                ? `assurance bancaire actuelle ${euro(pret.coutBanque)}`
+                : "coût bancaire actuel non disponible"}
+            </p>
+          ) : (
+            <p className="text-xs text-ink-muted">
+              {devis.length} devis comparés sur la grille de garanties de la branche du dossier.
+            </p>
+          )}
         </div>
         <p className="text-[11px] text-ink-soft">
           Garanties issues des grilles validées du CRM. À défaut, la valeur lue sur le devis est signalée.
         </p>
       </header>
+
 
       <div className="overflow-x-auto p-4">
         <table className="w-full min-w-[640px] border-collapse text-xs">
