@@ -223,7 +223,6 @@ export async function traiterPieceIdentiteEtRelancerLcb(
 
   const ecarts: string[] = [];
   if (!extraction.fiable) ecarts.push("l'IA signale une lecture peu fiable");
-  if (!dateValide(extraction.date_naissance)) ecarts.push("date de naissance illisible ou invalide");
   if (!concorde(c.nom, extraction.nom)) {
     ecarts.push(`nom différent (fiche « ${c.nom ?? "—"} » / pièce « ${extraction.nom ?? "—"} »)`);
   }
@@ -234,7 +233,7 @@ export async function traiterPieceIdentiteEtRelancerLcb(
   if (ecarts.length > 0) {
     await creerTacheAdmin(admin, {
       titre: "Pièce d'identité — écart avec la fiche client",
-      description: `Lecture automatique de la pièce d'identité de ${c.prenom ?? ""} ${c.nom ?? ""} non appliquée.\nÉcarts constatés :\n- ${ecarts.join("\n- ")}\nAction : vérifier la pièce, corriger la fiche manuellement puis relancer le contrôle LCB-FT.`,
+      description: `Lecture automatique de la pièce d'identité de ${c.prenom ?? ""} ${c.nom ?? ""} non appliquée.\nÉcarts constatés :\n- ${ecarts.join("\n- ")}\nAction : vérifier la pièce puis corriger la fiche manuellement.`,
       client_id: c.id,
     });
     await admin
@@ -252,50 +251,87 @@ export async function traiterPieceIdentiteEtRelancerLcb(
     return { statut: "ecart", raison: ecarts.join(" ; ") };
   }
 
-  const dateNaissance = extraction.date_naissance as string;
-  const patch: Record<string, unknown> = { date_naissance: dateNaissance };
-  if (!c.lieu_naissance && extraction.lieu_naissance) patch["lieu_naissance"] = extraction.lieu_naissance;
+  // Complétion des champs encore vides uniquement : une saisie humaine n'est jamais écrasée.
+  const patch: Record<string, unknown> = {};
+  const remplis: string[] = [];
+  const completer = (colonne: string, actuel: string | null, valeur: string | null, libelle: string) => {
+    if (!actuel && valeur) {
+      patch[colonne] = valeur;
+      remplis.push(`${libelle} : ${valeur}`);
+    }
+  };
 
-  const { error: uErr } = await admin.from("clients").update(patch as never).eq("id", c.id);
-  if (uErr) {
-    await creerTacheAdmin(admin, {
-      titre: "Date de naissance non enregistrée — LCB-FT en attente",
-      description: `Mise à jour impossible de la fiche de ${c.prenom ?? ""} ${c.nom ?? ""} : ${uErr.message}`,
-      client_id: c.id,
-    });
-    return { statut: "ecart", raison: uErr.message };
+  const dateNaissance = dateValide(extraction.date_naissance) ? (extraction.date_naissance as string) : null;
+  completer("date_naissance", c.date_naissance, dateNaissance, "Date de naissance");
+  completer("civilite", c.civilite, extraction.civilite, "Civilité");
+  completer("prenom", c.prenom, extraction.prenom, "Prénom");
+  completer("nom_naissance", c.nom_naissance, extraction.nom, "Nom de naissance");
+  completer("lieu_naissance", c.lieu_naissance, extraction.lieu_naissance, "Lieu de naissance");
+  completer("ville_naissance", c.ville_naissance, extraction.lieu_naissance, "Ville de naissance");
+  completer("pays_naissance", c.pays_naissance, extraction.pays_naissance, "Pays de naissance");
+  completer("nationalite", c.nationalite, extraction.nationalite, "Nationalité");
+
+  if (Object.keys(patch).length > 0) {
+    const { error: uErr } = await admin.from("clients").update(patch as never).eq("id", c.id);
+    if (uErr) {
+      await creerTacheAdmin(admin, {
+        titre: "État civil non enregistré depuis la pièce d'identité",
+        description: `Mise à jour impossible de la fiche de ${c.prenom ?? ""} ${c.nom ?? ""} : ${uErr.message}`,
+        client_id: c.id,
+      });
+      return { statut: "ecart", raison: uErr.message };
+    }
   }
 
-  await admin
-    .from("activites")
-    .insert({
-      client_id: c.id,
-      type: "systeme",
-      titre: "Date de naissance complétée automatiquement depuis la pièce d'identité déposée",
-      contenu: `Date de naissance : ${dateNaissance}${patch["lieu_naissance"] ? `\nLieu de naissance : ${String(patch["lieu_naissance"])}` : ""}\nSource : ${d.nom ?? "pièce d'identité"} déposée par le client.\nLe contrôle LCB-FT est relancé automatiquement.`,
-    })
-    .then(
-      () => undefined,
-      (e: unknown) => console.error("[CNI] trace complétion non enregistrée", e),
-    );
+  // Date de fin de validité de la pièce (utile aux rappels d'expiration).
+  if (!d.date_expiration && extraction.date_expiration && ISO.test(extraction.date_expiration)) {
+    await admin
+      .from("client_kyc_documents")
+      .update({ date_expiration: extraction.date_expiration } as never)
+      .eq("id", kycDocumentId)
+      .then(
+        () => remplis.push(`Validité de la pièce : ${extraction.date_expiration}`),
+        (e: unknown) => console.error("[CNI] date d'expiration non enregistrée", e),
+      );
+  }
+
+  if (remplis.length > 0) {
+    await admin
+      .from("activites")
+      .insert({
+        client_id: c.id,
+        type: "systeme",
+        titre: "État civil complété automatiquement depuis la pièce d'identité",
+        contenu: `${remplis.join("\n")}\nSource : ${d.nom ?? "pièce d'identité"} déposée sur la fiche client.${
+          lcbEnAttente && dateNaissance ? "\nLe contrôle LCB-FT est relancé automatiquement." : ""
+        }`,
+      })
+      .then(
+        () => undefined,
+        (e: unknown) => console.error("[CNI] trace complétion non enregistrée", e),
+      );
+  }
 
   let statutLcb: string | null = null;
-  try {
-    const { lancerLcbAutomatique } = await import("@/lib/dossier-automation.server");
-    const res = await lancerLcbAutomatique(admin, {
-      client_id: c.id,
-      nom: c.nom ?? extraction.nom ?? "",
-      prenom: c.prenom ?? extraction.prenom ?? null,
-      date_naissance: dateNaissance,
-    });
-    statutLcb = (res as { statut?: string } | null)?.statut ?? null;
-  } catch (e) {
-    await creerTacheAdmin(admin, {
-      titre: "Relance LCB-FT automatique en échec",
-      description: `La date de naissance a bien été complétée, mais le contrôle LCB-FT n'a pas pu être relancé : ${e instanceof Error ? e.message : "erreur inconnue"}.\nAction : relancer le contrôle depuis l'onglet Conformité.`,
-      client_id: c.id,
-    });
+  const dateRetenue = c.date_naissance ?? dateNaissance;
+  if (lcbEnAttente && dateRetenue) {
+    try {
+      const { lancerLcbAutomatique } = await import("@/lib/dossier-automation.server");
+      const res = await lancerLcbAutomatique(admin, {
+        client_id: c.id,
+        nom: c.nom ?? extraction.nom ?? "",
+        prenom: c.prenom ?? extraction.prenom ?? null,
+        date_naissance: dateRetenue,
+      });
+      statutLcb = (res as { statut?: string } | null)?.statut ?? null;
+    } catch (e) {
+      await creerTacheAdmin(admin, {
+        titre: "Relance LCB-FT automatique en échec",
+        description: `L'état civil a bien été complété, mais le contrôle LCB-FT n'a pas pu être relancé : ${e instanceof Error ? e.message : "erreur inconnue"}.\nAction : relancer le contrôle depuis l'onglet Conformité.`,
+        client_id: c.id,
+      });
+    }
   }
 
-  return { statut: "complete", date_naissance: dateNaissance, lcb: statutLcb };
+  return { statut: "complete", date_naissance: dateRetenue, champs: remplis, lcb: statutLcb };
 }
