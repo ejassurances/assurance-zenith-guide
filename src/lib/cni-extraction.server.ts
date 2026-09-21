@@ -222,6 +222,7 @@ export async function traiterPieceIdentiteEtRelancerLcb(
     storage_path: string;
     date_expiration: string | null;
   };
+  if (d.type === "justificatif_domicile") return traiterJustificatifDomicile(admin, kycDocumentId, d);
   if (d.type !== "cni") return { statut: "ignore", raison: "Type de document non exploitable" };
 
   // La relance du contrôle LCB-FT n'a lieu que s'il attendait ces informations.
