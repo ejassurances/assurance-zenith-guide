@@ -34,7 +34,6 @@ import { SimulassurConsole } from "@/components/simulassur-console";
 import { EtudeEpargnePanel } from "@/components/etude-epargne-panel";
 import { traiterDocumentDepose } from "@/lib/etudes.functions";
 import { ETAPES, etapeLabel, estEtapeValide, type EtapeKey } from "@/lib/pipeline-dossier";
-import { ParcoursEmprunteurNav } from "@/components/parcours-emprunteur-nav";
 import { ImportDocumentsEmprunteur } from "@/components/import-documents-emprunteur";
 import {
   etapeCouranteParcours,
@@ -147,9 +146,9 @@ function DossierDetail() {
   );
   /** Étape visible du parcours emprunteur (présentation en 12 étapes). */
   const [parcours, setParcours] = useState<ParcoursKey | null>(null);
-  /** Vue du dossier : onglets façon Courtigo, chacun réutilisant un composant déjà existant. */
+  /** Onglet actif du dossier emprunteur, correspondant exactement aux onglets Courtigo qui ont un vrai contenu. */
   const [modeAffichage, setModeAffichage] = useState<
-    "synthese" | "assures" | "devis" | "taches" | "fichiers" | "parcours" | "global"
+    "synthese" | "assures" | "pret" | "fichiers" | "devis" | "taches"
   >("synthese");
   const completude = useCompletudeDossier(id, dossier?.client_id ?? null);
   /** Actes réellement archivés : une étape réglementaire n'est cochée que s'ils existent. */
@@ -275,52 +274,35 @@ function DossierDetail() {
       </div>
 
       {parcoursActif && (
-        <>
-          <div className="flex gap-5 overflow-x-auto border-b border-line pb-0 text-sm">
-            {(
-              [
-                { mode: "synthese", label: "Synthèse" },
-                { mode: "assures", label: "Assurés" },
-                { mode: "devis", label: "Études et devis" },
-                { mode: "taches", label: "Tâches" },
-                { mode: "fichiers", label: "Fichiers" },
-                { mode: "parcours", label: "Parcours détaillé" },
-                { mode: "global", label: "Vue globale ACPR" },
-              ] as const
-            ).map((t) => (
-              <button
-                key={t.mode}
-                type="button"
-                onClick={() => setModeAffichage(t.mode)}
-                className={
-                  "shrink-0 whitespace-nowrap border-b-2 px-1 pb-3 transition " +
-                  (modeAffichage === t.mode
-                    ? "border-ink font-medium text-ink"
-                    : "border-transparent text-ink-muted hover:text-ink")
-                }
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-          {modeAffichage === "parcours" && (
-            <ParcoursEmprunteurNav
-              statut={dossier.statut}
-              active={parcoursActif}
-              onSelect={(k) => {
-                setModeAffichage("parcours");
-                setParcours(k);
-              }}
-              preuves={preuvesParcours}
-              gele={kycBloquant}
-            />
-          )}
-        </>
+        <div className="flex gap-5 overflow-x-auto border-b border-line pb-0 text-sm">
+          {(
+            [
+              { mode: "synthese", label: "Synthèse" },
+              { mode: "assures", label: "Info Assuré(s)" },
+              { mode: "pret", label: "Prêt(s)" },
+              { mode: "fichiers", label: "Fichiers" },
+              { mode: "devis", label: "Études et devis" },
+              { mode: "taches", label: "Tâches" },
+            ] as const
+          ).map((t) => (
+            <button
+              key={t.mode}
+              type="button"
+              onClick={() => setModeAffichage(t.mode)}
+              className={
+                "shrink-0 whitespace-nowrap border-b-2 px-1 pb-3 transition " +
+                (modeAffichage === t.mode
+                  ? "border-ink font-medium text-ink"
+                  : "border-transparent text-ink-muted hover:text-ink")
+              }
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       )}
 
-
-      {/* Suivi réglementaire : réservé à la vue globale et à la dernière étape du parcours. */}
-      {(!parcoursActif || modeAffichage === "global" || (modeAffichage === "parcours" && parcoursActif === "analyse")) && (
+      {!parcoursActif && (
         <DossierPipeline
           dossierId={id}
           statut={dossier.statut}
@@ -328,11 +310,7 @@ function DossierDetail() {
           canEdit={canEdit}
           masquerPhases={!!parcoursActif}
           onChanged={handlePipelineChanged}
-          onStepClick={(k) => {
-            setParcours(null);
-            setModeAffichage("parcours");
-            setSelectedStep(k);
-          }}
+          onStepClick={(k) => setSelectedStep(k)}
         />
       )}
 
@@ -344,12 +322,27 @@ function DossierDetail() {
             dossierId={id}
             canEdit={canEdit}
             scoreKyc={scoreKyc}
-            onVoirParcours={() => setModeAffichage("parcours")}
-            onVoirVueGlobale={() => setModeAffichage("global")}
             onSaved={load}
           />
         ) : modeAffichage === "assures" && parcoursActif ? (
           <CoordonneesEtape dossier={dossier} />
+        ) : parcoursActif && modeAffichage === "pret" ? (
+          <RecueilDossierPanel
+            dossierId={id}
+            typeAssurance={dossier.type_assurance}
+            recueil={dossier.recueil_besoins}
+            canEdit={canEdit}
+            onSaved={load}
+            sectionUnique
+            filtreSections={(titre) => /pr[eê]t/i.test(titre)}
+            client={{
+              id: dossier.client_id,
+              nom: dossier.client_nom,
+              email: dossier.client_email,
+              telephone: dossier.client_phone,
+              reference: dossier.reference,
+            }}
+          />
         ) : userId && modeAffichage === "devis" && parcoursActif ? (
           <DossierDevisPanel
             dossierId={id}
@@ -363,25 +356,6 @@ function DossierDetail() {
           <section className="space-y-6" aria-label="Fichiers du dossier">
             <PiecesSection dossierId={id} clientEmail={dossier.client_email} canValidate={canEdit} />
             <DocumentsPanel dossierId={id} userId={userId} />
-          </section>
-        ) : userId && modeAffichage === "global" ? (
-          <section className="space-y-6" aria-label="Vue globale du dossier">
-            <div className="border-b border-line pb-3">
-              <h2 className="font-serif text-xl font-medium text-ink">
-                Vue globale du dossier — traçabilité ACPR
-              </h2>
-              <p className="mt-1 text-xs text-ink-muted">
-                Ensemble des pièces et échanges du dossier, tous types confondus. Cette vue est
-                distincte du déroulé des étapes : chaque document reste rattaché à son étape.
-              </p>
-            </div>
-            <PiecesSection
-              dossierId={id}
-              clientEmail={dossier.client_email}
-              canValidate={canEdit}
-            />
-            <DocumentsPanel dossierId={id} userId={userId} />
-            <MessagesPanel dossierId={id} userId={userId} />
           </section>
         ) : (
           userId && (
@@ -417,16 +391,12 @@ function DossierSynthese({
   dossierId,
   canEdit,
   scoreKyc,
-  onVoirParcours,
-  onVoirVueGlobale,
   onSaved,
 }: {
   dossier: Dossier;
   dossierId: string;
   canEdit: boolean;
   scoreKyc: number | null;
-  onVoirParcours: () => void;
-  onVoirVueGlobale: () => void;
   onSaved: () => void;
 }) {
   return (
@@ -495,24 +465,17 @@ function DossierSynthese({
         </div>
 
         <div className="crm-card p-6">
-          <p className="crm-eyebrow">Actions rapides</p>
-          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={onVoirParcours}
-              className="rounded-xl border border-line px-4 py-3 text-left text-sm text-ink hover:border-ink/40"
-            >
-              Voir le parcours détaillé
-              <span className="block text-xs text-ink-muted">Étapes, import de documents, devis</span>
-            </button>
-            <button
-              type="button"
-              onClick={onVoirVueGlobale}
-              className="rounded-xl border border-line px-4 py-3 text-left text-sm text-ink hover:border-ink/40"
-            >
-              Vue globale ACPR
-              <span className="block text-xs text-ink-muted">Toutes les pièces et échanges</span>
-            </button>
+          <p className="crm-eyebrow">Suivi réglementaire et historique</p>
+          <div className="mt-4">
+            <DossierPipeline
+              dossierId={dossierId}
+              statut={dossier.statut}
+              selectedStep={dossier.statut}
+              canEdit={canEdit}
+              masquerPhases
+              onChanged={onSaved}
+              onStepClick={() => {}}
+            />
           </div>
           <div className="mt-6 border-t border-line pt-5">
             <DossierTachesPanel dossierId={dossierId} />
