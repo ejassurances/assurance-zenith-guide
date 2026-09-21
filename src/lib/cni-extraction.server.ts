@@ -83,10 +83,14 @@ async function appelerIa(fichier: { nom: string; mime: string; base64: string })
       if (!texte) throw new Error("Réponse IA vide");
       const brut = extraireJson(texte) as Record<string, unknown>;
       return {
-        nom: typeof brut["nom"] === "string" ? (brut["nom"] as string).trim() : null,
-        prenom: typeof brut["prenom"] === "string" ? (brut["prenom"] as string).trim() : null,
-        date_naissance: typeof brut["date_naissance"] === "string" ? (brut["date_naissance"] as string).trim() : null,
-        lieu_naissance: typeof brut["lieu_naissance"] === "string" ? (brut["lieu_naissance"] as string).trim() : null,
+        civilite: champ(brut["civilite"]),
+        nom: champ(brut["nom"]),
+        prenom: champ(brut["prenom"]),
+        date_naissance: champ(brut["date_naissance"]),
+        lieu_naissance: champ(brut["lieu_naissance"]),
+        pays_naissance: champ(brut["pays_naissance"]),
+        nationalite: champ(brut["nationalite"]),
+        date_expiration: champ(brut["date_expiration"]),
         fiable: brut["fiable"] !== false,
       };
     }
