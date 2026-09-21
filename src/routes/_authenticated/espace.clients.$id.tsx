@@ -314,7 +314,7 @@ function ClientDetail() {
           </div>
         </main>
 
-        <div className="lg:col-start-2 min-[1400px]:col-start-3 min-[1400px]:row-start-1">
+        <div className="lg:col-span-2 min-[1400px]:col-span-1 min-[1400px]:col-start-3 min-[1400px]:row-start-1">
           <ClientActivitySummary clientId={client.id} />
         </div>
       </div>
