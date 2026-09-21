@@ -61,12 +61,15 @@ function extraireJson(texte: string): unknown {
   }
 }
 
-async function appelerIa(fichier: { nom: string; mime: string; base64: string }): Promise<Extraction> {
+async function appelerBrut(
+  fichier: { nom: string; mime: string; base64: string },
+  prompt: string,
+): Promise<Record<string, unknown>> {
   const cle = process.env["LOVABLE_API_KEY"];
   if (!cle) throw new Error("Lecture indisponible : clé IA absente du projet.");
 
   const contenu = [
-    { type: "text", text: PROMPT },
+    { type: "text", text: prompt },
     { type: "file", file: { filename: fichier.nom, file_data: `data:${fichier.mime};base64,${fichier.base64}` } },
   ];
 
@@ -81,24 +84,77 @@ async function appelerIa(fichier: { nom: string; mime: string; base64: string })
       const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
       const texte = json.choices?.[0]?.message?.content ?? "";
       if (!texte) throw new Error("Réponse IA vide");
-      const brut = extraireJson(texte) as Record<string, unknown>;
-      return {
-        civilite: champ(brut["civilite"]),
-        nom: champ(brut["nom"]),
-        prenom: champ(brut["prenom"]),
-        date_naissance: champ(brut["date_naissance"]),
-        lieu_naissance: champ(brut["lieu_naissance"]),
-        pays_naissance: champ(brut["pays_naissance"]),
-        nationalite: champ(brut["nationalite"]),
-        date_expiration: champ(brut["date_expiration"]),
-        fiable: brut["fiable"] !== false,
-      };
+      return extraireJson(texte) as Record<string, unknown>;
     }
     derniere = `${res.status} ${await res.text()}`;
     if (res.status === 429) throw new Error("Lecture IA momentanément saturée, réessayez dans une minute.");
     if (res.status !== 400 && res.status !== 404) break;
   }
   throw new Error(`Lecture IA impossible : ${derniere}`);
+}
+
+async function appelerIa(fichier: { nom: string; mime: string; base64: string }): Promise<Extraction> {
+  const brut = await appelerBrut(fichier, PROMPT);
+  return {
+    civilite: champ(brut["civilite"]),
+    nom: champ(brut["nom"]),
+    prenom: champ(brut["prenom"]),
+    date_naissance: champ(brut["date_naissance"]),
+    lieu_naissance: champ(brut["lieu_naissance"]),
+    pays_naissance: champ(brut["pays_naissance"]),
+    nationalite: champ(brut["nationalite"]),
+    date_expiration: champ(brut["date_expiration"]),
+    fiable: brut["fiable"] !== false,
+  };
+}
+
+/** Justificatif de domicile : adresse postale du titulaire. */
+const PROMPT_DOMICILE = [
+  "Tu lis un justificatif de domicile (facture d'électricité, de gaz, d'eau, de téléphone/internet,",
+  "quittance de loyer, avis d'imposition ou attestation d'assurance habitation).",
+  "Extrais uniquement le nom du titulaire et son adresse postale de résidence.",
+  "",
+  "Réponds STRICTEMENT en JSON, sans texte autour, au format :",
+  '{"nom":"","prenom":"","adresse":"","complement_adresse":"","code_postal":"","ville":"","pays":"","fiable":true}',
+  "",
+  "Règles :",
+  "- `adresse` = numéro et nom de voie uniquement (ex. « 12 rue des Lilas »), sans code postal ni ville.",
+  "- `complement_adresse` = bâtiment, étage, appartement, lieu-dit si visible, sinon null.",
+  "- `code_postal` = 5 chiffres pour la France, sinon la valeur telle qu'elle apparaît.",
+  "- Prends l'adresse de résidence du titulaire, jamais l'adresse du fournisseur ou de l'expéditeur.",
+  "- `pays` en français (ex. « France ») si visible, sinon null.",
+  "- `fiable` = false si le document est illisible, tronqué, s'il ne s'agit pas d'un justificatif de domicile,",
+  "  ou si tu n'es pas certain de l'adresse.",
+  "- N'invente jamais une valeur : mets null quand l'information est absente.",
+].join("\n");
+
+type ExtractionDomicile = {
+  nom: string | null;
+  prenom: string | null;
+  adresse: string | null;
+  complement_adresse: string | null;
+  code_postal: string | null;
+  ville: string | null;
+  pays: string | null;
+  fiable: boolean;
+};
+
+async function appelerIaDomicile(fichier: {
+  nom: string;
+  mime: string;
+  base64: string;
+}): Promise<ExtractionDomicile> {
+  const brut = await appelerBrut(fichier, PROMPT_DOMICILE);
+  return {
+    nom: champ(brut["nom"]),
+    prenom: champ(brut["prenom"]),
+    adresse: champ(brut["adresse"]),
+    complement_adresse: champ(brut["complement_adresse"]),
+    code_postal: champ(brut["code_postal"]),
+    ville: champ(brut["ville"]),
+    pays: champ(brut["pays"]),
+    fiable: brut["fiable"] !== false,
+  };
 }
 
 /** Comparaison souple des noms (accents, casse, tirets, ordre des prénoms composés). */
@@ -166,6 +222,7 @@ export async function traiterPieceIdentiteEtRelancerLcb(
     storage_path: string;
     date_expiration: string | null;
   };
+  if (d.type === "justificatif_domicile") return traiterJustificatifDomicile(admin, kycDocumentId, d);
   if (d.type !== "cni") return { statut: "ignore", raison: "Type de document non exploitable" };
 
   // La relance du contrôle LCB-FT n'a lieu que s'il attendait ces informations.
@@ -334,4 +391,125 @@ export async function traiterPieceIdentiteEtRelancerLcb(
   }
 
   return { statut: "complete", date_naissance: dateRetenue, champs: remplis, lcb: statutLcb };
+}
+
+/**
+ * Justificatif de domicile déposé : lecture IA de l'adresse postale et
+ * complétion des champs d'adresse encore vides de la fiche client.
+ * Une adresse déjà saisie n'est jamais écrasée.
+ */
+async function traiterJustificatifDomicile(
+  admin: Admin,
+  kycDocumentId: string,
+  d: { client_id: string; nom: string | null; storage_path: string },
+): Promise<ResultatCni> {
+  const { data: client } = await admin
+    .from("clients")
+    .select("id, nom, prenom, adresse, complement_adresse, code_postal, ville, pays")
+    .eq("id", d.client_id)
+    .maybeSingle();
+  if (!client) return { statut: "ignore", raison: "Fiche client introuvable" };
+  const c = client as {
+    id: string;
+    nom: string | null;
+    prenom: string | null;
+    adresse: string | null;
+    complement_adresse: string | null;
+    code_postal: string | null;
+    ville: string | null;
+    pays: string | null;
+  };
+
+  let extraction: ExtractionDomicile;
+  try {
+    const fichier = await telecharger(admin, d.storage_path);
+    if (!fichier) throw new Error("Fichier indisponible dans le stockage");
+    const buffer = Buffer.from(await fichier.blob.arrayBuffer());
+    if (buffer.byteLength === 0) throw new Error("Fichier vide");
+    if (buffer.byteLength > TAILLE_MAX) throw new Error("Fichier trop volumineux (12 Mo maximum)");
+    extraction = await appelerIaDomicile({
+      nom: d.nom || "justificatif-domicile",
+      mime: fichier.blob.type || "application/pdf",
+      base64: buffer.toString("base64"),
+    });
+  } catch (e) {
+    const raison = e instanceof Error ? e.message : "erreur inconnue";
+    await creerTacheAdmin(admin, {
+      titre: "Justificatif de domicile illisible",
+      description: `La lecture automatique du justificatif de domicile de ${c.prenom ?? ""} ${c.nom ?? ""} a échoué (${raison}).\nAction : saisir l'adresse postale manuellement sur la fiche client.`,
+      client_id: c.id,
+    });
+    return { statut: "ecart", raison };
+  }
+
+  const ecarts: string[] = [];
+  if (!extraction.fiable) ecarts.push("l'IA signale une lecture peu fiable");
+  if (!extraction.adresse && !extraction.code_postal && !extraction.ville) {
+    ecarts.push("aucune adresse lisible sur le document");
+  }
+  if (!concorde(c.nom, extraction.nom)) {
+    ecarts.push(`nom différent (fiche « ${c.nom ?? "—"} » / justificatif « ${extraction.nom ?? "—"} »)`);
+  }
+
+  if (ecarts.length > 0) {
+    await creerTacheAdmin(admin, {
+      titre: "Justificatif de domicile — écart avec la fiche client",
+      description: `Lecture automatique du justificatif de domicile de ${c.prenom ?? ""} ${c.nom ?? ""} non appliquée.\nÉcarts constatés :\n- ${ecarts.join("\n- ")}\nAction : vérifier le document puis saisir l'adresse manuellement.`,
+      client_id: c.id,
+    });
+    await admin
+      .from("activites")
+      .insert({
+        client_id: c.id,
+        type: "systeme",
+        titre: "Lecture automatique du justificatif de domicile non appliquée",
+        contenu: `Écarts constatés :\n- ${ecarts.join("\n- ")}`,
+      })
+      .then(
+        () => undefined,
+        (e: unknown) => console.error("[Domicile] trace écart non enregistrée", e),
+      );
+    return { statut: "ecart", raison: ecarts.join(" ; ") };
+  }
+
+  const patch: Record<string, unknown> = {};
+  const remplis: string[] = [];
+  const completer = (colonne: string, actuel: string | null, valeur: string | null, libelle: string) => {
+    if (!actuel && valeur) {
+      patch[colonne] = valeur;
+      remplis.push(`${libelle} : ${valeur}`);
+    }
+  };
+
+  completer("adresse", c.adresse, extraction.adresse, "Adresse");
+  completer("complement_adresse", c.complement_adresse, extraction.complement_adresse, "Complément d'adresse");
+  completer("code_postal", c.code_postal, extraction.code_postal, "Code postal");
+  completer("ville", c.ville, extraction.ville, "Ville");
+  completer("pays", c.pays, extraction.pays, "Pays");
+
+  if (Object.keys(patch).length > 0) {
+    const { error: uErr } = await admin.from("clients").update(patch as never).eq("id", c.id);
+    if (uErr) {
+      await creerTacheAdmin(admin, {
+        titre: "Adresse non enregistrée depuis le justificatif de domicile",
+        description: `Mise à jour impossible de la fiche de ${c.prenom ?? ""} ${c.nom ?? ""} : ${uErr.message}`,
+        client_id: c.id,
+      });
+      return { statut: "ecart", raison: uErr.message };
+    }
+    await admin
+      .from("activites")
+      .insert({
+        client_id: c.id,
+        type: "systeme",
+        titre: "Adresse postale complétée automatiquement depuis le justificatif de domicile",
+        contenu: `${remplis.join("\n")}\nSource : ${d.nom ?? "justificatif de domicile"} déposé sur la fiche client.`,
+      })
+      .then(
+        () => undefined,
+        (e: unknown) => console.error("[Domicile] trace complétion non enregistrée", e),
+      );
+  }
+
+  return { statut: "complete", date_naissance: null, champs: remplis, lcb: null };
 }
