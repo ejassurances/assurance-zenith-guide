@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { echeancierDepuisRecueil } from "@/lib/echeancier-comparatif";
+import { echeancierDepuisRecueil, regrouperEcheancierParAnnee } from "@/lib/echeancier-comparatif";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { catalogueOffreUniqueFn, envoyerDevoirConseilFn, pdfDevoirConseil } from "@/lib/devoir-conseil.functions";
@@ -1066,7 +1066,8 @@ export function DevoirConseilPanel({
                   {echeancier.date_effet
                     ? ` (${echeancier.date_effet.split("-").reverse().join("/")})`
                     : ""}
-                  . Différentiel en vert : économie pour le client ; en rouge : surcoût.
+                  . 12 premières échéances détaillées, puis une ligne par année. Différentiel en
+                  vert : économie pour le client ; en rouge : surcoût.
                 </p>
                 {form.type_cotisation === "CRD" && (
                   <p className="mt-1 text-xs text-amber-700">
@@ -1092,26 +1093,47 @@ export function DevoirConseilPanel({
                     </tr>
                   </thead>
                   <tbody>
-                    {echeancier.lignes.map((l) => (
-                      <tr key={l.rang} className="border-t border-line">
-                        <td className="px-2 py-1 text-left">
-                          {l.date.split("-").reverse().join("/")}
-                        </td>
-                        <td className="px-2 py-1">{eur(l.echeance)}</td>
-                        <td className="px-2 py-1">{eur(l.interets)}</td>
-                        <td className="px-2 py-1">{eur(l.capital)}</td>
-                        <td className="px-2 py-1">{eur(l.assurance_initiale)}</td>
-                        <td className="px-2 py-1">{eur(l.assurance_nouvelle)}</td>
-                        <td className="px-2 py-1">{eur(l.total_actuel)}</td>
-                        <td className="px-2 py-1">{eur(l.total_nouveau)}</td>
-                        <td
-                          className={`px-2 py-1 font-semibold ${l.differentiel > 0 ? "text-red-600" : "text-emerald-600"}`}
-                        >
-                          {l.differentiel > 0 ? "+" : ""}
-                          {eur(l.differentiel)}
-                        </td>
-                      </tr>
-                    ))}
+                    {regrouperEcheancierParAnnee(echeancier.lignes).map((v) =>
+                      v.type === "mois" ? (
+                        <tr key={`m-${v.ligne.rang}`} className="border-t border-line">
+                          <td className="px-2 py-1 text-left">
+                            {v.ligne.date.split("-").reverse().join("/")}
+                          </td>
+                          <td className="px-2 py-1">{eur(v.ligne.echeance)}</td>
+                          <td className="px-2 py-1">{eur(v.ligne.interets)}</td>
+                          <td className="px-2 py-1">{eur(v.ligne.capital)}</td>
+                          <td className="px-2 py-1">{eur(v.ligne.assurance_initiale)}</td>
+                          <td className="px-2 py-1">{eur(v.ligne.assurance_nouvelle)}</td>
+                          <td className="px-2 py-1">{eur(v.ligne.total_actuel)}</td>
+                          <td className="px-2 py-1">{eur(v.ligne.total_nouveau)}</td>
+                          <td
+                            className={`px-2 py-1 font-semibold ${v.ligne.differentiel > 0 ? "text-red-600" : "text-emerald-600"}`}
+                          >
+                            {v.ligne.differentiel > 0 ? "+" : ""}
+                            {eur(v.ligne.differentiel)}
+                          </td>
+                        </tr>
+                      ) : (
+                        <tr key={`a-${v.annee}`} className="border-t border-line bg-muted/60 font-medium">
+                          <td className="px-2 py-1 text-left">
+                            Année {v.annee} ({v.nb_mois} mois)
+                          </td>
+                          <td className="px-2 py-1">—</td>
+                          <td className="px-2 py-1">{eur(v.interets)}</td>
+                          <td className="px-2 py-1">{eur(v.capital)}</td>
+                          <td className="px-2 py-1">{eur(v.assurance_initiale)}</td>
+                          <td className="px-2 py-1">{eur(v.assurance_nouvelle)}</td>
+                          <td className="px-2 py-1">{eur(v.total_actuel)}</td>
+                          <td className="px-2 py-1">{eur(v.total_nouveau)}</td>
+                          <td
+                            className={`px-2 py-1 font-semibold ${v.differentiel > 0 ? "text-red-600" : "text-emerald-600"}`}
+                          >
+                            {v.differentiel > 0 ? "+" : ""}
+                            {eur(v.differentiel)}
+                          </td>
+                        </tr>
+                      ),
+                    )}
                   </tbody>
                 </table>
               </div>

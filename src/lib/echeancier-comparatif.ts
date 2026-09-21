@@ -78,6 +78,64 @@ function ajouterMois(date: string, mois: number): string {
   return r.toISOString().slice(0, 10);
 }
 
+export type LigneVueEcheancier =
+  | { type: "mois"; ligne: LigneEcheancier }
+  | {
+      type: "annee";
+      annee: number;
+      nb_mois: number;
+      interets: number;
+      capital: number;
+      assurance_initiale: number;
+      assurance_nouvelle: number;
+      total_actuel: number;
+      total_nouveau: number;
+      differentiel: number;
+    };
+
+/**
+ * Vue d'affichage de l'échéancier comparatif : les `detailMois` premières
+ * échéances restent mois par mois, puis chaque année civile suivante est
+ * agrégée en une seule ligne (sommes des montants mensuels). Ne modifie
+ * aucune valeur calculée — pure mise en forme pour l'affichage.
+ */
+export function regrouperEcheancierParAnnee(
+  lignes: LigneEcheancier[],
+  detailMois = 12,
+): LigneVueEcheancier[] {
+  const vue: LigneVueEcheancier[] = [];
+  const detail = lignes.slice(0, detailMois);
+  const reste = lignes.slice(detailMois);
+
+  for (const ligne of detail) vue.push({ type: "mois", ligne });
+
+  const parAnnee = new Map<number, LigneEcheancier[]>();
+  for (const ligne of reste) {
+    const annee = Number(ligne.date.slice(0, 4));
+    const groupe = parAnnee.get(annee) ?? [];
+    groupe.push(ligne);
+    parAnnee.set(annee, groupe);
+  }
+
+  for (const [annee, groupe] of [...parAnnee.entries()].sort((a, b) => a[0] - b[0])) {
+    const somme = (f: (l: LigneEcheancier) => number) => r2(groupe.reduce((acc, l) => acc + f(l), 0));
+    vue.push({
+      type: "annee",
+      annee,
+      nb_mois: groupe.length,
+      interets: somme((l) => l.interets),
+      capital: somme((l) => l.capital),
+      assurance_initiale: somme((l) => l.assurance_initiale),
+      assurance_nouvelle: somme((l) => l.assurance_nouvelle),
+      total_actuel: somme((l) => l.total_actuel),
+      total_nouveau: somme((l) => l.total_nouveau),
+      differentiel: somme((l) => l.differentiel),
+    });
+  }
+
+  return vue;
+}
+
 const VIDE: EcheancierComparatif = {
   lignes: [],
   type_cotisation: null,
