@@ -16,27 +16,38 @@ const BUCKETS = ["conformite-documents", "dossier-documents"];
 const TAILLE_MAX = 12 * 1024 * 1024;
 
 const PROMPT = [
-  "Tu lis une pièce d'identité française (CNI, passeport ou titre de séjour).",
+  "Tu lis une pièce d'identité (CNI, passeport ou titre de séjour).",
   "Extrais uniquement les informations d'état civil du titulaire.",
   "",
   "Réponds STRICTEMENT en JSON, sans texte autour, au format :",
-  '{"nom":"","prenom":"","date_naissance":"AAAA-MM-JJ","lieu_naissance":"","fiable":true}',
+  '{"civilite":"M."|"Mme"|null,"nom":"","prenom":"","date_naissance":"AAAA-MM-JJ","lieu_naissance":"","pays_naissance":"","nationalite":"","date_expiration":"AAAA-MM-JJ","fiable":true}',
   "",
   "Règles :",
-  "- `date_naissance` au format ISO AAAA-MM-JJ. Si elle est illisible ou absente, mets null.",
+  "- Les dates au format ISO AAAA-MM-JJ. Si illisible ou absente, mets null.",
   "- `nom` = nom de naissance / nom de famille ; `prenom` = premier prénom.",
-  "- `lieu_naissance` = ville de naissance si visible, sinon null.",
+  "- `civilite` = « M. » ou « Mme » selon le sexe indiqué, sinon null.",
+  "- `lieu_naissance` = ville de naissance si visible, sinon null ; `pays_naissance` = pays si visible.",
+  "- `nationalite` en français (ex. « Française »), sinon null.",
+  "- `date_expiration` = date de fin de validité de la pièce, sinon null.",
   "- `fiable` = false si le document est illisible, tronqué, ou si tu n'es pas certain des valeurs.",
   "- N'invente jamais une valeur.",
 ].join("\n");
 
 type Extraction = {
+  civilite: string | null;
   nom: string | null;
   prenom: string | null;
   date_naissance: string | null;
   lieu_naissance: string | null;
+  pays_naissance: string | null;
+  nationalite: string | null;
+  date_expiration: string | null;
   fiable: boolean;
 };
+
+function champ(v: unknown): string | null {
+  return typeof v === "string" && v.trim() ? v.trim() : null;
+}
 
 function extraireJson(texte: string): unknown {
   const nettoye = texte.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
@@ -72,10 +83,14 @@ async function appelerIa(fichier: { nom: string; mime: string; base64: string })
       if (!texte) throw new Error("Réponse IA vide");
       const brut = extraireJson(texte) as Record<string, unknown>;
       return {
-        nom: typeof brut["nom"] === "string" ? (brut["nom"] as string).trim() : null,
-        prenom: typeof brut["prenom"] === "string" ? (brut["prenom"] as string).trim() : null,
-        date_naissance: typeof brut["date_naissance"] === "string" ? (brut["date_naissance"] as string).trim() : null,
-        lieu_naissance: typeof brut["lieu_naissance"] === "string" ? (brut["lieu_naissance"] as string).trim() : null,
+        civilite: champ(brut["civilite"]),
+        nom: champ(brut["nom"]),
+        prenom: champ(brut["prenom"]),
+        date_naissance: champ(brut["date_naissance"]),
+        lieu_naissance: champ(brut["lieu_naissance"]),
+        pays_naissance: champ(brut["pays_naissance"]),
+        nationalite: champ(brut["nationalite"]),
+        date_expiration: champ(brut["date_expiration"]),
         fiable: brut["fiable"] !== false,
       };
     }
@@ -127,11 +142,12 @@ async function telecharger(admin: Admin, path: string): Promise<{ blob: Blob } |
 export type ResultatCni =
   | { statut: "ignore"; raison: string }
   | { statut: "ecart"; raison: string }
-  | { statut: "complete"; date_naissance: string; lcb: string | null };
+  | { statut: "complete"; date_naissance: string | null; champs: string[]; lcb: string | null };
 
 /**
- * Traite une pièce d'identité déposée : extraction IA, complétion de la fiche
- * et relance du contrôle LCB-FT si celui-ci attendait des informations.
+ * Traite une pièce d'identité déposée : extraction IA, complétion des champs
+ * d'état civil encore vides de la fiche client, et relance du contrôle LCB-FT
+ * si celui-ci attendait justement ces informations.
  */
 export async function traiterPieceIdentiteEtRelancerLcb(
   admin: Admin,
@@ -139,7 +155,7 @@ export async function traiterPieceIdentiteEtRelancerLcb(
 ): Promise<ResultatCni> {
   const { data: doc } = await admin
     .from("client_kyc_documents")
-    .select("id, client_id, type, nom, storage_path")
+    .select("id, client_id, type, nom, storage_path, date_expiration")
     .eq("id", kycDocumentId)
     .maybeSingle();
   if (!doc) return { statut: "ignore", raison: "Document introuvable" };
@@ -148,10 +164,11 @@ export async function traiterPieceIdentiteEtRelancerLcb(
     type: string;
     nom: string | null;
     storage_path: string;
+    date_expiration: string | null;
   };
   if (d.type !== "cni") return { statut: "ignore", raison: "Type de document non exploitable" };
 
-  // On n'agit que si le contrôle LCB-FT attend justement ces informations.
+  // La relance du contrôle LCB-FT n'a lieu que s'il attendait ces informations.
   const { data: derniere } = await admin
     .from("client_lcb_verifications")
     .select("id, statut")
@@ -159,22 +176,27 @@ export async function traiterPieceIdentiteEtRelancerLcb(
     .order("verifie_le", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if ((derniere as { statut: string } | null)?.statut !== "en_attente_infos") {
-    return { statut: "ignore", raison: "Aucun contrôle LCB-FT en attente d'informations" };
-  }
+  const lcbEnAttente = (derniere as { statut: string } | null)?.statut === "en_attente_infos";
 
   const { data: client } = await admin
     .from("clients")
-    .select("id, nom, prenom, date_naissance, lieu_naissance")
+    .select(
+      "id, civilite, nom, prenom, nom_naissance, date_naissance, lieu_naissance, ville_naissance, pays_naissance, nationalite",
+    )
     .eq("id", d.client_id)
     .maybeSingle();
   if (!client) return { statut: "ignore", raison: "Fiche client introuvable" };
   const c = client as {
     id: string;
+    civilite: string | null;
     nom: string | null;
     prenom: string | null;
+    nom_naissance: string | null;
     date_naissance: string | null;
     lieu_naissance: string | null;
+    ville_naissance: string | null;
+    pays_naissance: string | null;
+    nationalite: string | null;
   };
 
   let extraction: Extraction;
@@ -201,7 +223,6 @@ export async function traiterPieceIdentiteEtRelancerLcb(
 
   const ecarts: string[] = [];
   if (!extraction.fiable) ecarts.push("l'IA signale une lecture peu fiable");
-  if (!dateValide(extraction.date_naissance)) ecarts.push("date de naissance illisible ou invalide");
   if (!concorde(c.nom, extraction.nom)) {
     ecarts.push(`nom différent (fiche « ${c.nom ?? "—"} » / pièce « ${extraction.nom ?? "—"} »)`);
   }
@@ -212,7 +233,7 @@ export async function traiterPieceIdentiteEtRelancerLcb(
   if (ecarts.length > 0) {
     await creerTacheAdmin(admin, {
       titre: "Pièce d'identité — écart avec la fiche client",
-      description: `Lecture automatique de la pièce d'identité de ${c.prenom ?? ""} ${c.nom ?? ""} non appliquée.\nÉcarts constatés :\n- ${ecarts.join("\n- ")}\nAction : vérifier la pièce, corriger la fiche manuellement puis relancer le contrôle LCB-FT.`,
+      description: `Lecture automatique de la pièce d'identité de ${c.prenom ?? ""} ${c.nom ?? ""} non appliquée.\nÉcarts constatés :\n- ${ecarts.join("\n- ")}\nAction : vérifier la pièce puis corriger la fiche manuellement.`,
       client_id: c.id,
     });
     await admin
@@ -230,50 +251,87 @@ export async function traiterPieceIdentiteEtRelancerLcb(
     return { statut: "ecart", raison: ecarts.join(" ; ") };
   }
 
-  const dateNaissance = extraction.date_naissance as string;
-  const patch: Record<string, unknown> = { date_naissance: dateNaissance };
-  if (!c.lieu_naissance && extraction.lieu_naissance) patch["lieu_naissance"] = extraction.lieu_naissance;
+  // Complétion des champs encore vides uniquement : une saisie humaine n'est jamais écrasée.
+  const patch: Record<string, unknown> = {};
+  const remplis: string[] = [];
+  const completer = (colonne: string, actuel: string | null, valeur: string | null, libelle: string) => {
+    if (!actuel && valeur) {
+      patch[colonne] = valeur;
+      remplis.push(`${libelle} : ${valeur}`);
+    }
+  };
 
-  const { error: uErr } = await admin.from("clients").update(patch as never).eq("id", c.id);
-  if (uErr) {
-    await creerTacheAdmin(admin, {
-      titre: "Date de naissance non enregistrée — LCB-FT en attente",
-      description: `Mise à jour impossible de la fiche de ${c.prenom ?? ""} ${c.nom ?? ""} : ${uErr.message}`,
-      client_id: c.id,
-    });
-    return { statut: "ecart", raison: uErr.message };
+  const dateNaissance = dateValide(extraction.date_naissance) ? (extraction.date_naissance as string) : null;
+  completer("date_naissance", c.date_naissance, dateNaissance, "Date de naissance");
+  completer("civilite", c.civilite, extraction.civilite, "Civilité");
+  completer("prenom", c.prenom, extraction.prenom, "Prénom");
+  completer("nom_naissance", c.nom_naissance, extraction.nom, "Nom de naissance");
+  completer("lieu_naissance", c.lieu_naissance, extraction.lieu_naissance, "Lieu de naissance");
+  completer("ville_naissance", c.ville_naissance, extraction.lieu_naissance, "Ville de naissance");
+  completer("pays_naissance", c.pays_naissance, extraction.pays_naissance, "Pays de naissance");
+  completer("nationalite", c.nationalite, extraction.nationalite, "Nationalité");
+
+  if (Object.keys(patch).length > 0) {
+    const { error: uErr } = await admin.from("clients").update(patch as never).eq("id", c.id);
+    if (uErr) {
+      await creerTacheAdmin(admin, {
+        titre: "État civil non enregistré depuis la pièce d'identité",
+        description: `Mise à jour impossible de la fiche de ${c.prenom ?? ""} ${c.nom ?? ""} : ${uErr.message}`,
+        client_id: c.id,
+      });
+      return { statut: "ecart", raison: uErr.message };
+    }
   }
 
-  await admin
-    .from("activites")
-    .insert({
-      client_id: c.id,
-      type: "systeme",
-      titre: "Date de naissance complétée automatiquement depuis la pièce d'identité déposée",
-      contenu: `Date de naissance : ${dateNaissance}${patch["lieu_naissance"] ? `\nLieu de naissance : ${String(patch["lieu_naissance"])}` : ""}\nSource : ${d.nom ?? "pièce d'identité"} déposée par le client.\nLe contrôle LCB-FT est relancé automatiquement.`,
-    })
-    .then(
-      () => undefined,
-      (e: unknown) => console.error("[CNI] trace complétion non enregistrée", e),
-    );
+  // Date de fin de validité de la pièce (utile aux rappels d'expiration).
+  if (!d.date_expiration && extraction.date_expiration && ISO.test(extraction.date_expiration)) {
+    await admin
+      .from("client_kyc_documents")
+      .update({ date_expiration: extraction.date_expiration } as never)
+      .eq("id", kycDocumentId)
+      .then(
+        () => remplis.push(`Validité de la pièce : ${extraction.date_expiration}`),
+        (e: unknown) => console.error("[CNI] date d'expiration non enregistrée", e),
+      );
+  }
+
+  if (remplis.length > 0) {
+    await admin
+      .from("activites")
+      .insert({
+        client_id: c.id,
+        type: "systeme",
+        titre: "État civil complété automatiquement depuis la pièce d'identité",
+        contenu: `${remplis.join("\n")}\nSource : ${d.nom ?? "pièce d'identité"} déposée sur la fiche client.${
+          lcbEnAttente && dateNaissance ? "\nLe contrôle LCB-FT est relancé automatiquement." : ""
+        }`,
+      })
+      .then(
+        () => undefined,
+        (e: unknown) => console.error("[CNI] trace complétion non enregistrée", e),
+      );
+  }
 
   let statutLcb: string | null = null;
-  try {
-    const { lancerLcbAutomatique } = await import("@/lib/dossier-automation.server");
-    const res = await lancerLcbAutomatique(admin, {
-      client_id: c.id,
-      nom: c.nom ?? extraction.nom ?? "",
-      prenom: c.prenom ?? extraction.prenom ?? null,
-      date_naissance: dateNaissance,
-    });
-    statutLcb = (res as { statut?: string } | null)?.statut ?? null;
-  } catch (e) {
-    await creerTacheAdmin(admin, {
-      titre: "Relance LCB-FT automatique en échec",
-      description: `La date de naissance a bien été complétée, mais le contrôle LCB-FT n'a pas pu être relancé : ${e instanceof Error ? e.message : "erreur inconnue"}.\nAction : relancer le contrôle depuis l'onglet Conformité.`,
-      client_id: c.id,
-    });
+  const dateRetenue = c.date_naissance ?? dateNaissance;
+  if (lcbEnAttente && dateRetenue) {
+    try {
+      const { lancerLcbAutomatique } = await import("@/lib/dossier-automation.server");
+      const res = await lancerLcbAutomatique(admin, {
+        client_id: c.id,
+        nom: c.nom ?? extraction.nom ?? "",
+        prenom: c.prenom ?? extraction.prenom ?? null,
+        date_naissance: dateRetenue,
+      });
+      statutLcb = (res as { statut?: string } | null)?.statut ?? null;
+    } catch (e) {
+      await creerTacheAdmin(admin, {
+        titre: "Relance LCB-FT automatique en échec",
+        description: `L'état civil a bien été complété, mais le contrôle LCB-FT n'a pas pu être relancé : ${e instanceof Error ? e.message : "erreur inconnue"}.\nAction : relancer le contrôle depuis l'onglet Conformité.`,
+        client_id: c.id,
+      });
+    }
   }
 
-  return { statut: "complete", date_naissance: dateNaissance, lcb: statutLcb };
+  return { statut: "complete", date_naissance: dateRetenue, champs: remplis, lcb: statutLcb };
 }

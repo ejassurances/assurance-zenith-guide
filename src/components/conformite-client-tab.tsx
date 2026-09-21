@@ -77,6 +77,7 @@ export function ConformiteClientTab({
   const [verifs, setVerifs] = useState<LCBVerif[]>([]);
   const [estPro, setEstPro] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [lecture, setLecture] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchResult, setSearchResult] = useState<Awaited<ReturnType<typeof rechercherSanctionsPPE>> | null>(null);
 
@@ -179,6 +180,30 @@ export function ConformiteClientTab({
   const telecharger = async (path: string) => {
     const { data } = await supabase.storage.from("dossier-documents").createSignedUrl(path, 300);
     if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+  };
+
+  /** Relecture IA d'une pièce d'identité déjà déposée : complète les champs vides de la fiche. */
+  const relire = async (id: string) => {
+    setLecture(id);
+    try {
+      const res = (await traiterPiece({ data: { kyc_document_id: id } })) as
+        | { statut: "complete"; champs: string[] }
+        | { statut: "ecart" | "ignore"; raison: string };
+      if (res.statut === "complete") {
+        alert(
+          res.champs.length > 0
+            ? "Informations complétées :\n- " + res.champs.join("\n- ")
+            : "Lecture effectuée : aucune information manquante à compléter.",
+        );
+      } else {
+        alert("Lecture non appliquée : " + res.raison);
+      }
+    } catch (e) {
+      alert("Lecture impossible : " + (e instanceof Error ? e.message : "erreur inconnue"));
+    } finally {
+      setLecture(null);
+      await load();
+    }
   };
 
   const enregistrerDrive = async (doc: KycDoc) => {
@@ -387,6 +412,15 @@ export function ConformiteClientTab({
                           <button onClick={() => telecharger(doc.storage_path)} className="text-xs underline">
                             Voir
                           </button>
+                          {canEdit && doc.type === "cni" && (
+                            <button
+                              onClick={() => relire(doc.id)}
+                              disabled={lecture === doc.id}
+                              className="text-xs font-medium text-[color:var(--crm-navy)] underline disabled:opacity-50"
+                            >
+                              {lecture === doc.id ? "Lecture…" : "Remplir la fiche"}
+                            </button>
+                          )}
                           {doc.drive_url && (
                             <a
                               href={doc.drive_url}
