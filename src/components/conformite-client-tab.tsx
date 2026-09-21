@@ -181,6 +181,30 @@ export function ConformiteClientTab({
     if (data?.signedUrl) window.open(data.signedUrl, "_blank");
   };
 
+  /** Relecture IA d'une pièce d'identité déjà déposée : complète les champs vides de la fiche. */
+  const relire = async (id: string) => {
+    setLecture(id);
+    try {
+      const res = (await traiterPiece({ data: { kyc_document_id: id } })) as
+        | { statut: "complete"; champs: string[] }
+        | { statut: "ecart" | "ignore"; raison: string };
+      if (res.statut === "complete") {
+        alert(
+          res.champs.length > 0
+            ? "Informations complétées :\n- " + res.champs.join("\n- ")
+            : "Lecture effectuée : aucune information manquante à compléter.",
+        );
+      } else {
+        alert("Lecture non appliquée : " + res.raison);
+      }
+    } catch (e) {
+      alert("Lecture impossible : " + (e instanceof Error ? e.message : "erreur inconnue"));
+    } finally {
+      setLecture(null);
+      await load();
+    }
+  };
+
   const enregistrerDrive = async (doc: KycDoc) => {
     const url = prompt("Lien Google Drive du document", doc.drive_url ?? "https://drive.google.com/");
     if (url === null) return;
