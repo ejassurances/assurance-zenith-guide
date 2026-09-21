@@ -392,3 +392,124 @@ export async function traiterPieceIdentiteEtRelancerLcb(
 
   return { statut: "complete", date_naissance: dateRetenue, champs: remplis, lcb: statutLcb };
 }
+
+/**
+ * Justificatif de domicile déposé : lecture IA de l'adresse postale et
+ * complétion des champs d'adresse encore vides de la fiche client.
+ * Une adresse déjà saisie n'est jamais écrasée.
+ */
+async function traiterJustificatifDomicile(
+  admin: Admin,
+  kycDocumentId: string,
+  d: { client_id: string; nom: string | null; storage_path: string },
+): Promise<ResultatCni> {
+  const { data: client } = await admin
+    .from("clients")
+    .select("id, nom, prenom, adresse, complement_adresse, code_postal, ville, pays")
+    .eq("id", d.client_id)
+    .maybeSingle();
+  if (!client) return { statut: "ignore", raison: "Fiche client introuvable" };
+  const c = client as {
+    id: string;
+    nom: string | null;
+    prenom: string | null;
+    adresse: string | null;
+    complement_adresse: string | null;
+    code_postal: string | null;
+    ville: string | null;
+    pays: string | null;
+  };
+
+  let extraction: ExtractionDomicile;
+  try {
+    const fichier = await telecharger(admin, d.storage_path);
+    if (!fichier) throw new Error("Fichier indisponible dans le stockage");
+    const buffer = Buffer.from(await fichier.blob.arrayBuffer());
+    if (buffer.byteLength === 0) throw new Error("Fichier vide");
+    if (buffer.byteLength > TAILLE_MAX) throw new Error("Fichier trop volumineux (12 Mo maximum)");
+    extraction = await appelerIaDomicile({
+      nom: d.nom || "justificatif-domicile",
+      mime: fichier.blob.type || "application/pdf",
+      base64: buffer.toString("base64"),
+    });
+  } catch (e) {
+    const raison = e instanceof Error ? e.message : "erreur inconnue";
+    await creerTacheAdmin(admin, {
+      titre: "Justificatif de domicile illisible",
+      description: `La lecture automatique du justificatif de domicile de ${c.prenom ?? ""} ${c.nom ?? ""} a échoué (${raison}).\nAction : saisir l'adresse postale manuellement sur la fiche client.`,
+      client_id: c.id,
+    });
+    return { statut: "ecart", raison };
+  }
+
+  const ecarts: string[] = [];
+  if (!extraction.fiable) ecarts.push("l'IA signale une lecture peu fiable");
+  if (!extraction.adresse && !extraction.code_postal && !extraction.ville) {
+    ecarts.push("aucune adresse lisible sur le document");
+  }
+  if (!concorde(c.nom, extraction.nom)) {
+    ecarts.push(`nom différent (fiche « ${c.nom ?? "—"} » / justificatif « ${extraction.nom ?? "—"} »)`);
+  }
+
+  if (ecarts.length > 0) {
+    await creerTacheAdmin(admin, {
+      titre: "Justificatif de domicile — écart avec la fiche client",
+      description: `Lecture automatique du justificatif de domicile de ${c.prenom ?? ""} ${c.nom ?? ""} non appliquée.\nÉcarts constatés :\n- ${ecarts.join("\n- ")}\nAction : vérifier le document puis saisir l'adresse manuellement.`,
+      client_id: c.id,
+    });
+    await admin
+      .from("activites")
+      .insert({
+        client_id: c.id,
+        type: "systeme",
+        titre: "Lecture automatique du justificatif de domicile non appliquée",
+        contenu: `Écarts constatés :\n- ${ecarts.join("\n- ")}`,
+      })
+      .then(
+        () => undefined,
+        (e: unknown) => console.error("[Domicile] trace écart non enregistrée", e),
+      );
+    return { statut: "ecart", raison: ecarts.join(" ; ") };
+  }
+
+  const patch: Record<string, unknown> = {};
+  const remplis: string[] = [];
+  const completer = (colonne: string, actuel: string | null, valeur: string | null, libelle: string) => {
+    if (!actuel && valeur) {
+      patch[colonne] = valeur;
+      remplis.push(`${libelle} : ${valeur}`);
+    }
+  };
+
+  completer("adresse", c.adresse, extraction.adresse, "Adresse");
+  completer("complement_adresse", c.complement_adresse, extraction.complement_adresse, "Complément d'adresse");
+  completer("code_postal", c.code_postal, extraction.code_postal, "Code postal");
+  completer("ville", c.ville, extraction.ville, "Ville");
+  completer("pays", c.pays, extraction.pays, "Pays");
+
+  if (Object.keys(patch).length > 0) {
+    const { error: uErr } = await admin.from("clients").update(patch as never).eq("id", c.id);
+    if (uErr) {
+      await creerTacheAdmin(admin, {
+        titre: "Adresse non enregistrée depuis le justificatif de domicile",
+        description: `Mise à jour impossible de la fiche de ${c.prenom ?? ""} ${c.nom ?? ""} : ${uErr.message}`,
+        client_id: c.id,
+      });
+      return { statut: "ecart", raison: uErr.message };
+    }
+    await admin
+      .from("activites")
+      .insert({
+        client_id: c.id,
+        type: "systeme",
+        titre: "Adresse postale complétée automatiquement depuis le justificatif de domicile",
+        contenu: `${remplis.join("\n")}\nSource : ${d.nom ?? "justificatif de domicile"} déposé sur la fiche client.`,
+      })
+      .then(
+        () => undefined,
+        (e: unknown) => console.error("[Domicile] trace complétion non enregistrée", e),
+      );
+  }
+
+  return { statut: "complete", date_naissance: null, champs: remplis, lcb: null };
+}
