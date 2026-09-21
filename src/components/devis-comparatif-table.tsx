@@ -26,6 +26,7 @@ type DevisColonne = {
   assure_rang: number | null;
   quotite_pct: number | null;
   cotisation_mensuelle: number | null;
+  montant_total_saisi: number | null;
   type_cotisation: "CI" | "CRD" | null;
   garanties_resume: string | null;
 };
