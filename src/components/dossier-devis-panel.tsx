@@ -216,6 +216,9 @@ export function DossierDevisPanel({
   /** Branche du dossier (utilisée quand la prop n'est pas fournie). */
   const [brancheDossierEtat, setBrancheDossierEtat] = useState<string>("");
   const estEmprunteur = (branche ?? brancheDossierEtat) === "emprunteur";
+  /** Famille de la grille de garanties standardisée correspondant à la branche du dossier. */
+  const familleCodeDossier = familleCodePourBranche(branche ?? brancheDossierEtat);
+
   /** Grilles de garanties emprunteur VALIDÉES, par produit : base de la notation. */
   const [grillesProduits, setGrillesProduits] = useState<Record<string, ValeursGrille>>({});
 
