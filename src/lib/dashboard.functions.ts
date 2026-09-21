@@ -83,6 +83,8 @@ export const getRepartitionTypeAssurance = createServerFn({ method: "GET" })
       .map(([nom, valeur]) => ({ nom, valeur }))
       .sort((a, b) => b.valeur - a.valeur);
   });
+
+export type CaMensuelPoint = {
   mois: string; // "2026-01"
   label: string; // "Jan"
   montant: number;
