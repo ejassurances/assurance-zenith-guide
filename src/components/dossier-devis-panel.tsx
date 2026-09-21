@@ -132,6 +132,35 @@ export function DossierDevisPanel({
     { id: string; file_name: string | null; type_document: string | null; created_at: string }[]
   >([]);
   const [piecesOuvertes, setPiecesOuvertes] = useState(false);
+  useEffect(() => {
+    let vivant = true;
+    void (async () => {
+      const { data } = await supabase
+        .from("documents")
+        .select("id,file_name,type_document,created_at,archive_le")
+        .eq("dossier_id", dossierId)
+        .is("archive_le", null)
+        .order("created_at", { ascending: false })
+        .limit(80);
+      if (!vivant) return;
+      const lignes = (data ?? []) as {
+        id: string;
+        file_name: string | null;
+        type_document: string | null;
+        created_at: string;
+      }[];
+      setPiecesCandidates(
+        lignes.filter(
+          (l) =>
+            /devis|tarif|proposition/i.test(l.type_document ?? "") ||
+            /devis|tarif|proposition|offre[_\s-]?assurance/i.test(l.file_name ?? ""),
+        ),
+      );
+    })();
+    return () => {
+      vivant = false;
+    };
+  }, [dossierId]);
   const creerFixe = useServerFn(creerDevisTarifFixeFn);
 
   /** Produit du dossier en tarification fixe : formules et options à cotisation connue. */
