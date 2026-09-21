@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { LIBELLES_PROFILS, routeRecommandation } from "@/lib/emprunteur-notebook";
 import { noterProduitEmprunteur, type NoteProduit } from "@/lib/emprunteur-scoring-produits";
 import type { ValeursGrille } from "@/lib/garanties-grille";
+import { DevisComparatifTable } from "@/components/devis-comparatif-table";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
