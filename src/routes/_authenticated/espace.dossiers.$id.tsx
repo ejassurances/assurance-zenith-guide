@@ -255,12 +255,17 @@ function DossierDetail() {
   const canEditSuivi = role === "admin" || role === "mandataire" || role === "prescripteur";
 
   const estEmprunteur = dossier.type_assurance === "emprunteur";
-  const parcoursActif: ParcoursKey | null = estEmprunteur
-    ? (parcours ?? etapeCouranteParcours(dossier.statut))
+  /** Parcours par étapes de la branche (emprunteur, trottinette/EDPM), sinon aucun. */
+  const etapesParcours: ParcoursEtape[] | null = parcoursPourBranche(dossier.type_assurance);
+  const estEdpm = !!etapesParcours && !estEmprunteur;
+  const parcoursActif: ParcoursKey | null = etapesParcours
+    ? (parcours ?? etapeCouranteParcours(dossier.statut, etapesParcours))
     : null;
-  const displayedStep = parcoursActif
-    ? (parcoursEtape(parcoursActif)?.statut ?? dossier.statut)
-    : (selectedStep ?? dossier.statut);
+  const displayedStep =
+    parcoursActif && etapesParcours
+      ? (parcoursEtape(parcoursActif, etapesParcours)?.statut ?? dossier.statut)
+      : (selectedStep ?? dossier.statut);
+
   const userId = user?.id;
   const handlePipelineChanged = () => {
     setSelectedStep(null);
