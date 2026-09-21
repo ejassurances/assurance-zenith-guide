@@ -3005,7 +3005,10 @@ export type Database = {
           analyse_ia_le: string | null
           analyse_ia_modele: string | null
           apporteur_id: string | null
+          cadre_financement: string | null
           capital: number | null
+          chance_reussite: string | null
+          charge_de_projet: string | null
           client_email: string | null
           client_id: string | null
           client_nom: string
@@ -3014,13 +3017,25 @@ export type Database = {
           created_at: string
           created_by: string | null
           cree_automatiquement: boolean
+          date_butoir: string | null
+          date_signature_pret: string | null
           duree_mois: number | null
           economie_estimee: number | null
+          frais_dossier: number | null
           fumeur: boolean | null
           id: string
           mode_recommandation: string
           notes: string | null
+          prime_annuelle: number | null
+          prime_mensuelle: number | null
+          prime_semestrielle: number | null
+          prime_trimestrielle: number | null
+          priorite: string | null
           produit_id: string | null
+          projet_contexte: string | null
+          projet_etat: string | null
+          projet_prioritaire: boolean | null
+          projet_type: string | null
           recueil_besoins: Json | null
           reference: string
           relance_pieces_envoyee_le: string | null
@@ -3040,7 +3055,10 @@ export type Database = {
           analyse_ia_le?: string | null
           analyse_ia_modele?: string | null
           apporteur_id?: string | null
+          cadre_financement?: string | null
           capital?: number | null
+          chance_reussite?: string | null
+          charge_de_projet?: string | null
           client_email?: string | null
           client_id?: string | null
           client_nom: string
@@ -3049,13 +3067,25 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           cree_automatiquement?: boolean
+          date_butoir?: string | null
+          date_signature_pret?: string | null
           duree_mois?: number | null
           economie_estimee?: number | null
+          frais_dossier?: number | null
           fumeur?: boolean | null
           id?: string
           mode_recommandation?: string
           notes?: string | null
+          prime_annuelle?: number | null
+          prime_mensuelle?: number | null
+          prime_semestrielle?: number | null
+          prime_trimestrielle?: number | null
+          priorite?: string | null
           produit_id?: string | null
+          projet_contexte?: string | null
+          projet_etat?: string | null
+          projet_prioritaire?: boolean | null
+          projet_type?: string | null
           recueil_besoins?: Json | null
           reference?: string
           relance_pieces_envoyee_le?: string | null
@@ -3075,7 +3105,10 @@ export type Database = {
           analyse_ia_le?: string | null
           analyse_ia_modele?: string | null
           apporteur_id?: string | null
+          cadre_financement?: string | null
           capital?: number | null
+          chance_reussite?: string | null
+          charge_de_projet?: string | null
           client_email?: string | null
           client_id?: string | null
           client_nom?: string
@@ -3084,13 +3117,25 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           cree_automatiquement?: boolean
+          date_butoir?: string | null
+          date_signature_pret?: string | null
           duree_mois?: number | null
           economie_estimee?: number | null
+          frais_dossier?: number | null
           fumeur?: boolean | null
           id?: string
           mode_recommandation?: string
           notes?: string | null
+          prime_annuelle?: number | null
+          prime_mensuelle?: number | null
+          prime_semestrielle?: number | null
+          prime_trimestrielle?: number | null
+          priorite?: string | null
           produit_id?: string | null
+          projet_contexte?: string | null
+          projet_etat?: string | null
+          projet_prioritaire?: boolean | null
+          projet_type?: string | null
           recueil_besoins?: Json | null
           reference?: string
           relance_pieces_envoyee_le?: string | null
