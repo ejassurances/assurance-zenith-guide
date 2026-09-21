@@ -144,8 +144,8 @@ export function ConformiteClientTab({
       .select("id")
       .maybeSingle();
     if (insErr) alert(insErr.message);
-    // Pièce d'identité : lecture IA + relance automatique du LCB-FT en attente.
-    if (!insErr && type === "cni" && insere) {
+    // Pièce d'identité (état civil) ou justificatif de domicile (adresse) : lecture IA immédiate.
+    if (!insErr && (type === "cni" || type === "justificatif_domicile") && insere) {
       try {
         await traiterPiece({ data: { kyc_document_id: (insere as { id: string }).id } });
       } catch (e) {
@@ -412,7 +412,7 @@ export function ConformiteClientTab({
                           <button onClick={() => telecharger(doc.storage_path)} className="text-xs underline">
                             Voir
                           </button>
-                          {canEdit && doc.type === "cni" && (
+                          {canEdit && (doc.type === "cni" || doc.type === "justificatif_domicile") && (
                             <button
                               onClick={() => relire(doc.id)}
                               disabled={lecture === doc.id}
