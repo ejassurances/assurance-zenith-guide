@@ -81,6 +81,23 @@ type Dossier = {
   souscription_relances_nb: number | null;
   souscription_retour_le: string | null;
   created_at: string;
+  // Onglet Modifier
+  projet_type: string | null;
+  projet_etat: string | null;
+  projet_contexte: string | null;
+  projet_prioritaire: boolean | null;
+  priorite: string | null;
+  chance_reussite: string | null;
+  charge_de_projet: string | null;
+  date_butoir: string | null;
+  prime_mensuelle: number | null;
+  prime_trimestrielle: number | null;
+  prime_semestrielle: number | null;
+  prime_annuelle: number | null;
+  // Onglet Configuration
+  date_signature_pret: string | null;
+  frais_dossier: number | null;
+  cadre_financement: string | null;
 };
 
 function CompagnieProduitSection({
@@ -377,15 +394,9 @@ function DossierDetail() {
             <DocumentsPanel dossierId={id} userId={userId} />
           </section>
         ) : modeAffichage === "modifier" && parcoursActif ? (
-          <OngletAVenir
-            titre="Modifier"
-            manque="Type de projet, état, contexte, priorité, chance de réussite, chargé de projet, date butoir, primes — aucun de ces champs n'existe encore dans le dossier."
-          />
+          <OngletModifier dossier={dossier} canEdit={canEdit} onSaved={load} />
         ) : modeAffichage === "configuration" && parcoursActif ? (
-          <OngletAVenir
-            titre="Configuration"
-            manque="Date de signature du prêt, frais de dossier, cadre de financement — pas encore de champs dédiés dans le dossier."
-          />
+          <OngletConfiguration dossier={dossier} canEdit={canEdit} onSaved={load} />
         ) : modeAffichage === "garanties" && parcoursActif ? (
           <OngletAVenir
             titre="Garanties"
@@ -442,6 +453,314 @@ function OngletAVenir({ titre, manque }: { titre: string; manque: string }) {
       <p className="mt-3 text-sm text-ink-muted">
         Cet onglet n'est pas encore construit avec de vraies données. {manque}
       </p>
+    </div>
+  );
+}
+
+const inputCls =
+  "w-full rounded-lg border border-line bg-background px-3 py-2 text-sm text-ink focus:border-ink/40 focus:outline-none";
+const labelCls = "text-xs font-medium text-ink-muted";
+
+/** Onglet Modifier : informations de pilotage commercial du dossier. */
+function OngletModifier({
+  dossier,
+  canEdit,
+  onSaved,
+}: {
+  dossier: Dossier;
+  canEdit: boolean;
+  onSaved: () => void;
+}) {
+  const [valeurs, setValeurs] = useState({
+    projet_type: dossier.projet_type ?? "",
+    projet_etat: dossier.projet_etat ?? "",
+    projet_contexte: dossier.projet_contexte ?? "",
+    projet_prioritaire: dossier.projet_prioritaire ?? false,
+    priorite: dossier.priorite ?? "",
+    chance_reussite: dossier.chance_reussite ?? "",
+    charge_de_projet: dossier.charge_de_projet ?? "",
+    date_butoir: dossier.date_butoir ?? "",
+    prime_mensuelle: dossier.prime_mensuelle?.toString() ?? "",
+    prime_trimestrielle: dossier.prime_trimestrielle?.toString() ?? "",
+    prime_semestrielle: dossier.prime_semestrielle?.toString() ?? "",
+    prime_annuelle: dossier.prime_annuelle?.toString() ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const enregistrer = async () => {
+    setSaving(true);
+    setMessage(null);
+    const { error } = await supabase
+      .from("dossiers")
+      .update({
+        projet_type: valeurs.projet_type || null,
+        projet_etat: valeurs.projet_etat || null,
+        projet_contexte: valeurs.projet_contexte || null,
+        projet_prioritaire: valeurs.projet_prioritaire,
+        priorite: valeurs.priorite || null,
+        chance_reussite: valeurs.chance_reussite || null,
+        charge_de_projet: valeurs.charge_de_projet || null,
+        date_butoir: valeurs.date_butoir || null,
+        prime_mensuelle: valeurs.prime_mensuelle ? Number(valeurs.prime_mensuelle) : null,
+        prime_trimestrielle: valeurs.prime_trimestrielle ? Number(valeurs.prime_trimestrielle) : null,
+        prime_semestrielle: valeurs.prime_semestrielle ? Number(valeurs.prime_semestrielle) : null,
+        prime_annuelle: valeurs.prime_annuelle ? Number(valeurs.prime_annuelle) : null,
+      })
+      .eq("id", dossier.id);
+    setSaving(false);
+    if (error) {
+      setMessage(`Erreur : ${error.message}`);
+      return;
+    }
+    setMessage("Enregistré.");
+    onSaved();
+  };
+
+  const set = (cle: keyof typeof valeurs, v: string | boolean) => setValeurs((p) => ({ ...p, [cle]: v }));
+
+  return (
+    <div className="crm-card space-y-6 p-6">
+      <p className="crm-eyebrow">Modifier</p>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div>
+          <label className={labelCls}>Type</label>
+          <select
+            className={inputCls}
+            disabled={!canEdit}
+            value={valeurs.projet_type}
+            onChange={(e) => set("projet_type", e.target.value)}
+          >
+            <option value="">—</option>
+            <option value="nouveau">Nouveau</option>
+            <option value="reprise">Reprise</option>
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>État</label>
+          <input
+            className={inputCls}
+            disabled={!canEdit}
+            value={valeurs.projet_etat}
+            onChange={(e) => set("projet_etat", e.target.value)}
+            placeholder="Ex : Création projet"
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Contexte</label>
+          <select
+            className={inputCls}
+            disabled={!canEdit}
+            value={valeurs.projet_contexte}
+            onChange={(e) => set("projet_contexte", e.target.value)}
+          >
+            <option value="">—</option>
+            <option value="avant_vente">Avant-vente</option>
+            <option value="apres_vente">Après-vente</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div>
+          <label className={labelCls}>Projet prioritaire</label>
+          <select
+            className={inputCls}
+            disabled={!canEdit}
+            value={valeurs.projet_prioritaire ? "oui" : "non"}
+            onChange={(e) => set("projet_prioritaire", e.target.value === "oui")}
+          >
+            <option value="non">Non</option>
+            <option value="oui">Oui</option>
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>Priorité</label>
+          <select
+            className={inputCls}
+            disabled={!canEdit}
+            value={valeurs.priorite}
+            onChange={(e) => set("priorite", e.target.value)}
+          >
+            <option value="">—</option>
+            <option value="faible">Faible</option>
+            <option value="moyenne">Moyenne</option>
+            <option value="elevee">Élevée</option>
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>Chance de réussite</label>
+          <select
+            className={inputCls}
+            disabled={!canEdit}
+            value={valeurs.chance_reussite}
+            onChange={(e) => set("chance_reussite", e.target.value)}
+          >
+            <option value="">—</option>
+            <option value="faible">Faible</option>
+            <option value="moyenne">Moyenne</option>
+            <option value="elevee">Élevée</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className={labelCls}>Chargé de projet</label>
+          <input
+            className={inputCls}
+            disabled={!canEdit}
+            value={valeurs.charge_de_projet}
+            onChange={(e) => set("charge_de_projet", e.target.value)}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Date butoir</label>
+          <input
+            type="date"
+            className={inputCls}
+            disabled={!canEdit}
+            value={valeurs.date_butoir}
+            onChange={(e) => set("date_butoir", e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div>
+        <p className="crm-eyebrow">Primes</p>
+        <div className="mt-3 grid gap-4 sm:grid-cols-4">
+          {(
+            [
+              ["prime_mensuelle", "Mensuelle"],
+              ["prime_trimestrielle", "Trimestrielle"],
+              ["prime_semestrielle", "Semestrielle"],
+              ["prime_annuelle", "Annuelle"],
+            ] as const
+          ).map(([cle, label]) => (
+            <div key={cle}>
+              <label className={labelCls}>{label}</label>
+              <input
+                type="number"
+                className={inputCls}
+                disabled={!canEdit}
+                value={valeurs[cle]}
+                onChange={(e) => set(cle, e.target.value)}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {canEdit && (
+        <div className="flex items-center gap-3 border-t border-line pt-4">
+          <button
+            type="button"
+            onClick={() => void enregistrer()}
+            disabled={saving}
+            className="rounded-full bg-ink px-5 py-2 text-sm text-primary-foreground disabled:opacity-60"
+          >
+            {saving ? "Enregistrement…" : "Enregistrer"}
+          </button>
+          {message && <p className="text-sm text-ink-muted">{message}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Onglet Configuration : paramètres de gestion du prêt. */
+function OngletConfiguration({
+  dossier,
+  canEdit,
+  onSaved,
+}: {
+  dossier: Dossier;
+  canEdit: boolean;
+  onSaved: () => void;
+}) {
+  const [valeurs, setValeurs] = useState({
+    date_signature_pret: dossier.date_signature_pret ?? "",
+    frais_dossier: dossier.frais_dossier?.toString() ?? "",
+    cadre_financement: dossier.cadre_financement ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const enregistrer = async () => {
+    setSaving(true);
+    setMessage(null);
+    const { error } = await supabase
+      .from("dossiers")
+      .update({
+        date_signature_pret: valeurs.date_signature_pret || null,
+        frais_dossier: valeurs.frais_dossier ? Number(valeurs.frais_dossier) : null,
+        cadre_financement: valeurs.cadre_financement || null,
+      })
+      .eq("id", dossier.id);
+    setSaving(false);
+    if (error) {
+      setMessage(`Erreur : ${error.message}`);
+      return;
+    }
+    setMessage("Enregistré.");
+    onSaved();
+  };
+
+  return (
+    <div className="crm-card space-y-6 p-6">
+      <p className="crm-eyebrow">Configuration — gestion du prêt</p>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div>
+          <label className={labelCls}>Date de signature du prêt</label>
+          <input
+            type="date"
+            className={inputCls}
+            disabled={!canEdit}
+            value={valeurs.date_signature_pret}
+            onChange={(e) => setValeurs((p) => ({ ...p, date_signature_pret: e.target.value }))}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Frais de dossier</label>
+          <input
+            type="number"
+            className={inputCls}
+            disabled={!canEdit}
+            value={valeurs.frais_dossier}
+            onChange={(e) => setValeurs((p) => ({ ...p, frais_dossier: e.target.value }))}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Cadre de financement</label>
+          <select
+            className={inputCls}
+            disabled={!canEdit}
+            value={valeurs.cadre_financement}
+            onChange={(e) => setValeurs((p) => ({ ...p, cadre_financement: e.target.value }))}
+          >
+            <option value="">—</option>
+            <option value="nouveau_pret">Nouveau prêt</option>
+            <option value="rachat">Rachat</option>
+            <option value="renegociation">Renégociation</option>
+          </select>
+        </div>
+      </div>
+
+      {canEdit && (
+        <div className="flex items-center gap-3 border-t border-line pt-4">
+          <button
+            type="button"
+            onClick={() => void enregistrer()}
+            disabled={saving}
+            className="rounded-full bg-ink px-5 py-2 text-sm text-primary-foreground disabled:opacity-60"
+          >
+            {saving ? "Enregistrement…" : "Enregistrer"}
+          </button>
+          {message && <p className="text-sm text-ink-muted">{message}</p>}
+        </div>
+      )}
     </div>
   );
 }
