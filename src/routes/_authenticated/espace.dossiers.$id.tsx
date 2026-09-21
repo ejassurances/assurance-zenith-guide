@@ -219,9 +219,11 @@ function DossierDetail() {
 
   useEffect(() => {
     setSelectedStep(etape && estEtapeValide(etape) ? etape : null);
-    // Lien direct vers une étape du parcours emprunteur (?etape=coordonnees…).
-    if (etape && parcoursEtape(etape)) setParcours(etape as ParcoursKey);
-  }, [etape]);
+    // Lien direct vers une étape du parcours (?etape=coordonnees…), branche du dossier.
+    const liste = parcoursPourBranche(dossier?.type_assurance ?? null) ?? PARCOURS_EMPRUNTEUR;
+    if (etape && parcoursEtape(etape, liste)) setParcours(etape as ParcoursKey);
+  }, [etape, dossier?.type_assurance]);
+
 
 
   useEffect(() => {
