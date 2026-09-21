@@ -168,13 +168,19 @@ function DossierDetail() {
     setLoading(false);
   };
 
+  // Le dossier n'est rechargé depuis la base qu'à l'ouverture (ou changement de
+  // dossier) — jamais à chaque changement d'étape, pour ne pas courir contre
+  // la sauvegarde automatique en cours et écraser une saisie non encore écrite.
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
   useEffect(() => {
     setSelectedStep(etape && estEtapeValide(etape) ? etape : null);
     // Lien direct vers une étape du parcours emprunteur (?etape=coordonnees…).
     if (etape && parcoursEtape(etape)) setParcours(etape as ParcoursKey);
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, etape]);
+  }, [etape]);
 
 
   useEffect(() => {
