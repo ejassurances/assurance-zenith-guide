@@ -16,8 +16,8 @@ import { useCompletudeClient } from "@/hooks/use-completude";
 import { CompletudeRings } from "@/components/completude-rings";
 import { ClientHeader } from "@/components/client-header";
 import { BoutonEnvoiEmail } from "@/components/envoi-rapide-email";
-import { ClientApercuCards, useClientContexte } from "@/components/client-apercu";
-import { SectionNav, type SectionNavItem } from "@/components/section-nav";
+import { useClientContexte, useClientPortfolioStats } from "@/components/client-apercu";
+import type { SectionNavItem } from "@/components/section-nav";
 import { type NiveauConformite } from "@/lib/conformite-score";
 import { SinistresPanel } from "@/components/sinistres-panel";
 import { DeleteClientButton } from "@/components/delete-client-button";
@@ -33,8 +33,19 @@ import {
 } from "@/lib/crm-origines";
 import { ClientOriginePicker } from "@/components/client-origine-picker";
 import { DriveDossierButton } from "@/components/drive-dossier-button";
+import { ClientActivitySummary } from "@/components/client-activity-summary";
 
 export const Route = createFileRoute("/_authenticated/espace/clients/$id")({
+  head: () => ({
+    meta: [
+      { title: "Fiche client 360 — EJ Partners Assurances" },
+      { name: "description", content: "Fiche client 360 du CRM EJ Partners Assurances." },
+      { property: "og:title", content: "Fiche client 360 — EJ Partners Assurances" },
+      { property: "og:description", content: "Fiche client 360 du CRM EJ Partners Assurances." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   validateSearch: (search: Record<string, unknown>): { tab?: string } => ({
     tab: typeof search.tab === "string" ? search.tab : undefined,
   }),
@@ -146,6 +157,7 @@ function ClientDetail() {
   const scoreValeur = useScoreValeur(id);
   const completude = useCompletudeClient(id);
   const contexte = useClientContexte(id, client?.commercial_id ?? null);
+  const portfolio = useClientPortfolioStats(id);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -189,12 +201,12 @@ function ClientDetail() {
   ];
 
   return (
-    <div>
-      <Link to="/espace/clients" className="text-xs text-ink-muted hover:underline">
-        ← Clients
+    <div className="space-y-3">
+      <Link to="/espace/clients" className="inline-flex text-xs text-ink-muted hover:text-ink hover:underline">
+        ← Retour aux clients
       </Link>
 
-      <div className="mt-2">
+      <div>
         <ClientHeader
           prenom={client.prenom}
           nom={client.nom}
@@ -203,8 +215,11 @@ function ClientDetail() {
           reference={client.reference}
           branche={contexte.branche}
           conseiller={contexte.conseiller}
+          createdAt={client.created_at}
+          dateNaissance={client.date_naissance}
+          contratsActifs={portfolio.actifs}
+          primeAnnuelle={portfolio.primeTtc}
         >
-          <ScoreRings valeur={scoreValeur ?? 0} />
           {canEdit && <BoutonEnvoiEmail type="client" id={client.id} />}
           {canEdit && <DriveDossierButton clientId={client.id} />}
           {canEdit && client.email && (
@@ -220,24 +235,65 @@ function ClientDetail() {
         </ClientHeader>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_18rem]">
-        <div className="min-w-0 space-y-6">
-          <div className="crm-card p-6">
-            <p className="crm-eyebrow">Complétude du dossier</p>
-            <div className="mt-4">
-              {completude ? (
-                <CompletudeRings items={completude} />
-              ) : (
-                <p className="text-xs text-ink-muted">Calcul…</p>
-              )}
-            </div>
+      <div className="grid min-w-0 gap-3 xl:grid-cols-[15rem_minmax(0,1fr)_17rem]">
+        <aside className="crm-card min-w-0 overflow-hidden xl:sticky xl:top-4 xl:self-start">
+          <div className="flex items-center gap-2 border-b border-line px-4 py-3">
+            <span className="size-2 rounded-full bg-[color:var(--crm-gold)]" aria-hidden="true" />
+            <p className="crm-eyebrow text-ink">Copilote client</p>
           </div>
+          <div className="space-y-5 p-4">
+            <div>
+              <p className="crm-eyebrow">Valeur client</p>
+              <div className="mt-3 flex items-center gap-4">
+                <ScoreRings valeur={scoreValeur ?? 0} size={64} />
+                <div className="min-w-0 text-xs text-ink-muted">
+                  <p><span className="font-semibold text-ink">{portfolio.actifs}</span> contrat{portfolio.actifs > 1 ? "s" : ""} actif{portfolio.actifs > 1 ? "s" : ""}</p>
+                  <p className="mt-1"><span className="font-semibold text-ink">{portfolio.primeTtc.toLocaleString("fr-FR", { maximumFractionDigits: 0 })} €</span> / an</p>
+                </div>
+              </div>
+            </div>
 
-          <ClientApercuCards clientId={client.id} />
+            <div className="border-t border-line pt-4">
+              <p className="crm-eyebrow">Complétude</p>
+              <div className="mt-3">
+                {completude ? <CompletudeRings items={completude} size={48} className="gap-3" /> : <p className="text-xs text-ink-muted">Calcul…</p>}
+              </div>
+            </div>
 
-          <CrmBrandPanel clientId={client.id} canEdit={canEdit} />
+            <CrmBrandPanel clientId={client.id} canEdit={canEdit} compact />
+          </div>
+        </aside>
 
-          <div>
+        <main className="crm-card min-w-0 overflow-hidden">
+          <div className="border-b border-line bg-surface/50 px-3 pt-2">
+            <label className="mb-2 block lg:hidden">
+              <span className="sr-only">Section de la fiche</span>
+              <select
+                value={tab}
+                onChange={(e) => setTab(e.target.value as Tab)}
+                className="w-full rounded-md border border-line bg-surface-elevated px-3 py-2 text-sm text-ink"
+              >
+                {navItems.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}
+              </select>
+            </label>
+            <nav aria-label="Sections de la fiche client" className="hidden overflow-x-auto lg:flex">
+              {navItems.map((item) => {
+                const active = item.key === tab;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => setTab(item.key)}
+                    aria-current={active ? "page" : undefined}
+                    className={"shrink-0 border-b-2 px-3 py-2.5 text-xs font-semibold transition-colors " + (active ? "border-[color:var(--crm-gold)] bg-surface-elevated text-ink" : "border-transparent text-ink-muted hover:text-ink")}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+          <div className="min-w-0 p-4 sm:p-5">
             {tab === "identite" && <IdentiteTab client={client} canEdit={canEdit} onSaved={load} />}
             {tab === "famille" && <FamilleTab clientId={client.id} canEdit={canEdit} />}
             {tab === "entreprise" && <EntrepriseTab clientId={client.id} canEdit={canEdit} />}
@@ -256,11 +312,9 @@ function ClientDetail() {
               <ConformiteClientTab clientId={client.id} clientEmail={client.email} canEdit={canEdit} />
             )}
           </div>
-        </div>
+        </main>
 
-        <aside className="lg:sticky lg:top-6 lg:self-start">
-          <SectionNav title="Sections" items={navItems} active={tab} onSelect={setTab} />
-        </aside>
+        <ClientActivitySummary clientId={client.id} />
       </div>
     </div>
   );
