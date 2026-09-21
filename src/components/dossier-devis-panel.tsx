@@ -2585,9 +2585,10 @@ export function DossierDevisPanel({
             onChange={(e) => setForm({ ...form, commission_base: e.target.value as BaseCommission })}
             className={inp}
           >
-            <option value="economie_realisee">Économie réalisée</option>
+            {estEmprunteur && <option value="economie_realisee">Économie réalisée</option>}
             <option value="prime">Cotisation (prime)</option>
           </select>
+
         </label>
         <label className="block sm:col-span-2">
           <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Résumé des garanties</span>
