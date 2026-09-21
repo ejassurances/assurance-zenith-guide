@@ -1196,9 +1196,10 @@ export function DossierDevisPanel({
         <h3 className="text-sm font-medium text-ink">Ajouter un devis</h3>
         <p className="mt-1 text-xs text-ink-muted">
           Déposez le devis reçu, ou reprenez une pièce déjà présente sur le dossier (reçue par e-mail, scannée). La
-          pièce est lue automatiquement : partenaire, produit, tarif, quotité et garanties sont seulement proposés.
-          Rien n'est enregistré sans votre validation.
+          pièce est lue automatiquement : partenaire, produit, tarif{estEmprunteur ? ", quotité" : ""} et garanties
+          sont seulement proposés. Rien n'est enregistré sans votre validation.
         </p>
+
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-ink px-4 py-2 text-xs text-primary-foreground disabled:opacity-60">
             <input
