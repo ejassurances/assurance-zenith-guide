@@ -147,8 +147,8 @@ function DossierDetail() {
   );
   /** Étape visible du parcours emprunteur (présentation en 12 étapes). */
   const [parcours, setParcours] = useState<ParcoursKey | null>(null);
-  /** Vue globale ACPR : onglet distinct du déroulé des étapes. */
-  const [vueGlobale, setVueGlobale] = useState(false);
+  /** Vue du dossier : Synthèse (nouvelle vue par défaut), Parcours détaillé, ou Vue globale ACPR. */
+  const [modeAffichage, setModeAffichage] = useState<"synthese" | "parcours" | "global">("synthese");
   const completude = useCompletudeDossier(id, dossier?.client_id ?? null);
   /** Actes réellement archivés : une étape réglementaire n'est cochée que s'ils existent. */
   const preuvesParcours = usePreuvesParcours(id, dossier?.type_assurance === "emprunteur");
@@ -277,22 +277,34 @@ function DossierDetail() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => setVueGlobale(false)}
+              onClick={() => setModeAffichage("synthese")}
               className={
                 "rounded-full border px-4 py-1.5 text-xs transition " +
-                (vueGlobale
-                  ? "border-line bg-background text-ink-muted hover:border-ink/40"
-                  : "border-ink bg-ink text-primary-foreground")
+                (modeAffichage === "synthese"
+                  ? "border-ink bg-ink text-primary-foreground"
+                  : "border-line bg-background text-ink-muted hover:border-ink/40")
+              }
+            >
+              Synthèse
+            </button>
+            <button
+              type="button"
+              onClick={() => setModeAffichage("parcours")}
+              className={
+                "rounded-full border px-4 py-1.5 text-xs transition " +
+                (modeAffichage === "parcours"
+                  ? "border-ink bg-ink text-primary-foreground"
+                  : "border-line bg-background text-ink-muted hover:border-ink/40")
               }
             >
               Parcours par étapes
             </button>
             <button
               type="button"
-              onClick={() => setVueGlobale(true)}
+              onClick={() => setModeAffichage("global")}
               className={
                 "rounded-full border px-4 py-1.5 text-xs transition " +
-                (vueGlobale
+                (modeAffichage === "global"
                   ? "border-ink bg-ink text-primary-foreground"
                   : "border-line bg-background text-ink-muted hover:border-ink/40")
               }
@@ -300,11 +312,14 @@ function DossierDetail() {
               Vue globale du dossier (traçabilité ACPR)
             </button>
           </div>
-          {!vueGlobale && (
+          {modeAffichage === "parcours" && (
             <ParcoursEmprunteurNav
               statut={dossier.statut}
               active={parcoursActif}
-              onSelect={setParcours}
+              onSelect={(k) => {
+                setModeAffichage("parcours");
+                setParcours(k);
+              }}
               preuves={preuvesParcours}
               gele={kycBloquant}
             />
@@ -313,8 +328,8 @@ function DossierDetail() {
       )}
 
 
-      {/* Suivi réglementaire : réservé à la vue globale et à la dernière étape. */}
-      {(!parcoursActif || vueGlobale || parcoursActif === "analyse") && (
+      {/* Suivi réglementaire : réservé à la vue globale et à la dernière étape du parcours. */}
+      {(!parcoursActif || modeAffichage === "global" || (modeAffichage === "parcours" && parcoursActif === "analyse")) && (
         <DossierPipeline
           dossierId={id}
           statut={dossier.statut}
@@ -324,7 +339,7 @@ function DossierDetail() {
           onChanged={handlePipelineChanged}
           onStepClick={(k) => {
             setParcours(null);
-            setVueGlobale(false);
+            setModeAffichage("parcours");
             setSelectedStep(k);
           }}
         />
@@ -332,7 +347,17 @@ function DossierDetail() {
 
 
       <div className="min-w-0">
-        {userId && vueGlobale ? (
+        {userId && modeAffichage === "synthese" && parcoursActif ? (
+          <DossierSynthese
+            dossier={dossier}
+            dossierId={id}
+            canEdit={canEdit}
+            scoreKyc={scoreKyc}
+            onVoirParcours={() => setModeAffichage("parcours")}
+            onVoirVueGlobale={() => setModeAffichage("global")}
+            onSaved={load}
+          />
+        ) : userId && modeAffichage === "global" ? (
           <section className="space-y-6" aria-label="Vue globale du dossier">
             <div className="border-b border-line pb-3">
               <h2 className="font-serif text-xl font-medium text-ink">
@@ -370,6 +395,123 @@ function DossierDetail() {
       </div>
 
 
+    </div>
+  );
+}
+
+/**
+ * Synthèse du dossier — nouvelle vue par défaut : cartes de suivi (complétude,
+ * devis, tâches), informations commerciales et raccourcis vers le parcours
+ * détaillé (étapes, import de documents) et la vue globale ACPR. Réservée aux
+ * dossiers emprunteur, où le parcours par étapes existe.
+ */
+function DossierSynthese({
+  dossier,
+  dossierId,
+  canEdit,
+  scoreKyc,
+  onVoirParcours,
+  onVoirVueGlobale,
+  onSaved,
+}: {
+  dossier: Dossier;
+  dossierId: string;
+  canEdit: boolean;
+  scoreKyc: number | null;
+  onVoirParcours: () => void;
+  onVoirVueGlobale: () => void;
+  onSaved: () => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="crm-card p-5">
+          <p className="crm-eyebrow">Statut du dossier</p>
+          <p className="mt-2 font-serif text-xl font-medium capitalize text-ink">
+            {dossier.statut.replace(/_/g, " ")}
+          </p>
+        </div>
+        <div className="crm-card p-5">
+          <p className="crm-eyebrow">Conformité KYC client</p>
+          <p className="mt-2 font-serif text-xl font-medium text-ink">
+            {scoreKyc == null ? "…" : `${scoreKyc} %`}
+          </p>
+        </div>
+        <div className="crm-card p-5">
+          <p className="crm-eyebrow">Capital emprunté</p>
+          <p className="mt-2 font-serif text-xl font-medium text-ink">
+            {dossier.capital ? `${dossier.capital.toLocaleString("fr-FR")} €` : "—"}
+          </p>
+        </div>
+        <div className="crm-card p-5">
+          <p className="crm-eyebrow">Économie estimée</p>
+          <p className="mt-2 font-serif text-xl font-medium text-ink">
+            {dossier.economie_estimee ? `${dossier.economie_estimee.toLocaleString("fr-FR")} €` : "—"}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="crm-card p-6">
+          <p className="crm-eyebrow">Dossier commercial</p>
+          <dl className="mt-4 space-y-3 text-sm">
+            <div className="flex justify-between gap-3">
+              <dt className="text-ink-muted">Client</dt>
+              <dd className="font-medium text-ink">{dossier.client_nom}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-ink-muted">Référence</dt>
+              <dd className="text-ink">{dossier.reference}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-ink-muted">Branche</dt>
+              <dd className="text-ink">{labelForBranche(dossier.type_assurance)}</dd>
+            </div>
+            {dossier.duree_mois && (
+              <div className="flex justify-between gap-3">
+                <dt className="text-ink-muted">Durée du prêt</dt>
+                <dd className="text-ink">{dossier.duree_mois} mois</dd>
+              </div>
+            )}
+            {dossier.souscription_envoyee_le && (
+              <div className="flex justify-between gap-3">
+                <dt className="text-ink-muted">Souscription envoyée le</dt>
+                <dd className="text-ink">
+                  {new Date(dossier.souscription_envoyee_le).toLocaleDateString("fr-FR")}
+                </dd>
+              </div>
+            )}
+          </dl>
+          <div className="mt-5 border-t border-line pt-5">
+            <CompagnieProduitSection dossier={dossier} canEdit={canEdit} onSaved={onSaved} />
+          </div>
+        </div>
+
+        <div className="crm-card p-6">
+          <p className="crm-eyebrow">Actions rapides</p>
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={onVoirParcours}
+              className="rounded-xl border border-line px-4 py-3 text-left text-sm text-ink hover:border-ink/40"
+            >
+              Voir le parcours détaillé
+              <span className="block text-xs text-ink-muted">Étapes, import de documents, devis</span>
+            </button>
+            <button
+              type="button"
+              onClick={onVoirVueGlobale}
+              className="rounded-xl border border-line px-4 py-3 text-left text-sm text-ink hover:border-ink/40"
+            >
+              Vue globale ACPR
+              <span className="block text-xs text-ink-muted">Toutes les pièces et échanges</span>
+            </button>
+          </div>
+          <div className="mt-6 border-t border-line pt-5">
+            <DossierTachesPanel dossierId={dossierId} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
