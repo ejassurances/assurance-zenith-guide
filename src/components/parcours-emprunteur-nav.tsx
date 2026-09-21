@@ -8,6 +8,8 @@ import {
   etapeAtteinte,
   etatEtape,
   parcoursEtape,
+  titreParcours,
+  type ParcoursEtape,
   type ParcoursKey,
   type PreuvesParcours,
 } from "@/lib/parcours-emprunteur";
@@ -18,23 +20,27 @@ export function ParcoursEmprunteurNav({
   onSelect,
   preuves,
   gele,
+  etapes = PARCOURS_EMPRUNTEUR,
 }: {
   statut: string;
   active: ParcoursKey;
   onSelect: (key: ParcoursKey) => void;
   preuves?: PreuvesParcours | null;
   gele?: boolean;
+  /** Parcours affiché (emprunteur par défaut, trottinette pour les EDPM). */
+  etapes?: ParcoursEtape[];
 }) {
-  const def = parcoursEtape(active);
+  const def = parcoursEtape(active, etapes);
+  const dernier = etapes[etapes.length - 1]?.numero ?? 0;
 
   return (
     <div className="rounded-2xl border border-line bg-surface-elevated p-5">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:flex-wrap sm:justify-between">
         <h2 className="min-w-0 truncate font-serif text-lg font-medium text-ink">
-          Parcours assurance emprunteur
+          {titreParcours(etapes)}
         </h2>
         <span className="shrink-0 rounded-full border border-line px-3 py-1 text-xs text-ink-soft">
-          Étape {def?.numero ?? 0} / 11
+          Étape {def?.numero ?? 0} / {dernier}
         </span>
       </div>
 
@@ -45,8 +51,9 @@ export function ParcoursEmprunteurNav({
       )}
 
       <ol className="mt-4 flex flex-wrap gap-2">
-        {PARCOURS_EMPRUNTEUR.map((e) => {
-          const etat = etatEtape(e.key, statut, preuves);
+        {etapes.map((e) => {
+          const etat = etatEtape(e.key, statut, preuves, etapes);
+
           const courante = e.key === active;
           const reprise = etat === "reprise";
           const terminee = etat === "terminee";
