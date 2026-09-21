@@ -2498,7 +2498,8 @@ export function DossierDevisPanel({
             </label>
           </>
         )}
-        {assuresRecueil.length >= 2 && (
+        {estEmprunteur && assuresRecueil.length >= 2 && (
+
           <label className="block sm:col-span-2">
             <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
               Tête assurée couverte par ce devis <span className="text-accent">*</span>
