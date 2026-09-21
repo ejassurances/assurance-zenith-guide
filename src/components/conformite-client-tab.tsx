@@ -77,6 +77,7 @@ export function ConformiteClientTab({
   const [verifs, setVerifs] = useState<LCBVerif[]>([]);
   const [estPro, setEstPro] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [lecture, setLecture] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchResult, setSearchResult] = useState<Awaited<ReturnType<typeof rechercherSanctionsPPE>> | null>(null);
 
