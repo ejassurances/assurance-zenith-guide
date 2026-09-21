@@ -127,6 +127,11 @@ export function DossierDevisPanel({
   const [importBusy, setImportBusy] = useState(false);
   const [importMsg, setImportMsg] = useState<string | null>(null);
   const [importDocId, setImportDocId] = useState<string | null>(null);
+  /** Pièces du dossier pouvant être un devis (reçues par e-mail, scannées…). */
+  const [piecesCandidates, setPiecesCandidates] = useState<
+    { id: string; file_name: string | null; type_document: string | null; created_at: string }[]
+  >([]);
+  const [piecesOuvertes, setPiecesOuvertes] = useState(false);
   const creerFixe = useServerFn(creerDevisTarifFixeFn);
 
   /** Produit du dossier en tarification fixe : formules et options à cotisation connue. */
