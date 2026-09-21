@@ -38,8 +38,13 @@ import { ImportDocumentsEmprunteur } from "@/components/import-documents-emprunt
 import {
   etapeCouranteParcours,
   parcoursEtape,
+  parcoursPourBranche,
+  PARCOURS_EMPRUNTEUR,
+  type ParcoursEtape,
   type ParcoursKey,
 } from "@/lib/parcours-emprunteur";
+import { ParcoursEmprunteurNav } from "@/components/parcours-emprunteur-nav";
+
 import { DocumentsPretPanel } from "@/components/documents-pret-panel";
 import { DossierReferencesExternesPanel } from "@/components/dossier-references-externes-panel";
 import { DossierTachesPanel } from "@/components/dossier-taches-panel";
