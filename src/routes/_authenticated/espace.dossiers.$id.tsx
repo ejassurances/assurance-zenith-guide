@@ -429,6 +429,26 @@ function DossierDetail() {
               reference: dossier.reference,
             }}
           />
+        ) : parcoursActif && (modeAffichage === "engin" || modeAffichage === "usage") ? (
+          <RecueilDossierPanel
+            dossierId={id}
+            typeAssurance={dossier.type_assurance}
+            recueil={dossier.recueil_besoins}
+            canEdit={canEdit}
+            onSaved={load}
+            sectionUnique
+            filtreSections={(titre) =>
+              modeAffichage === "engin" ? /engin/i.test(titre) : !/engin/i.test(titre)
+            }
+            client={{
+              id: dossier.client_id,
+              nom: dossier.client_nom,
+              email: dossier.client_email,
+              telephone: dossier.client_phone,
+              reference: dossier.reference,
+            }}
+          />
+
         ) : userId && modeAffichage === "devis" && parcoursActif ? (
           <DossierDevisPanel
             dossierId={id}
