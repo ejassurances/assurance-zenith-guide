@@ -721,6 +721,50 @@ export function DossierDevisPanel({
     }
   };
 
+  /**
+   * Reprise d'une pièce DÉJÀ déposée sur le dossier (devis reçu par e-mail ou
+   * scanné) : aucune duplication de fichier, lecture IA puis validation humaine.
+   */
+  const reprendreDocument = async (docId: string, nom: string) => {
+    setImportBusy(true);
+    setErr(null);
+    setImportMsg(`Lecture de « ${nom} » par l'IA…`);
+    try {
+      setImportDocId(docId);
+      const lu = await lireDevis({ data: { dossier_id: dossierId, document_id: docId } });
+      const num = (v: number | null) => (v === null || v === undefined ? "" : String(v));
+      setForm((f) => ({
+        ...f,
+        compagnie_id: lu.compagnie_id ?? f.compagnie_id,
+        produit_id: lu.produit_id ?? f.produit_id,
+        montant_total_saisi: num(lu.montant_total) || f.montant_total_saisi,
+        type_cotisation: lu.type_cotisation ?? f.type_cotisation,
+        cotisation_mensuelle: num(lu.cotisation_mensuelle) || f.cotisation_mensuelle,
+        cotisation_min: num(lu.cotisation_min) || f.cotisation_min,
+        cotisation_max: num(lu.cotisation_max) || f.cotisation_max,
+        quotite_pct: num(lu.quotite_pct) || f.quotite_pct,
+        garanties_resume: lu.garanties_resume ?? f.garanties_resume,
+      }));
+      const manque: string[] = [];
+      if (!lu.compagnie_id)
+        manque.push(
+          lu.compagnie ? `partenaire (« ${lu.compagnie} » absent du catalogue de la branche)` : "partenaire",
+        );
+      if (!lu.produit_id) manque.push(lu.produit ? `produit (« ${lu.produit} »)` : "produit");
+      if (lu.cotisation_mensuelle === null && lu.montant_total === null) manque.push("tarif");
+      setImportMsg(
+        `Pièce lue${lu.assure_nom ? ` (assuré : ${lu.assure_nom})` : ""}. Vérifiez les valeurs proposées puis enregistrez.` +
+          (manque.length ? ` À compléter à la main : ${manque.join(", ")}.` : ""),
+      );
+      setSaisieOuverte(true);
+    } catch (e) {
+      setImportMsg(null);
+      setErr(e instanceof Error ? e.message : "Lecture de la pièce impossible");
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
   /** Traçabilité ACPR : le devis n'est jamais supprimé, il est archivé (masqué). */
   const supprimer = async (d: DossierDevis) => {
     if (!confirm("Archiver ce devis ? Il sera retiré du comparatif mais conservé comme preuve (ACPR).")) return;
