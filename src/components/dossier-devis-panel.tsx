@@ -1842,10 +1842,11 @@ export function DossierDevisPanel({
                   </p>
                   {d.montant_total_saisi != null && (
                     <p className="text-xs text-ink-soft">
-                      {Number(d.montant_total_saisi).toLocaleString("fr-FR")} € au total sur la durée du prêt
+                      {Number(d.montant_total_saisi).toLocaleString("fr-FR")} €{" "}
+                      {estEmprunteur ? "au total sur la durée du prêt" : "par an"}
                     </p>
                   )}
-                  {d.type_cotisation && (
+                  {estEmprunteur && d.type_cotisation && (
                     <p className="text-xs text-ink-muted">
                       {d.type_cotisation === "CI"
                         ? "CI — cotisation constante sur le capital initial"
@@ -1858,6 +1859,7 @@ export function DossierDevisPanel({
                           }`}
                     </p>
                   )}
+
                 </div>
               </div>
 
