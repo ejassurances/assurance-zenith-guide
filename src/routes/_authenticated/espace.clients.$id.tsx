@@ -235,8 +235,8 @@ function ClientDetail() {
         </ClientHeader>
       </div>
 
-      <div className="grid min-w-0 gap-3 xl:grid-cols-[15rem_minmax(0,1fr)_17rem]">
-        <aside className="crm-card min-w-0 overflow-hidden xl:sticky xl:top-4 xl:self-start">
+      <div className="grid min-w-0 gap-3 lg:grid-cols-[14rem_minmax(0,1fr)] min-[1400px]:grid-cols-[13rem_minmax(0,1fr)_15rem]">
+        <aside className="crm-card min-w-0 overflow-hidden lg:sticky lg:top-4 lg:self-start">
           <div className="flex items-center gap-2 border-b border-line px-4 py-3">
             <span className="size-2 rounded-full bg-[color:var(--crm-gold)]" aria-hidden="true" />
             <p className="crm-eyebrow text-ink">Copilote client</p>
@@ -314,7 +314,9 @@ function ClientDetail() {
           </div>
         </main>
 
-        <ClientActivitySummary clientId={client.id} />
+        <div className="lg:col-start-2 min-[1400px]:col-start-3 min-[1400px]:row-start-1">
+          <ClientActivitySummary clientId={client.id} />
+        </div>
       </div>
     </div>
   );
