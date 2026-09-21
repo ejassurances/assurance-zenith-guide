@@ -115,32 +115,32 @@
   --font-serif-family: "Playfair Display", "Newsreader", Georgia, serif;
 
   --background: #f4f6fa;
-  --foreground: #0a1229;
+  --foreground: #0a192f;
   --surface: #eaeef6;
   --surface-elevated: #ffffff;
-  --ink: #0a1229;
+  --ink: #0a192f;
   --ink-soft: #38415c;
   --ink-muted: #737c92;
   --line: rgb(10 18 41 / 0.08);
 
   --card: #ffffff;
-  --card-foreground: #0a1229;
-  --primary: #0a1229;
+  --card-foreground: #0a192f;
+  --primary: #0a192f;
   --primary-foreground: #f4f6fa;
   --secondary: #e6eaf4;
-  --secondary-foreground: #0a1229;
+  --secondary-foreground: #0a192f;
   --muted: #eaeef6;
   --muted-foreground: #737c92;
-  --accent: #b88e2f;
+  --accent: #b99b3f;
   --accent-foreground: #ffffff;
   --border: rgb(10 18 41 / 0.08);
   --input: rgb(10 18 41 / 0.14);
-  --ring: #b88e2f;
+  --ring: #b99b3f;
 
-  --crm-navy: #0a1229;
+  --crm-navy: #0a192f;
   --crm-navy-soft: #152345;
-  --crm-gold: #b88e2f;
-  --crm-gold-soft: rgb(184 142 47 / 0.1);
+  --crm-gold: #b99b3f;
+  --crm-gold-soft: rgb(185 155 63 / 0.1);
   --crm-gold-muted: #9a742a;
   --crm-slate: #8b93a7;
   --crm-brand-blue: #1d4ed8;

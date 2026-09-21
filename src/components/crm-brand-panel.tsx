@@ -7,7 +7,7 @@ import { BESOINS, DDA_STATUTS, MARQUE_KEYS, MARQUES, besoinLabel, ddaStatut, mar
 type Row = { marque: string; besoins: string[] | null; dda_statut: string };
 
 /** Panneau marque d'origine / besoins / statut DDA + synchronisation webhook. */
-export function CrmBrandPanel({ clientId, canEdit }: { clientId: string; canEdit: boolean }) {
+export function CrmBrandPanel({ clientId, canEdit, compact = false }: { clientId: string; canEdit: boolean; compact?: boolean }) {
   const [row, setRow] = useState<Row | null>(null);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -59,7 +59,7 @@ export function CrmBrandPanel({ clientId, canEdit }: { clientId: string; canEdit
   };
 
   return (
-    <div className="rounded-2xl border border-line bg-surface-elevated p-5">
+    <div className={compact ? "border-t border-line pt-4" : "rounded-2xl border border-line bg-surface-elevated p-5"}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${m.badge}`}>
@@ -72,7 +72,7 @@ export function CrmBrandPanel({ clientId, canEdit }: { clientId: string; canEdit
           {canEdit && (
             <button
               onClick={() => setEditing((v) => !v)}
-              className="rounded-full border border-line px-3 py-1.5 text-xs hover:bg-surface"
+              className="rounded-md border border-line px-2 py-1 text-xs hover:bg-surface"
             >
               {editing ? "Fermer" : "Modifier"}
             </button>
@@ -81,7 +81,7 @@ export function CrmBrandPanel({ clientId, canEdit }: { clientId: string; canEdit
             <button
               onClick={pousser}
               disabled={syncing}
-              className="rounded-full bg-ink px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-60"
+              className="rounded-md bg-ink px-2 py-1 text-xs font-medium text-primary-foreground disabled:opacity-60"
             >
               {syncing ? "Envoi…" : "Envoyer au webhook"}
             </button>

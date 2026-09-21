@@ -25,6 +25,10 @@ export function ClientHeader({
   reference,
   branche,
   conseiller,
+  createdAt,
+  dateNaissance,
+  contratsActifs = 0,
+  primeAnnuelle = 0,
   children,
 }: {
   prenom: string | null;
@@ -34,6 +38,10 @@ export function ClientHeader({
   reference: string;
   branche?: string | null;
   conseiller?: string | null;
+  createdAt?: string | null;
+  dateNaissance?: string | null;
+  contratsActifs?: number;
+  primeAnnuelle?: number;
   children?: React.ReactNode;
 }) {
   const badge = STATUT_BADGE[statut] ?? STATUT_BADGE.inactif;
@@ -42,30 +50,43 @@ export function ClientHeader({
     branche ? `Branche : ${branche}` : null,
     conseiller ? `Conseiller : ${conseiller}` : "Conseiller : non assigné",
   ].filter(Boolean);
+  const age = dateNaissance
+    ? Math.max(0, Math.floor((Date.now() - new Date(dateNaissance).getTime()) / 31_557_600_000))
+    : null;
 
   return (
-    <header className="rounded-[var(--radius)] bg-[#0A192F] p-6 text-white shadow-[0_16px_40px_-24px_rgb(10_25_47/0.8)]">
-      <div className="flex flex-wrap items-start justify-between gap-6">
-        <div className="flex items-start gap-4">
+    <header className="crm-card overflow-hidden border-t-2 border-t-[color:var(--crm-gold)] px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
           <div
-            className="flex size-16 shrink-0 items-center justify-center rounded-[var(--radius)] bg-[#D4AF37] font-serif text-2xl font-semibold text-[#0A192F]"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[color:var(--crm-navy)] text-sm font-bold text-primary-foreground"
             aria-hidden="true"
           >
             {initiales(prenom, nom)}
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="font-serif text-3xl font-semibold text-white">{fullName}</h1>
+              <h1 className="truncate font-sans text-xl font-bold text-ink">{fullName}</h1>
+              {age !== null && <span className="text-xs text-ink-muted">({age} ans)</span>}
               <span
                 className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest ${badge}`}
               >
                 {statut}
               </span>
             </div>
-            <p className="mt-2 text-xs text-white/60">{contexte.join(" · ")}</p>
+            <p className="mt-1 text-xs text-ink-muted">
+              {contexte.join(" · ")}
+              {createdAt ? ` · Ajouté le ${new Date(createdAt).toLocaleDateString("fr-FR")}` : ""}
+            </p>
           </div>
         </div>
-        {children && <div className="flex flex-wrap items-center gap-4">{children}</div>}
+        <div className="flex flex-wrap items-center justify-end gap-4">
+          <div className="hidden items-center gap-5 border-r border-line pr-4 sm:flex">
+            <div className="text-center"><p className="crm-eyebrow">Contrats</p><p className="text-base font-bold text-ink">{contratsActifs}</p></div>
+            <div className="text-center"><p className="crm-eyebrow">Prime annuelle</p><p className="text-base font-bold text-ink">{primeAnnuelle.toLocaleString("fr-FR", { maximumFractionDigits: 0 })} €</p></div>
+          </div>
+          {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
+        </div>
       </div>
     </header>
   );
