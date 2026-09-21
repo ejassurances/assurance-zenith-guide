@@ -146,9 +146,21 @@ function DossierDetail() {
   );
   /** Étape visible du parcours emprunteur (présentation en 12 étapes). */
   const [parcours, setParcours] = useState<ParcoursKey | null>(null);
-  /** Onglet actif du dossier emprunteur, correspondant exactement aux onglets Courtigo qui ont un vrai contenu. */
+  /** Onglet actif du dossier emprunteur — les 13 onglets de la maquette Courtigo. */
   const [modeAffichage, setModeAffichage] = useState<
-    "synthese" | "assures" | "pret" | "fichiers" | "devis" | "taches"
+    | "synthese"
+    | "modifier"
+    | "assures"
+    | "configuration"
+    | "pret"
+    | "garanties"
+    | "banque"
+    | "fichiers"
+    | "taches"
+    | "activite"
+    | "simulations"
+    | "devis"
+    | "pieces"
   >("synthese");
   const completude = useCompletudeDossier(id, dossier?.client_id ?? null);
   /** Actes réellement archivés : une étape réglementaire n'est cochée que s'ils existent. */
@@ -278,11 +290,18 @@ function DossierDetail() {
           {(
             [
               { mode: "synthese", label: "Synthèse" },
+              { mode: "modifier", label: "Modifier" },
               { mode: "assures", label: "Info Assuré(s)" },
+              { mode: "configuration", label: "Configuration" },
               { mode: "pret", label: "Prêt(s)" },
+              { mode: "garanties", label: "Garanties" },
+              { mode: "banque", label: "Banque" },
               { mode: "fichiers", label: "Fichiers" },
-              { mode: "devis", label: "Études et devis" },
               { mode: "taches", label: "Tâches" },
+              { mode: "activite", label: "Activité" },
+              { mode: "simulations", label: "Simulation(s)" },
+              { mode: "devis", label: "Études et devis" },
+              { mode: "pieces", label: "Pièces" },
             ] as const
           ).map((t) => (
             <button
@@ -357,6 +376,41 @@ function DossierDetail() {
             <PiecesSection dossierId={id} clientEmail={dossier.client_email} canValidate={canEdit} />
             <DocumentsPanel dossierId={id} userId={userId} />
           </section>
+        ) : modeAffichage === "modifier" && parcoursActif ? (
+          <OngletAVenir
+            titre="Modifier"
+            manque="Type de projet, état, contexte, priorité, chance de réussite, chargé de projet, date butoir, primes — aucun de ces champs n'existe encore dans le dossier."
+          />
+        ) : modeAffichage === "configuration" && parcoursActif ? (
+          <OngletAVenir
+            titre="Configuration"
+            manque="Date de signature du prêt, frais de dossier, cadre de financement — pas encore de champs dédiés dans le dossier."
+          />
+        ) : modeAffichage === "garanties" && parcoursActif ? (
+          <OngletAVenir
+            titre="Garanties"
+            manque="Choix des garanties par assuré avec quotité individuelle (MNO, IPP...) — le recueil actuel gère les garanties globalement, pas encore par assuré dans cette structure."
+          />
+        ) : modeAffichage === "banque" && parcoursActif ? (
+          <OngletAVenir
+            titre="Banque"
+            manque="Le nom de la banque est déjà saisi dans l'onglet Prêt(s) (section « Le prêt ») — il n'existe pas encore de fiche prêteur séparée (agence, code, adresse) comme sur Courtigo."
+          />
+        ) : modeAffichage === "activite" && parcoursActif ? (
+          <OngletAVenir
+            titre="Activité"
+            manque="Journal d'activité générique du dossier — l'historique réglementaire existe déjà (onglet Synthèse), mais pas de journal d'activité libre distinct pour l'instant."
+          />
+        ) : modeAffichage === "simulations" && parcoursActif ? (
+          <OngletAVenir
+            titre="Simulation(s)"
+            manque="Distinct de « Études et devis » chez Courtigo, mais je n'ai pas encore identifié de donnée propre à ce concept dans le dossier — à préciser avec toi avant de le construire."
+          />
+        ) : modeAffichage === "pieces" && parcoursActif ? (
+          <OngletAVenir
+            titre="Pièces"
+            manque="Chevauche l'onglet Fichiers actuel (mêmes pièces KYC/DDA) — à préciser si Courtigo distingue vraiment les deux ou si c'est la même chose sous deux noms."
+          />
         ) : (
           userId && (
             <StageContent
@@ -376,6 +430,18 @@ function DossierDetail() {
       </div>
 
 
+    </div>
+  );
+}
+
+/** Onglet Courtigo pas encore construit : dit clairement ce qui manque, sans inventer de contenu. */
+function OngletAVenir({ titre, manque }: { titre: string; manque: string }) {
+  return (
+    <div className="crm-card p-6">
+      <p className="crm-eyebrow">{titre}</p>
+      <p className="mt-3 text-sm text-ink-muted">
+        Cet onglet n'est pas encore construit avec de vraies données. {manque}
+      </p>
     </div>
   );
 }
