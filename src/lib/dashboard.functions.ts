@@ -19,7 +19,70 @@ export type CaRealSummary = {
   finPeriodeN1: string;
 };
 
-export type CaMensuelPoint = {
+export type RepartitionPoint = {
+  nom: string;
+  valeur: number;
+};
+
+/**
+ * Répartition des contrats actifs par compagnie d'assurance. Un contrat sans
+ * compagnie rattachée est regroupé sous "Non renseigné".
+ */
+export const getRepartitionCompagnies = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<RepartitionPoint[]> => {
+    const { data } = await context.supabase
+      .from("contrats")
+      .select("compagnies(nom)")
+      .neq("statut", "resilie");
+
+    const compte = new Map<string, number>();
+    for (const row of data ?? []) {
+      const nom = (row as { compagnies: { nom: string } | null }).compagnies?.nom ?? "Non renseigné";
+      compte.set(nom, (compte.get(nom) ?? 0) + 1);
+    }
+    return [...compte.entries()]
+      .map(([nom, valeur]) => ({ nom, valeur }))
+      .sort((a, b) => b.valeur - a.valeur);
+  });
+
+/**
+ * Répartition des contrats actifs par famille de produit (type d'assurance :
+ * emprunteur, santé, prévoyance, épargne...). Un contrat sans produit/famille
+ * rattaché est regroupé sous "Non renseigné".
+ */
+export const getRepartitionTypeAssurance = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<RepartitionPoint[]> => {
+    const [{ data: contrats }, { data: familles }] = await Promise.all([
+      context.supabase.from("contrats").select("produit_id, is_emprunteur").neq("statut", "resilie"),
+      context.supabase.from("produit_familles").select("id, nom"),
+    ]);
+    const familleParProduit = new Map<string, string>();
+    if (contrats && contrats.some((c) => c.produit_id)) {
+      const produitIds = [...new Set((contrats ?? []).map((c) => c.produit_id).filter(Boolean))] as string[];
+      if (produitIds.length > 0) {
+        const { data: produits } = await context.supabase
+          .from("produits")
+          .select("id, famille_id")
+          .in("id", produitIds);
+        const nomFamille = new Map((familles ?? []).map((f) => [f.id, f.nom]));
+        for (const p of produits ?? []) {
+          if (p.famille_id) familleParProduit.set(p.id, nomFamille.get(p.famille_id) ?? "Non renseigné");
+        }
+      }
+    }
+
+    const compte = new Map<string, number>();
+    for (const c of contrats ?? []) {
+      const nom = (c.produit_id && familleParProduit.get(c.produit_id))
+        ?? (c.is_emprunteur ? "Assurance emprunteur" : "Non renseigné");
+      compte.set(nom, (compte.get(nom) ?? 0) + 1);
+    }
+    return [...compte.entries()]
+      .map(([nom, valeur]) => ({ nom, valeur }))
+      .sort((a, b) => b.valeur - a.valeur);
+  });
   mois: string; // "2026-01"
   label: string; // "Jan"
   montant: number;

@@ -4,8 +4,18 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CommissionMoisCard } from "@/components/commission-mois-card";
-import { getCaRealEtN1, getCaMensuel, getSyntheseAnneeCommissions, type CaRealSummary, type CaMensuelPoint } from "@/lib/dashboard.functions";
+import {
+  getCaRealEtN1,
+  getCaMensuel,
+  getRepartitionCompagnies,
+  getRepartitionTypeAssurance,
+  getSyntheseAnneeCommissions,
+  type CaRealSummary,
+  type CaMensuelPoint,
+  type RepartitionPoint,
+} from "@/lib/dashboard.functions";
 import { CaEvolutionChart } from "@/components/ca-evolution-chart";
+import { DonutRepartition } from "@/components/donut-repartition";
 import type { SyntheseAnnee } from "@/lib/commission-previsions";
 import { ScoreRings } from "@/components/score-rings";
 import { useScoresValeur } from "@/hooks/use-scores-valeur";
@@ -86,14 +96,18 @@ function Dashboard() {
   const [taches, setTaches] = useState<Tache[]>([]);
   const [caReal, setCaReal] = useState<CaRealSummary | null>(null);
   const [caMensuel, setCaMensuel] = useState<CaMensuelPoint[]>([]);
+  const [repartitionCompagnies, setRepartitionCompagnies] = useState<RepartitionPoint[]>([]);
+  const [repartitionType, setRepartitionType] = useState<RepartitionPoint[]>([]);
   const scoresValeur = useScoresValeur();
   const fetchCaReal = useServerFn(getCaRealEtN1);
   const fetchCaMensuel = useServerFn(getCaMensuel);
+  const fetchRepartitionCompagnies = useServerFn(getRepartitionCompagnies);
+  const fetchRepartitionType = useServerFn(getRepartitionTypeAssurance);
   const fetchSynthese = useServerFn(getSyntheseAnneeCommissions);
 
   useEffect(() => {
     (async () => {
-      const [c, p, tot, ec, si, com, tch, ca, caMens] = await Promise.all([
+      const [c, p, tot, ec, si, com, tch, ca, caMens, repCompagnies, repType] = await Promise.all([
         supabase.from("clients").select("*", { count: "exact", head: true }),
         supabase.from("clients").select("*", { count: "exact", head: true }).eq("statut", "prospect"),
         supabase.from("dossiers").select("*", { count: "exact", head: true }),
@@ -108,6 +122,8 @@ function Dashboard() {
           .limit(6),
         fetchCaReal(),
         fetchCaMensuel(),
+        fetchRepartitionCompagnies(),
+        fetchRepartitionType(),
       ]);
       setStats({
         clients: c.count ?? 0,
@@ -120,8 +136,10 @@ function Dashboard() {
       setTaches((tch.data ?? []) as unknown as Tache[]);
       setCaReal(ca);
       setCaMensuel(caMens);
+      setRepartitionCompagnies(repCompagnies);
+      setRepartitionType(repType);
     })();
-  }, [fetchCaReal, fetchCaMensuel, fetchSynthese]);
+  }, [fetchCaReal, fetchCaMensuel, fetchRepartitionCompagnies, fetchRepartitionType, fetchSynthese]);
 
   return (
     <div>
@@ -172,6 +190,21 @@ function Dashboard() {
       {role !== "client" && caMensuel.length > 0 && (
         <div className="mt-8">
           <CaEvolutionChart data={caMensuel} />
+        </div>
+      )}
+
+      {role !== "client" && (
+        <div className="mt-8 grid gap-6 md:grid-cols-2">
+          <DonutRepartition
+            titre="Contrats par compagnie"
+            sousTitre="Contrats actifs, toutes branches"
+            data={repartitionCompagnies}
+          />
+          <DonutRepartition
+            titre="Répartition par type d'assurance"
+            sousTitre="Contrats actifs, toutes compagnies"
+            data={repartitionType}
+          />
         </div>
       )}
 
