@@ -38,8 +38,13 @@ import { ImportDocumentsEmprunteur } from "@/components/import-documents-emprunt
 import {
   etapeCouranteParcours,
   parcoursEtape,
+  parcoursPourBranche,
+  PARCOURS_EMPRUNTEUR,
+  type ParcoursEtape,
   type ParcoursKey,
 } from "@/lib/parcours-emprunteur";
+import { ParcoursEmprunteurNav } from "@/components/parcours-emprunteur-nav";
+
 import { DocumentsPretPanel } from "@/components/documents-pret-panel";
 import { DossierReferencesExternesPanel } from "@/components/dossier-references-externes-panel";
 import { DossierTachesPanel } from "@/components/dossier-taches-panel";
@@ -163,13 +168,15 @@ function DossierDetail() {
   );
   /** Étape visible du parcours emprunteur (présentation en 12 étapes). */
   const [parcours, setParcours] = useState<ParcoursKey | null>(null);
-  /** Onglet actif du dossier emprunteur — les 13 onglets de la maquette Courtigo. */
+  /** Onglet actif du dossier — onglets de la maquette Courtigo, adaptés à la branche. */
   const [modeAffichage, setModeAffichage] = useState<
     | "synthese"
     | "modifier"
     | "assures"
     | "configuration"
     | "pret"
+    | "engin"
+    | "usage"
     | "garanties"
     | "banque"
     | "fichiers"
@@ -181,7 +188,11 @@ function DossierDetail() {
   >("synthese");
   const completude = useCompletudeDossier(id, dossier?.client_id ?? null);
   /** Actes réellement archivés : une étape réglementaire n'est cochée que s'ils existent. */
-  const preuvesParcours = usePreuvesParcours(id, dossier?.type_assurance === "emprunteur");
+  const preuvesParcours = usePreuvesParcours(
+    id,
+    !!parcoursPourBranche(dossier?.type_assurance ?? null),
+  );
+
   /** Score de conformité KYC du client (0-100) : sous 50 %, le dossier est gelé. */
   const [scoreKyc, setScoreKyc] = useState<number | null>(null);
   const [contreProposition, setContreProposition] = useState<{
@@ -208,9 +219,11 @@ function DossierDetail() {
 
   useEffect(() => {
     setSelectedStep(etape && estEtapeValide(etape) ? etape : null);
-    // Lien direct vers une étape du parcours emprunteur (?etape=coordonnees…).
-    if (etape && parcoursEtape(etape)) setParcours(etape as ParcoursKey);
-  }, [etape]);
+    // Lien direct vers une étape du parcours (?etape=coordonnees…), branche du dossier.
+    const liste = parcoursPourBranche(dossier?.type_assurance ?? null) ?? PARCOURS_EMPRUNTEUR;
+    if (etape && parcoursEtape(etape, liste)) setParcours(etape as ParcoursKey);
+  }, [etape, dossier?.type_assurance]);
+
 
 
   useEffect(() => {
@@ -242,12 +255,17 @@ function DossierDetail() {
   const canEditSuivi = role === "admin" || role === "mandataire" || role === "prescripteur";
 
   const estEmprunteur = dossier.type_assurance === "emprunteur";
-  const parcoursActif: ParcoursKey | null = estEmprunteur
-    ? (parcours ?? etapeCouranteParcours(dossier.statut))
+  /** Parcours par étapes de la branche (emprunteur, trottinette/EDPM), sinon aucun. */
+  const etapesParcours: ParcoursEtape[] | null = parcoursPourBranche(dossier.type_assurance);
+  const estEdpm = !!etapesParcours && !estEmprunteur;
+  const parcoursActif: ParcoursKey | null = etapesParcours
+    ? (parcours ?? etapeCouranteParcours(dossier.statut, etapesParcours))
     : null;
-  const displayedStep = parcoursActif
-    ? (parcoursEtape(parcoursActif)?.statut ?? dossier.statut)
-    : (selectedStep ?? dossier.statut);
+  const displayedStep =
+    parcoursActif && etapesParcours
+      ? (parcoursEtape(parcoursActif, etapesParcours)?.statut ?? dossier.statut)
+      : (selectedStep ?? dossier.statut);
+
   const userId = user?.id;
   const handlePipelineChanged = () => {
     setSelectedStep(null);
@@ -308,24 +326,49 @@ function DossierDetail() {
         </div>
       </div>
 
+      {parcoursActif && etapesParcours && (
+        <ParcoursEmprunteurNav
+          statut={dossier.statut}
+          active={parcoursActif}
+          onSelect={(k) => setParcours(k)}
+          preuves={preuvesParcours ?? undefined}
+          gele={scoreKyc !== null && scoreKyc < 50}
+          etapes={etapesParcours}
+        />
+      )}
+
       {parcoursActif && (
         <div className="flex gap-5 overflow-x-auto border-b border-line pb-0 text-sm">
-          {(
-            [
-              { mode: "synthese", label: "Synthèse" },
-              { mode: "modifier", label: "Modifier" },
-              { mode: "assures", label: "Info Assuré(s)" },
-              { mode: "configuration", label: "Configuration" },
-              { mode: "pret", label: "Prêt(s)" },
-              { mode: "garanties", label: "Garanties" },
-              { mode: "banque", label: "Banque" },
-              { mode: "fichiers", label: "Fichiers" },
-              { mode: "taches", label: "Tâches" },
-              { mode: "activite", label: "Activité" },
-              { mode: "simulations", label: "Simulation(s)" },
-              { mode: "devis", label: "Études et devis" },
-              { mode: "pieces", label: "Pièces" },
-            ] as const
+          {(estEdpm
+            ? ([
+                { mode: "synthese", label: "Synthèse" },
+                { mode: "modifier", label: "Modifier" },
+                { mode: "assures", label: "Info Assuré(s)" },
+                { mode: "configuration", label: "Configuration" },
+                { mode: "engin", label: "L'engin" },
+                { mode: "usage", label: "Usage" },
+                { mode: "garanties", label: "Garanties" },
+                { mode: "fichiers", label: "Fichiers" },
+                { mode: "taches", label: "Tâches" },
+                { mode: "activite", label: "Activité" },
+                { mode: "devis", label: "Études et devis" },
+                { mode: "pieces", label: "Pièces" },
+              ] as const)
+            : ([
+                { mode: "synthese", label: "Synthèse" },
+                { mode: "modifier", label: "Modifier" },
+                { mode: "assures", label: "Info Assuré(s)" },
+                { mode: "configuration", label: "Configuration" },
+                { mode: "pret", label: "Prêt(s)" },
+                { mode: "garanties", label: "Garanties" },
+                { mode: "banque", label: "Banque" },
+                { mode: "fichiers", label: "Fichiers" },
+                { mode: "taches", label: "Tâches" },
+                { mode: "activite", label: "Activité" },
+                { mode: "simulations", label: "Simulation(s)" },
+                { mode: "devis", label: "Études et devis" },
+                { mode: "pieces", label: "Pièces" },
+              ] as const)
           ).map((t) => (
             <button
               key={t.mode}
@@ -343,6 +386,7 @@ function DossierDetail() {
           ))}
         </div>
       )}
+
 
       {!parcoursActif && (
         <DossierPipeline
@@ -385,6 +429,26 @@ function DossierDetail() {
               reference: dossier.reference,
             }}
           />
+        ) : parcoursActif && (modeAffichage === "engin" || modeAffichage === "usage") ? (
+          <RecueilDossierPanel
+            dossierId={id}
+            typeAssurance={dossier.type_assurance}
+            recueil={dossier.recueil_besoins}
+            canEdit={canEdit}
+            onSaved={load}
+            sectionUnique
+            filtreSections={(titre) =>
+              modeAffichage === "engin" ? /engin/i.test(titre) : !/engin/i.test(titre)
+            }
+            client={{
+              id: dossier.client_id,
+              nom: dossier.client_nom,
+              email: dossier.client_email,
+              telephone: dossier.client_phone,
+              reference: dossier.reference,
+            }}
+          />
+
         ) : userId && modeAffichage === "devis" && parcoursActif ? (
           <DossierDevisPanel
             dossierId={id}
