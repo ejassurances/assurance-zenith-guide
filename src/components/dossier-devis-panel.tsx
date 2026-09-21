@@ -150,10 +150,20 @@ export function DossierDevisPanel({
         created_at: string;
       }[];
       setPiecesCandidates(
-        lignes.filter(
-          (l) =>
-            /devis|tarif|proposition/i.test(l.type_document ?? "") ||
-            /devis|tarif|proposition|offre[_\s-]?assurance/i.test(l.file_name ?? ""),
+        // Une même pièce déposée plusieurs fois (mêmes nom de fichier) n'apparaît
+        // qu'une fois dans la liste : la copie la plus récente.
+        Object.values(
+          lignes
+            .filter(
+              (l) =>
+                /devis|tarif|proposition/i.test(l.type_document ?? "") ||
+                /devis|tarif|proposition|offre[_\s-]?assurance/i.test(l.file_name ?? ""),
+            )
+            .reduce<Record<string, (typeof lignes)[number]>>((acc, l) => {
+              const cle = (l.file_name ?? l.id).toLowerCase();
+              if (!acc[cle]) acc[cle] = l;
+              return acc;
+            }, {}),
         ),
       );
     })();
