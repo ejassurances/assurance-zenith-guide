@@ -127,6 +127,50 @@ export function DossierDevisPanel({
   const [importBusy, setImportBusy] = useState(false);
   const [importMsg, setImportMsg] = useState<string | null>(null);
   const [importDocId, setImportDocId] = useState<string | null>(null);
+  /** Pièces du dossier pouvant être un devis (reçues par e-mail, scannées…). */
+  const [piecesCandidates, setPiecesCandidates] = useState<
+    { id: string; file_name: string | null; type_document: string | null; created_at: string }[]
+  >([]);
+  const [piecesOuvertes, setPiecesOuvertes] = useState(false);
+  useEffect(() => {
+    let vivant = true;
+    void (async () => {
+      const { data } = await supabase
+        .from("documents")
+        .select("id,file_name,type_document,created_at,archive_le")
+        .eq("dossier_id", dossierId)
+        .is("archive_le", null)
+        .order("created_at", { ascending: false })
+        .limit(80);
+      if (!vivant) return;
+      const lignes = (data ?? []) as {
+        id: string;
+        file_name: string | null;
+        type_document: string | null;
+        created_at: string;
+      }[];
+      setPiecesCandidates(
+        // Une même pièce déposée plusieurs fois (mêmes nom de fichier) n'apparaît
+        // qu'une fois dans la liste : la copie la plus récente.
+        Object.values(
+          lignes
+            .filter(
+              (l) =>
+                /devis|tarif|proposition/i.test(l.type_document ?? "") ||
+                /devis|tarif|proposition|offre[_\s-]?assurance/i.test(l.file_name ?? ""),
+            )
+            .reduce<Record<string, (typeof lignes)[number]>>((acc, l) => {
+              const cle = (l.file_name ?? l.id).toLowerCase();
+              if (!acc[cle]) acc[cle] = l;
+              return acc;
+            }, {}),
+        ),
+      );
+    })();
+    return () => {
+      vivant = false;
+    };
+  }, [dossierId]);
   const creerFixe = useServerFn(creerDevisTarifFixeFn);
 
   /** Produit du dossier en tarification fixe : formules et options à cotisation connue. */
@@ -721,6 +765,50 @@ export function DossierDevisPanel({
     }
   };
 
+  /**
+   * Reprise d'une pièce DÉJÀ déposée sur le dossier (devis reçu par e-mail ou
+   * scanné) : aucune duplication de fichier, lecture IA puis validation humaine.
+   */
+  const reprendreDocument = async (docId: string, nom: string) => {
+    setImportBusy(true);
+    setErr(null);
+    setImportMsg(`Lecture de « ${nom} » par l'IA…`);
+    try {
+      setImportDocId(docId);
+      const lu = await lireDevis({ data: { dossier_id: dossierId, document_id: docId } });
+      const num = (v: number | null) => (v === null || v === undefined ? "" : String(v));
+      setForm((f) => ({
+        ...f,
+        compagnie_id: lu.compagnie_id ?? f.compagnie_id,
+        produit_id: lu.produit_id ?? f.produit_id,
+        montant_total_saisi: num(lu.montant_total) || f.montant_total_saisi,
+        type_cotisation: lu.type_cotisation ?? f.type_cotisation,
+        cotisation_mensuelle: num(lu.cotisation_mensuelle) || f.cotisation_mensuelle,
+        cotisation_min: num(lu.cotisation_min) || f.cotisation_min,
+        cotisation_max: num(lu.cotisation_max) || f.cotisation_max,
+        quotite_pct: num(lu.quotite_pct) || f.quotite_pct,
+        garanties_resume: lu.garanties_resume ?? f.garanties_resume,
+      }));
+      const manque: string[] = [];
+      if (!lu.compagnie_id)
+        manque.push(
+          lu.compagnie ? `partenaire (« ${lu.compagnie} » absent du catalogue de la branche)` : "partenaire",
+        );
+      if (!lu.produit_id) manque.push(lu.produit ? `produit (« ${lu.produit} »)` : "produit");
+      if (lu.cotisation_mensuelle === null && lu.montant_total === null) manque.push("tarif");
+      setImportMsg(
+        `Pièce lue${lu.assure_nom ? ` (assuré : ${lu.assure_nom})` : ""}. Vérifiez les valeurs proposées puis enregistrez.` +
+          (manque.length ? ` À compléter à la main : ${manque.join(", ")}.` : ""),
+      );
+      setSaisieOuverte(true);
+    } catch (e) {
+      setImportMsg(null);
+      setErr(e instanceof Error ? e.message : "Lecture de la pièce impossible");
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
   /** Traçabilité ACPR : le devis n'est jamais supprimé, il est archivé (masqué). */
   const supprimer = async (d: DossierDevis) => {
     if (!confirm("Archiver ce devis ? Il sera retiré du comparatif mais conservé comme preuve (ACPR).")) return;
@@ -1086,6 +1174,76 @@ export function DossierDevisPanel({
           ? `Produit à tarification fixe (${produitFixe.nom}) : le devis est repris directement du tarif renseigné sur la fiche produit, sans ressaisie ni classement IA.`
           : `Saisie manuelle des devis étudiés pour ce dossier${branche ? ` (${branche})` : ""}. Ils alimentent le tableau des offres comparées du devoir de conseil. La saisie manuelle couvre les compagnies sans API de tarification et les contrats déjà validés par la compagnie (import rétroactif).`}
       </p>
+
+      {/* Ajout d'un devis : dépôt direct ou reprise d'une pièce déjà au dossier. */}
+      <div className="mt-4 rounded-xl border border-line bg-surface p-4">
+        <h3 className="text-sm font-medium text-ink">Ajouter un devis</h3>
+        <p className="mt-1 text-xs text-ink-muted">
+          Déposez le devis reçu, ou reprenez une pièce déjà présente sur le dossier (reçue par e-mail, scannée). La
+          pièce est lue automatiquement : partenaire, produit, tarif, quotité et garanties sont seulement proposés.
+          Rien n'est enregistré sans votre validation.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-ink px-4 py-2 text-xs text-primary-foreground disabled:opacity-60">
+            <input
+              type="file"
+              accept="application/pdf,image/*"
+              className="hidden"
+              disabled={importBusy}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f) void importerDevis(f);
+              }}
+            />
+            {importBusy ? "Lecture en cours…" : "Déposer un devis (PDF ou photo)"}
+          </label>
+          <button
+            type="button"
+            onClick={() => setPiecesOuvertes((v) => !v)}
+            disabled={importBusy}
+            className="rounded-full border border-line px-4 py-2 text-xs text-ink hover:bg-surface disabled:opacity-60"
+          >
+            Reprendre un devis du dossier ({piecesCandidates.length})
+          </button>
+        </div>
+
+        {piecesOuvertes && (
+          <div className="mt-3 space-y-2">
+            {piecesCandidates.length === 0 ? (
+              <p className="text-xs text-ink-muted">
+                Aucune pièce du dossier ne ressemble à un devis. Déposez le fichier ci-dessus, ou classez la pièce en
+                « devis » depuis l'onglet des pièces du dossier.
+              </p>
+            ) : (
+              piecesCandidates.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-surface-elevated/60 px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-medium text-ink">{p.file_name ?? "Pièce sans nom"}</p>
+                    <p className="text-[11px] text-ink-muted">
+                      Déposée le {new Date(p.created_at).toLocaleDateString("fr-FR")}
+                      {p.type_document ? ` · ${p.type_document.replace(/_/g, " ")}` : ""}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void reprendreDocument(p.id, p.file_name ?? "cette pièce")}
+                    disabled={importBusy}
+                    className="shrink-0 rounded-full border border-line px-3 py-1.5 text-xs text-ink hover:bg-surface disabled:opacity-60"
+                  >
+                    Lire et préremplir
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {importMsg && <p className="mt-2 text-xs text-emerald-700">{importMsg}</p>}
+      </div>
 
 
 
