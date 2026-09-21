@@ -3,6 +3,8 @@ import { LIBELLES_PROFILS, routeRecommandation } from "@/lib/emprunteur-notebook
 import { noterProduitEmprunteur, type NoteProduit } from "@/lib/emprunteur-scoring-produits";
 import type { ValeursGrille } from "@/lib/garanties-grille";
 import { DevisComparatifTable } from "@/components/devis-comparatif-table";
+import { familleCodePourBranche } from "@/lib/bibliotheque-cg";
+
 
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
@@ -216,6 +218,9 @@ export function DossierDevisPanel({
   /** Branche du dossier (utilisée quand la prop n'est pas fournie). */
   const [brancheDossierEtat, setBrancheDossierEtat] = useState<string>("");
   const estEmprunteur = (branche ?? brancheDossierEtat) === "emprunteur";
+  /** Famille de la grille de garanties standardisée correspondant à la branche du dossier. */
+  const familleCodeDossier = familleCodePourBranche(branche ?? brancheDossierEtat);
+
   /** Grilles de garanties emprunteur VALIDÉES, par produit : base de la notation. */
   const [grillesProduits, setGrillesProduits] = useState<Record<string, ValeursGrille>>({});
 
@@ -247,6 +252,17 @@ export function DossierDevisPanel({
     garanties_resume: "",
     assure_rang: "1",
   });
+
+  /**
+   * Hors assurance emprunteur, il n'y a pas d'« économie réalisée » face à une
+   * assurance bancaire : l'assiette proposée est la cotisation.
+   */
+  useEffect(() => {
+    if (estEmprunteur) return;
+    setForm((f) => (f.commission_base === "prime" ? f : { ...f, commission_base: "prime" }));
+  }, [estEmprunteur]);
+
+
 
   const LIBELLE_MOTIF: Record<"sans_api" | "retroactif" | "autre", string> = {
     sans_api: "compagnie sans API de tarification (devis reçu par e-mail ou extranet)",
@@ -1180,9 +1196,10 @@ export function DossierDevisPanel({
         <h3 className="text-sm font-medium text-ink">Ajouter un devis</h3>
         <p className="mt-1 text-xs text-ink-muted">
           Déposez le devis reçu, ou reprenez une pièce déjà présente sur le dossier (reçue par e-mail, scannée). La
-          pièce est lue automatiquement : partenaire, produit, tarif, quotité et garanties sont seulement proposés.
-          Rien n'est enregistré sans votre validation.
+          pièce est lue automatiquement : partenaire, produit, tarif{estEmprunteur ? ", quotité" : ""} et garanties
+          sont seulement proposés. Rien n'est enregistré sans votre validation.
         </p>
+
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-ink px-4 py-2 text-xs text-primary-foreground disabled:opacity-60">
             <input
@@ -1686,7 +1703,21 @@ export function DossierDevisPanel({
         </div>
       )}
 
-
+      {/* Hors emprunteur : comparatif sur la grille de garanties de la branche du dossier. */}
+      {!estEmprunteur && familleCodeDossier && (
+        <DevisComparatifTable
+          familleCode={familleCodeDossier}
+          devis={devisAffiches}
+          nomCompagnie={(id) => compagnies.find((c) => c.id === id)?.nom ?? "Compagnie non renseignée"}
+          nomProduit={(id) => produits.find((p) => p.id === id)?.nom ?? "Produit non renseigné"}
+          grillesProduits={grillesProduits}
+          coutTotal={() => null}
+          coutHuitAns={() => null}
+          economie={() => null}
+          estRetenu={(d) => estDevisRetenu(d as DossierDevis)}
+          labelAssure={(rang) => `Assuré ${rang ?? 1}`}
+        />
+      )}
 
 
       <div className={`mt-4 space-y-2 ${estEmprunteur && !detailOuvert ? "hidden" : ""}`}>
@@ -1744,11 +1775,12 @@ export function DossierDevisPanel({
                     <span className="rounded-full border border-line px-2 py-0.5 text-ink-muted">
                       {d.source === "api" ? "Tarif automatique (API)" : d.source === "pdf" ? "Devis PDF" : "Saisie manuelle"}
                     </span>
-                    {d.quotite_pct != null && (
+                    {estEmprunteur && d.quotite_pct != null && (
                       <span className="rounded-full border border-line px-2 py-0.5 text-ink-muted">
                         Quotité {d.quotite_pct} %
                       </span>
                     )}
+
                   </div>
 
                   {/* Rémunération du cabinet — interne, jamais visible client ni apporteur. */}
@@ -1841,10 +1873,11 @@ export function DossierDevisPanel({
                   </p>
                   {d.montant_total_saisi != null && (
                     <p className="text-xs text-ink-soft">
-                      {Number(d.montant_total_saisi).toLocaleString("fr-FR")} € au total sur la durée du prêt
+                      {Number(d.montant_total_saisi).toLocaleString("fr-FR")} €{" "}
+                      {estEmprunteur ? "au total sur la durée du prêt" : "par an"}
                     </p>
                   )}
-                  {d.type_cotisation && (
+                  {estEmprunteur && d.type_cotisation && (
                     <p className="text-xs text-ink-muted">
                       {d.type_cotisation === "CI"
                         ? "CI — cotisation constante sur le capital initial"
@@ -1857,6 +1890,7 @@ export function DossierDevisPanel({
                           }`}
                     </p>
                   )}
+
                 </div>
               </div>
 
@@ -1871,8 +1905,10 @@ export function DossierDevisPanel({
 
 
               {(() => {
+                if (!estEmprunteur) return null;
                 const eco = economiePourDevis(d);
                 if (!eco) return null;
+
                 return (
                   <p
                     className={`mt-2 rounded-md px-2 py-1 text-xs ${
@@ -2271,10 +2307,11 @@ export function DossierDevisPanel({
       <div className="mt-4 rounded-xl border border-line bg-surface-elevated/60 p-3">
         <h3 className="text-sm font-medium text-ink">Importer un devis reçu (PDF ou photo)</h3>
         <p className="mt-1 text-xs text-ink-muted">
-          Le devis est conservé comme justificatif sur le dossier et lu automatiquement : partenaire, produit, tarif,
-          mode de calcul, quotité et garanties sont proposés dans le formulaire ci-dessous. Rien n'est enregistré tant
-          que vous n'avez pas vérifié et validé.
+          Le devis est conservé comme justificatif sur le dossier et lu automatiquement : partenaire, produit, tarif
+          {estEmprunteur ? ", mode de calcul, quotité" : ""} et garanties sont proposés dans le formulaire ci-dessous.
+          Rien n'est enregistré tant que vous n'avez pas vérifié et validé.
         </p>
+
         <label className="mt-2 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink hover:bg-surface">
           <input
             type="file"
@@ -2373,7 +2410,9 @@ export function DossierDevisPanel({
         )}
         <label className="block sm:col-span-2">
           <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
-            Montant total de l'assurance sur la durée du prêt (€)
+            {estEmprunteur
+              ? "Montant total de l'assurance sur la durée du prêt (€)"
+              : "Montant total annuel de la cotisation (€ / an)"}
           </span>
           <input
             type="number"
@@ -2383,36 +2422,47 @@ export function DossierDevisPanel({
             className={inp}
           />
           <span className="mt-1 block text-xs text-ink-muted">
-            Donnée d'entrée principale : c'est le montant figurant sur le devis de l'assureur pour la durée totale du
-            prêt.
-            {moisRestants
-              ? ` Recueil des besoins : ${moisRestants} mois restants${
-                  crdRecueil ? ` · capital restant dû ${crdRecueil.toLocaleString("fr-FR")} €` : ""
-                }.`
-              : " Renseignez « mois restants » dans le recueil des besoins pour dériver automatiquement le mensuel moyen."}
-            {mensuelMoyenDerive != null &&
-              ` Mensuel moyen calculé : ${mensuelMoyenDerive.toLocaleString("fr-FR", {
-                maximumFractionDigits: 2,
-              })} € / mois.`}
+            {estEmprunteur ? (
+              <>
+                Donnée d'entrée principale : c'est le montant figurant sur le devis de l'assureur pour la durée totale
+                du prêt.
+                {moisRestants
+                  ? ` Recueil des besoins : ${moisRestants} mois restants${
+                      crdRecueil ? ` · capital restant dû ${crdRecueil.toLocaleString("fr-FR")} €` : ""
+                    }.`
+                  : " Renseignez « mois restants » dans le recueil des besoins pour dériver automatiquement le mensuel moyen."}
+                {mensuelMoyenDerive != null &&
+                  ` Mensuel moyen calculé : ${mensuelMoyenDerive.toLocaleString("fr-FR", {
+                    maximumFractionDigits: 2,
+                  })} € / mois.`}
+              </>
+            ) : (
+              <>Cotisation annuelle figurant sur le devis de l'assureur, garanties et franchises incluses.</>
+            )}
           </span>
         </label>
-        <label className="block">
-          <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Mode de calcul (CI / CRD)</span>
-          <select
-            value={form.type_cotisation}
-            onChange={(e) =>
-              setForm({ ...form, type_cotisation: e.target.value as "" | "CI" | "CRD" })
-            }
-            className={inp}
-          >
-            <option value="">— À préciser —</option>
-            <option value="CI">CI — capital initial (cotisation constante)</option>
-            <option value="CRD">CRD — capital restant dû (cotisation dégressive)</option>
-          </select>
-        </label>
+        {estEmprunteur && (
+          <label className="block">
+            <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+              Mode de calcul (CI / CRD)
+            </span>
+            <select
+              value={form.type_cotisation}
+              onChange={(e) =>
+                setForm({ ...form, type_cotisation: e.target.value as "" | "CI" | "CRD" })
+              }
+              className={inp}
+            >
+              <option value="">— À préciser —</option>
+              <option value="CI">CI — capital initial (cotisation constante)</option>
+              <option value="CRD">CRD — capital restant dû (cotisation dégressive)</option>
+            </select>
+          </label>
+        )}
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
-            Cotisation mensuelle {form.type_cotisation === "CRD" ? "moyenne " : ""}(€ / mois) — complémentaire
+            Cotisation mensuelle {estEmprunteur && form.type_cotisation === "CRD" ? "moyenne " : ""}(€ / mois) —
+            complémentaire
           </span>
           <input
             type="number"
@@ -2427,10 +2477,13 @@ export function DossierDevisPanel({
             className={inp}
           />
           <span className="mt-1 block text-xs text-ink-muted">
-            Laissez vide pour reprendre automatiquement le mensuel moyen dérivé du montant total.
+            {estEmprunteur
+              ? "Laissez vide pour reprendre automatiquement le mensuel moyen dérivé du montant total."
+              : "Cotisation prélevée chaque mois, si le devis la mentionne."}
           </span>
         </label>
-        {form.type_cotisation === "CRD" && (
+        {estEmprunteur && form.type_cotisation === "CRD" && (
+
           <>
             <label className="block">
               <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
@@ -2458,7 +2511,8 @@ export function DossierDevisPanel({
             </label>
           </>
         )}
-        {assuresRecueil.length >= 2 && (
+        {estEmprunteur && assuresRecueil.length >= 2 && (
+
           <label className="block sm:col-span-2">
             <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
               Tête assurée couverte par ce devis <span className="text-accent">*</span>
@@ -2533,9 +2587,10 @@ export function DossierDevisPanel({
             onChange={(e) => setForm({ ...form, commission_base: e.target.value as BaseCommission })}
             className={inp}
           >
-            <option value="economie_realisee">Économie réalisée</option>
+            {estEmprunteur && <option value="economie_realisee">Économie réalisée</option>}
             <option value="prime">Cotisation (prime)</option>
           </select>
+
         </label>
         <label className="block sm:col-span-2">
           <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Résumé des garanties</span>

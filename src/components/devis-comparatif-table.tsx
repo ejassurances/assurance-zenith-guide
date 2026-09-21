@@ -59,14 +59,22 @@ export function DevisComparatifTable({
   coutHuitAns: (d: DevisColonne) => number | null;
   economie: (d: DevisColonne) => { economie: number; pourcentage: number } | null;
   estRetenu: (d: DevisColonne) => boolean;
-  pret: { moisRestants: number | null; crd: number | null; coutBanque: number | null };
+  pret?: { moisRestants: number | null; crd: number | null; coutBanque: number | null };
   labelAssure: (rang: number | null) => string;
 }) {
   const grille = grillePourFamille(familleCode);
+  const estEmprunteur = familleCode === "emprunteur";
   if (devis.length === 0) return null;
 
   const valeurs = (d: DevisColonne): ValeursGrille | null =>
     (d.produit_id ? grillesProduits[d.produit_id] : null) ?? null;
+
+  /** Cotisation annuelle : total annuel saisi, à défaut 12 × la cotisation mensuelle. */
+  const coutAnnuel = (d: DevisColonne): number | null => {
+    if (d.montant_total_saisi != null) return Number(d.montant_total_saisi);
+    if (d.cotisation_mensuelle != null) return Number(d.cotisation_mensuelle) * 12;
+    return null;
+  };
 
   const th = "border-b border-line px-2 py-2 text-left align-bottom";
   const td = "border-b border-line/70 px-2 py-1.5 align-top";
@@ -77,20 +85,27 @@ export function DevisComparatifTable({
       <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line px-4 py-3">
         <div>
           <h4 className="font-serif text-base text-ink">Rapprochement des devis importés</h4>
-          <p className="text-xs text-ink-muted">
-            Prêt : {pret.crd != null ? `capital restant dû ${euro(pret.crd)}` : "capital restant dû non disponible"}
-            {" · "}
-            {pret.moisRestants ? `${pret.moisRestants} mois restants` : "durée restante non disponible"}
-            {" · "}
-            {pret.coutBanque != null
-              ? `assurance bancaire actuelle ${euro(pret.coutBanque)}`
-              : "coût bancaire actuel non disponible"}
-          </p>
+          {estEmprunteur && pret ? (
+            <p className="text-xs text-ink-muted">
+              Prêt : {pret.crd != null ? `capital restant dû ${euro(pret.crd)}` : "capital restant dû non disponible"}
+              {" · "}
+              {pret.moisRestants ? `${pret.moisRestants} mois restants` : "durée restante non disponible"}
+              {" · "}
+              {pret.coutBanque != null
+                ? `assurance bancaire actuelle ${euro(pret.coutBanque)}`
+                : "coût bancaire actuel non disponible"}
+            </p>
+          ) : (
+            <p className="text-xs text-ink-muted">
+              {devis.length} devis comparés sur la grille de garanties de la branche du dossier.
+            </p>
+          )}
         </div>
         <p className="text-[11px] text-ink-soft">
           Garanties issues des grilles validées du CRM. À défaut, la valeur lue sur le devis est signalée.
         </p>
       </header>
+
 
       <div className="overflow-x-auto p-4">
         <table className="w-full min-w-[640px] border-collapse text-xs">
@@ -124,7 +139,7 @@ export function DevisComparatifTable({
                   {d.cotisation_mensuelle != null
                     ? `${Number(d.cotisation_mensuelle).toLocaleString("fr-FR", { maximumFractionDigits: 2 })} € / mois`
                     : ND}
-                  {d.type_cotisation && (
+                  {estEmprunteur && d.type_cotisation && (
                     <span className="block text-[11px] text-ink-muted">
                       {d.type_cotisation === "CI" ? "constante (capital initial)" : "dégressive (capital restant dû)"}
                     </span>
@@ -132,41 +147,55 @@ export function DevisComparatifTable({
                 </td>
               ))}
             </tr>
-            <tr>
-              <td className={lbl}>Quotité assurée</td>
-              {devis.map((d) => (
-                <td key={d.id} className={td + " text-ink"}>
-                  {d.quotite_pct != null ? `${d.quotite_pct} %` : ND}
-                </td>
-              ))}
-            </tr>
-            <tr>
-              <td className={lbl}>Coût total jusqu'à la fin du prêt</td>
-              {devis.map((d) => (
-                <td key={d.id} className={td + " text-ink"}>
-                  {euro(coutTotal(d)) ?? ND}
-                </td>
-              ))}
-            </tr>
-            <tr>
-              <td className={lbl}>Coût sur 8 ans</td>
-              {devis.map((d) => (
-                <td key={d.id} className={td + " text-ink"}>
-                  {euro(coutHuitAns(d)) ?? ND}
-                </td>
-              ))}
-            </tr>
-            <tr>
-              <td className={lbl}>Économie face à la banque</td>
-              {devis.map((d) => {
-                const e = economie(d);
-                return (
+            {estEmprunteur ? (
+              <>
+                <tr>
+                  <td className={lbl}>Quotité assurée</td>
+                  {devis.map((d) => (
+                    <td key={d.id} className={td + " text-ink"}>
+                      {d.quotite_pct != null ? `${d.quotite_pct} %` : ND}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className={lbl}>Coût total jusqu'à la fin du prêt</td>
+                  {devis.map((d) => (
+                    <td key={d.id} className={td + " text-ink"}>
+                      {euro(coutTotal(d)) ?? ND}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className={lbl}>Coût sur 8 ans</td>
+                  {devis.map((d) => (
+                    <td key={d.id} className={td + " text-ink"}>
+                      {euro(coutHuitAns(d)) ?? ND}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className={lbl}>Économie face à la banque</td>
+                  {devis.map((d) => {
+                    const e = economie(d);
+                    return (
+                      <td key={d.id} className={td + " text-ink"}>
+                        {e ? `${euro(e.economie)} (${e.pourcentage} %)` : ND}
+                      </td>
+                    );
+                  })}
+                </tr>
+              </>
+            ) : (
+              <tr>
+                <td className={lbl}>Cotisation annuelle</td>
+                {devis.map((d) => (
                   <td key={d.id} className={td + " text-ink"}>
-                    {e ? `${euro(e.economie)} (${e.pourcentage} %)` : ND}
+                    {euro(coutAnnuel(d)) ?? ND}
                   </td>
-                );
-              })}
-            </tr>
+                ))}
+              </tr>
+            )}
+
 
             {grille ? (
               groupesGrille(grille).map((sec) => (
