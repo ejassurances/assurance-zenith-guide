@@ -1498,6 +1498,26 @@ export function DossierDevisPanel({
             })}
           </div>
 
+          <DevisComparatifTable
+            familleCode="emprunteur"
+            devis={devisAffiches}
+            nomCompagnie={(id) => compagnies.find((c) => c.id === id)?.nom ?? "Compagnie non renseignée"}
+            nomProduit={(id) => produits.find((p) => p.id === id)?.nom ?? "Produit non renseigné"}
+            grillesProduits={grillesProduits}
+            coutTotal={(d) => coutTotalDevis(d as DossierDevis)}
+            coutHuitAns={(d) => coutHuitAns(d as DossierDevis)}
+            economie={(d) => economiePourDevis(d)}
+            estRetenu={(d) => estDevisRetenu(d as DossierDevis)}
+            pret={{
+              moisRestants,
+              crd: crdRecueil,
+              coutBanque: assuranceInit.coutRestant,
+            }}
+            labelAssure={(rang) =>
+              assuresColonnes.find((a) => a.rang === (rang ?? 1))?.label ?? `Assuré ${rang ?? 1}`
+            }
+          />
+
           <button
             onClick={() => setDetailOuvert((v) => !v)}
             className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs text-ink"
