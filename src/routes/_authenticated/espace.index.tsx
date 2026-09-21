@@ -4,7 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CommissionMoisCard } from "@/components/commission-mois-card";
-import { getCaRealEtN1, getSyntheseAnneeCommissions, type CaRealSummary } from "@/lib/dashboard.functions";
+import { getCaRealEtN1, getCaMensuel, getSyntheseAnneeCommissions, type CaRealSummary, type CaMensuelPoint } from "@/lib/dashboard.functions";
+import { CaEvolutionChart } from "@/components/ca-evolution-chart";
 import type { SyntheseAnnee } from "@/lib/commission-previsions";
 import { ScoreRings } from "@/components/score-rings";
 import { useScoresValeur } from "@/hooks/use-scores-valeur";
@@ -84,13 +85,15 @@ function Dashboard() {
   const [synthese, setSynthese] = useState<SyntheseAnnee | null>(null);
   const [taches, setTaches] = useState<Tache[]>([]);
   const [caReal, setCaReal] = useState<CaRealSummary | null>(null);
+  const [caMensuel, setCaMensuel] = useState<CaMensuelPoint[]>([]);
   const scoresValeur = useScoresValeur();
   const fetchCaReal = useServerFn(getCaRealEtN1);
+  const fetchCaMensuel = useServerFn(getCaMensuel);
   const fetchSynthese = useServerFn(getSyntheseAnneeCommissions);
 
   useEffect(() => {
     (async () => {
-      const [c, p, tot, ec, si, com, tch, ca] = await Promise.all([
+      const [c, p, tot, ec, si, com, tch, ca, caMens] = await Promise.all([
         supabase.from("clients").select("*", { count: "exact", head: true }),
         supabase.from("clients").select("*", { count: "exact", head: true }).eq("statut", "prospect"),
         supabase.from("dossiers").select("*", { count: "exact", head: true }),
@@ -104,6 +107,7 @@ function Dashboard() {
           .order("echeance", { ascending: true, nullsFirst: false })
           .limit(6),
         fetchCaReal(),
+        fetchCaMensuel(),
       ]);
       setStats({
         clients: c.count ?? 0,
@@ -115,8 +119,9 @@ function Dashboard() {
       setSynthese(com);
       setTaches((tch.data ?? []) as unknown as Tache[]);
       setCaReal(ca);
+      setCaMensuel(caMens);
     })();
-  }, [fetchCaReal, fetchSynthese]);
+  }, [fetchCaReal, fetchCaMensuel, fetchSynthese]);
 
   return (
     <div>
@@ -163,6 +168,12 @@ function Dashboard() {
       </div>
 
 
+
+      {role !== "client" && caMensuel.length > 0 && (
+        <div className="mt-8">
+          <CaEvolutionChart data={caMensuel} />
+        </div>
+      )}
 
       {(role === "admin" || role === "mandataire") && <CommissionMoisCard />}
 

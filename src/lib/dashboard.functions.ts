@@ -19,6 +19,50 @@ export type CaRealSummary = {
   finPeriodeN1: string;
 };
 
+export type CaMensuelPoint = {
+  mois: string; // "2026-01"
+  label: string; // "Jan"
+  montant: number;
+};
+
+const MOIS_LABELS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
+
+/**
+ * CA réel (commissions versées) mois par mois, de janvier à aujourd'hui,
+ * pour l'année en cours. Source : mêmes commissions "versées" que
+ * getCaRealEtN1, agrégées par mois plutôt qu'en un seul total.
+ */
+export const getCaMensuel = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<CaMensuelPoint[]> => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const startCurrent = `${currentYear}-01-01`;
+    const endCurrent = now.toISOString().split("T")[0];
+
+    const { data: rows } = await context.supabase
+      .from("commissions")
+      .select("montant,date_versement")
+      .eq("statut", "versee")
+      .gte("date_versement", startCurrent)
+      .lte("date_versement", endCurrent);
+
+    const moisCourant = now.getMonth(); // 0-indexé, mois déjà écoulés inclus
+    const totaux = new Array(moisCourant + 1).fill(0) as number[];
+    for (const r of rows ?? []) {
+      const dv = r.date_versement as string | null;
+      if (!dv) continue;
+      const m = new Date(dv).getMonth();
+      if (m >= 0 && m <= moisCourant) totaux[m] += Number(r.montant ?? 0);
+    }
+
+    return totaux.map((montant, i) => ({
+      mois: `${currentYear}-${String(i + 1).padStart(2, "0")}`,
+      label: MOIS_LABELS[i],
+      montant: Math.round(montant),
+    }));
+  });
+
 /**
  * Retourne le CA réel (commissions versées) de l'année en cours,
  * le CA sur la période comparable N-1, et l'évolution en %.
