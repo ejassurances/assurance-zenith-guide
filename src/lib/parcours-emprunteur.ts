@@ -326,8 +326,10 @@ export function etatEtape(
   key: ParcoursKey,
   statut: string,
   preuves?: PreuvesParcours | null,
+  liste: ParcoursEtape[] = PARCOURS_EMPRUNTEUR,
 ): EtatEtape {
-  if (!etapeAtteinte(key, statut)) return "a_faire";
+  if (!etapeAtteinte(key, statut, liste)) return "a_faire";
+
   if (!preuves) return "terminee";
   const requise = preuveRequise(key, preuves);
   if (requise === null) return "terminee";
