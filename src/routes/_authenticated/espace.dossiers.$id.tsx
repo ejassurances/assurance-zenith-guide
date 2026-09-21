@@ -234,6 +234,12 @@ function DossierDetail() {
   const kycBloquant = scoreKyc != null && scoreKyc < 50;
   const canEdit =
     (role === "admin" || role === "mandataire" || role === "prescripteur") && !kycBloquant;
+  /**
+   * Suivi commercial interne (Modifier/Configuration : priorité, chance de
+   * réussite, chargé de projet...) — pas de sensibilité réglementaire, donc
+   * pas bloqué par le gel KYC, contrairement aux devis et documents DDA.
+   */
+  const canEditSuivi = role === "admin" || role === "mandataire" || role === "prescripteur";
 
   const estEmprunteur = dossier.type_assurance === "emprunteur";
   const parcoursActif: ParcoursKey | null = estEmprunteur
@@ -394,9 +400,9 @@ function DossierDetail() {
             <DocumentsPanel dossierId={id} userId={userId} />
           </section>
         ) : modeAffichage === "modifier" && parcoursActif ? (
-          <OngletModifier dossier={dossier} canEdit={canEdit} onSaved={load} />
+          <OngletModifier dossier={dossier} canEdit={canEditSuivi} onSaved={load} />
         ) : modeAffichage === "configuration" && parcoursActif ? (
-          <OngletConfiguration dossier={dossier} canEdit={canEdit} onSaved={load} />
+          <OngletConfiguration dossier={dossier} canEdit={canEditSuivi} onSaved={load} />
         ) : modeAffichage === "garanties" && parcoursActif ? (
           <OngletAVenir
             titre="Garanties"
