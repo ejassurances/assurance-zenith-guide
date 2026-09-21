@@ -172,6 +172,7 @@ function DossierDetail() {
     | "synthese"
     | "modifier"
     | "assures"
+    | "lettre_mission"
     | "configuration"
     | "pret"
     | "engin"
@@ -183,6 +184,7 @@ function DossierDetail() {
     | "activite"
     | "simulations"
     | "devis"
+    | "devoir_conseil"
     | "pieces"
   >("synthese");
   const completude = useCompletudeDossier(id, dossier?.client_id ?? null);
@@ -332,6 +334,7 @@ function DossierDetail() {
                 { mode: "synthese", label: "Synthèse" },
                 { mode: "modifier", label: "Modifier" },
                 { mode: "assures", label: "Info Assuré(s)" },
+                { mode: "lettre_mission", label: "Lettre de mission" },
                 { mode: "configuration", label: "Configuration" },
                 { mode: "engin", label: "L'engin" },
                 { mode: "usage", label: "Usage" },
@@ -340,12 +343,14 @@ function DossierDetail() {
                 { mode: "taches", label: "Tâches" },
                 { mode: "activite", label: "Activité" },
                 { mode: "devis", label: "Études et devis" },
+                { mode: "devoir_conseil", label: "Devoir de conseil" },
                 { mode: "pieces", label: "Pièces" },
               ] as const)
             : ([
                 { mode: "synthese", label: "Synthèse" },
                 { mode: "modifier", label: "Modifier" },
                 { mode: "assures", label: "Info Assuré(s)" },
+                { mode: "lettre_mission", label: "Lettre de mission" },
                 { mode: "configuration", label: "Configuration" },
                 { mode: "pret", label: "Prêt(s)" },
                 { mode: "garanties", label: "Garanties" },
@@ -355,6 +360,7 @@ function DossierDetail() {
                 { mode: "activite", label: "Activité" },
                 { mode: "simulations", label: "Simulation(s)" },
                 { mode: "devis", label: "Études et devis" },
+                { mode: "devoir_conseil", label: "Devoir de conseil" },
                 { mode: "pieces", label: "Pièces" },
               ] as const)
           ).map((t) => (
@@ -400,6 +406,17 @@ function DossierDetail() {
           />
         ) : modeAffichage === "assures" && parcoursActif ? (
           <CoordonneesEtape dossier={dossier} />
+        ) : modeAffichage === "lettre_mission" && parcoursActif ? (
+          <div className="crm-card p-6">
+            <p className="crm-eyebrow">Lettre de mission</p>
+            {canEdit ? (
+              <div className="mt-4">
+                <LettreMissionPanel dossierId={id} clientEmail={dossier.client_email} />
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-ink-muted">Dossier gelé — édition indisponible.</p>
+            )}
+          </div>
         ) : parcoursActif && modeAffichage === "pret" ? (
           <RecueilDossierPanel
             dossierId={id}
@@ -444,6 +461,28 @@ function DossierDetail() {
             userId={userId}
             onChanged={load}
           />
+        ) : userId && modeAffichage === "devoir_conseil" && parcoursActif ? (
+          <div className="space-y-6">
+            {canEdit && (
+              <DevoirConseilRefusAnalysePanel
+                dossierId={id}
+                userId={userId}
+                onContreProposition={(suggestion, motif) =>
+                  setContreProposition({ suggestion, motif, key: Date.now() })
+                }
+                onChanged={load}
+              />
+            )}
+            {canEdit && (
+              <DevoirConseilPanel
+                dossierId={id}
+                clientEmail={dossier.client_email}
+                branche={dossier.type_assurance}
+                onChanged={load}
+                contreProposition={contreProposition}
+              />
+            )}
+          </div>
         ) : modeAffichage === "taches" && parcoursActif ? (
           <DossierTachesPanel dossierId={id} />
         ) : userId && modeAffichage === "fichiers" && parcoursActif ? (
@@ -765,21 +804,25 @@ function OngletConfiguration({
     onSaved();
   };
 
+  const estPret = dossier.type_assurance === "emprunteur";
+
   return (
     <div className="crm-card space-y-6 p-6">
-      <p className="crm-eyebrow">Configuration — gestion du prêt</p>
+      <p className="crm-eyebrow">{estPret ? "Configuration — gestion du prêt" : "Configuration"}</p>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div>
-          <label className={labelCls}>Date de signature du prêt</label>
-          <input
-            type="date"
-            className={inputCls}
-            disabled={!canEdit}
-            value={valeurs.date_signature_pret}
-            onChange={(e) => setValeurs((p) => ({ ...p, date_signature_pret: e.target.value }))}
-          />
-        </div>
+      <div className={`grid gap-4 ${estPret ? "sm:grid-cols-3" : "sm:grid-cols-1 sm:max-w-xs"}`}>
+        {estPret && (
+          <div>
+            <label className={labelCls}>Date de signature du prêt</label>
+            <input
+              type="date"
+              className={inputCls}
+              disabled={!canEdit}
+              value={valeurs.date_signature_pret}
+              onChange={(e) => setValeurs((p) => ({ ...p, date_signature_pret: e.target.value }))}
+            />
+          </div>
+        )}
         <div>
           <label className={labelCls}>Frais de dossier</label>
           <input
@@ -790,6 +833,7 @@ function OngletConfiguration({
             onChange={(e) => setValeurs((p) => ({ ...p, frais_dossier: e.target.value }))}
           />
         </div>
+        {estPret && (
         <div>
           <label className={labelCls}>Cadre de financement</label>
           <select
@@ -804,6 +848,7 @@ function OngletConfiguration({
             <option value="renegociation">Renégociation</option>
           </select>
         </div>
+        )}
       </div>
 
       {canEdit && (
