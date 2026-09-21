@@ -163,13 +163,15 @@ function DossierDetail() {
   );
   /** Étape visible du parcours emprunteur (présentation en 12 étapes). */
   const [parcours, setParcours] = useState<ParcoursKey | null>(null);
-  /** Onglet actif du dossier emprunteur — les 13 onglets de la maquette Courtigo. */
+  /** Onglet actif du dossier — onglets de la maquette Courtigo, adaptés à la branche. */
   const [modeAffichage, setModeAffichage] = useState<
     | "synthese"
     | "modifier"
     | "assures"
     | "configuration"
     | "pret"
+    | "engin"
+    | "usage"
     | "garanties"
     | "banque"
     | "fichiers"
@@ -181,7 +183,11 @@ function DossierDetail() {
   >("synthese");
   const completude = useCompletudeDossier(id, dossier?.client_id ?? null);
   /** Actes réellement archivés : une étape réglementaire n'est cochée que s'ils existent. */
-  const preuvesParcours = usePreuvesParcours(id, dossier?.type_assurance === "emprunteur");
+  const preuvesParcours = usePreuvesParcours(
+    id,
+    !!parcoursPourBranche(dossier?.type_assurance ?? null),
+  );
+
   /** Score de conformité KYC du client (0-100) : sous 50 %, le dossier est gelé. */
   const [scoreKyc, setScoreKyc] = useState<number | null>(null);
   const [contreProposition, setContreProposition] = useState<{
