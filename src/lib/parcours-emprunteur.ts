@@ -13,6 +13,8 @@ export type ParcoursKey =
   | "informations"
   | "prets"
   | "preteur"
+  | "engin"
+  | "usage"
   | "lettre_mission"
   | "simulations"
   | "devoir_conseil"
@@ -20,6 +22,7 @@ export type ParcoursKey =
   | "substitution"
   | "souscription"
   | "analyse";
+
 
 export type ParcoursEtape = {
   key: ParcoursKey;
