@@ -10,6 +10,7 @@
  * affichée comme telle, signalée « lu sur le devis, non validé », et jamais
  * consolidée dans le comparatif validé.
  */
+import { Fragment } from "react";
 import {
   COUVERTURE_LABEL,
   grillePourFamille,
@@ -168,8 +169,8 @@ export function DevisComparatifTable({
 
             {grille ? (
               groupesGrille(grille).map((sec) => (
-                <>
-                  <tr key={(sec.groupe ?? "g") + "-h"}>
+                <Fragment key={sec.groupe ?? "garanties"}>
+                  <tr>
                     <td
                       className="border-b border-line bg-surface px-2 py-1.5 font-serif text-[11px] uppercase tracking-wide text-ink-muted"
                       colSpan={devis.length + 1}
@@ -206,7 +207,7 @@ export function DevisComparatifTable({
                       })}
                     </tr>
                   ))}
-                </>
+                </Fragment>
               ))
             ) : (
               <tr>
