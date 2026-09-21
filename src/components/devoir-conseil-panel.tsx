@@ -785,6 +785,13 @@ export function DevoirConseilPanel({
         )}
       </div>
 
+      {devisDossier.length === 0 && (
+        <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          Aucun devis enregistré sur ce dossier : la mise en concurrence du devoir de conseil serait vide. Revenez à
+          l'étape « Étude et devis » pour déposer ou reprendre les devis, puis revenez ici.
+        </p>
+      )}
+
       {open && (
         <div className="mt-4 space-y-3 border-t border-line pt-4">
           <Field label="1. Exigences et besoins exprimés par le client">
