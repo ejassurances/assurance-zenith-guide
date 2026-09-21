@@ -61,12 +61,15 @@ function extraireJson(texte: string): unknown {
   }
 }
 
-async function appelerIa(fichier: { nom: string; mime: string; base64: string }): Promise<Extraction> {
+async function appelerBrut(
+  fichier: { nom: string; mime: string; base64: string },
+  prompt: string,
+): Promise<Record<string, unknown>> {
   const cle = process.env["LOVABLE_API_KEY"];
   if (!cle) throw new Error("Lecture indisponible : clé IA absente du projet.");
 
   const contenu = [
-    { type: "text", text: PROMPT },
+    { type: "text", text: prompt },
     { type: "file", file: { filename: fichier.nom, file_data: `data:${fichier.mime};base64,${fichier.base64}` } },
   ];
 
@@ -81,24 +84,77 @@ async function appelerIa(fichier: { nom: string; mime: string; base64: string })
       const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
       const texte = json.choices?.[0]?.message?.content ?? "";
       if (!texte) throw new Error("Réponse IA vide");
-      const brut = extraireJson(texte) as Record<string, unknown>;
-      return {
-        civilite: champ(brut["civilite"]),
-        nom: champ(brut["nom"]),
-        prenom: champ(brut["prenom"]),
-        date_naissance: champ(brut["date_naissance"]),
-        lieu_naissance: champ(brut["lieu_naissance"]),
-        pays_naissance: champ(brut["pays_naissance"]),
-        nationalite: champ(brut["nationalite"]),
-        date_expiration: champ(brut["date_expiration"]),
-        fiable: brut["fiable"] !== false,
-      };
+      return extraireJson(texte) as Record<string, unknown>;
     }
     derniere = `${res.status} ${await res.text()}`;
     if (res.status === 429) throw new Error("Lecture IA momentanément saturée, réessayez dans une minute.");
     if (res.status !== 400 && res.status !== 404) break;
   }
   throw new Error(`Lecture IA impossible : ${derniere}`);
+}
+
+async function appelerIa(fichier: { nom: string; mime: string; base64: string }): Promise<Extraction> {
+  const brut = await appelerBrut(fichier, PROMPT);
+  return {
+    civilite: champ(brut["civilite"]),
+    nom: champ(brut["nom"]),
+    prenom: champ(brut["prenom"]),
+    date_naissance: champ(brut["date_naissance"]),
+    lieu_naissance: champ(brut["lieu_naissance"]),
+    pays_naissance: champ(brut["pays_naissance"]),
+    nationalite: champ(brut["nationalite"]),
+    date_expiration: champ(brut["date_expiration"]),
+    fiable: brut["fiable"] !== false,
+  };
+}
+
+/** Justificatif de domicile : adresse postale du titulaire. */
+const PROMPT_DOMICILE = [
+  "Tu lis un justificatif de domicile (facture d'électricité, de gaz, d'eau, de téléphone/internet,",
+  "quittance de loyer, avis d'imposition ou attestation d'assurance habitation).",
+  "Extrais uniquement le nom du titulaire et son adresse postale de résidence.",
+  "",
+  "Réponds STRICTEMENT en JSON, sans texte autour, au format :",
+  '{"nom":"","prenom":"","adresse":"","complement_adresse":"","code_postal":"","ville":"","pays":"","fiable":true}',
+  "",
+  "Règles :",
+  "- `adresse` = numéro et nom de voie uniquement (ex. « 12 rue des Lilas »), sans code postal ni ville.",
+  "- `complement_adresse` = bâtiment, étage, appartement, lieu-dit si visible, sinon null.",
+  "- `code_postal` = 5 chiffres pour la France, sinon la valeur telle qu'elle apparaît.",
+  "- Prends l'adresse de résidence du titulaire, jamais l'adresse du fournisseur ou de l'expéditeur.",
+  "- `pays` en français (ex. « France ») si visible, sinon null.",
+  "- `fiable` = false si le document est illisible, tronqué, s'il ne s'agit pas d'un justificatif de domicile,",
+  "  ou si tu n'es pas certain de l'adresse.",
+  "- N'invente jamais une valeur : mets null quand l'information est absente.",
+].join("\n");
+
+type ExtractionDomicile = {
+  nom: string | null;
+  prenom: string | null;
+  adresse: string | null;
+  complement_adresse: string | null;
+  code_postal: string | null;
+  ville: string | null;
+  pays: string | null;
+  fiable: boolean;
+};
+
+async function appelerIaDomicile(fichier: {
+  nom: string;
+  mime: string;
+  base64: string;
+}): Promise<ExtractionDomicile> {
+  const brut = await appelerBrut(fichier, PROMPT_DOMICILE);
+  return {
+    nom: champ(brut["nom"]),
+    prenom: champ(brut["prenom"]),
+    adresse: champ(brut["adresse"]),
+    complement_adresse: champ(brut["complement_adresse"]),
+    code_postal: champ(brut["code_postal"]),
+    ville: champ(brut["ville"]),
+    pays: champ(brut["pays"]),
+    fiable: brut["fiable"] !== false,
+  };
 }
 
 /** Comparaison souple des noms (accents, casse, tirets, ordre des prénoms composés). */
