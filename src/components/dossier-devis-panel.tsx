@@ -253,6 +253,17 @@ export function DossierDevisPanel({
     assure_rang: "1",
   });
 
+  /**
+   * Hors assurance emprunteur, il n'y a pas d'« économie réalisée » face à une
+   * assurance bancaire : l'assiette proposée est la cotisation.
+   */
+  useEffect(() => {
+    if (estEmprunteur) return;
+    setForm((f) => (f.commission_base === "prime" ? f : { ...f, commission_base: "prime" }));
+  }, [estEmprunteur]);
+
+
+
   const LIBELLE_MOTIF: Record<"sans_api" | "retroactif" | "autre", string> = {
     sans_api: "compagnie sans API de tarification (devis reçu par e-mail ou extranet)",
     retroactif: "contrat déjà validé par la compagnie (import rétroactif)",
