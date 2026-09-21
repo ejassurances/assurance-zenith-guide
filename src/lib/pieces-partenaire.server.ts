@@ -49,7 +49,7 @@ export interface ResultatPiecePartenaire {
   dossier_id: string | null;
   contrat_id: string | null
   ;
-  statut: "rattachee" | "a_classer" | "echec";
+  statut: "rattachee" | "a_classer" | "echec" | "deja_traite";
   detail: string;
 }
 
@@ -220,6 +220,23 @@ export async function traiterPiecesJointesPartenaire(
       detail: "",
     };
     try {
+      // Anti-doublon : si cette pièce de ce même mail a déjà été déposée (mail
+      // retraité par le tri, retry, ou webhook dupliqué), on ne la redépose pas.
+      const nomFichier = piece.nom.replace(/[^\w.\-]+/g, "_").slice(0, 120);
+      const { data: dejaPresent } = await admin
+        .from("documents")
+        .select("id")
+        .ilike("storage_path", `%/${params.gmail_message_id}/%-${nomFichier}`)
+        .limit(1)
+        .maybeSingle();
+      if (dejaPresent) {
+        resultat.statut = "deja_traite";
+        resultat.detail = "Pièce déjà déposée pour ce mail — non redéposée.";
+        resultat.document_id = dejaPresent.id;
+        details.push(resultat);
+        continue;
+      }
+
       const { base64 } = await telechargerPieceJointe(params.gmail_message_id, piece.attachment_id!);
       const octets = Buffer.from(base64, "base64");
       if (octets.byteLength === 0) throw new Error("pièce vide");
@@ -235,7 +252,6 @@ export async function traiterPiecesJointesPartenaire(
       );
       const trouve = await retrouverClient(admin, ident);
 
-      const nomFichier = piece.nom.replace(/[^\w.\-]+/g, "_").slice(0, 120);
       const chemin = trouve.client_id
         ? `${trouve.client_id}/partenaires/${params.gmail_message_id}/${Date.now()}-${nomFichier}`
         : `a-classer/${params.gmail_message_id}/${Date.now()}-${nomFichier}`;
@@ -357,7 +373,7 @@ export async function traiterPiecesJointesPartenaire(
   return {
     traitees: details.length,
     rattachees: details.filter((d) => d.statut === "rattachee").length,
-    a_classer: details.filter((d) => d.statut !== "rattachee").length,
+    a_classer: details.filter((d) => d.statut === "a_classer" || d.statut === "echec").length,
     details,
   };
 }
