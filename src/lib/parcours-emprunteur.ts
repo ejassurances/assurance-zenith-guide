@@ -126,6 +126,117 @@ export const PARCOURS_EMPRUNTEUR: ParcoursEtape[] = [
   },
 ];
 
+/**
+ * PARCOURS EDPM (trottinette, gyroroue, hoverboard…). Même déroulé et mêmes
+ * statuts métier que l'emprunteur, mais les étapes propres au crédit (prêts,
+ * prêteur, substitution) sont remplacées par l'engin et son usage.
+ */
+export const PARCOURS_EDPM: ParcoursEtape[] = [
+  {
+    key: "import",
+    numero: 0,
+    label: "Import documents",
+    description:
+      "Dépôt de la facture d'achat de l'engin, de la pièce d'identité et du justificatif de domicile : les champs lus alimentent le recueil.",
+    statut: "nouveau",
+  },
+  {
+    key: "coordonnees",
+    numero: 1,
+    label: "Coordonnées",
+    description: "Identité et coordonnées de l'assuré, rapprochées de la fiche client.",
+    statut: "en_cours",
+  },
+  {
+    key: "informations",
+    numero: 2,
+    label: "Informations personnelles",
+    description: "Situation de l'assuré : naissance, profession, conducteur habituel de l'engin.",
+    statut: "en_cours",
+  },
+  {
+    key: "engin",
+    numero: 3,
+    label: "L'engin",
+    description:
+      "Marque, modèle, numéro de série, prix et date d'achat, vitesse maximale de l'engin assuré.",
+    statut: "en_cours",
+  },
+  {
+    key: "usage",
+    numero: 4,
+    label: "Usage et stationnement",
+    description: "Usage déclaré (loisir, trajets domicile-travail), lieu de stationnement, antivol.",
+    statut: "en_cours",
+  },
+  {
+    key: "lettre_mission",
+    numero: 5,
+    label: "Lettre de mission",
+    description:
+      "Générée à partir des informations client et de l'engin : mission du cabinet, signée par le client.",
+    statut: "lettre_mission_envoyee",
+  },
+  {
+    key: "simulations",
+    numero: 6,
+    label: "Études et devis",
+    description:
+      "Devis déposés ou repris du dossier, comparés sur la grille de garanties de la branche.",
+    statut: "devis_en_cours",
+  },
+  {
+    key: "devoir_conseil",
+    numero: 7,
+    label: "Devoir de conseil",
+    description:
+      "Mise en concurrence, génération par l'agent, validation humaine obligatoire puis signature du client.",
+    statut: "devoir_conseil_envoye",
+  },
+  {
+    key: "adhesion",
+    numero: 8,
+    label: "Informations adhésion",
+    description: "Pièces et informations demandées par l'assureur. Accessible après signature.",
+    statut: "devoir_conseil_signe",
+  },
+  {
+    key: "souscription",
+    numero: 9,
+    label: "Souscription",
+    description: "Transmission du dossier à la compagnie et suivi des relances.",
+    statut: "souscription_envoyee",
+  },
+  {
+    key: "analyse",
+    numero: 10,
+    label: "Analyse et décision",
+    description:
+      "Décision de la compagnie et dépôt des documents reçus : devis final, lettre de mission signée, devoir de conseil signé.",
+    statut: "contrat_valide",
+  },
+];
+
+/** Branches disposant d'un parcours par étapes dédié. */
+const PARCOURS_PAR_BRANCHE: Record<string, ParcoursEtape[]> = {
+  emprunteur: PARCOURS_EMPRUNTEUR,
+  trottinette: PARCOURS_EDPM,
+  edpm: PARCOURS_EDPM,
+};
+
+/** Parcours applicable à une branche, ou null si la branche n'en a pas. */
+export function parcoursPourBranche(branche: string | null | undefined): ParcoursEtape[] | null {
+  if (!branche) return null;
+  return PARCOURS_PAR_BRANCHE[branche] ?? null;
+}
+
+/** Libellé du parcours affiché en tête de la frise. */
+export function titreParcours(liste: ParcoursEtape[]): string {
+  return liste === PARCOURS_EDPM
+    ? "Parcours assurance trottinette"
+    : "Parcours assurance emprunteur";
+}
+
 /** Rang du statut courant dans l'ordre du parcours (-1 si hors parcours). */
 function rangStatut(statut: string): number {
   const ordre: EtapeKey[] = [
@@ -143,17 +254,21 @@ function rangStatut(statut: string): number {
   return ordre.indexOf(statut as EtapeKey);
 }
 
-export function parcoursEtape(key: string): ParcoursEtape | undefined {
-  return PARCOURS_EMPRUNTEUR.find((e) => e.key === key);
+export function parcoursEtape(
+  key: string,
+  liste: ParcoursEtape[] = PARCOURS_EMPRUNTEUR,
+): ParcoursEtape | undefined {
+  return liste.find((e) => e.key === key);
 }
 
 /** Étape du parcours correspondant au statut courant du dossier. */
-export function etapeCouranteParcours(statut: string): ParcoursKey {
+export function etapeCouranteParcours(
+  statut: string,
+  liste: ParcoursEtape[] = PARCOURS_EMPRUNTEUR,
+): ParcoursKey {
   const rang = rangStatut(statut);
   if (rang < 0) return "import";
-  const trouvee = [...PARCOURS_EMPRUNTEUR]
-    .reverse()
-    .find((e) => rangStatut(e.statut) <= rang);
+  const trouvee = [...liste].reverse().find((e) => rangStatut(e.statut) <= rang);
   return trouvee?.key ?? "import";
 }
 
@@ -162,11 +277,16 @@ export function etapeCouranteParcours(statut: string): ParcoursKey {
  * toujours ; les étapes suivantes restent consultables mais signalées comme
  * non atteintes (les blocages réglementaires restent portés par le serveur).
  */
-export function etapeAtteinte(key: ParcoursKey, statut: string): boolean {
-  const e = parcoursEtape(key);
+export function etapeAtteinte(
+  key: ParcoursKey,
+  statut: string,
+  liste: ParcoursEtape[] = PARCOURS_EMPRUNTEUR,
+): boolean {
+  const e = parcoursEtape(key, liste);
   if (!e) return false;
   return rangStatut(e.statut) <= rangStatut(statut);
 }
+
 
 /**
  * Preuves réellement présentes dans le logiciel pour un dossier. Une étape
