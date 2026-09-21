@@ -45,7 +45,7 @@ type Extraction = {
   fiable: boolean;
 };
 
-function texte(v: unknown): string | null {
+function champ(v: unknown): string | null {
   return typeof v === "string" && v.trim() ? v.trim() : null;
 }
 
