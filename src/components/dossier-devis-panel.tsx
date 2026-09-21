@@ -2306,10 +2306,11 @@ export function DossierDevisPanel({
       <div className="mt-4 rounded-xl border border-line bg-surface-elevated/60 p-3">
         <h3 className="text-sm font-medium text-ink">Importer un devis reçu (PDF ou photo)</h3>
         <p className="mt-1 text-xs text-ink-muted">
-          Le devis est conservé comme justificatif sur le dossier et lu automatiquement : partenaire, produit, tarif,
-          mode de calcul, quotité et garanties sont proposés dans le formulaire ci-dessous. Rien n'est enregistré tant
-          que vous n'avez pas vérifié et validé.
+          Le devis est conservé comme justificatif sur le dossier et lu automatiquement : partenaire, produit, tarif
+          {estEmprunteur ? ", mode de calcul, quotité" : ""} et garanties sont proposés dans le formulaire ci-dessous.
+          Rien n'est enregistré tant que vous n'avez pas vérifié et validé.
         </p>
+
         <label className="mt-2 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink hover:bg-surface">
           <input
             type="file"
