@@ -16,27 +16,38 @@ const BUCKETS = ["conformite-documents", "dossier-documents"];
 const TAILLE_MAX = 12 * 1024 * 1024;
 
 const PROMPT = [
-  "Tu lis une pièce d'identité française (CNI, passeport ou titre de séjour).",
+  "Tu lis une pièce d'identité (CNI, passeport ou titre de séjour).",
   "Extrais uniquement les informations d'état civil du titulaire.",
   "",
   "Réponds STRICTEMENT en JSON, sans texte autour, au format :",
-  '{"nom":"","prenom":"","date_naissance":"AAAA-MM-JJ","lieu_naissance":"","fiable":true}',
+  '{"civilite":"M."|"Mme"|null,"nom":"","prenom":"","date_naissance":"AAAA-MM-JJ","lieu_naissance":"","pays_naissance":"","nationalite":"","date_expiration":"AAAA-MM-JJ","fiable":true}',
   "",
   "Règles :",
-  "- `date_naissance` au format ISO AAAA-MM-JJ. Si elle est illisible ou absente, mets null.",
+  "- Les dates au format ISO AAAA-MM-JJ. Si illisible ou absente, mets null.",
   "- `nom` = nom de naissance / nom de famille ; `prenom` = premier prénom.",
-  "- `lieu_naissance` = ville de naissance si visible, sinon null.",
+  "- `civilite` = « M. » ou « Mme » selon le sexe indiqué, sinon null.",
+  "- `lieu_naissance` = ville de naissance si visible, sinon null ; `pays_naissance` = pays si visible.",
+  "- `nationalite` en français (ex. « Française »), sinon null.",
+  "- `date_expiration` = date de fin de validité de la pièce, sinon null.",
   "- `fiable` = false si le document est illisible, tronqué, ou si tu n'es pas certain des valeurs.",
   "- N'invente jamais une valeur.",
 ].join("\n");
 
 type Extraction = {
+  civilite: string | null;
   nom: string | null;
   prenom: string | null;
   date_naissance: string | null;
   lieu_naissance: string | null;
+  pays_naissance: string | null;
+  nationalite: string | null;
+  date_expiration: string | null;
   fiable: boolean;
 };
+
+function texte(v: unknown): string | null {
+  return typeof v === "string" && v.trim() ? v.trim() : null;
+}
 
 function extraireJson(texte: string): unknown {
   const nettoye = texte.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
