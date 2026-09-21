@@ -34,7 +34,7 @@ export const getRepartitionCompagnies = createServerFn({ method: "GET" })
     const { data } = await context.supabase
       .from("contrats")
       .select("compagnies(nom)")
-      .neq("statut", "resilie");
+      .not("statut", "in", "(resilie,annule,cloture)");
 
     const compte = new Map<string, number>();
     for (const row of data ?? []) {
@@ -55,7 +55,7 @@ export const getRepartitionTypeAssurance = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<RepartitionPoint[]> => {
     const [{ data: contrats }, { data: familles }] = await Promise.all([
-      context.supabase.from("contrats").select("produit_id, is_emprunteur").neq("statut", "resilie"),
+      context.supabase.from("contrats").select("produit_id, is_emprunteur").not("statut", "in", "(resilie,annule,cloture)"),
       context.supabase.from("produit_familles").select("id, nom"),
     ]);
     const familleParProduit = new Map<string, string>();
