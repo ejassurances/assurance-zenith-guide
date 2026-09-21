@@ -9,6 +9,7 @@ import { StatCard } from "@/components/stat-card";
 import { labelForBranche } from "@/lib/recueil-besoins-schemas";
 
 export type ClientContexte = { branche: string | null; conseiller: string | null };
+export type ClientPortfolioStats = { primeTtc: number; actifs: number };
 
 export function useClientContexte(clientId: string, commercialId: string | null): ClientContexte {
   const [ctx, setCtx] = useState<ClientContexte>({ branche: null, conseiller: null });
@@ -45,9 +46,8 @@ export function useClientContexte(clientId: string, commercialId: string | null)
   return ctx;
 }
 
-export function ClientApercuCards({ clientId }: { clientId: string }) {
-  const [primeTtc, setPrimeTtc] = useState(0);
-  const [actifs, setActifs] = useState(0);
+export function useClientPortfolioStats(clientId: string): ClientPortfolioStats {
+  const [stats, setStats] = useState<ClientPortfolioStats>({ primeTtc: 0, actifs: 0 });
 
   useEffect(() => {
     let annule = false;
@@ -59,14 +59,22 @@ export function ClientApercuCards({ clientId }: { clientId: string }) {
       const rows = (data ?? []) as { prime_annuelle: number | null; statut: string }[];
       const enCours = rows.filter((r) => r.statut === "actif");
       if (!annule) {
-        setActifs(enCours.length);
-        setPrimeTtc(enCours.reduce((s, r) => s + Number(r.prime_annuelle ?? 0), 0));
+        setStats({
+          actifs: enCours.length,
+          primeTtc: enCours.reduce((s, r) => s + Number(r.prime_annuelle ?? 0), 0),
+        });
       }
     })();
     return () => {
       annule = true;
     };
   }, [clientId]);
+
+  return stats;
+}
+
+export function ClientApercuCards({ clientId }: { clientId: string }) {
+  const { primeTtc, actifs } = useClientPortfolioStats(clientId);
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
