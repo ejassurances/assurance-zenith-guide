@@ -83,6 +83,42 @@ export const getRepartitionTypeAssurance = createServerFn({ method: "GET" })
       .map(([nom, valeur]) => ({ nom, valeur }))
       .sort((a, b) => b.valeur - a.valeur);
   });
+
+export type DepartementPoint = {
+  code: string; // code département (ex "75", "2A", "971")
+  valeur: number;
+};
+
+/**
+ * Déduit le code département à partir d'un code postal français.
+ * Cas particuliers : Corse (2A/2B, approximation par plage numérique —
+ * la limite réelle suit les communes, pas les codes postaux) et DOM (971-976).
+ */
+function departementDepuisCodePostal(codePostal: string | null): string | null {
+  if (!codePostal) return null;
+  const cp = codePostal.trim().padStart(5, "0");
+  if (!/^\d{5}$/.test(cp)) return null;
+  if (cp.startsWith("97")) return cp.slice(0, 3); // Guadeloupe, Martinique, Guyane, Réunion...
+  if (cp.startsWith("98")) return null; // Monaco / collectivités hors carte départements
+  if (cp.startsWith("20")) return Number(cp) < 20200 ? "2A" : "2B";
+  return cp.slice(0, 2);
+}
+
+/** Répartition des clients (particuliers) par département de résidence. */
+export const getRepartitionDepartements = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<DepartementPoint[]> => {
+    const { data } = await context.supabase.from("clients").select("code_postal");
+    const compte = new Map<string, number>();
+    for (const c of data ?? []) {
+      const code = departementDepuisCodePostal(c.code_postal as string | null);
+      if (!code) continue;
+      compte.set(code, (compte.get(code) ?? 0) + 1);
+    }
+    return [...compte.entries()].map(([code, valeur]) => ({ code, valeur }));
+  });
+
+export type CaMensuelPoint = {
   mois: string; // "2026-01"
   label: string; // "Jan"
   montant: number;

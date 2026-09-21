@@ -9,13 +9,16 @@ import {
   getCaMensuel,
   getRepartitionCompagnies,
   getRepartitionTypeAssurance,
+  getRepartitionDepartements,
   getSyntheseAnneeCommissions,
   type CaRealSummary,
   type CaMensuelPoint,
   type RepartitionPoint,
+  type DepartementPoint,
 } from "@/lib/dashboard.functions";
 import { CaEvolutionChart } from "@/components/ca-evolution-chart";
 import { DonutRepartition } from "@/components/donut-repartition";
+import { FranceClientsMap } from "@/components/france-clients-map";
 import type { SyntheseAnnee } from "@/lib/commission-previsions";
 import { ScoreRings } from "@/components/score-rings";
 import { useScoresValeur } from "@/hooks/use-scores-valeur";
@@ -98,16 +101,18 @@ function Dashboard() {
   const [caMensuel, setCaMensuel] = useState<CaMensuelPoint[]>([]);
   const [repartitionCompagnies, setRepartitionCompagnies] = useState<RepartitionPoint[]>([]);
   const [repartitionType, setRepartitionType] = useState<RepartitionPoint[]>([]);
+  const [repartitionDepartements, setRepartitionDepartements] = useState<DepartementPoint[]>([]);
   const scoresValeur = useScoresValeur();
   const fetchCaReal = useServerFn(getCaRealEtN1);
   const fetchCaMensuel = useServerFn(getCaMensuel);
   const fetchRepartitionCompagnies = useServerFn(getRepartitionCompagnies);
   const fetchRepartitionType = useServerFn(getRepartitionTypeAssurance);
+  const fetchRepartitionDepartements = useServerFn(getRepartitionDepartements);
   const fetchSynthese = useServerFn(getSyntheseAnneeCommissions);
 
   useEffect(() => {
     (async () => {
-      const [c, p, tot, ec, si, com, tch, ca, caMens, repCompagnies, repType] = await Promise.all([
+      const [c, p, tot, ec, si, com, tch, ca, caMens, repCompagnies, repType, repDept] = await Promise.all([
         supabase.from("clients").select("*", { count: "exact", head: true }),
         supabase.from("clients").select("*", { count: "exact", head: true }).eq("statut", "prospect"),
         supabase.from("dossiers").select("*", { count: "exact", head: true }),
@@ -124,6 +129,7 @@ function Dashboard() {
         fetchCaMensuel(),
         fetchRepartitionCompagnies(),
         fetchRepartitionType(),
+        fetchRepartitionDepartements(),
       ]);
       setStats({
         clients: c.count ?? 0,
@@ -138,8 +144,16 @@ function Dashboard() {
       setCaMensuel(caMens);
       setRepartitionCompagnies(repCompagnies);
       setRepartitionType(repType);
+      setRepartitionDepartements(repDept);
     })();
-  }, [fetchCaReal, fetchCaMensuel, fetchRepartitionCompagnies, fetchRepartitionType, fetchSynthese]);
+  }, [
+    fetchCaReal,
+    fetchCaMensuel,
+    fetchRepartitionCompagnies,
+    fetchRepartitionType,
+    fetchRepartitionDepartements,
+    fetchSynthese,
+  ]);
 
   return (
     <div>
@@ -205,6 +219,12 @@ function Dashboard() {
             sousTitre="Contrats actifs, toutes compagnies"
             data={repartitionType}
           />
+        </div>
+      )}
+
+      {role !== "client" && (
+        <div className="mt-8">
+          <FranceClientsMap data={repartitionDepartements} />
         </div>
       )}
 
