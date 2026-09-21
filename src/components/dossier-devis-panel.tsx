@@ -2397,7 +2397,9 @@ export function DossierDevisPanel({
         )}
         <label className="block sm:col-span-2">
           <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
-            Montant total de l'assurance sur la durée du prêt (€)
+            {estEmprunteur
+              ? "Montant total de l'assurance sur la durée du prêt (€)"
+              : "Montant total annuel de la cotisation (€ / an)"}
           </span>
           <input
             type="number"
@@ -2407,36 +2409,47 @@ export function DossierDevisPanel({
             className={inp}
           />
           <span className="mt-1 block text-xs text-ink-muted">
-            Donnée d'entrée principale : c'est le montant figurant sur le devis de l'assureur pour la durée totale du
-            prêt.
-            {moisRestants
-              ? ` Recueil des besoins : ${moisRestants} mois restants${
-                  crdRecueil ? ` · capital restant dû ${crdRecueil.toLocaleString("fr-FR")} €` : ""
-                }.`
-              : " Renseignez « mois restants » dans le recueil des besoins pour dériver automatiquement le mensuel moyen."}
-            {mensuelMoyenDerive != null &&
-              ` Mensuel moyen calculé : ${mensuelMoyenDerive.toLocaleString("fr-FR", {
-                maximumFractionDigits: 2,
-              })} € / mois.`}
+            {estEmprunteur ? (
+              <>
+                Donnée d'entrée principale : c'est le montant figurant sur le devis de l'assureur pour la durée totale
+                du prêt.
+                {moisRestants
+                  ? ` Recueil des besoins : ${moisRestants} mois restants${
+                      crdRecueil ? ` · capital restant dû ${crdRecueil.toLocaleString("fr-FR")} €` : ""
+                    }.`
+                  : " Renseignez « mois restants » dans le recueil des besoins pour dériver automatiquement le mensuel moyen."}
+                {mensuelMoyenDerive != null &&
+                  ` Mensuel moyen calculé : ${mensuelMoyenDerive.toLocaleString("fr-FR", {
+                    maximumFractionDigits: 2,
+                  })} € / mois.`}
+              </>
+            ) : (
+              <>Cotisation annuelle figurant sur le devis de l'assureur, garanties et franchises incluses.</>
+            )}
           </span>
         </label>
-        <label className="block">
-          <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Mode de calcul (CI / CRD)</span>
-          <select
-            value={form.type_cotisation}
-            onChange={(e) =>
-              setForm({ ...form, type_cotisation: e.target.value as "" | "CI" | "CRD" })
-            }
-            className={inp}
-          >
-            <option value="">— À préciser —</option>
-            <option value="CI">CI — capital initial (cotisation constante)</option>
-            <option value="CRD">CRD — capital restant dû (cotisation dégressive)</option>
-          </select>
-        </label>
+        {estEmprunteur && (
+          <label className="block">
+            <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+              Mode de calcul (CI / CRD)
+            </span>
+            <select
+              value={form.type_cotisation}
+              onChange={(e) =>
+                setForm({ ...form, type_cotisation: e.target.value as "" | "CI" | "CRD" })
+              }
+              className={inp}
+            >
+              <option value="">— À préciser —</option>
+              <option value="CI">CI — capital initial (cotisation constante)</option>
+              <option value="CRD">CRD — capital restant dû (cotisation dégressive)</option>
+            </select>
+          </label>
+        )}
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
-            Cotisation mensuelle {form.type_cotisation === "CRD" ? "moyenne " : ""}(€ / mois) — complémentaire
+            Cotisation mensuelle {estEmprunteur && form.type_cotisation === "CRD" ? "moyenne " : ""}(€ / mois) —
+            complémentaire
           </span>
           <input
             type="number"
@@ -2451,10 +2464,13 @@ export function DossierDevisPanel({
             className={inp}
           />
           <span className="mt-1 block text-xs text-ink-muted">
-            Laissez vide pour reprendre automatiquement le mensuel moyen dérivé du montant total.
+            {estEmprunteur
+              ? "Laissez vide pour reprendre automatiquement le mensuel moyen dérivé du montant total."
+              : "Cotisation prélevée chaque mois, si le devis la mentionne."}
           </span>
         </label>
-        {form.type_cotisation === "CRD" && (
+        {estEmprunteur && form.type_cotisation === "CRD" && (
+
           <>
             <label className="block">
               <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
