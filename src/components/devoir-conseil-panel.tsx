@@ -1071,6 +1071,7 @@ export function DevoirConseilPanel({
           </div>
 
           {emprunteur && echeancier.lignes.length > 0 && (
+            <>
             <div className="rounded-lg border border-line">
               <div className="border-b border-line px-3 py-2">
                 <p className="text-sm font-semibold">Échéancier comparatif du prêt</p>
@@ -1198,6 +1199,7 @@ export function DevoirConseilPanel({
                 </div>
               </div>
             </div>
+            </>
           )}
 
 
