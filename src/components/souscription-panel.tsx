@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth-context";
 import {
   envoyerSouscriptionFn,
   enregistrerRetourCompagnie,
@@ -54,6 +56,8 @@ export function SouscriptionPanel({
   const [dateEffet, setDateEffet] = useState(new Date().toISOString().slice(0, 10));
   const [primeAnnuelle, setPrimeAnnuelle] = useState("");
   const [modeHorsApi, setModeHorsApi] = useState<ModeHorsApi>("intranet");
+  const { user } = useAuth();
+  const [depotDcCompagnie, setDepotDcCompagnie] = useState(false);
 
   const envoyable = ["devoir_conseil_signe", "souscription_envoyee", "devis_en_cours"].includes(statut);
   const autorise = prerequis?.autorise === true;
@@ -66,6 +70,35 @@ export function SouscriptionPanel({
       setPrerequis(null);
     }
   }, [dossierId, lirePrerequis]);
+
+  /** Dépôt direct du devoir de conseil compagnie, depuis le jalon lui-même. */
+  const deposerDcCompagnie = async (file: File) => {
+    setDepotDcCompagnie(true);
+    setError(null);
+    try {
+      const safeName = file.name.replace(/[^\w.\-]+/g, "_").slice(0, 120);
+      const path = `${dossierId}/${Date.now()}-${safeName}`;
+      const { error: upErr } = await supabase.storage.from("dossier-documents").upload(path, file);
+      if (upErr) throw upErr;
+      const { error: dbErr } = await supabase.from("documents").insert({
+        dossier_id: dossierId,
+        uploader_id: user?.id ?? null,
+        storage_path: path,
+        file_name: file.name.slice(0, 200),
+        file_size: file.size,
+        mime_type: file.type || null,
+        categorie: "contrat",
+        type_document: "devoir_conseil_compagnie",
+      });
+      if (dbErr) throw dbErr;
+      await rafraichirPrerequis();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Dépôt impossible");
+    } finally {
+      setDepotDcCompagnie(false);
+    }
+  };
+
 
   useEffect(() => {
     void rafraichirPrerequis();
@@ -202,13 +235,30 @@ export function SouscriptionPanel({
         ) : (
           <ul className="mt-2 space-y-1 text-sm">
             {prerequis.jalons.map((j) => (
-              <li key={j.code} className="flex gap-2">
-                <span className={j.etat === "OK" ? "text-emerald-600" : "text-red-600"}>
-                  {j.etat === "OK" ? "✓" : "✗"}
-                </span>
-                <span className="text-ink">
-                  {j.libelle} — <span className="text-ink-muted">{j.detail}</span>
-                </span>
+              <li key={j.code} className="flex flex-col gap-1">
+                <div className="flex gap-2">
+                  <span className={j.etat === "OK" ? "text-emerald-600" : "text-red-600"}>
+                    {j.etat === "OK" ? "✓" : "✗"}
+                  </span>
+                  <span className="text-ink">
+                    {j.libelle} — <span className="text-ink-muted">{j.detail}</span>
+                  </span>
+                </div>
+                {j.code === "devoir_conseil" && j.etat !== "OK" && (
+                  <label className="ml-6 inline-flex w-fit cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-xs text-ink hover:border-ink/40">
+                    {depotDcCompagnie ? "Dépôt en cours…" : "Déposer le devoir de conseil de la compagnie"}
+                    <input
+                      type="file"
+                      className="hidden"
+                      disabled={depotDcCompagnie}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) void deposerDcCompagnie(f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                )}
               </li>
             ))}
           </ul>
