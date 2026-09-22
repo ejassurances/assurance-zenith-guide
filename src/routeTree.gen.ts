@@ -54,6 +54,7 @@ import { Route as AuthenticatedEspaceSignerDevoirConseilRouteImport } from './ro
 import { Route as AuthenticatedEspaceSignerDerRouteImport } from './routes/_authenticated/espace.signer-der'
 import { Route as AuthenticatedEspaceRelationClientRouteImport } from './routes/_authenticated/espace.relation-client'
 import { Route as AuthenticatedEspacePrescripteursRouteImport } from './routes/_authenticated/espace.prescripteurs'
+import { Route as AuthenticatedEspacePrequalificationRouteImport } from './routes/_authenticated/espace.prequalification'
 import { Route as AuthenticatedEspacePilotageRouteImport } from './routes/_authenticated/espace.pilotage'
 import { Route as AuthenticatedEspaceParametresRouteImport } from './routes/_authenticated/espace.parametres'
 import { Route as AuthenticatedEspaceNeolianeRouteImport } from './routes/_authenticated/espace.neoliane'
@@ -334,6 +335,12 @@ const AuthenticatedEspacePrescripteursRoute =
     path: '/prescripteurs',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const AuthenticatedEspacePrequalificationRoute =
+  AuthenticatedEspacePrequalificationRouteImport.update({
+    id: '/prequalification',
+    path: '/prequalification',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
 const AuthenticatedEspacePilotageRoute =
   AuthenticatedEspacePilotageRouteImport.update({
     id: '/pilotage',
@@ -522,6 +529,7 @@ export interface FileRoutesByFullPath {
   '/espace/neoliane': typeof AuthenticatedEspaceNeolianeRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/espace/pilotage': typeof AuthenticatedEspacePilotageRoute
+  '/espace/prequalification': typeof AuthenticatedEspacePrequalificationRoute
   '/espace/prescripteurs': typeof AuthenticatedEspacePrescripteursRoute
   '/espace/relation-client': typeof AuthenticatedEspaceRelationClientRoute
   '/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
@@ -595,6 +603,7 @@ export interface FileRoutesByTo {
   '/espace/neoliane': typeof AuthenticatedEspaceNeolianeRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/espace/pilotage': typeof AuthenticatedEspacePilotageRoute
+  '/espace/prequalification': typeof AuthenticatedEspacePrequalificationRoute
   '/espace/prescripteurs': typeof AuthenticatedEspacePrescripteursRoute
   '/espace/relation-client': typeof AuthenticatedEspaceRelationClientRoute
   '/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
@@ -671,6 +680,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/neoliane': typeof AuthenticatedEspaceNeolianeRoute
   '/_authenticated/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/_authenticated/espace/pilotage': typeof AuthenticatedEspacePilotageRoute
+  '/_authenticated/espace/prequalification': typeof AuthenticatedEspacePrequalificationRoute
   '/_authenticated/espace/prescripteurs': typeof AuthenticatedEspacePrescripteursRoute
   '/_authenticated/espace/relation-client': typeof AuthenticatedEspaceRelationClientRoute
   '/_authenticated/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
@@ -747,6 +757,7 @@ export interface FileRouteTypes {
     | '/espace/neoliane'
     | '/espace/parametres'
     | '/espace/pilotage'
+    | '/espace/prequalification'
     | '/espace/prescripteurs'
     | '/espace/relation-client'
     | '/espace/signer-der'
@@ -820,6 +831,7 @@ export interface FileRouteTypes {
     | '/espace/neoliane'
     | '/espace/parametres'
     | '/espace/pilotage'
+    | '/espace/prequalification'
     | '/espace/prescripteurs'
     | '/espace/relation-client'
     | '/espace/signer-der'
@@ -895,6 +907,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/neoliane'
     | '/_authenticated/espace/parametres'
     | '/_authenticated/espace/pilotage'
+    | '/_authenticated/espace/prequalification'
     | '/_authenticated/espace/prescripteurs'
     | '/_authenticated/espace/relation-client'
     | '/_authenticated/espace/signer-der'
@@ -1307,6 +1320,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspacePrescripteursRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/prequalification': {
+      id: '/_authenticated/espace/prequalification'
+      path: '/prequalification'
+      fullPath: '/espace/prequalification'
+      preLoaderRoute: typeof AuthenticatedEspacePrequalificationRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
     '/_authenticated/espace/pilotage': {
       id: '/_authenticated/espace/pilotage'
       path: '/pilotage'
@@ -1535,6 +1555,7 @@ interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceNeolianeRoute: typeof AuthenticatedEspaceNeolianeRoute
   AuthenticatedEspaceParametresRoute: typeof AuthenticatedEspaceParametresRoute
   AuthenticatedEspacePilotageRoute: typeof AuthenticatedEspacePilotageRoute
+  AuthenticatedEspacePrequalificationRoute: typeof AuthenticatedEspacePrequalificationRoute
   AuthenticatedEspacePrescripteursRoute: typeof AuthenticatedEspacePrescripteursRoute
   AuthenticatedEspaceRelationClientRoute: typeof AuthenticatedEspaceRelationClientRoute
   AuthenticatedEspaceSignerDerRoute: typeof AuthenticatedEspaceSignerDerRoute
@@ -1573,6 +1594,8 @@ const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
   AuthenticatedEspaceNeolianeRoute: AuthenticatedEspaceNeolianeRoute,
   AuthenticatedEspaceParametresRoute: AuthenticatedEspaceParametresRoute,
   AuthenticatedEspacePilotageRoute: AuthenticatedEspacePilotageRoute,
+  AuthenticatedEspacePrequalificationRoute:
+    AuthenticatedEspacePrequalificationRoute,
   AuthenticatedEspacePrescripteursRoute: AuthenticatedEspacePrescripteursRoute,
   AuthenticatedEspaceRelationClientRoute:
     AuthenticatedEspaceRelationClientRoute,
