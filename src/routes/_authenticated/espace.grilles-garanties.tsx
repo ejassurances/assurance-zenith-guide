@@ -219,10 +219,17 @@ function AtelierGrillesPage() {
       },
     });
     if (res.doublons.length > 0) {
+      const aPrivilegier = res.doublons.filter((d) => d.a_privilegier);
       const liste = res.doublons.map((d) => `${d.produit_nom} (${d.compagnie_nom})`).join(", ");
+      const recommandation =
+        aPrivilegier.length > 0
+          ? ` Ce produit est chez un courtier grossiste : privilégier ${aPrivilegier
+              .map((d) => `${d.produit_nom} (${d.compagnie_nom})`)
+              .join(", ")}, directement chez la compagnie d'assurance.`
+          : "";
       setMessage({
         type: "warn",
-        texte: `Doublon détecté : ce contrat semble identique, chez le même assureur porteur, à ${liste}. À vérifier avant de multiplier les références.`,
+        texte: `Doublon détecté : ce contrat semble identique, chez le même assureur porteur, à ${liste}.${recommandation}`,
       });
     } else {
       setMessage({ type: "ok", texte: "Grille validée." });

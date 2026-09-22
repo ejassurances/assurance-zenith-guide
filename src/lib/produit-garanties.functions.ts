@@ -41,6 +41,9 @@ export type DoublonGrossiste = {
   produit_nom: string;
   compagnie_id: string;
   compagnie_nom: string;
+  compagnie_type: string | null;
+  /** true si CE candidat (compagnie directe) doit être privilégié sur le produit validé (chez un grossiste). */
+  a_privilegier: boolean;
 };
 
 /**
@@ -57,10 +60,12 @@ async function detecterDoublonsGrossiste(
 ): Promise<DoublonGrossiste[]> {
   const { data: produit } = await supabase
     .from("produits")
-    .select("id, nom, compagnie_id, famille_id, assureur_porteur")
+    .select("id, nom, compagnie_id, famille_id, assureur_porteur, compagnies(type_partenaire)")
     .eq("id", produitId)
     .maybeSingle();
   if (!produit?.assureur_porteur) return [];
+  const typePartenaireCible = (produit as { compagnies: { type_partenaire: string } | null }).compagnies
+    ?.type_partenaire as string | null;
 
   const { data: grille } = await supabase
     .from("produit_garanties")
@@ -72,7 +77,7 @@ async function detecterDoublonsGrossiste(
 
   const { data: candidats } = await supabase
     .from("produits")
-    .select("id, nom, compagnie_id, compagnies(nom)")
+    .select("id, nom, compagnie_id, compagnies(nom, type_partenaire)")
     .eq("assureur_porteur", produit.assureur_porteur)
     .eq("famille_id", produit.famille_id)
     .neq("compagnie_id", produit.compagnie_id)
@@ -84,7 +89,7 @@ async function detecterDoublonsGrossiste(
     id: string;
     nom: string;
     compagnie_id: string;
-    compagnies: { nom: string } | null;
+    compagnies: { nom: string; type_partenaire: string } | null;
   }[]) {
     const { data: grilleCandidate } = await supabase
       .from("produit_garanties")
@@ -94,11 +99,16 @@ async function detecterDoublonsGrossiste(
       .maybeSingle();
     if (!grilleCandidate?.valeurs) continue;
     if (garantiesIdentiques(grille.valeurs, grilleCandidate.valeurs)) {
+      const typeCandidat = c.compagnies?.type_partenaire ?? null;
       doublons.push({
         produit_id: c.id,
         produit_nom: c.nom,
         compagnie_id: c.compagnie_id,
         compagnie_nom: c.compagnies?.nom ?? "Compagnie inconnue",
+        compagnie_type: typeCandidat,
+        // À privilégier si CE candidat est une compagnie directe alors que le
+        // produit validé est chez un grossiste — jamais l'inverse.
+        a_privilegier: typeCandidat === "compagnie" && typePartenaireCible === "courtier_grossiste",
       });
     }
   }
