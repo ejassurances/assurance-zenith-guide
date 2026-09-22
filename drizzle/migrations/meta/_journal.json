@@ -8,6 +8,13 @@
       "when": 1790064297531,
       "tag": "0000_restreindre_acces_bordereaux_compagnie_docs_der",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790075048692,
+      "tag": "0001_devoirs_conseil_echelonnement",
+      "breakpoints": true
     }
   ]
 }

@@ -2299,6 +2299,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           dossier_id: string
+          echelonnement_demande: boolean
+          echelonnement_montant_mensuel: number | null
           email_destinataire: string | null
           envoye_le: string | null
           hash: string | null
@@ -2327,6 +2329,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           dossier_id: string
+          echelonnement_demande?: boolean
+          echelonnement_montant_mensuel?: number | null
           email_destinataire?: string | null
           envoye_le?: string | null
           hash?: string | null
@@ -2355,6 +2359,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           dossier_id?: string
+          echelonnement_demande?: boolean
+          echelonnement_montant_mensuel?: number | null
           email_destinataire?: string | null
           envoye_le?: string | null
           hash?: string | null
