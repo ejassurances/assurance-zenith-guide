@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790064297531,
+      "tag": "0000_restreindre_acces_bordereaux_compagnie_docs_der",
+      "breakpoints": true
+    }
+  ]
+}
