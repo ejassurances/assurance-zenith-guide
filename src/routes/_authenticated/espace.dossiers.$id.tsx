@@ -407,7 +407,7 @@ function DossierDetail() {
             onSaved={load}
           />
         ) : modeAffichage === "assures" && parcoursActif ? (
-          <CoordonneesEtape dossier={dossier} />
+          <CoordonneesEtape dossier={dossier} dossierId={id} canEditSuivi={canEditSuivi} onSaved={load} />
         ) : modeAffichage === "lettre_mission" && parcoursActif ? (
           <div className="crm-card p-6">
             <p className="crm-eyebrow">Lettre de mission</p>
@@ -1097,7 +1097,17 @@ function ClientDossierField({
     </div>
   );
 }
-function CoordonneesEtape({ dossier }: { dossier: Dossier }) {
+function CoordonneesEtape({
+  dossier,
+  dossierId,
+  canEditSuivi,
+  onSaved,
+}: {
+  dossier: Dossier;
+  dossierId: string;
+  canEditSuivi: boolean;
+  onSaved: () => void;
+}) {
   const assures = assuresEmprunteur(dossier.recueil_besoins?.["assures"]);
   const brut = Array.isArray(dossier.recueil_besoins?.["assures"])
     ? (dossier.recueil_besoins?.["assures"] as Record<string, unknown>[])
@@ -1158,7 +1168,15 @@ function CoordonneesEtape({ dossier }: { dossier: Dossier }) {
     <div className="space-y-4">
       <Section title="Titulaire du dossier">
         <Row label="Nom">
-          {titulaire ? `${titulaire.prenom ?? ""} ${titulaire.nom}`.trim() : dossier.client_nom}
+          <ClientDossierField
+            dossierId={dossierId}
+            clientId={dossier.client_id}
+            clientNom={
+              titulaire ? `${titulaire.prenom ?? ""} ${titulaire.nom}`.trim() : dossier.client_nom
+            }
+            canEdit={canEditSuivi}
+            onSaved={onSaved}
+          />
         </Row>
         <Row label="Email">{titulaire?.email ?? dossier.client_email ?? "—"}</Row>
         <Row label="Téléphone">{titulaire?.telephone ?? dossier.client_phone ?? "—"}</Row>
@@ -1432,7 +1450,7 @@ function StageContent({
 
   // Étape 1 — Coordonnées : identité et contacts, sans les champs du prêt.
   if (parcours === "coordonnees") {
-    content = <CoordonneesEtape dossier={dossier} />;
+    content = <CoordonneesEtape dossier={dossier} dossierId={dossier.id} canEditSuivi={canEdit} onSaved={onChanged} />;
   }
 
   // Étape 2 — Informations personnelles : les assurés à couvrir uniquement.
