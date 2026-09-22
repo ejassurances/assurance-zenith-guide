@@ -220,7 +220,86 @@ export function SouscriptionPanel({
         )}
       </div>
 
-      {envoyable && (
+      {canal && (
+        <p className="mt-4 inline-flex rounded-full border border-line bg-surface-2 px-3 py-1 text-xs text-ink">
+          {labelCanal(canal)}
+        </p>
+      )}
+
+      {envoyable && canal === "externe" && (
+        <div className="mt-4 space-y-3 rounded-lg border border-line bg-surface-2 p-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+            Souscription enregistrée hors API
+          </p>
+          <p className="text-xs text-ink-muted">
+            Le devis retenu ne vient pas d'un partenaire connecté : l'adhésion est réalisée
+            directement auprès de la compagnie, puis enregistrée ici pour créer le contrat.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-xs text-ink-muted">
+              N° de contrat / adhésion
+              <input
+                type="text"
+                value={numeroHorsApi}
+                onChange={(e) => setNumeroHorsApi(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
+              />
+            </label>
+            <label className="block text-xs text-ink-muted">
+              Date d'effet
+              <input
+                type="date"
+                value={dateEffet}
+                onChange={(e) => setDateEffet(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
+              />
+            </label>
+            <label className="block text-xs text-ink-muted">
+              Prime annuelle (€, facultatif)
+              <input
+                type="text"
+                inputMode="decimal"
+                value={primeAnnuelle}
+                onChange={(e) => setPrimeAnnuelle(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
+              />
+            </label>
+            <label className="block text-xs text-ink-muted">
+              Mode de transmission
+              <select
+                value={modeHorsApi}
+                onChange={(e) => setModeHorsApi(e.target.value as ModeHorsApi)}
+                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
+              >
+                {MODES_HORS_API.map((m) => (
+                  <option key={m.code} value={m.code}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <label className="block text-xs text-ink-muted">
+            Commentaire (facultatif)
+            <textarea
+              rows={2}
+              value={commentaire}
+              onChange={(e) => setCommentaire(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={enregistrerSouscriptionHorsApi}
+            disabled={busy || !autorise || numeroHorsApi.trim().length === 0}
+            className="rounded-lg bg-ink px-3 py-2 text-sm font-medium text-surface disabled:opacity-50"
+          >
+            {busy ? "Enregistrement…" : "Enregistrer la souscription et créer le contrat"}
+          </button>
+        </div>
+      )}
+
+      {envoyable && canal !== "externe" && (
         <div className="mt-4 space-y-3">
           <label className="block text-xs text-ink-muted">
             Adresse du service souscription (laisser vide pour utiliser celle de la fiche compagnie)
