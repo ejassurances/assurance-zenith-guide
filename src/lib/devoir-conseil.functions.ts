@@ -123,6 +123,39 @@ export const signerDevoirConseil = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const confirmerEchelonnementSchema = z.object({
+  devoir_id: z.string().uuid(),
+});
+
+/**
+ * Confirmation explicite par le courtier/mandataire : la modification a bien
+ * été faite sur l'intranet du partenaire (échelonnement en 12 fois). Tracée
+ * (qui, quand) — ce n'est pas une case qu'on coche sans avoir fait l'action,
+ * c'est ce qui referme la popup bloquante à l'ouverture du dossier.
+ */
+export const confirmerEchelonnementPartenaire = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => confirmerEchelonnementSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+    const estStaff = ((roles ?? []) as { role: string }[]).some(
+      (r) => r.role === "admin" || r.role === "mandataire",
+    );
+    if (!estStaff) throw new Error("Réservé au cabinet");
+
+    const { error } = await supabase
+      .from("devoirs_conseil")
+      .update({
+        echelonnement_partenaire_confirme: true,
+        echelonnement_partenaire_confirme_par: userId,
+        echelonnement_partenaire_confirme_le: new Date().toISOString(),
+      })
+      .eq("id", data.devoir_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 const refuserSchema = z.object({
   devoir_id: z.string().uuid(),
   motif: z.string().min(3).max(2000),

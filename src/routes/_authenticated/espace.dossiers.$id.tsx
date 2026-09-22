@@ -24,6 +24,7 @@ import { CompagnieProduitPicker } from "@/components/compagnie-produit-picker";
 import { ProduitDocumentsLink } from "@/components/produit-documents-link";
 import { DossierPipeline } from "@/components/dossier-pipeline";
 import { DevoirConseilPanel } from "@/components/devoir-conseil-panel";
+import { confirmerEchelonnementPartenaire } from "@/lib/devoir-conseil.functions";
 import { DevoirConseilRefusAnalysePanel } from "@/components/devoir-conseil-refus-analyse-panel";
 import { SouscriptionPanel } from "@/components/souscription-panel";
 import { CopilotePanel } from "@/components/copilote-panel";
@@ -221,6 +222,33 @@ function DossierDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  /**
+   * Popup bloquante à l'ouverture du dossier : le client a demandé l'échelonnement
+   * des frais de distribution en 12 fois, et personne n'a encore confirmé avoir
+   * renseigné cet échelonnement sur l'intranet du partenaire. Réservé au
+   * personnel (le client n'a rien à confirmer ici) — jamais un bandeau qu'on
+   * peut manquer, une action explicite est requise pour la refermer.
+   */
+  const [devoirAConfirmer, setDevoirAConfirmer] = useState<string | null>(null);
+  const confirmerPartenaire = useServerFn(confirmerEchelonnementPartenaire);
+  const [confirmationEnCours, setConfirmationEnCours] = useState(false);
+  useEffect(() => {
+    if (role !== "admin" && role !== "mandataire") return;
+    void (async () => {
+      const { data } = await supabase
+        .from("devoirs_conseil")
+        .select("id")
+        .eq("dossier_id", id)
+        .eq("statut", "signe")
+        .eq("echelonnement_demande", true)
+        .eq("echelonnement_partenaire_confirme", false)
+        .order("signed_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setDevoirAConfirmer(data?.id ?? null);
+    })();
+  }, [id, role]);
+
   useEffect(() => {
     setSelectedStep(etape && estEtapeValide(etape) ? etape : null);
     // Lien direct vers une étape du parcours (?etape=coordonnees…), branche du dossier.
@@ -280,6 +308,36 @@ function DossierDetail() {
 
   return (
     <div className="space-y-8">
+      {devoirAConfirmer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4">
+          <div className="w-full max-w-md space-y-4 rounded-2xl bg-background p-6 shadow-xl">
+            <p className="font-serif text-lg font-medium text-ink">
+              Échelonnement des frais de distribution à renseigner
+            </p>
+            <p className="text-sm text-ink-soft">
+              Le client de ce dossier a demandé, à la signature du devoir de conseil, l'échelonnement des
+              frais de distribution en 12 fois. Rendez-vous sur l'intranet du partenaire pour renseigner cet
+              échelonnement avant de continuer.
+            </p>
+            <button
+              type="button"
+              disabled={confirmationEnCours}
+              onClick={async () => {
+                setConfirmationEnCours(true);
+                try {
+                  await confirmerPartenaire({ data: { devoir_id: devoirAConfirmer } });
+                  setDevoirAConfirmer(null);
+                } finally {
+                  setConfirmationEnCours(false);
+                }
+              }}
+              className="w-full rounded-full bg-[#D4AF37] px-5 py-2 text-sm font-semibold text-[#0A192F] disabled:opacity-50"
+            >
+              {confirmationEnCours ? "Enregistrement…" : "J'ai bien renseigné l'échelonnement sur l'intranet du partenaire"}
+            </button>
+          </div>
+        </div>
+      )}
       <div>
         <Link to="/espace/dossiers" className="text-sm text-ink-muted hover:text-ink">
           ← Retour aux dossiers
