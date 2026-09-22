@@ -67,6 +67,8 @@ export const envoyerDevoirConseilFn = createServerFn({ method: "POST" })
 const signerSchema = z.object({
   devoir_id: z.string().uuid(),
   signature_png: z.string().min(100).max(500_000),
+  /** Le client demande, lors de cette même signature, l'échelonnement des frais de courtage sur 12 mois. */
+  echelonnement_demande: z.boolean().optional(),
 });
 
 export const signerDevoirConseil = createServerFn({ method: "POST" })
@@ -76,13 +78,19 @@ export const signerDevoirConseil = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: devoir, error } = await supabase
       .from("devoirs_conseil")
-      .select("id, statut, dossier_id, client_id, clients:client_id(user_id)")
+      .select("id, statut, dossier_id, client_id, contenu, clients:client_id(user_id)")
       .eq("id", data.devoir_id)
       .maybeSingle();
     if (error || !devoir) throw new Error("Devoir de conseil introuvable");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((devoir as any).clients?.user_id !== userId) throw new Error("Non autorisé");
     if (devoir.statut === "signe") throw new Error("Document déjà signé");
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fraisCourtage = Number((devoir as any).contenu?.conseil?.frais_courtage ?? 0);
+    const echelonnementDemande = !!data.echelonnement_demande;
+    const echelonnementMontantMensuel =
+      echelonnementDemande && fraisCourtage > 0 ? Math.round((fraisCourtage / 12) * 100) / 100 : null;
 
     const { error: upErr } = await supabase
       .from("devoirs_conseil")
@@ -92,6 +100,8 @@ export const signerDevoirConseil = createServerFn({ method: "POST" })
         signed_at: new Date().toISOString(),
         signed_ip: getRequestIP({ xForwardedFor: true }) ?? null,
         signed_ua: getRequestHeader("user-agent") ?? null,
+        echelonnement_demande: echelonnementDemande,
+        echelonnement_montant_mensuel: echelonnementMontantMensuel,
       })
       .eq("id", data.devoir_id);
     if (upErr) throw new Error(upErr.message);

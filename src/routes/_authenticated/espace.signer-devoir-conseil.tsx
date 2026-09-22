@@ -38,6 +38,9 @@ function SignerDevoirConseil() {
   const [loading, setLoading] = useState(true);
   const [accepte, setAccepte] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
+  const [echelonnementSouhaite, setEchelonnementSouhaite] = useState(false);
+  const [echelonnementPopupOuvert, setEchelonnementPopupOuvert] = useState(false);
+  const [echelonnementConfirme, setEchelonnementConfirme] = useState(false);
   const [motifRefus, setMotifRefus] = useState("");
   const [refusOpen, setRefusOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -59,10 +62,16 @@ function SignerDevoirConseil() {
 
   const submitSignature = async () => {
     if (!devoir || !accepte || !signature) return;
+    if (echelonnementSouhaite && !echelonnementConfirme) {
+      setEchelonnementPopupOuvert(true);
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
-      await signer({ data: { devoir_id: devoir.id, signature_png: signature } });
+      await signer({
+        data: { devoir_id: devoir.id, signature_png: signature, echelonnement_demande: echelonnementSouhaite },
+      });
       navigate({ to: "/espace/mon-espace" });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur");
@@ -246,6 +255,65 @@ function SignerDevoirConseil() {
               recommandation formulée par {SITE.shortName}.
             </span>
           </label>
+          <label className="flex items-start gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={echelonnementSouhaite}
+              onChange={(e) => {
+                setEchelonnementSouhaite(e.target.checked);
+                setEchelonnementConfirme(false);
+              }}
+              className="mt-1"
+            />
+            <span>Je souhaite régler les frais de distribution en 12 fois.</span>
+          </label>
+          {echelonnementPopupOuvert && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4">
+              <div className="w-full max-w-md space-y-4 rounded-2xl bg-background p-6">
+                <p className="font-serif text-lg font-medium text-ink">Échelonnement des frais de distribution</p>
+                <label className="flex items-start gap-3 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={echelonnementConfirme}
+                    onChange={(e) => setEchelonnementConfirme(e.target.checked)}
+                    className="mt-1"
+                  />
+                  <span>
+                    Je reconnais que les frais de{" "}
+                    {Number(devoir?.contenu?.conseil?.frais_courtage ?? 0).toLocaleString("fr-FR", {
+                      minimumFractionDigits: 2,
+                    })}{" "}
+                    € correspondant aux frais de distribution seront prélevés en 12 fois, en complément des
+                    mensualités d'assurance, soit{" "}
+                    {(Number(devoir?.contenu?.conseil?.frais_courtage ?? 0) / 12).toLocaleString("fr-FR", {
+                      minimumFractionDigits: 2,
+                    })}{" "}
+                    € en plus de la mensualité pendant 12 mois. Les frais de dossier restent, eux, prélevés en
+                    une seule fois.
+                  </span>
+                </label>
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => {
+                      setEchelonnementPopupOuvert(false);
+                      setEchelonnementSouhaite(false);
+                      setEchelonnementConfirme(false);
+                    }}
+                    className="rounded-full border border-line px-4 py-2 text-sm"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    disabled={!echelonnementConfirme}
+                    onClick={() => setEchelonnementPopupOuvert(false)}
+                    className="rounded-full bg-[#D4AF37] px-4 py-2 text-sm font-semibold text-[#0A192F] disabled:opacity-50"
+                  >
+                    Confirmer
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           <SignaturePad onChange={setSignature} />
           {error && <p className="text-xs text-destructive">{error}</p>}
           <div className="flex flex-wrap gap-3">

@@ -32,6 +32,8 @@ type Devoir = {
   refuse_le: string | null;
   hash: string | null;
   email_destinataire: string | null;
+  echelonnement_demande: boolean | null;
+  echelonnement_montant_mensuel: number | null;
 };
 
 type DevisLigne = {
@@ -162,7 +164,7 @@ export function DevoirConseilPanel({
     const { data } = await supabase
       .from("devoirs_conseil")
       .select(
-        "id, statut, recommandation, motifs, mises_en_garde, envoye_le, signed_at, refus_motif, refuse_le, hash, email_destinataire",
+        "id, statut, recommandation, motifs, mises_en_garde, envoye_le, signed_at, refus_motif, refuse_le, hash, email_destinataire, echelonnement_demande, echelonnement_montant_mensuel",
       )
       .eq("dossier_id", dossierId)
       .order("created_at", { ascending: false })
@@ -686,6 +688,16 @@ export function DevoirConseilPanel({
           ) : null}
           {devoir.signed_at && (
             <p className="text-emerald-700">Signé le {new Date(devoir.signed_at).toLocaleString("fr-FR")}</p>
+          )}
+          {devoir.signed_at && devoir.echelonnement_demande && (
+            <p className="rounded-lg border border-amber-400/50 bg-amber-50 px-3 py-2 text-amber-900">
+              ⚠ Le client a demandé l'échelonnement des frais de distribution en 12 fois
+              {devoir.echelonnement_montant_mensuel
+                ? ` (+${Number(devoir.echelonnement_montant_mensuel).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} € / mois pendant 12 mois)`
+                : ""}
+              . Sur l'intranet du partenaire, les frais de distribution sont toujours saisis en une fois — c'est
+              au cabinet de suivre le remboursement échelonné au client, pas au partenaire.
+            </p>
           )}
           {devoir.refuse_le && (
             <p className="text-destructive">
