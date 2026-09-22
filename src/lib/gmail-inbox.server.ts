@@ -204,8 +204,9 @@ export async function traiterInboxPrincipale(
     // 3. Réponse du cabinet déjà envoyée dans le fil ?
     const dejaRepondu = await reponseCabinetPosterieure(m.thread_id, m.id);
 
-    // 4. Analyse du contenu et rattachement CRM.
-    const detail = dejaRepondu ? null : await lireMessage(m.id).catch(() => null);
+    // 4. Analyse du contenu et rattachement CRM. Le message est toujours lu :
+    // les pièces jointes doivent être traitées même si une réponse existe déjà.
+    const detail = await lireMessage(m.id).catch(() => null);
     const besoin = classerBesoinReponse({
       sujet: m.sujet,
       texte: detail?.texte ?? m.snippet,
