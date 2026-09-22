@@ -39,6 +39,8 @@ export function SouscriptionPanel({
   const envoyer = useServerFn(envoyerSouscriptionFn);
   const retour = useServerFn(enregistrerRetourCompagnie);
   const lirePrerequis = useServerFn(prerequisSouscriptionFn);
+  const lireCanal = useServerFn(canalSouscriptionFn);
+  const souscrireHorsApi = useServerFn(souscrireHorsApiFn);
 
   const [email, setEmail] = useState(emailCompagnie ?? "");
   const [commentaire, setCommentaire] = useState("");
@@ -47,6 +49,11 @@ export function SouscriptionPanel({
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [prerequis, setPrerequis] = useState<ResultatPrerequis | null>(null);
+  const [canal, setCanal] = useState<CanalSouscription | null>(null);
+  const [numeroHorsApi, setNumeroHorsApi] = useState("");
+  const [dateEffet, setDateEffet] = useState(new Date().toISOString().slice(0, 10));
+  const [primeAnnuelle, setPrimeAnnuelle] = useState("");
+  const [modeHorsApi, setModeHorsApi] = useState<ModeHorsApi>("intranet");
 
   const envoyable = ["devoir_conseil_signe", "souscription_envoyee", "devis_en_cours"].includes(statut);
   const autorise = prerequis?.autorise === true;
@@ -63,6 +70,53 @@ export function SouscriptionPanel({
   useEffect(() => {
     void rafraichirPrerequis();
   }, [rafraichirPrerequis]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = (await lireCanal({ data: { dossier_id: dossierId } })) as {
+          canal: CanalSouscription;
+        };
+        setCanal(res.canal);
+      } catch {
+        setCanal(null);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dossierId]);
+
+  const enregistrerSouscriptionHorsApi = async () => {
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const prime = Number(primeAnnuelle.replace(",", "."));
+      const res = (await souscrireHorsApi({
+        data: {
+          dossier_id: dossierId,
+          numero_contrat: numeroHorsApi.trim(),
+          date_effet: dateEffet,
+          prime_annuelle: Number.isFinite(prime) && prime > 0 ? prime : undefined,
+          mode_transmission: modeHorsApi,
+          commentaire: commentaire.trim() || undefined,
+        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      })) as any;
+      setMessage(
+        res.contrats_ids?.length > 1
+          ? `Souscription enregistrée : ${res.contrats_ids.length} contrats créés au portefeuille (un par assuré).`
+          : "Souscription enregistrée : le contrat est créé au portefeuille.",
+      );
+      setCommentaire("");
+      setNumeroHorsApi("");
+      await rafraichirPrerequis();
+      onChanged();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Enregistrement impossible");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const lancerEnvoi = async (mode: "api" | "intranet") => {
     setBusy(true);
