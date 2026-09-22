@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
+import { ClientOriginePicker } from "@/components/client-origine-picker";
 import { BoutonEnvoiEmail } from "@/components/envoi-rapide-email";
 import { useEffect, useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -920,9 +921,15 @@ function DossierSynthese({
         <div className="crm-card p-6">
           <p className="crm-eyebrow">Dossier commercial</p>
           <dl className="mt-4 space-y-3 text-sm">
-            <div className="flex justify-between gap-3">
+            <div className="flex items-center justify-between gap-3">
               <dt className="text-ink-muted">Client</dt>
-              <dd className="font-medium text-ink">{dossier.client_nom}</dd>
+              <ClientDossierField
+                dossierId={dossierId}
+                clientId={dossier.client_id}
+                clientNom={dossier.client_nom}
+                canEdit={canEdit}
+                onSaved={onSaved}
+              />
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-ink-muted">Référence</dt>
@@ -975,8 +982,118 @@ function DossierSynthese({
 }
 
 /**
- * Étape 1 du parcours emprunteur — Coordonnées : identité et coordonnées de
- * contact de chaque emprunteur. L'identité connue en base PRIME toujours : elle
+ * Champ Client du dossier : affichage par défaut, avec un mode édition qui
+ * permet de rattacher le dossier au bon enregistrement client (met à jour
+ * client_id ET client_nom à partir de la fiche choisie) ou, à défaut, de
+ * corriger le seul libellé texte du dossier.
+ */
+function ClientDossierField({
+  dossierId,
+  clientId,
+  clientNom,
+  canEdit,
+  onSaved,
+}: {
+  dossierId: string;
+  clientId: string | null;
+  clientNom: string;
+  canEdit: boolean;
+  onSaved: () => void;
+}) {
+  const [edition, setEdition] = useState(false);
+  const [choixId, setChoixId] = useState<string | null>(clientId);
+  const [nomLibre, setNomLibre] = useState(clientNom);
+  const [saving, setSaving] = useState(false);
+  const [erreur, setErreur] = useState<string | null>(null);
+
+  if (!edition) {
+    return (
+      <div className="flex items-center gap-2">
+        <dd className="font-medium text-ink">{clientNom}</dd>
+        {canEdit && (
+          <button
+            type="button"
+            onClick={() => setEdition(true)}
+            className="text-xs text-ink-muted underline hover:text-ink"
+          >
+            Modifier
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  const enregistrer = async () => {
+    setSaving(true);
+    setErreur(null);
+    let nom = nomLibre.trim();
+    if (choixId) {
+      const { data: client } = await supabase
+        .from("clients")
+        .select("nom,prenom")
+        .eq("id", choixId)
+        .maybeSingle();
+      if (client) nom = `${client.prenom ?? ""} ${client.nom}`.trim();
+    }
+    if (!nom) {
+      setErreur("Le nom du client ne peut pas être vide.");
+      setSaving(false);
+      return;
+    }
+    const { error } = await supabase
+      .from("dossiers")
+      .update({ client_id: choixId, client_nom: nom })
+      .eq("id", dossierId);
+    setSaving(false);
+    if (error) {
+      setErreur(error.message);
+      return;
+    }
+    setEdition(false);
+    onSaved();
+  };
+
+  return (
+    <div className="w-64 space-y-2 rounded-lg border border-line bg-background p-3">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-ink-muted">
+        Rattacher à un client existant
+      </p>
+      <ClientOriginePicker value={choixId} onChange={(id) => setChoixId(id)} />
+      <p className="pt-1 text-[10px] font-medium uppercase tracking-wide text-ink-muted">
+        Ou corriger le nom affiché sur le dossier
+      </p>
+      <input
+        className="w-full rounded-lg border border-line bg-background px-2 py-1.5 text-sm"
+        value={nomLibre}
+        onChange={(e) => setNomLibre(e.target.value)}
+        placeholder="Nom du client"
+      />
+      {erreur && <p className="text-xs text-destructive">{erreur}</p>}
+      <div className="flex items-center gap-2 pt-1">
+        <button
+          type="button"
+          onClick={() => void enregistrer()}
+          disabled={saving}
+          className="rounded-full bg-ink px-3 py-1 text-xs text-primary-foreground disabled:opacity-60"
+        >
+          {saving ? "Enregistrement…" : "Enregistrer"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setEdition(false);
+            setChoixId(clientId);
+            setNomLibre(clientNom);
+            setErreur(null);
+          }}
+          className="text-xs text-ink-muted underline"
+        >
+          Annuler
+        </button>
+      </div>
+    </div>
+  );
+}
  * est reprise de la fiche client liée (titulaire et fiche de chaque assuré), et
  * le recueil ne sert qu'à compléter ce qui manque encore.
  */
