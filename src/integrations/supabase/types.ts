@@ -2340,6 +2340,9 @@ export type Database = {
           dossier_id: string
           echelonnement_demande: boolean
           echelonnement_montant_mensuel: number | null
+          echelonnement_partenaire_confirme: boolean
+          echelonnement_partenaire_confirme_le: string | null
+          echelonnement_partenaire_confirme_par: string | null
           email_destinataire: string | null
           envoye_le: string | null
           hash: string | null
@@ -2370,6 +2373,9 @@ export type Database = {
           dossier_id: string
           echelonnement_demande?: boolean
           echelonnement_montant_mensuel?: number | null
+          echelonnement_partenaire_confirme?: boolean
+          echelonnement_partenaire_confirme_le?: string | null
+          echelonnement_partenaire_confirme_par?: string | null
           email_destinataire?: string | null
           envoye_le?: string | null
           hash?: string | null
@@ -2400,6 +2406,9 @@ export type Database = {
           dossier_id?: string
           echelonnement_demande?: boolean
           echelonnement_montant_mensuel?: number | null
+          echelonnement_partenaire_confirme?: boolean
+          echelonnement_partenaire_confirme_le?: string | null
+          echelonnement_partenaire_confirme_par?: string | null
           email_destinataire?: string | null
           envoye_le?: string | null
           hash?: string | null
