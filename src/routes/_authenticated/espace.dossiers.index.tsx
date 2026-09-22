@@ -286,7 +286,7 @@ export function NewDossierForm({
     }
   };
 
-  const branche = getBranche(type)!;
+  const branche = type ? getBranche(type) : undefined;
 
   /** Lit un fichier en base64 (sans le préfixe data:). */
   const enBase64 = (file: File) =>
@@ -779,6 +779,10 @@ export function NewDossierForm({
 
       </div>
     );
+  }
+
+  if (!branche) {
+    return <p className="mt-4 text-sm text-ink-muted">Choisissez une branche d'assurance.</p>;
   }
 
   return (
