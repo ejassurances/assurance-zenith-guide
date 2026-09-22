@@ -4,8 +4,16 @@ import {
   envoyerSouscriptionFn,
   enregistrerRetourCompagnie,
   prerequisSouscriptionFn,
+  canalSouscriptionFn,
+  souscrireHorsApiFn,
 } from "@/lib/souscription.functions";
 import type { ResultatPrerequis } from "@/lib/souscription-prerequis";
+import {
+  MODES_HORS_API,
+  labelCanal,
+  type CanalSouscription,
+  type ModeHorsApi,
+} from "@/lib/souscription-canal";
 
 /**
  * Étape souscription : contrôle de complétude bloquant, transmission à la
@@ -31,6 +39,8 @@ export function SouscriptionPanel({
   const envoyer = useServerFn(envoyerSouscriptionFn);
   const retour = useServerFn(enregistrerRetourCompagnie);
   const lirePrerequis = useServerFn(prerequisSouscriptionFn);
+  const lireCanal = useServerFn(canalSouscriptionFn);
+  const souscrireHorsApi = useServerFn(souscrireHorsApiFn);
 
   const [email, setEmail] = useState(emailCompagnie ?? "");
   const [commentaire, setCommentaire] = useState("");
@@ -39,6 +49,11 @@ export function SouscriptionPanel({
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [prerequis, setPrerequis] = useState<ResultatPrerequis | null>(null);
+  const [canal, setCanal] = useState<CanalSouscription | null>(null);
+  const [numeroHorsApi, setNumeroHorsApi] = useState("");
+  const [dateEffet, setDateEffet] = useState(new Date().toISOString().slice(0, 10));
+  const [primeAnnuelle, setPrimeAnnuelle] = useState("");
+  const [modeHorsApi, setModeHorsApi] = useState<ModeHorsApi>("intranet");
 
   const envoyable = ["devoir_conseil_signe", "souscription_envoyee", "devis_en_cours"].includes(statut);
   const autorise = prerequis?.autorise === true;
@@ -55,6 +70,53 @@ export function SouscriptionPanel({
   useEffect(() => {
     void rafraichirPrerequis();
   }, [rafraichirPrerequis]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = (await lireCanal({ data: { dossier_id: dossierId } })) as {
+          canal: CanalSouscription;
+        };
+        setCanal(res.canal);
+      } catch {
+        setCanal(null);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dossierId]);
+
+  const enregistrerSouscriptionHorsApi = async () => {
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const prime = Number(primeAnnuelle.replace(",", "."));
+      const res = (await souscrireHorsApi({
+        data: {
+          dossier_id: dossierId,
+          numero_contrat: numeroHorsApi.trim(),
+          date_effet: dateEffet,
+          prime_annuelle: Number.isFinite(prime) && prime > 0 ? prime : undefined,
+          mode_transmission: modeHorsApi,
+          commentaire: commentaire.trim() || undefined,
+        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      })) as any;
+      setMessage(
+        res.contrats_ids?.length > 1
+          ? `Souscription enregistrée : ${res.contrats_ids.length} contrats créés au portefeuille (un par assuré).`
+          : "Souscription enregistrée : le contrat est créé au portefeuille.",
+      );
+      setCommentaire("");
+      setNumeroHorsApi("");
+      await rafraichirPrerequis();
+      onChanged();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Enregistrement impossible");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const lancerEnvoi = async (mode: "api" | "intranet") => {
     setBusy(true);
@@ -158,7 +220,86 @@ export function SouscriptionPanel({
         )}
       </div>
 
-      {envoyable && (
+      {canal && (
+        <p className="mt-4 inline-flex rounded-full border border-line bg-surface-2 px-3 py-1 text-xs text-ink">
+          {labelCanal(canal)}
+        </p>
+      )}
+
+      {envoyable && canal === "externe" && (
+        <div className="mt-4 space-y-3 rounded-lg border border-line bg-surface-2 p-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+            Souscription enregistrée hors API
+          </p>
+          <p className="text-xs text-ink-muted">
+            Le devis retenu ne vient pas d'un partenaire connecté : l'adhésion est réalisée
+            directement auprès de la compagnie, puis enregistrée ici pour créer le contrat.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-xs text-ink-muted">
+              N° de contrat / adhésion
+              <input
+                type="text"
+                value={numeroHorsApi}
+                onChange={(e) => setNumeroHorsApi(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
+              />
+            </label>
+            <label className="block text-xs text-ink-muted">
+              Date d'effet
+              <input
+                type="date"
+                value={dateEffet}
+                onChange={(e) => setDateEffet(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
+              />
+            </label>
+            <label className="block text-xs text-ink-muted">
+              Prime annuelle (€, facultatif)
+              <input
+                type="text"
+                inputMode="decimal"
+                value={primeAnnuelle}
+                onChange={(e) => setPrimeAnnuelle(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
+              />
+            </label>
+            <label className="block text-xs text-ink-muted">
+              Mode de transmission
+              <select
+                value={modeHorsApi}
+                onChange={(e) => setModeHorsApi(e.target.value as ModeHorsApi)}
+                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
+              >
+                {MODES_HORS_API.map((m) => (
+                  <option key={m.code} value={m.code}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <label className="block text-xs text-ink-muted">
+            Commentaire (facultatif)
+            <textarea
+              rows={2}
+              value={commentaire}
+              onChange={(e) => setCommentaire(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={enregistrerSouscriptionHorsApi}
+            disabled={busy || !autorise || numeroHorsApi.trim().length === 0}
+            className="rounded-lg bg-ink px-3 py-2 text-sm font-medium text-surface disabled:opacity-50"
+          >
+            {busy ? "Enregistrement…" : "Enregistrer la souscription et créer le contrat"}
+          </button>
+        </div>
+      )}
+
+      {envoyable && canal !== "externe" && (
         <div className="mt-4 space-y-3">
           <label className="block text-xs text-ink-muted">
             Adresse du service souscription (laisser vide pour utiliser celle de la fiche compagnie)
