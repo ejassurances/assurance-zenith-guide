@@ -109,7 +109,9 @@ export const signerDevoirConseil = createServerFn({ method: "POST" })
     // Avancement du pipeline + historique : trigger SQL devoir_conseil_avance_dossier
     // (le client signataire n'a pas les droits RLS sur la table dossiers).
 
-    // Archivage du PDF signé (le client n'a pas de droit d'écriture sur le stockage).
+    // Archivage du PDF signé + tâche automatique pour le cabinet : le client
+    // signataire n'a pas les droits RLS sur le stockage ni sur les tâches,
+    // d'où l'accès admin ici pour les deux.
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { archiverDevoirConseil } = await import("./devoir-conseil-archive.server");
@@ -118,6 +120,24 @@ export const signerDevoirConseil = createServerFn({ method: "POST" })
       // La signature reste valide ; l'échec est tracé et repris par le job
       // nocturne de reprise des PDF DDA (plus d'échec silencieux).
       console.error("[dda] archivage devoir de conseil signé échoué", e);
+    }
+
+    // Tâche automatique : signature reçue, dossier à traiter. Priorité haute
+    // si échelonnement demandé (action requise sur l'intranet partenaire).
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await supabaseAdmin.from("taches").insert({
+        dossier_id: devoir.dossier_id,
+        client_id: devoir.client_id,
+        type: "devoir_conseil",
+        statut: "a_faire",
+        priorite: echelonnementDemande ? "haute" : "normale",
+        titre: echelonnementDemande
+          ? `Devoir de conseil signé — échelonnement 12x à renseigner sur l'intranet partenaire${echelonnementMontantMensuel ? ` (${echelonnementMontantMensuel.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €/mois)` : ""}`
+          : "Devoir de conseil signé par le client — dossier à poursuivre",
+      });
+    } catch (e) {
+      console.error("[dda] création tâche signature devoir de conseil échouée", e);
     }
 
     return { ok: true };

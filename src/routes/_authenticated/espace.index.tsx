@@ -532,7 +532,7 @@ function ActiviteRecente({ isAdmin }: { isAdmin: boolean }) {
           .limit(8),
         supabase
           .from("devoirs_conseil")
-          .select("id,signed_at,refuse_le,client_id,type_assurance,clients(prenom,nom)")
+          .select("id,signed_at,refuse_le,client_id,type_assurance,echelonnement_demande,clients(prenom,nom)")
           .order("updated_at", { ascending: false })
           .limit(8),
       ]);
@@ -646,7 +646,9 @@ function ActiviteRecente({ isAdmin }: { isAdmin: boolean }) {
           type: "signature",
           auteurRole: "client",
           auteurNom: c ? [c.prenom, c.nom].filter(Boolean).join(" ") : null,
-          titre: `Devoir de conseil ${d.signed_at ? "signé" : "refusé"} · ${d.type_assurance}`,
+          titre:
+            `Devoir de conseil ${d.signed_at ? "signé" : "refusé"} · ${d.type_assurance}` +
+            (d.signed_at && d.echelonnement_demande ? " · échelonnement 12x demandé" : ""),
           detail: null,
           clientId: d.client_id,
           clientNom: c ? [c.prenom, c.nom].filter(Boolean).join(" ") : null,
