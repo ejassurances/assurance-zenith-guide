@@ -15,7 +15,7 @@ describe("délai de 45 minutes", () => {
   const recu = new Date("2026-09-22T10:00:00Z");
 
   it("attend exactement 45 minutes", () => {
-    expect(traitableAPartirDe(recu).toISOString()).toBe("2026-09-22T10:45:00Z");
+    expect(traitableAPartirDe(recu).toISOString()).toBe("2026-09-22T10:45:00.000Z");
     expect(DELAI_TRAITEMENT_MINUTES).toBe(45);
   });
 
@@ -24,7 +24,7 @@ describe("délai de 45 minutes", () => {
   });
 
   it("autorise à l'échéance et après", () => {
-    expect(delaiEcoule(recu, new Date("2026-09-22T10:45:00Z"))).toBe(true);
+    expect(delaiEcoule(recu, new Date("2026-09-22T10:45:00.000Z"))).toBe(true);
     expect(delaiEcoule(recu, new Date("2026-09-22T12:00:00Z"))).toBe(true);
   });
 });
