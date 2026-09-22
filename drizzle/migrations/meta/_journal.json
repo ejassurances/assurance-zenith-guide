@@ -15,6 +15,13 @@
       "when": 1790075048692,
       "tag": "0001_devoirs_conseil_echelonnement",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790075349093,
+      "tag": "0002_gmail_inbox_traitement",
+      "breakpoints": true
     }
   ]
 }

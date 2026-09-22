@@ -2066,54 +2066,93 @@ export type Database = {
       crm_emails: {
         Row: {
           ai_context: Json
+          brouillon_id: string | null
           client_id: string | null
           compagnie_id: string | null
+          confiance: number | null
           contrat_id: string | null
           created_at: string
           created_by: string | null
+          decision: string | null
           direction: string
           dossier_id: string | null
+          expediteur_email: string | null
+          expediteur_nom: string | null
           gmail_message_id: string
           gmail_thread_id: string | null
           id: string
+          label_gmail: string | null
+          lien_brouillon: string | null
+          lien_gmail: string | null
+          lien_reponse: string | null
+          motif: string | null
           notes: string | null
           recu_le: string | null
+          statut_traitement: string
+          sujet: string | null
+          traite_le: string | null
           triage_ia: Json | null
           triage_le: string | null
           updated_at: string
         }
         Insert: {
           ai_context?: Json
+          brouillon_id?: string | null
           client_id?: string | null
           compagnie_id?: string | null
+          confiance?: number | null
           contrat_id?: string | null
           created_at?: string
           created_by?: string | null
+          decision?: string | null
           direction?: string
           dossier_id?: string | null
+          expediteur_email?: string | null
+          expediteur_nom?: string | null
           gmail_message_id: string
           gmail_thread_id?: string | null
           id?: string
+          label_gmail?: string | null
+          lien_brouillon?: string | null
+          lien_gmail?: string | null
+          lien_reponse?: string | null
+          motif?: string | null
           notes?: string | null
           recu_le?: string | null
+          statut_traitement?: string
+          sujet?: string | null
+          traite_le?: string | null
           triage_ia?: Json | null
           triage_le?: string | null
           updated_at?: string
         }
         Update: {
           ai_context?: Json
+          brouillon_id?: string | null
           client_id?: string | null
           compagnie_id?: string | null
+          confiance?: number | null
           contrat_id?: string | null
           created_at?: string
           created_by?: string | null
+          decision?: string | null
           direction?: string
           dossier_id?: string | null
+          expediteur_email?: string | null
+          expediteur_nom?: string | null
           gmail_message_id?: string
           gmail_thread_id?: string | null
           id?: string
+          label_gmail?: string | null
+          lien_brouillon?: string | null
+          lien_gmail?: string | null
+          lien_reponse?: string | null
+          motif?: string | null
           notes?: string | null
           recu_le?: string | null
+          statut_traitement?: string
+          sujet?: string | null
+          traite_le?: string | null
           triage_ia?: Json | null
           triage_le?: string | null
           updated_at?: string
@@ -2460,8 +2499,10 @@ export type Database = {
           created_at: string
           date_expiration: string | null
           dossier_id: string | null
+          empreinte_fichier: string | null
           file_name: string
           file_size: number | null
+          gmail_message_id: string | null
           id: string
           mime_type: string | null
           rappel_expiration_envoye_le: string | null
@@ -2479,8 +2520,10 @@ export type Database = {
           created_at?: string
           date_expiration?: string | null
           dossier_id?: string | null
+          empreinte_fichier?: string | null
           file_name: string
           file_size?: number | null
+          gmail_message_id?: string | null
           id?: string
           mime_type?: string | null
           rappel_expiration_envoye_le?: string | null
@@ -2498,8 +2541,10 @@ export type Database = {
           created_at?: string
           date_expiration?: string | null
           dossier_id?: string | null
+          empreinte_fichier?: string | null
           file_name?: string
           file_size?: number | null
+          gmail_message_id?: string | null
           id?: string
           mime_type?: string | null
           rappel_expiration_envoye_le?: string | null
@@ -3301,6 +3346,53 @@ export type Database = {
             columns: ["tiers_id"]
             isOneToOne: false
             referencedRelation: "tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_decisions: {
+        Row: {
+          confiance: number | null
+          created_at: string
+          crm_email_id: string
+          decision: string
+          gmail_message_id: string
+          id: string
+          label_gmail: string | null
+          motif: string | null
+          origine: string
+          par: string | null
+        }
+        Insert: {
+          confiance?: number | null
+          created_at?: string
+          crm_email_id: string
+          decision: string
+          gmail_message_id: string
+          id?: string
+          label_gmail?: string | null
+          motif?: string | null
+          origine?: string
+          par?: string | null
+        }
+        Update: {
+          confiance?: number | null
+          created_at?: string
+          crm_email_id?: string
+          decision?: string
+          gmail_message_id?: string
+          id?: string
+          label_gmail?: string | null
+          motif?: string | null
+          origine?: string
+          par?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_decisions_crm_email_id_fkey"
+            columns: ["crm_email_id"]
+            isOneToOne: false
+            referencedRelation: "crm_emails"
             referencedColumns: ["id"]
           },
         ]
