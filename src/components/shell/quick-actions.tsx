@@ -313,6 +313,7 @@ function ModaleAppel({ onClose }: { onClose: () => void }) {
 const AJOUTS = [
   { label: "Nouveau client", to: "/espace/clients", icon: IconUserPlus },
   { label: "Nouveau dossier", to: "/espace/dossiers", icon: IconFolderPlus },
+  { label: "Pré-qualification rapide", to: "/espace/prequalification", icon: IconMail },
   { label: "Nouveau sinistre", to: "/espace/sinistres", icon: IconShieldExclamation },
   { label: "Nouveau contrat suivi", to: "/espace/clients", icon: IconFileText },
 ] as const;

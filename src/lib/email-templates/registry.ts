@@ -484,7 +484,41 @@ function EspaceClientMiseEnPlaceEmail(props: { prenom?: string }) {
   );
 }
 
+function PrequalificationEmprunteurEmail(props: { prenom?: string; cabinetName?: string }) {
+  const nom = props.cabinetName || "EJ Partners Assurances";
+  const html =
+    "<p>Bonjour " +
+    (props.prenom || "") +
+    ",</p>" +
+    "<p>Suite a notre echange, je reviens vers vous pour lancer l'etude de votre assurance de pret.</p>" +
+    "<p>Pour vous proposer les meilleures conditions, j'ai besoin des elements suivants :</p>" +
+    "<ul>" +
+    "<li>Votre offre de pret (ou a defaut le tableau d'amortissement)</li>" +
+    "<li>Une copie de votre carte d'identite</li>" +
+    "<li>Un justificatif de domicile</li>" +
+    "<li>Votre date de naissance (sauf si la carte d'identite nous est transmise)</li>" +
+    "<li>Si vous etes fumeur ou non</li>" +
+    "<li>Votre profession</li>" +
+    "<li>Si vous parcourez plus de 20 000 km par an dans le cadre de votre activite</li>" +
+    "<li>Toute autre information que vous jugez utile pour cette etude</li>" +
+    "</ul>" +
+    "<p>Vous pouvez me transmettre l'ensemble de ces elements directement en reponse a ce mail.</p>" +
+    "<p>Cordialement,<br/>Erwan Jaffrelot<br/>" +
+    nom +
+    "</p>";
+  const style = { fontFamily: "Arial, sans-serif", color: "#1a1a1a", fontSize: "15px", lineHeight: "1.6" };
+  return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
+}
+
 export const TEMPLATES: Record<string, TemplateEntry> = {
+  "prequalification-emprunteur": {
+    component: PrequalificationEmprunteurEmail,
+    subject: (data: Record<string, any>) =>
+      "Votre etude assurance emprunteur — " + (data && data.reference ? data.reference : ""),
+    displayName: "Pre-qualification - Assurance emprunteur",
+    previewData: { prenom: "Jean", reference: "EJ-2026-EMP-0001" },
+  },
+
   "espace-client-mise-en-place": {
     component: EspaceClientMiseEnPlaceEmail,
     subject: "Votre espace client EJ Partners Assurances — mise à jour de votre dossier",
