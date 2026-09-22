@@ -12,6 +12,7 @@ import {
 import { grillePourFamille, synthetiserGaranties, type ValeursGrille } from "@/lib/garanties-grille";
 import { assuresDevoirConseil } from "@/lib/devoir-conseil-assures.server";
 import { echeancierDepuisRecueil } from "@/lib/echeancier-comparatif";
+import { calculerFraisCourtage } from "@/lib/frais-courtage";
 
 export type DevoirConseilSaisie = {
   recommandation: string;
@@ -259,6 +260,47 @@ export async function envoyerDevoirConseil(
       ]
     : modele.mentionsLegales;
 
+  // Assurés, échéancier et frais de courtage : calculés une fois ici, jamais
+  // repris tels quels depuis la saisie côté client pour le montant financier
+  // (le frais de courtage n'est JAMAIS une valeur saisie à la main).
+  const assuresListe = await assuresDevoirConseil(supabase, dossierId, d);
+  const echeancierBrut =
+    d.type_assurance === "emprunteur"
+      ? echeancierDepuisRecueil(
+          (d.recueil_besoins ?? {}) as Record<string, unknown>,
+          {
+            mensuelle: saisie.cotisation_mensuelle ?? null,
+            type_cotisation: saisie.type_cotisation ?? null,
+          },
+          d.created_at ?? null,
+          { courtage: null, dossier: saisie.frais_dossier ?? null, adhesion: saisie.frais_adhesion ?? null },
+        )
+      : null;
+  const fraisCourtageResultat = echeancierBrut
+    ? calculerFraisCourtage({
+        economieBrute: echeancierBrut.economie_brute,
+        nbAssures: Math.max(1, assuresListe.length),
+        fraisDossierPartenaire: saisie.frais_dossier ?? 0,
+        fraisAdhesionPartenaire: saisie.frais_adhesion ?? 0,
+      })
+    : null;
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  const echeancierComparatif =
+    echeancierBrut && fraisCourtageResultat
+      ? {
+          ...echeancierBrut,
+          frais_totaux: r2(
+            fraisCourtageResultat.montant + (saisie.frais_dossier ?? 0) + (saisie.frais_adhesion ?? 0),
+          ),
+          economie_nette: r2(
+            echeancierBrut.economie_brute -
+              fraisCourtageResultat.montant -
+              (saisie.frais_dossier ?? 0) -
+              (saisie.frais_adhesion ?? 0),
+          ),
+        }
+      : echeancierBrut;
+
   const contenu = {
     cabinet: {
       nom: SITE.name,
@@ -279,7 +321,7 @@ export async function envoyerDevoirConseil(
       type_assurance: d.type_assurance,
     },
     recueil_besoins: d.recueil_besoins ?? {},
-    conseil: saisie,
+    conseil: { ...saisie, frais_courtage: fraisCourtageResultat?.montant ?? saisie.frais_courtage ?? null },
     garanties_produit: {
       famille_code: garanties.grille.familleCode,
       grille_version: garanties.grille.version,
@@ -302,29 +344,15 @@ export async function envoyerDevoirConseil(
      * assuré est restitué avec son identité, sa quotité, ses exigences propres
      * et l'assurance qui le concerne (contrat en cours ou devis retenu).
      */
-    assures: await assuresDevoirConseil(supabase, dossierId, d),
+    assures: assuresListe,
 
     /**
      * Emprunteur : échéancier comparatif à partir du mois prévu de la
-     * substitution — échéance du prêt, intérêts, capital amorti, assurance de la
-     * banque, notre assurance, prélèvements totaux et différentiel mensuel.
+     * substitution — échéance du prêt, assurance de la banque, notre
+     * assurance, prélèvements totaux et économie réalisée. Frais de courtage
+     * calculés automatiquement (voir plus haut), jamais saisis à la main.
      */
-    echeancier_comparatif:
-      d.type_assurance === "emprunteur"
-        ? echeancierDepuisRecueil(
-            (d.recueil_besoins ?? {}) as Record<string, unknown>,
-            {
-              mensuelle: saisie.cotisation_mensuelle ?? null,
-              type_cotisation: saisie.type_cotisation ?? null,
-            },
-            d.created_at ?? null,
-            {
-              courtage: saisie.frais_courtage ?? null,
-              dossier: saisie.frais_dossier ?? null,
-              adhesion: saisie.frais_adhesion ?? null,
-            },
-          )
-        : null,
+    echeancier_comparatif: echeancierComparatif,
 
 
     modele: modele.branche,

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { echeancierDepuisRecueil, regrouperEcheancierParAnnee } from "@/lib/echeancier-comparatif";
+import { calculerFraisCourtage } from "@/lib/frais-courtage";
+import { assuresEmprunteur } from "@/lib/recueil-besoins-schemas";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { catalogueOffreUniqueFn, envoyerDevoirConseilFn, pdfDevoirConseil } from "@/lib/devoir-conseil.functions";
@@ -328,7 +330,7 @@ export function DevoirConseilPanel({
         },
         dossier?.created_at ?? null,
         {
-          courtage: form.frais_courtage ? Number(form.frais_courtage) : null,
+          courtage: null,
           dossier: form.frais_dossier ? Number(form.frais_dossier) : null,
           adhesion: form.frais_adhesion ? Number(form.frais_adhesion) : null,
         },
@@ -338,11 +340,50 @@ export function DevoirConseilPanel({
       dossier?.created_at,
       form.cotisation_mensuelle,
       form.type_cotisation,
-      form.frais_courtage,
       form.frais_dossier,
       form.frais_adhesion,
     ],
   );
+
+  /**
+   * Frais de courtage (= frais de distribution) : calculés automatiquement,
+   * jamais saisis à la main — 10 % de l'économie brute, plancher 175 € par
+   * assuré, déduction de la part partenaire (dossier + adhésion) au-delà du
+   * plancher, sans jamais redescendre sous ce plancher.
+   */
+  const nbAssures = useMemo(() => {
+    const liste = assuresEmprunteur(dossier?.recueil_besoins?.["assures"]);
+    return Math.max(1, liste.length);
+  }, [dossier?.recueil_besoins]);
+
+  const fraisCourtageCalc = useMemo(
+    () =>
+      calculerFraisCourtage({
+        economieBrute: echeancier.economie_brute || null,
+        nbAssures,
+        fraisDossierPartenaire: form.frais_dossier ? Number(form.frais_dossier) : 0,
+        fraisAdhesionPartenaire: form.frais_adhesion ? Number(form.frais_adhesion) : 0,
+      }),
+    [echeancier.economie_brute, nbAssures, form.frais_dossier, form.frais_adhesion],
+  );
+
+  // Synchronise form.frais_courtage sur le montant calculé, pour que tous les
+  // usages existants (sauvegarde, PDF, affichage) restent corrects sans
+  // dupliquer la logique de calcul à chaque endroit.
+  useEffect(() => {
+    const calcule = fraisCourtageCalc ? String(fraisCourtageCalc.montant) : "";
+    setForm((f) => (f.frais_courtage === calcule ? f : { ...f, frais_courtage: calcule }));
+  }, [fraisCourtageCalc]);
+
+  const economieNette = useMemo(() => {
+    if (!fraisCourtageCalc) return echeancier.economie_brute;
+    return (
+      echeancier.economie_brute -
+      fraisCourtageCalc.montant -
+      Number(form.frais_dossier || 0) -
+      Number(form.frais_adhesion || 0)
+    );
+  }, [echeancier.economie_brute, fraisCourtageCalc, form.frais_dossier, form.frais_adhesion]);
 
 
   /** Reprend les données du recueil de besoins (capital, CRD, quotité, durée, exigences). */
@@ -1042,13 +1083,23 @@ export function DevoirConseilPanel({
                 className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
               />
             </Field>
-            <Field label="Frais de courtage (€)">
-              <input
-                type="number"
-                value={form.frais_courtage}
-                onChange={(e) => setForm({ ...form, frais_courtage: e.target.value })}
-                className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
-              />
+            <Field label="Frais de courtage / distribution (€) — calculés automatiquement">
+              <div className="w-full rounded-md border border-line bg-muted/40 px-3 py-2 text-sm">
+                {fraisCourtageCalc ? (
+                  <>
+                    <span className="font-semibold">{eur(fraisCourtageCalc.montant)}</span>
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {fraisCourtageCalc.planchierApplique
+                        ? `(plancher 175 € × ${nbAssures} assuré${nbAssures > 1 ? "s" : ""} — 10 % de l'économie était inférieur au plancher)`
+                        : `(10 % de l'économie = ${eur(fraisCourtageCalc.base)}, dont ${eur(fraisCourtageCalc.partPartenaireDeduite)} déduits pour le partenaire)`}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-xs text-muted-foreground">
+                    Calcul indisponible : l'économie brute doit être connue (échéancier renseigné plus bas).
+                  </span>
+                )}
+              </div>
             </Field>
             <Field label="Frais d'adhésion (€)">
               <input
@@ -1190,11 +1241,11 @@ export function DevoirConseilPanel({
                   </p>
                   <p
                     className={`text-base font-semibold ${
-                      echeancier.economie_nette >= 0 ? "text-emerald-600" : "text-red-600"
+                      economieNette >= 0 ? "text-emerald-600" : "text-red-600"
                     }`}
                   >
-                    {echeancier.economie_nette >= 0 ? "" : "-"}
-                    {eur(Math.abs(echeancier.economie_nette))}
+                    {economieNette >= 0 ? "" : "-"}
+                    {eur(Math.abs(economieNette))}
                   </p>
                 </div>
               </div>
