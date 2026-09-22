@@ -2,7 +2,6 @@ import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tan
 import { useEffect, useMemo, useState } from "react";
 import { IconChecklist, IconInbox, IconSettings } from "@tabler/icons-react";
 
-import { DomainRail } from "@/components/shell/domain-rail";
 import { GlobalSearch } from "@/components/shell/global-search";
 import { IconAction, IconActionLink } from "@/components/shell/icon-action";
 import { QuickActions } from "@/components/shell/quick-actions";
@@ -143,12 +142,12 @@ function EspaceLayout() {
         void signOut();
       }}
       title={`${user?.email ?? ""} — Se déconnecter`}
-      className="flex w-full flex-col items-center gap-1 rounded-sm px-1 py-2 text-white/50 transition-colors hover:bg-white/5 hover:text-white"
+      className="flex w-full items-center gap-2 rounded-sm px-1 py-2 text-ink-muted transition-colors hover:bg-surface hover:text-ink"
     >
-      <span className="flex size-8 items-center justify-center rounded-full border border-[color:var(--crm-gold)]/40 bg-[color:var(--crm-gold)]/15 text-[10px] font-bold text-[color:var(--crm-gold)]">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-[color:var(--crm-gold)]/40 bg-[color:var(--crm-gold)]/15 text-[10px] font-bold text-[color:var(--crm-gold)]">
         {initiales || "EJ"}
       </span>
-      <span className="text-[9px] font-semibold uppercase tracking-[0.08em] leading-none">Quitter</span>
+      <span className="text-xs font-semibold uppercase tracking-[0.08em]">Quitter</span>
     </button>
   );
 
@@ -164,22 +163,25 @@ function EspaceLayout() {
         />
       )}
 
-      {/* Niveaux 1 et 2 : rail des domaines + colonne des modules */}
+      {/* Colonne unique de navigation (domaine + modules fusionnés) */}
       <div
         className={
           "fixed inset-y-0 left-0 z-40 flex transition-transform duration-200 lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:translate-x-0 " +
           (menuOuvert ? "translate-x-0" : "-translate-x-full")
         }
       >
-        <DomainRail
-          domaines={domaines}
-          reglages={reglages}
-          actif={domaine?.key ?? null}
-          onSelect={ouvrirDomaine}
-          header={logo}
-          footer={avatar}
-        />
-        {domaine && <ModuleColumn domaine={domaine} pathname={pathname} onNavigate={() => setMenuOuvert(false)} />}
+        {domaine && (
+          <ModuleColumn
+            domaine={domaine}
+            domaines={domaines}
+            reglages={reglages}
+            pathname={pathname}
+            onSelectDomaine={ouvrirDomaine}
+            onNavigate={() => setMenuOuvert(false)}
+            header={logo}
+            footer={avatar}
+          />
+        )}
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">

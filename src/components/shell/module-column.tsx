@@ -1,6 +1,8 @@
 /**
- * Colonne des modules et sous-modules du domaine sélectionné (niveaux 2 et 3).
- * Les entrées du périmètre cible non développé sont affichées désactivées.
+ * Colonne unique de navigation (fusion de l'ancien rail de domaines et de la
+ * colonne des modules) : sélecteur de domaine en haut, puis modules et
+ * sous-modules du domaine choisi. Les entrées du périmètre cible non
+ * développé sont affichées désactivées.
  */
 import { Link } from "@tanstack/react-router";
 
@@ -8,19 +10,52 @@ import type { NavDomain } from "@/lib/navigation";
 
 export function ModuleColumn({
   domaine,
+  domaines,
+  reglages,
   pathname,
+  onSelectDomaine,
   onNavigate,
+  header,
+  footer,
 }: {
   domaine: NavDomain;
+  domaines: NavDomain[];
+  reglages: NavDomain | null;
   pathname: string;
+  onSelectDomaine: (domaine: NavDomain) => void;
   onNavigate?: () => void;
+  header?: React.ReactNode;
+  footer?: React.ReactNode;
 }) {
   const estActif = (to: string, exact?: boolean) =>
     exact ? pathname === to : pathname === to || pathname.startsWith(to + "/");
 
+  const toutes = reglages ? [...domaines, reglages] : domaines;
+
   return (
-    <div className="flex h-full w-[calc(100vw-76px)] max-w-[17rem] shrink-0 flex-col overflow-y-auto border-r border-line bg-surface-elevated sm:w-64">
-      <h2 className="px-5 pb-5 pt-5 font-serif text-lg font-semibold leading-snug text-ink">{domaine.label}</h2>
+    <div className="flex h-full w-[min(88vw,17rem)] shrink-0 flex-col overflow-y-auto border-r border-line bg-surface-elevated">
+      {header && <div className="flex justify-center px-5 pt-5">{header}</div>}
+
+      <div className="px-5 pb-5 pt-5">
+        <label htmlFor="selecteur-domaine" className="crm-eyebrow">
+          Domaine
+        </label>
+        <select
+          id="selecteur-domaine"
+          value={domaine.key}
+          onChange={(e) => {
+            const cible = toutes.find((d) => d.key === e.target.value);
+            if (cible) onSelectDomaine(cible);
+          }}
+          className="mt-1 w-full rounded-lg border border-line bg-background px-2 py-2 font-serif text-lg font-semibold text-ink"
+        >
+          {toutes.map((d) => (
+            <option key={d.key} value={d.key}>
+              {d.label}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {domaine.modules.map((m) => (
         <section key={m.module} className="pb-5">
@@ -70,6 +105,8 @@ export function ModuleColumn({
           </ul>
         </section>
       ))}
+
+      {footer && <div className="mt-auto border-t border-line px-5 py-3">{footer}</div>}
     </div>
   );
 }
