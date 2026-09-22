@@ -7,6 +7,7 @@ const complet: EntreePrerequis = {
   devis_actifs: 1,
   devoir_conseil_signe_le: "2026-08-20T10:00:00.000Z",
   devoir_conseil_refuse: false,
+  devoir_conseil_compagnie_recu: false,
   pieces_manquantes: [],
   pieces_a_qualifier: [],
 };
