@@ -97,5 +97,9 @@ export const LABELS_CREABLES: readonly string[] = [
   DIRECTION_CONFORMITE,
   ARCHIVE,
   A_VALIDER,
+  // Trois états du traitement de la boîte de réception principale.
+  "01_Brouillon_IA_A_Relire",
+  "02_Alerte_Humain_A_Traiter",
+  "03_Archives_Traitees",
 ];
 
