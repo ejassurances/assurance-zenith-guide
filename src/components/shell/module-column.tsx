@@ -20,8 +20,7 @@ export function ModuleColumn({
 
   return (
     <div className="flex h-full w-[calc(100vw-76px)] max-w-[17rem] shrink-0 flex-col overflow-y-auto border-r border-line bg-surface-elevated sm:w-64">
-      <p className="crm-eyebrow px-5 pb-1 pt-5">Domaine</p>
-      <h2 className="px-5 pb-5 font-serif text-lg font-semibold leading-snug text-ink">{domaine.label}</h2>
+      <h2 className="px-5 pb-5 pt-5 font-serif text-lg font-semibold leading-snug text-ink">{domaine.label}</h2>
 
       {domaine.modules.map((m) => (
         <section key={m.module} className="pb-5">
