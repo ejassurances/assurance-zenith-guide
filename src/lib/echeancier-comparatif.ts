@@ -48,6 +48,16 @@ export interface EcheancierComparatif {
   total_assurance_nouvelle: number;
   /** Négatif = économie totale sur la période restante. */
   total_differentiel: number;
+  /** Économie sur les seules cotisations d'assurance, sur toute la durée résiduelle
+   *  du prêt à compter de la substitution. Positif = économie réelle pour le client ;
+   *  négatif = la nouvelle assurance coûte in fine plus cher (cas honnêtement signalé,
+   *  jamais masqué). = -total_differentiel. */
+  economie_brute: number;
+  /** Somme des frais ponctuels (courtage + dossier + adhésion) — déduits une seule
+   *  fois, jamais étalés sur la durée : ce sont des frais uniques, pas mensuels. */
+  frais_totaux: number;
+  /** economie_brute - frais_totaux. */
+  economie_nette: number;
 }
 
 export interface EcheancierEntree {
@@ -63,6 +73,10 @@ export interface EcheancierEntree {
   /** Cotisation mensuelle de la nouvelle assurance (moyenne si CRD). */
   assurance_nouvelle_mensuelle?: number | null;
   type_cotisation?: "CI" | "CRD" | null;
+  /** Frais ponctuels du nouveau contrat, déduits de l'économie brute pour obtenir la nette. */
+  frais_courtage?: number | null;
+  frais_dossier?: number | null;
+  frais_adhesion?: number | null;
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -143,6 +157,9 @@ const VIDE: EcheancierComparatif = {
   total_assurance_initiale: 0,
   total_assurance_nouvelle: 0,
   total_differentiel: 0,
+  economie_brute: 0,
+  frais_totaux: 0,
+  economie_nette: 0,
 };
 
 /**
@@ -204,13 +221,21 @@ export function echeancierComparatif(e: EcheancierEntree): EcheancierComparatif 
   }
 
   const somme = (f: (l: LigneEcheancier) => number) => r2(lignes.reduce((s, l) => s + f(l), 0));
+  const totalDifferentiel = somme((l) => l.differentiel);
+  const fraisTotaux = r2(
+    (nb(e.frais_courtage) ?? 0) + (nb(e.frais_dossier) ?? 0) + (nb(e.frais_adhesion) ?? 0),
+  );
+  const economieBrute = r2(-totalDifferentiel);
   return {
     lignes,
     type_cotisation: e.type_cotisation ?? null,
     date_effet: situation.date_effet,
     total_assurance_initiale: somme((l) => l.assurance_initiale),
     total_assurance_nouvelle: somme((l) => l.assurance_nouvelle),
-    total_differentiel: somme((l) => l.differentiel),
+    total_differentiel: totalDifferentiel,
+    economie_brute: economieBrute,
+    frais_totaux: fraisTotaux,
+    economie_nette: r2(economieBrute - fraisTotaux),
   };
 }
 
@@ -219,6 +244,7 @@ export function echeancierDepuisRecueil(
   recueil: Record<string, unknown> | null | undefined,
   nouvelle: { mensuelle: number | null; type_cotisation: "CI" | "CRD" | null },
   dossierCreeLe?: string | null,
+  frais?: { courtage?: number | null; dossier?: number | null; adhesion?: number | null },
 ): EcheancierComparatif {
   const r = recueil ?? {};
   const s = (k: string) => (typeof r[k] === "string" ? (r[k] as string) : null);
@@ -238,5 +264,8 @@ export function echeancierDepuisRecueil(
     assurance_initiale_mensuelle: assInit,
     assurance_nouvelle_mensuelle: nouvelle.mensuelle,
     type_cotisation: nouvelle.type_cotisation,
+    frais_courtage: frais?.courtage ?? null,
+    frais_dossier: frais?.dossier ?? null,
+    frais_adhesion: frais?.adhesion ?? null,
   });
 }

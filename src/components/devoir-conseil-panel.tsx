@@ -327,8 +327,21 @@ export function DevoirConseilPanel({
           type_cotisation: form.type_cotisation || null,
         },
         dossier?.created_at ?? null,
+        {
+          courtage: form.frais_courtage ? Number(form.frais_courtage) : null,
+          dossier: form.frais_dossier ? Number(form.frais_dossier) : null,
+          adhesion: form.frais_adhesion ? Number(form.frais_adhesion) : null,
+        },
       ),
-    [dossier?.recueil_besoins, dossier?.created_at, form.cotisation_mensuelle, form.type_cotisation],
+    [
+      dossier?.recueil_besoins,
+      dossier?.created_at,
+      form.cotisation_mensuelle,
+      form.type_cotisation,
+      form.frais_courtage,
+      form.frais_dossier,
+      form.frais_adhesion,
+    ],
   );
 
 
@@ -1139,18 +1152,59 @@ export function DevoirConseilPanel({
               </div>
               <div className="border-t border-line px-3 py-2 text-xs">
                 Assurance de la banque : {eur(echeancier.total_assurance_initiale)} — assurance
-                proposée : {eur(echeancier.total_assurance_nouvelle)} —{" "}
-                <span
-                  className={
-                    echeancier.total_differentiel > 0
-                      ? "font-semibold text-red-600"
-                      : "font-semibold text-emerald-600"
-                  }
-                >
-                  {echeancier.total_differentiel > 0 ? "surcoût " : "économie "}
-                  {eur(Math.abs(echeancier.total_differentiel))}
-                </span>{" "}
-                sur la période restante.
+                proposée : {eur(echeancier.total_assurance_nouvelle)} sur la période restante.
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-lg border border-line">
+              <div className="border-b border-line px-3 py-2">
+                <p className="text-sm font-semibold">Conditions financières</p>
+                <p className="text-xs text-muted-foreground">
+                  Frais ponctuels du nouveau contrat — jamais étalés sur la durée, déduits une
+                  seule fois de l'économie brute pour obtenir l'économie nette.
+                </p>
+              </div>
+              <div className="grid grid-cols-3 divide-x divide-line text-sm">
+                <div className="px-3 py-2">
+                  <p className="text-xs text-muted-foreground">Frais de courtage</p>
+                  <p className="font-medium">{eur(Number(form.frais_courtage || 0))}</p>
+                </div>
+                <div className="px-3 py-2">
+                  <p className="text-xs text-muted-foreground">Frais de dossier</p>
+                  <p className="font-medium">{eur(Number(form.frais_dossier || 0))}</p>
+                </div>
+                <div className="px-3 py-2">
+                  <p className="text-xs text-muted-foreground">Frais d'adhésion</p>
+                  <p className="font-medium">{eur(Number(form.frais_adhesion || 0))}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 divide-x divide-line border-t border-line text-sm">
+                <div className="px-3 py-3">
+                  <p className="text-xs text-muted-foreground">
+                    Économie brute (cotisations seules, sur la durée résiduelle)
+                  </p>
+                  <p
+                    className={`text-base font-semibold ${
+                      echeancier.economie_brute >= 0 ? "text-emerald-600" : "text-red-600"
+                    }`}
+                  >
+                    {echeancier.economie_brute >= 0 ? "" : "-"}
+                    {eur(Math.abs(echeancier.economie_brute))}
+                  </p>
+                </div>
+                <div className="px-3 py-3">
+                  <p className="text-xs text-muted-foreground">
+                    Économie nette (après frais de courtage, dossier, adhésion)
+                  </p>
+                  <p
+                    className={`text-base font-semibold ${
+                      echeancier.economie_nette >= 0 ? "text-emerald-600" : "text-red-600"
+                    }`}
+                  >
+                    {echeancier.economie_nette >= 0 ? "" : "-"}
+                    {eur(Math.abs(echeancier.economie_nette))}
+                  </p>
+                </div>
               </div>
             </div>
           )}
