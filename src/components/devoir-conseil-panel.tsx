@@ -695,8 +695,9 @@ export function DevoirConseilPanel({
               {devoir.echelonnement_montant_mensuel
                 ? ` (+${Number(devoir.echelonnement_montant_mensuel).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} € / mois pendant 12 mois)`
                 : ""}
-              . Sur l'intranet du partenaire, les frais de distribution sont toujours saisis en une fois — c'est
-              au cabinet de suivre le remboursement échelonné au client, pas au partenaire.
+              . Pensez à l'indiquer sur l'intranet du partenaire, afin qu'il prélève bien les frais de
+              distribution en 12 fois plutôt qu'en une seule fois. Les frais de dossier, eux, restent prélevés
+              en une seule fois.
             </p>
           )}
           {devoir.refuse_le && (
