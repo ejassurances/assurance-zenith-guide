@@ -30,8 +30,9 @@ export function domaineDeEmail(email: string | null | undefined): string | null 
   return m ? m[1]!.replace(/^www\./, "") : null;
 }
 
-/** Vrai uniquement pour une adresse d'un domaine du cabinet. */
+/** Vrai pour un domaine du cabinet ou une adresse personnelle répertoriée. */
 export function estEmailInterne(email: string | null | undefined): boolean {
+  if (estAdresseInterneNominative(email)) return true;
   const d = domaineDeEmail(email);
   if (!d) return false;
   return DOMAINES_INTERNES.some((x) => d === x || d.endsWith(`.${x}`));
