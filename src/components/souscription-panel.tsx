@@ -76,13 +76,14 @@ export function SouscriptionPanel({
     setDepotDcCompagnie(true);
     setError(null);
     try {
+      if (!user?.id) throw new Error("Session requise pour déposer un document");
       const safeName = file.name.replace(/[^\w.\-]+/g, "_").slice(0, 120);
       const path = `${dossierId}/${Date.now()}-${safeName}`;
       const { error: upErr } = await supabase.storage.from("dossier-documents").upload(path, file);
       if (upErr) throw upErr;
       const { error: dbErr } = await supabase.from("documents").insert({
         dossier_id: dossierId,
-        uploader_id: user?.id ?? null,
+        uploader_id: user.id,
         storage_path: path,
         file_name: file.name.slice(0, 200),
         file_size: file.size,
