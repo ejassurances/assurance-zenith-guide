@@ -40,6 +40,8 @@ export interface ResultatTraitementInbox {
   alertes: number;
   archives: number;
   ignores_deja_traites: number;
+  pieces_deposees: number;
+  pieces_a_classer: number;
 }
 
 interface Rattachement {
