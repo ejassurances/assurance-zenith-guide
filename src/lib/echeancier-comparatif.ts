@@ -98,6 +98,7 @@ export type LigneVueEcheancier =
       type: "annee";
       annee: number;
       nb_mois: number;
+      echeance: number;
       interets: number;
       capital: number;
       assurance_initiale: number;
@@ -137,6 +138,7 @@ export function regrouperEcheancierParAnnee(
       type: "annee",
       annee,
       nb_mois: groupe.length,
+      echeance: somme((l) => l.echeance),
       interets: somme((l) => l.interets),
       capital: somme((l) => l.capital),
       assurance_initiale: somme((l) => l.assurance_initiale),

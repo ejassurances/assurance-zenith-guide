@@ -1094,15 +1094,12 @@ export function DevoirConseilPanel({
                 <table className="w-full text-right text-xs">
                   <thead className="sticky top-0 bg-muted">
                     <tr>
-                      <th className="px-2 py-1 text-left font-medium">Échéance</th>
-                      <th className="px-2 py-1 font-medium">Mensualité</th>
-                      <th className="px-2 py-1 font-medium">Intérêts</th>
-                      <th className="px-2 py-1 font-medium">Capital</th>
-                      <th className="px-2 py-1 font-medium">Assur. banque</th>
-                      <th className="px-2 py-1 font-medium">Nouvelle assur.</th>
-                      <th className="px-2 py-1 font-medium">Total actuel</th>
-                      <th className="px-2 py-1 font-medium">Total proposé</th>
-                      <th className="px-2 py-1 font-medium">Différentiel</th>
+                      <th className="px-2 py-1 text-left font-medium">Date d'échéance</th>
+                      <th className="px-2 py-1 font-medium">Échéance banque (hors assurance)</th>
+                      <th className="px-2 py-1 font-medium">Assurance banque</th>
+                      <th className="px-2 py-1 font-medium">Total</th>
+                      <th className="px-2 py-1 font-medium">Assurance EJ Assurances</th>
+                      <th className="px-2 py-1 font-medium">Économie réalisée</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1113,17 +1110,14 @@ export function DevoirConseilPanel({
                             {v.ligne.date.split("-").reverse().join("/")}
                           </td>
                           <td className="px-2 py-1">{eur(v.ligne.echeance)}</td>
-                          <td className="px-2 py-1">{eur(v.ligne.interets)}</td>
-                          <td className="px-2 py-1">{eur(v.ligne.capital)}</td>
                           <td className="px-2 py-1">{eur(v.ligne.assurance_initiale)}</td>
-                          <td className="px-2 py-1">{eur(v.ligne.assurance_nouvelle)}</td>
                           <td className="px-2 py-1">{eur(v.ligne.total_actuel)}</td>
-                          <td className="px-2 py-1">{eur(v.ligne.total_nouveau)}</td>
+                          <td className="px-2 py-1">{eur(v.ligne.assurance_nouvelle)}</td>
                           <td
                             className={`px-2 py-1 font-semibold ${v.ligne.differentiel > 0 ? "text-red-600" : "text-emerald-600"}`}
                           >
-                            {v.ligne.differentiel > 0 ? "+" : ""}
-                            {eur(v.ligne.differentiel)}
+                            {v.ligne.differentiel > 0 ? "-" : ""}
+                            {eur(Math.abs(v.ligne.differentiel))}
                           </td>
                         </tr>
                       ) : (
@@ -1131,18 +1125,15 @@ export function DevoirConseilPanel({
                           <td className="px-2 py-1 text-left">
                             Année {v.annee} ({v.nb_mois} mois)
                           </td>
-                          <td className="px-2 py-1">—</td>
-                          <td className="px-2 py-1">{eur(v.interets)}</td>
-                          <td className="px-2 py-1">{eur(v.capital)}</td>
+                          <td className="px-2 py-1">{eur(v.echeance)}</td>
                           <td className="px-2 py-1">{eur(v.assurance_initiale)}</td>
-                          <td className="px-2 py-1">{eur(v.assurance_nouvelle)}</td>
                           <td className="px-2 py-1">{eur(v.total_actuel)}</td>
-                          <td className="px-2 py-1">{eur(v.total_nouveau)}</td>
+                          <td className="px-2 py-1">{eur(v.assurance_nouvelle)}</td>
                           <td
                             className={`px-2 py-1 font-semibold ${v.differentiel > 0 ? "text-red-600" : "text-emerald-600"}`}
                           >
-                            {v.differentiel > 0 ? "+" : ""}
-                            {eur(v.differentiel)}
+                            {v.differentiel > 0 ? "-" : ""}
+                            {eur(Math.abs(v.differentiel))}
                           </td>
                         </tr>
                       ),
