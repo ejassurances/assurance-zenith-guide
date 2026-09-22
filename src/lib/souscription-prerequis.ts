@@ -24,6 +24,13 @@ export interface EntreePrerequis {
   devoir_conseil_signe_le: string | null;
   /** Devoir de conseil refusé (bloque également la transmission). */
   devoir_conseil_refuse: boolean;
+  /**
+   * Preuve alternative : le client a signé le devoir de conseil de la
+   * compagnie elle-même (parcours géré directement par l'assureur), pas le
+   * nôtre. Satisfait le jalon au même titre, à condition qu'un document en
+   * fasse la preuve — jamais une dérogation sans justificatif.
+   */
+  devoir_conseil_compagnie_recu: boolean;
   /** Complétude documentaire. */
   pieces_manquantes: string[];
   pieces_a_qualifier: string[];
@@ -62,16 +69,18 @@ export function evaluerPrerequisSouscription(e: EntreePrerequis): ResultatPrereq
       : "Aucun devis enregistré sur le dossier",
   });
 
-  const dcOk = Boolean(e.devoir_conseil_signe_le) && !e.devoir_conseil_refuse;
+  const dcOk = (Boolean(e.devoir_conseil_signe_le) && !e.devoir_conseil_refuse) || e.devoir_conseil_compagnie_recu;
   jalons.push({
     code: "devoir_conseil",
     libelle: "Devoir de conseil signé",
     etat: dcOk ? "OK" : "MANQUANT",
-    detail: e.devoir_conseil_refuse
-      ? "Devoir de conseil refusé par le client"
-      : e.devoir_conseil_signe_le
-        ? `Signé le ${e.devoir_conseil_signe_le.slice(0, 10)}`
-        : "Devoir de conseil non signé",
+    detail: e.devoir_conseil_compagnie_recu
+      ? "Devoir de conseil de la compagnie reçu (document au dossier)"
+      : e.devoir_conseil_refuse
+        ? "Devoir de conseil refusé par le client"
+        : e.devoir_conseil_signe_le
+          ? `Signé le ${e.devoir_conseil_signe_le.slice(0, 10)}`
+          : "Devoir de conseil non signé (le nôtre, ou celui de la compagnie déposé au dossier)",
   });
 
   const piecesOk = e.pieces_manquantes.length === 0 && e.pieces_a_qualifier.length === 0;

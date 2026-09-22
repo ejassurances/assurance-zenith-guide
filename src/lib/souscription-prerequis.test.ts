@@ -10,6 +10,7 @@ const complet: EntreePrerequis = {
   devis_actifs: 2,
   devoir_conseil_signe_le: "2026-08-20T10:00:00.000Z",
   devoir_conseil_refuse: false,
+  devoir_conseil_compagnie_recu: false,
   pieces_manquantes: [],
   pieces_a_qualifier: [],
 };
@@ -47,6 +48,18 @@ describe("prérequis de transmission compagnie", () => {
     expect(r.jalons.find((j) => j.code === "devoir_conseil")?.detail).toContain("refusé");
   });
 
+  it("autorise si le devoir de conseil de la compagnie est reçu, même sans le nôtre", () => {
+    const r = evaluerPrerequisSouscription({
+      ...complet,
+      devoir_conseil_signe_le: null,
+      devoir_conseil_refuse: false,
+      devoir_conseil_compagnie_recu: true,
+    });
+    expect(r.autorise).toBe(true);
+    expect(r.jalons.find((j) => j.code === "devoir_conseil")?.etat).toBe("OK");
+    expect(r.jalons.find((j) => j.code === "devoir_conseil")?.detail).toContain("compagnie reçu");
+  });
+
   it("bloque avec une pièce obligatoire manquante ou à qualifier", () => {
     const manquante = evaluerPrerequisSouscription({ ...complet, pieces_manquantes: ["RIB"] });
     expect(manquante.autorise).toBe(false);
@@ -62,6 +75,7 @@ describe("prérequis de transmission compagnie", () => {
       devis_actifs: 0,
       devoir_conseil_signe_le: null,
       devoir_conseil_refuse: false,
+      devoir_conseil_compagnie_recu: false,
       pieces_manquantes: ["CNI"],
       pieces_a_qualifier: [],
     });

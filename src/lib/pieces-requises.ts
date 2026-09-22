@@ -31,7 +31,9 @@ const KYC_COMMUN: PieceRequise[] = [
 
 const PAR_BRANCHE: Record<string, PieceRequise[]> = {
   emprunteur: [
-    { code: "offre_pret", libelle: "Offre de prêt / tableau d'amortissement", categorie: "dossier", obligatoire: true },
+    { code: "offre_pret", libelle: "Offre de prêt", categorie: "dossier", obligatoire: true },
+    { code: "tableau_amortissement", libelle: "Tableau d'amortissement", categorie: "dossier", obligatoire: true },
+    { code: "attestation_assurance", libelle: "Attestation de l'assurance actuelle", categorie: "contrat", obligatoire: false },
     { code: "contrat_groupe", libelle: "Contrat d'assurance groupe bancaire actuel", categorie: "contrat", obligatoire: false },
     { code: "questionnaire_sante", libelle: "Questionnaire de santé", categorie: "dossier", obligatoire: false },
   ],
@@ -91,7 +93,10 @@ const REGLES: RegleClassement[] = [
   { code: "cni", motifs: /(cni|carte[-_ ]?identite|identit|passeport|passport|titre[-_ ]?sejour)/i },
   { code: "justificatif_domicile", motifs: /(domicile|edf|engie|quittance|loyer|taxe[-_ ]?fonciere|facture[-_ ]?(eau|elec|gaz|internet|telecom))/i },
   { code: "rib", motifs: /(rib|iban|coordonnees[-_ ]?bancaires|bancaire)/i },
-  { code: "offre_pret", motifs: /(offre[-_ ]?de[-_ ]?pret|offre[-_ ]?pret|amortissement|tableau[-_ ]?amort|pret[-_ ]?immo)/i },
+  { code: "offre_pret", motifs: /(offre[-_ ]?de[-_ ]?pret|offre[-_ ]?pret|pret[-_ ]?immo)/i },
+  { code: "tableau_amortissement", motifs: /(amortissement|tableau[-_ ]?amort)/i },
+  { code: "attestation_assurance", motifs: /(attestation[-_ ]?assurance|attestation[-_ ]?adhesion)/i },
+  { code: "devoir_conseil_compagnie", motifs: /(devoir[-_ ]?de[-_ ]?conseil[-_ ]?(compagnie|assureur|partenaire)|dda[-_ ]?compagnie)/i },
   { code: "contrat_groupe", motifs: /(contrat[-_ ]?groupe|assurance[-_ ]?groupe|conditions[-_ ]?particulieres)/i },
   { code: "questionnaire_sante", motifs: /(questionnaire[-_ ]?sante|declaration[-_ ]?etat[-_ ]?sante)/i },
   { code: "avis_imposition", motifs: /(avis[-_ ]?d?[-_ ]?imposition|impots|fiscal)/i },

@@ -16,7 +16,7 @@ export async function prerequisSouscription(
   admin: Admin,
   dossierId: string,
 ): Promise<ResultatPrerequis> {
-  const [{ data: dossier }, { data: devis }, { data: dc }, completude] = await Promise.all([
+  const [{ data: dossier }, { data: devis }, { data: dc }, { data: dcCompagnie }, completude] = await Promise.all([
     admin.from("dossiers").select("id, recueil_besoins").eq("id", dossierId).maybeSingle(),
     admin.from("dossier_devis").select("id").eq("dossier_id", dossierId).is("archive_le", null),
     admin
@@ -25,6 +25,13 @@ export async function prerequisSouscription(
       .eq("dossier_id", dossierId)
       .is("archive_le", null)
       .order("created_at", { ascending: false }),
+    admin
+      .from("documents")
+      .select("id")
+      .eq("dossier_id", dossierId)
+      .eq("type_document", "devoir_conseil_compagnie")
+      .is("archive_le", null)
+      .limit(1),
     calculerCompletudeDossier(admin, dossierId),
   ]);
 
@@ -38,6 +45,7 @@ export async function prerequisSouscription(
     devis_actifs: (devis ?? []).length,
     devoir_conseil_signe_le: signe,
     devoir_conseil_refuse: Boolean(dernier && !signe && dernier.refuse_le),
+    devoir_conseil_compagnie_recu: (dcCompagnie ?? []).length > 0,
     pieces_manquantes: completude.manquantes.map((p) => p.libelle),
     pieces_a_qualifier: completude.a_qualifier.map((p) => p.libelle),
   });
