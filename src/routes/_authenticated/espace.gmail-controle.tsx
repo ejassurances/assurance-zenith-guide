@@ -97,7 +97,7 @@ function GmailControlePage() {
       <PageHeader
         icon={IconMail}
         title="Contrôle du traitement Gmail"
-        subtitle="Lecture de la boîte de réception principale, délai de 45 minutes, classement et brouillons. Aucun envoi automatique."
+        description="Lecture de la boîte de réception principale, délai de 45 minutes, classement et brouillons. Aucun envoi automatique."
       />
 
       <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
