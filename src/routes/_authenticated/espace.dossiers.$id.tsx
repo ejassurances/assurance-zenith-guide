@@ -188,6 +188,7 @@ function DossierDetail() {
     | "devoir_conseil"
     | "pieces"
     | "souscription"
+    | "substitution"
   >("synthese");
   const completude = useCompletudeDossier(id, dossier?.client_id ?? null);
   /** Actes réellement archivés : une étape réglementaire n'est cochée que s'ils existent. */
@@ -365,6 +366,7 @@ function DossierDetail() {
                 { mode: "devis", label: "Études et devis" },
                 { mode: "devoir_conseil", label: "Devoir de conseil" },
                 { mode: "pieces", label: "Pièces" },
+                { mode: "substitution", label: "Substitution" },
                 { mode: "souscription", label: "Souscription" },
               ] as const)
           ).map((t) => (
@@ -499,6 +501,23 @@ function DossierDetail() {
           <OngletModifier dossier={dossier} canEdit={canEditSuivi} onSaved={load} />
         ) : modeAffichage === "configuration" && parcoursActif ? (
           <OngletConfiguration dossier={dossier} canEdit={canEditSuivi} onSaved={load} />
+        ) : parcoursActif && modeAffichage === "garanties" && !estEdpm ? (
+          <RecueilDossierPanel
+            dossierId={id}
+            typeAssurance={dossier.type_assurance}
+            recueil={dossier.recueil_besoins}
+            canEdit={canEdit}
+            onSaved={load}
+            sectionUnique
+            filtreSections={(titre) => /assur/i.test(titre)}
+            client={{
+              id: dossier.client_id,
+              nom: dossier.client_nom,
+              email: dossier.client_email,
+              telephone: dossier.client_phone,
+              reference: dossier.reference,
+            }}
+          />
         ) : modeAffichage === "garanties" && parcoursActif ? (
           <OngletAVenir
             titre="Garanties"
@@ -524,6 +543,22 @@ function DossierDetail() {
             titre="Pièces"
             manque="Chevauche l'onglet Fichiers actuel (mêmes pièces KYC/DDA) — à préciser si Courtigo distingue vraiment les deux ou si c'est la même chose sous deux noms."
           />
+        ) : modeAffichage === "substitution" && parcoursActif ? (
+          <div className="space-y-4">
+            <div className="crm-card p-5">
+              <p className="crm-eyebrow">Substitution</p>
+              <p className="mt-2 text-sm text-ink-soft">
+                Demande adressée à la banque prêteuse et au contrat à résilier, à la date d'effet
+                retenue. Déposez ici les courriers et accusés liés à la substitution.
+              </p>
+            </div>
+            <DocumentsPretPanel
+              dossierId={id}
+              titre="Courriers de substitution"
+              filtre="assureur"
+              typeDocument="substitution"
+            />
+          </div>
         ) : modeAffichage === "souscription" && parcoursActif ? (
           <div className="crm-card p-6">
             <p className="crm-eyebrow">Souscription</p>
