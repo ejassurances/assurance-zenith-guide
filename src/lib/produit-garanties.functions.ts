@@ -12,6 +12,99 @@ const valeurSchema = z.object({
   confiance: z.number().min(0).max(1).nullable().optional(),
 });
 
+/**
+ * Compare deux jeux de garanties sur leurs champs substantiels uniquement
+ * (couverture, plafond, franchise, délai de carence, conditions) — ignore
+ * l'extrait de texte brut (peut varier verbatim selon le document source
+ * même à sens identique) et le score de confiance IA (pas un attribut du
+ * produit). Retourne vrai seulement si TOUTES les garanties comparables
+ * correspondent exactement : aucune tolérance floue inventée.
+ */
+function garantiesIdentiques(a: Record<string, unknown>, b: Record<string, unknown>): boolean {
+  const cles = new Set([...Object.keys(a), ...Object.keys(b)]);
+  const CHAMPS = ["couverture", "plafond", "franchise", "delai_carence", "conditions"] as const;
+  for (const cle of cles) {
+    const va = a[cle] as Record<string, unknown> | undefined;
+    const vb = b[cle] as Record<string, unknown> | undefined;
+    if (!va || !vb) return false; // garantie présente d'un côté seulement
+    for (const champ of CHAMPS) {
+      const na = (va[champ] ?? "").toString().trim().toLowerCase();
+      const nb = (vb[champ] ?? "").toString().trim().toLowerCase();
+      if (na !== nb) return false;
+    }
+  }
+  return true;
+}
+
+export type DoublonGrossiste = {
+  produit_id: string;
+  produit_nom: string;
+  compagnie_id: string;
+  compagnie_nom: string;
+};
+
+/**
+ * Détecte, pour un produit dont la grille vient d'être validée, si un autre
+ * produit — même assureur porteur, même famille, mais chez une compagnie
+ * (grossiste) différente — porte des garanties identiques. Ne compare que
+ * des grilles elles-mêmes validées (statut "valide") : jamais un brouillon
+ * contre une référence fiable.
+ */
+async function detecterDoublonsGrossiste(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  produitId: string,
+): Promise<DoublonGrossiste[]> {
+  const { data: produit } = await supabase
+    .from("produits")
+    .select("id, nom, compagnie_id, famille_id, assureur_porteur")
+    .eq("id", produitId)
+    .maybeSingle();
+  if (!produit?.assureur_porteur) return [];
+
+  const { data: grille } = await supabase
+    .from("produit_garanties")
+    .select("valeurs")
+    .eq("produit_id", produitId)
+    .eq("statut", "valide")
+    .maybeSingle();
+  if (!grille?.valeurs) return [];
+
+  const { data: candidats } = await supabase
+    .from("produits")
+    .select("id, nom, compagnie_id, compagnies(nom)")
+    .eq("assureur_porteur", produit.assureur_porteur)
+    .eq("famille_id", produit.famille_id)
+    .neq("compagnie_id", produit.compagnie_id)
+    .neq("id", produitId);
+  if (!candidats || candidats.length === 0) return [];
+
+  const doublons: DoublonGrossiste[] = [];
+  for (const c of candidats as {
+    id: string;
+    nom: string;
+    compagnie_id: string;
+    compagnies: { nom: string } | null;
+  }[]) {
+    const { data: grilleCandidate } = await supabase
+      .from("produit_garanties")
+      .select("valeurs")
+      .eq("produit_id", c.id)
+      .eq("statut", "valide")
+      .maybeSingle();
+    if (!grilleCandidate?.valeurs) continue;
+    if (garantiesIdentiques(grille.valeurs, grilleCandidate.valeurs)) {
+      doublons.push({
+        produit_id: c.id,
+        produit_nom: c.nom,
+        compagnie_id: c.compagnie_id,
+        compagnie_nom: c.compagnies?.nom ?? "Compagnie inconnue",
+      });
+    }
+  }
+  return doublons;
+}
+
 async function assertStaff(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
@@ -158,7 +251,21 @@ export const validerGrilleGaranties = createServerFn({ method: "POST" })
     });
 
 
-    return { ok: true };
+    const doublons = await detecterDoublonsGrossiste(context.supabase, data.produit_id);
+
+    if (doublons.length > 0) {
+      await context.supabase.rpc("log_audit", {
+        _action: "doublon_grossiste_detecte",
+        _target_type: "produit_garanties",
+        _target_id: data.produit_id,
+        _metadata: {
+          assureur_porteur: data.assureur_porteur ?? null,
+          doublons: doublons.map((d) => ({ produit_id: d.produit_id, compagnie: d.compagnie_nom })),
+        },
+      });
+    }
+
+    return { ok: true, doublons };
   });
 
 /** Rejet d'une proposition IA (aucune donnée reprise). */

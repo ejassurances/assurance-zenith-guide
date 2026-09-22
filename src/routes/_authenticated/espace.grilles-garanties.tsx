@@ -63,7 +63,7 @@ function AtelierGrillesPage() {
   const [produits, setProduits] = useState<EtatGrilleProduit[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [lot, setLot] = useState<{ fait: number; total: number } | null>(null);
-  const [message, setMessage] = useState<{ type: "ok" | "err"; texte: string } | null>(null);
+  const [message, setMessage] = useState<{ type: "ok" | "err" | "warn"; texte: string } | null>(null);
 
   const grille = grillePourFamille(famille);
 
@@ -206,7 +206,7 @@ function AtelierGrillesPage() {
   /** Validation humaine explicite de la proposition, reprise telle quelle. */
   const validerProposition = async (p: EtatGrilleProduit) => {
     if (!p.proposition || !grille) throw new Error("Proposition indisponible");
-    await valider({
+    const res = await valider({
       data: {
         produit_id: p.produit_id,
         famille_code: famille,
@@ -218,6 +218,15 @@ function AtelierGrillesPage() {
         reference_contrat: p.proposition.reference_contrat_propose,
       },
     });
+    if (res.doublons.length > 0) {
+      const liste = res.doublons.map((d) => `${d.produit_nom} (${d.compagnie_nom})`).join(", ");
+      setMessage({
+        type: "warn",
+        texte: `Doublon détecté : ce contrat semble identique, chez le même assureur porteur, à ${liste}. À vérifier avant de multiplier les références.`,
+      });
+    } else {
+      setMessage({ type: "ok", texte: "Grille validée." });
+    }
   };
 
   if (loading) return <p className="p-6 text-sm text-ink-muted">Chargement…</p>;
@@ -295,7 +304,9 @@ function AtelierGrillesPage() {
           className={`rounded-md border px-3 py-2 text-sm ${
             message.type === "ok"
               ? "border-line bg-background text-ink"
-              : "border-destructive/40 bg-destructive/10 text-destructive"
+              : message.type === "warn"
+                ? "border-amber-400/50 bg-amber-50 text-amber-900"
+                : "border-destructive/40 bg-destructive/10 text-destructive"
           }`}
         >
           {message.texte}
