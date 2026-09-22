@@ -4,8 +4,16 @@ import {
   envoyerSouscriptionFn,
   enregistrerRetourCompagnie,
   prerequisSouscriptionFn,
+  canalSouscriptionFn,
+  souscrireHorsApiFn,
 } from "@/lib/souscription.functions";
 import type { ResultatPrerequis } from "@/lib/souscription-prerequis";
+import {
+  MODES_HORS_API,
+  labelCanal,
+  type CanalSouscription,
+  type ModeHorsApi,
+} from "@/lib/souscription-canal";
 
 /**
  * Étape souscription : contrôle de complétude bloquant, transmission à la
