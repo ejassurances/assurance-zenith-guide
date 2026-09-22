@@ -34,6 +34,7 @@ const PAR_BRANCHE: Record<string, PieceRequise[]> = {
     { code: "offre_pret", libelle: "Offre de prêt", categorie: "dossier", obligatoire: true },
     { code: "tableau_amortissement", libelle: "Tableau d'amortissement", categorie: "dossier", obligatoire: true },
     { code: "attestation_assurance", libelle: "Attestation de l'assurance actuelle", categorie: "contrat", obligatoire: false },
+    { code: "devoir_conseil_compagnie", libelle: "Devoir de conseil de la compagnie (signé par le client)", categorie: "contrat", obligatoire: false },
     { code: "contrat_groupe", libelle: "Contrat d'assurance groupe bancaire actuel", categorie: "contrat", obligatoire: false },
     { code: "questionnaire_sante", libelle: "Questionnaire de santé", categorie: "dossier", obligatoire: false },
   ],
