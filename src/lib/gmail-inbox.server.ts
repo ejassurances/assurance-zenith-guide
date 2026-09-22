@@ -144,6 +144,8 @@ export async function traiterInboxPrincipale(
     alertes: 0,
     archives: 0,
     ignores_deja_traites: 0,
+    pieces_deposees: 0,
+    pieces_a_classer: 0,
   };
 
   const { listerInboxPrincipale, lireMessage, reponseCabinetPosterieure, classerInbox, creerBrouillon } =
