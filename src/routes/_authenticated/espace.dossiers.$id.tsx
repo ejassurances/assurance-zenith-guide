@@ -328,7 +328,7 @@ function DossierDetail() {
       </div>
 
       {parcoursActif && (
-        <div className="flex gap-5 overflow-x-auto border-b border-line pb-0 text-sm">
+        <div className="flex flex-wrap gap-x-5 gap-y-1 border-b border-line pb-2 text-sm">
           {(estEdpm
             ? ([
                 { mode: "synthese", label: "Synthèse" },
