@@ -216,7 +216,7 @@ export async function traiterInboxPrincipale(
     const lien = await rattacher(admin, m.expediteur_email);
     const confiance = dejaRepondu ? 1 : besoin.categorie === "ambigu" ? 0.3 : lien.certain ? 0.9 : 0.5;
 
-    const classement = classerEmail({
+    let classement = classerEmail({
       reponseDejaEnvoyee: dejaRepondu,
       reponseNecessaire: besoin.categorie === "reponse_attendue",
       rattachementCertain: lien.certain,
@@ -224,6 +224,42 @@ export async function traiterInboxPrincipale(
       comprehensible: besoin.categorie !== "ambigu",
       confiance,
     });
+
+    // 4 bis. Pièces jointes : lecture, dépôt et rattachement au bon client /
+    // dossier / contrat. Une pièce dont le titulaire n'est pas certain est
+    // déposée « à classer » et le message part obligatoirement en alerte
+    // humaine (jamais de rattachement deviné, jamais de doublon).
+    const pieces = detail?.pieces_jointes.filter((p) => p.attachment_id) ?? [];
+    if (pieces.length > 0 && userId) {
+      try {
+        const { traiterPiecesJointesPartenaire } = await import("@/lib/pieces-partenaire.server");
+        const bilan = await traiterPiecesJointesPartenaire(admin, {
+          gmail_message_id: m.id,
+          sujet: m.sujet,
+          texte: detail?.texte ?? m.snippet ?? null,
+          compagnie: null,
+          pieces_jointes: pieces,
+          userId,
+        });
+        res.pieces_deposees += bilan.traitees;
+        res.pieces_a_classer += bilan.a_classer;
+        if (bilan.a_classer > 0) {
+          classement = {
+            decision: "alerte_humain",
+            label: LABEL_ALERTE,
+            motif: `${bilan.a_classer} pièce(s) jointe(s) sans rattachement certain : à qualifier par un humain.`,
+          };
+        }
+      } catch (e) {
+        console.error("[gmail-inbox] pièces jointes non traitées", e);
+        classement = {
+          decision: "alerte_humain",
+          label: LABEL_ALERTE,
+          motif: "Pièces jointes non traitées : vérification humaine nécessaire.",
+        };
+      }
+    }
+
 
     // 5. Brouillon Gmail si une réponse est nécessaire (jamais d'envoi).
     let brouillonId: string | null = null;
