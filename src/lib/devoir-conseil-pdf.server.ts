@@ -8,6 +8,7 @@ import {
   dessinerPiedsDePage,
   referenceDocument,
 } from "@/lib/pdf-entete-pied";
+import { regrouperEcheancierParAnnee, type LigneVueEcheancier } from "@/lib/echeancier-comparatif";
 
 
 /**
@@ -670,84 +671,82 @@ export async function genererPdfDevoirConseil(input: DevoirPdfInput): Promise<Ui
   }
 
   /* Echeancier comparatif emprunteur : prelevement bancaire, assurance en place,
-     nouvelle assurance et differentiel mois par mois (aucune valeur deduite). */
+     nouvelle assurance et economie realisee — 12 premieres echeances mois par
+     mois puis une ligne par annee civile (aucune valeur deduite, meme regle
+     que le tableau affiche a l'ecran). */
   const ech = c.echeancier_comparatif ?? null;
   const lignesEch: {
+    rang: number;
     date: string;
     echeance: number;
-    interets: number;
-    capital: number;
     assurance_initiale: number;
     assurance_nouvelle: number;
     total_actuel: number;
-    total_nouveau: number;
     differentiel: number;
   }[] = ech && Array.isArray(ech.lignes) ? ech.lignes : [];
   if (lignesEch.length > 0) {
-    titreSection("Echeancier comparatif : prelevements et differentiel d'assurance");
+    titreSection("Echeancier comparatif : prelevements et economie realisee");
     para(
       "Tableau etabli a partir de votre offre de pret, a compter du mois prevu de la substitution" +
         (ech.date_effet ? ` (${String(ech.date_effet).split("-").reverse().join("/")})` : "") +
-        ". Le differentiel compare le prelevement total actuel (echeance + assurance de la banque) au prelevement total avec l'assurance proposee : un montant negatif est une economie.",
+        ". Douze premieres echeances detaillees mois par mois, puis une ligne par annee civile jusqu'a la fin du pret. L'economie compare le prelevement total actuel (echeance banque + assurance banque) au prelevement avec l'assurance proposee : un montant negatif signale que la nouvelle assurance coute in fine plus cher, jamais masque.",
       { size: 8.5, color: MUTED, gap: 6 },
     );
     if (ech.type_cotisation === "CRD") {
       encadre(
         "Information importante : cotisation calculee sur le capital restant du",
-        "L'assurance proposee est tarifee sur le capital restant du : la cotisation est plus elevee les premieres annees puis diminue au fil du remboursement du pret. Le tableau ci-dessous restitue cette evolution mois par mois. Une cotisation moyenne plus basse qu'un contrat a capital initial n'implique donc pas une cotisation plus basse des la premiere echeance.",
+        "L'assurance proposee est tarifee sur le capital restant du : la cotisation est plus elevee les premieres annees puis diminue au fil du remboursement du pret. Une cotisation moyenne plus basse qu'un contrat a capital initial n'implique donc pas une cotisation plus basse des la premiere echeance.",
       );
     }
 
     const colsE = [
-      { label: "Echeance", w: 0.11 },
-      { label: "Mensualite", w: 0.11 },
-      { label: "Interets", w: 0.1 },
-      { label: "Capital", w: 0.1 },
-      { label: "Assur. banque", w: 0.12 },
-      { label: "Nouvelle assur.", w: 0.12 },
-      { label: "Total actuel", w: 0.11 },
-      { label: "Total propose", w: 0.11 },
-      { label: "Differentiel", w: 0.12 },
+      { label: "Date d'echeance", w: 0.19 },
+      { label: "Echeance banque (hors assurance)", w: 0.18 },
+      { label: "Assurance banque", w: 0.16 },
+      { label: "Total", w: 0.16 },
+      { label: "Assurance EJ Assurances", w: 0.16 },
+      { label: "Economie realisee", w: 0.15 },
     ];
     const wE = colsE.map((col) => col.w * CONTENT);
     const enteteE = () => {
-      page.drawRectangle({ x: MARGIN, y: y - 18, width: CONTENT, height: 18, color: INK });
+      page.drawRectangle({ x: MARGIN, y: y - 20, width: CONTENT, height: 20, color: INK });
       let hx = MARGIN + 4;
       colsE.forEach((col, i) => {
-        page.drawText(safe(col.label), { x: hx, y: y - 12.5, size: 6.2, font: bold, color: WHITE });
+        const lignesLabel = wrap(col.label, bold, 6.6, wE[i]! - 6);
+        lignesLabel.slice(0, 2).forEach((l, li) => {
+          page.drawText(safe(l), { x: hx, y: y - 9 - li * 8, size: 6.6, font: bold, color: WHITE });
+        });
         hx += wE[i]!;
       });
-      y -= 18;
+      y -= 20;
     };
     ensure(60);
     enteteE();
     const m2 = (n: number) => n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    lignesEch.forEach((l, idx) => {
+    const vue: LigneVueEcheancier[] = regrouperEcheancierParAnnee(lignesEch as never, 12);
+    vue.forEach((v, idx) => {
       const rowH = 11;
       if (y - rowH < MARGIN + 60) {
         ensure(rowH + 40);
         enteteE();
       }
       if (idx % 2 === 1) page.drawRectangle({ x: MARGIN, y: y - rowH, width: CONTENT, height: rowH, color: SOFT });
-      const cells = [
-        String(l.date).split("-").reverse().join("/"),
-        m2(l.echeance),
-        m2(l.interets),
-        m2(l.capital),
-        m2(l.assurance_initiale),
-        m2(l.assurance_nouvelle),
-        m2(l.total_actuel),
-        m2(l.total_nouveau),
-        (l.differentiel > 0 ? "+" : "") + m2(l.differentiel),
-      ];
+      const dateCol = v.type === "mois" ? String(v.ligne.date).split("-").reverse().join("/") : `Annee ${v.annee} (${v.nb_mois} mois)`;
+      const echeance = v.type === "mois" ? v.ligne.echeance : v.echeance;
+      const assInit = v.type === "mois" ? v.ligne.assurance_initiale : v.assurance_initiale;
+      const total = v.type === "mois" ? v.ligne.total_actuel : v.total_actuel;
+      const assNouv = v.type === "mois" ? v.ligne.assurance_nouvelle : v.assurance_nouvelle;
+      const diff = v.type === "mois" ? v.ligne.differentiel : v.differentiel;
+      const economie = -diff;
+      const cells = [dateCol, m2(echeance), m2(assInit), m2(total), m2(assNouv), (economie < 0 ? "-" : "") + m2(Math.abs(economie))];
       let cx = MARGIN + 4;
       cells.forEach((t, i) => {
         page.drawText(safe(t), {
           x: cx,
           y: y - 8,
-          size: 6.2,
-          font: i === 8 ? bold : font,
-          color: i === 8 ? (l.differentiel > 0 ? BAD : OK) : INK,
+          size: 6.4,
+          font: i === 5 ? bold : v.type === "annee" ? bold : font,
+          color: i === 5 ? (economie < 0 ? BAD : OK) : INK,
         });
         cx += wE[i]!;
       });
@@ -757,11 +756,32 @@ export async function genererPdfDevoirConseil(input: DevoirPdfInput): Promise<Ui
     ensure(40);
     para(
       `Total de l'assurance de la banque sur la periode : ${euro(Number(ech.total_assurance_initiale))} — ` +
-        `total de l'assurance proposee : ${euro(Number(ech.total_assurance_nouvelle))} — ` +
-        `differentiel : ${Number(ech.total_differentiel) > 0 ? "+" : ""}${euro(Number(ech.total_differentiel))} ` +
-        `(${Number(ech.total_differentiel) > 0 ? "surcout" : "economie"}).`,
+        `total de l'assurance proposee : ${euro(Number(ech.total_assurance_nouvelle))}.`,
       { size: 9, gap: 6 },
     );
+
+    /* Conditions financieres : frais ponctuels et recapitulatif economie brute/nette. */
+    const fraisCourtage = Number(conseil.frais_courtage ?? 0);
+    const fraisDossier = Number(conseil.frais_dossier ?? 0);
+    const fraisAdhesion = Number(conseil.frais_adhesion ?? 0);
+    const economieBrute = Number(ech.economie_brute ?? 0);
+    const economieNette = Number(ech.economie_nette ?? economieBrute);
+    ensure(90);
+    titreSection("Conditions financieres");
+    para(
+      "Frais ponctuels du nouveau contrat, jamais etales sur la duree : deduits une seule fois de l'economie brute pour obtenir l'economie nette.",
+      { size: 8.5, color: MUTED, gap: 6 },
+    );
+    kv("Frais de courtage", euro(fraisCourtage));
+    kv("Frais de dossier", euro(fraisDossier));
+    kv("Frais d'adhesion", euro(fraisAdhesion));
+    y -= 4;
+    kv("Economie brute (cotisations seules)", (economieBrute < 0 ? "-" : "") + euro(Math.abs(economieBrute)), {
+      color: economieBrute < 0 ? BAD : OK,
+    });
+    kv("Economie nette (apres frais)", (economieNette < 0 ? "-" : "") + euro(Math.abs(economieNette)), {
+      color: economieNette < 0 ? BAD : OK,
+    });
   }
 
   /* Comparatif avec le contrat actuel du client — uniquement a partir des grilles

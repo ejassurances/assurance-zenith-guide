@@ -318,6 +318,11 @@ export async function envoyerDevoirConseil(
               type_cotisation: saisie.type_cotisation ?? null,
             },
             d.created_at ?? null,
+            {
+              courtage: saisie.frais_courtage ?? null,
+              dossier: saisie.frais_dossier ?? null,
+              adhesion: saisie.frais_adhesion ?? null,
+            },
           )
         : null,
 
