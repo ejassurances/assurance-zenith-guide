@@ -742,3 +742,104 @@ export async function etiquettesMessage(id: string): Promise<string[]> {
     .map((id2) => noms.get(id2))
     .filter((n): n is string => !!n && !/^(INBOX|SENT|DRAFT|SPAM|TRASH|UNREAD|STARRED|IMPORTANT|CATEGORY_.*|CHAT)$/.test(n.toUpperCase()));
 }
+
+// ============================================================================
+// Traitement de la boîte de réception principale (nouveau flux d'inbox).
+// ============================================================================
+
+import {
+  LABELS_TRIAGE_INBOX,
+  lienGmailBrouillon,
+  lienGmailMessage,
+} from "@/lib/gmail-inbox";
+
+/**
+ * Boîte de réception principale STRICTE : onglet Principal uniquement, hors
+ * Promotions, Réseaux sociaux, Notifications/Mises à jour et Forums. Les
+ * messages lus ET non lus sont inclus.
+ */
+export const REQUETE_INBOX_PRINCIPALE_STRICTE = [
+  "in:inbox",
+  "category:primary",
+  "-category:promotions",
+  "-category:social",
+  "-category:updates",
+  "-category:forums",
+].join(" ");
+
+/** Messages de la boîte principale stricte, avec leur date de réception. */
+export async function listerInboxPrincipale(params?: {
+  maxResults?: number;
+  pageToken?: string | null;
+}): Promise<{ messages: EmailResume[]; nextPageToken: string | null }> {
+  const search = new URLSearchParams({
+    q: REQUETE_INBOX_PRINCIPALE_STRICTE,
+    maxResults: String(Math.max(1, Math.min(params?.maxResults ?? 25, 100))),
+  });
+  if (params?.pageToken) search.set("pageToken", params.pageToken);
+
+  const list = await gmailFetch<{ messages?: { id: string }[]; nextPageToken?: string }>(
+    `/users/me/messages?${search.toString()}`,
+  );
+  const ids = (list.messages ?? []).map((m) => m.id);
+  if (!ids.length) return { messages: [], nextPageToken: list.nextPageToken ?? null };
+
+  const details = await Promise.all(
+    ids.map((id) =>
+      gmailFetch<GmailMessage>(
+        `/users/me/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`,
+      ).catch(() => null),
+    ),
+  );
+  const { labels } = await gmailFetch<{ labels?: GmailLabel[] }>("/users/me/labels").catch(() => ({
+    labels: [] as GmailLabel[],
+  }));
+  const noms = new Map((labels ?? []).map((l) => [l.id, l.name] as const));
+  return {
+    messages: details.filter((m): m is GmailMessage => !!m).map((m) => toResume(m, noms)),
+    nextPageToken: list.nextPageToken ?? null,
+  };
+}
+
+/**
+ * Pose l'un des trois états de classement du traitement d'inbox et retire les
+ * deux autres. Le libellé de direction éventuellement présent n'est pas touché,
+ * et le message reste dans la boîte de réception (gestion manuelle du dirigeant).
+ */
+export async function classerInbox(id: string, label: string): Promise<void> {
+  const ajouter = [await resoudreLabel(label)];
+  const autres = await Promise.all(
+    LABELS_TRIAGE_INBOX.filter((l) => l !== label).map((l) => resoudreLabel(l).catch(() => null)),
+  );
+  const retirer = autres.filter((l): l is string => !!l && !ajouter.includes(l));
+  await modifierLabels(id, { ajouter, retirer });
+}
+
+/**
+ * Crée un brouillon Gmail dans le fil du message d'origine. AUCUN envoi :
+ * le brouillon reste en attente de relecture humaine.
+ */
+export async function creerBrouillon(params: {
+  to: string;
+  sujet: string;
+  html: string;
+  threadId?: string | null;
+}): Promise<{ id: string; lien: string }> {
+  const entetes = [
+    `To: ${params.to}`,
+    `Subject: ${encodeSujet(params.sujet)}`,
+    "MIME-Version: 1.0",
+    'Content-Type: text/html; charset="UTF-8"',
+    "",
+    params.html,
+  ].join("\r\n");
+  const draft = await gmailFetch<{ id: string }>("/users/me/drafts", {
+    method: "POST",
+    body: JSON.stringify({
+      message: { raw: encodeB64Url(entetes), ...(params.threadId ? { threadId: params.threadId } : {}) },
+    }),
+  });
+  return { id: draft.id, lien: lienGmailBrouillon(draft.id) };
+}
+
+export { lienGmailMessage };
