@@ -29,6 +29,13 @@
       "when": 1790075800032,
       "tag": "0003_trigger_document_recu_cree_tache",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790075821257,
+      "tag": "0004_add_echelonnement_partenaire_cols",
+      "breakpoints": true
     }
   ]
 }
