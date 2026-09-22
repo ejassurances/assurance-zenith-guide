@@ -1094,9 +1094,6 @@ function ClientDossierField({
     </div>
   );
 }
- * est reprise de la fiche client liée (titulaire et fiche de chaque assuré), et
- * le recueil ne sert qu'à compléter ce qui manque encore.
- */
 function CoordonneesEtape({ dossier }: { dossier: Dossier }) {
   const assures = assuresEmprunteur(dossier.recueil_besoins?.["assures"]);
   const brut = Array.isArray(dossier.recueil_besoins?.["assures"])
