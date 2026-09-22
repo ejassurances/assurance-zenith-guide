@@ -402,6 +402,7 @@ function DossierDetail() {
             dossier={dossier}
             dossierId={id}
             canEdit={canEdit}
+            canEditSuivi={canEditSuivi}
             scoreKyc={scoreKyc}
             onSaved={load}
           />
@@ -879,12 +880,14 @@ function DossierSynthese({
   dossier,
   dossierId,
   canEdit,
+  canEditSuivi,
   scoreKyc,
   onSaved,
 }: {
   dossier: Dossier;
   dossierId: string;
   canEdit: boolean;
+  canEditSuivi: boolean;
   scoreKyc: number | null;
   onSaved: () => void;
 }) {
@@ -927,7 +930,7 @@ function DossierSynthese({
                 dossierId={dossierId}
                 clientId={dossier.client_id}
                 clientNom={dossier.client_nom}
-                canEdit={canEdit}
+                canEdit={canEditSuivi}
                 onSaved={onSaved}
               />
             </div>
