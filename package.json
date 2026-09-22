@@ -98,6 +98,9 @@
     "vite": "^8.0.16",
     "vitest": "^4.1.11"
   },
+  "overrides": {
+    "tslib": "^2.8.1"
+  },
   "pnpm": {
     "overrides": {
       "entities": "4.5.0"
