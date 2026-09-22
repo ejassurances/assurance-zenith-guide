@@ -10,7 +10,7 @@ const offreSchema = z.object({
   cotisation_mensuelle: z.number().nullable().optional(),
   cout_total: z.number().nullable().optional(),
   statut: z.enum(["retenue", "equivalente", "ecartee"]),
-  commentaire: z.string().max(500).nullable().optional(),
+  commentaire: z.string().max(2000).nullable().optional(),
 });
 
 const saisieSchema = z.object({
