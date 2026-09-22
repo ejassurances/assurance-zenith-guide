@@ -187,6 +187,7 @@ function DossierDetail() {
     | "devis"
     | "devoir_conseil"
     | "pieces"
+    | "souscription"
   >("synthese");
   const completude = useCompletudeDossier(id, dossier?.client_id ?? null);
   /** Actes réellement archivés : une étape réglementaire n'est cochée que s'ils existent. */
@@ -346,6 +347,7 @@ function DossierDetail() {
                 { mode: "devis", label: "Études et devis" },
                 { mode: "devoir_conseil", label: "Devoir de conseil" },
                 { mode: "pieces", label: "Pièces" },
+                { mode: "souscription", label: "Souscription" },
               ] as const)
             : ([
                 { mode: "synthese", label: "Synthèse" },
@@ -363,6 +365,7 @@ function DossierDetail() {
                 { mode: "devis", label: "Études et devis" },
                 { mode: "devoir_conseil", label: "Devoir de conseil" },
                 { mode: "pieces", label: "Pièces" },
+                { mode: "souscription", label: "Souscription" },
               ] as const)
           ).map((t) => (
             <button
@@ -521,6 +524,29 @@ function DossierDetail() {
             titre="Pièces"
             manque="Chevauche l'onglet Fichiers actuel (mêmes pièces KYC/DDA) — à préciser si Courtigo distingue vraiment les deux ou si c'est la même chose sous deux noms."
           />
+        ) : modeAffichage === "souscription" && parcoursActif ? (
+          <div className="crm-card p-6">
+            <p className="crm-eyebrow">Souscription</p>
+            <p className="mt-1 text-xs text-ink-muted">
+              Enregistrer le retour de la compagnie crée automatiquement le contrat correspondant
+              dans le portefeuille.
+            </p>
+            {canEdit ? (
+              <div className="mt-4">
+                <SouscriptionPanel
+                  dossierId={id}
+                  statut={dossier.statut}
+                  emailCompagnie={dossier.souscription_email_compagnie}
+                  envoyeeLe={dossier.souscription_envoyee_le}
+                  relances={dossier.souscription_relances_nb}
+                  retourLe={dossier.souscription_retour_le}
+                  onChanged={load}
+                />
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-ink-muted">Dossier gelé — édition indisponible.</p>
+            )}
+          </div>
         ) : (
           userId && (
             <StageContent
