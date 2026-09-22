@@ -803,15 +803,22 @@ export async function listerInboxPrincipale(params?: {
 
 /**
  * Pose l'un des trois états de classement du traitement d'inbox et retire les
- * deux autres. Le libellé de direction éventuellement présent n'est pas touché,
- * et le message reste dans la boîte de réception (gestion manuelle du dirigeant).
+ * deux autres. Le libellé de direction éventuellement présent n'est pas touché.
+ * Le message SORT de la boîte de réception principale : il n'est visible que
+ * dans son étiquette de traitement (01 / 02 / 03), conformément au tri demandé.
+ * `garderDansInbox: true` permet de conserver le message en boîte principale.
  */
-export async function classerInbox(id: string, label: string): Promise<void> {
+export async function classerInbox(
+  id: string,
+  label: string,
+  options?: { garderDansInbox?: boolean },
+): Promise<void> {
   const ajouter = [await resoudreLabel(label)];
   const autres = await Promise.all(
     LABELS_TRIAGE_INBOX.filter((l) => l !== label).map((l) => resoudreLabel(l).catch(() => null)),
   );
   const retirer = autres.filter((l): l is string => !!l && !ajouter.includes(l));
+  if (!options?.garderDansInbox) retirer.push("INBOX");
   await modifierLabels(id, { ajouter, retirer });
 }
 
