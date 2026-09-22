@@ -32,6 +32,7 @@ import { Route as ApiPublicReclamationsAccuseReceptionRouteImport } from './rout
 import { Route as ApiPublicRappelsExpirationRouteImport } from './routes/api/public/rappels-expiration'
 import { Route as ApiPublicLettresMissionEnvoisRouteImport } from './routes/api/public/lettres-mission-envois'
 import { Route as ApiPublicLeadsRouteImport } from './routes/api/public/leads'
+import { Route as ApiPublicGmailInboxRouteImport } from './routes/api/public/gmail-inbox'
 import { Route as ApiPublicFormationsRappelsRouteImport } from './routes/api/public/formations-rappels'
 import { Route as ApiPublicEnvoisPlanifiesRouteImport } from './routes/api/public/envois-planifies'
 import { Route as ApiPublicDossiersBloquesRouteImport } from './routes/api/public/dossiers-bloques'
@@ -202,6 +203,11 @@ const ApiPublicLettresMissionEnvoisRoute =
 const ApiPublicLeadsRoute = ApiPublicLeadsRouteImport.update({
   id: '/api/public/leads',
   path: '/api/public/leads',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicGmailInboxRoute = ApiPublicGmailInboxRouteImport.update({
+  id: '/api/public/gmail-inbox',
+  path: '/api/public/gmail-inbox',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicFormationsRappelsRoute =
@@ -529,6 +535,7 @@ export interface FileRoutesByFullPath {
   '/api/public/dossiers-bloques': typeof ApiPublicDossiersBloquesRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
+  '/api/public/gmail-inbox': typeof ApiPublicGmailInboxRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/lettres-mission-envois': typeof ApiPublicLettresMissionEnvoisRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
@@ -600,6 +607,7 @@ export interface FileRoutesByTo {
   '/api/public/dossiers-bloques': typeof ApiPublicDossiersBloquesRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
+  '/api/public/gmail-inbox': typeof ApiPublicGmailInboxRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/lettres-mission-envois': typeof ApiPublicLettresMissionEnvoisRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
@@ -674,6 +682,7 @@ export interface FileRoutesById {
   '/api/public/dossiers-bloques': typeof ApiPublicDossiersBloquesRoute
   '/api/public/envois-planifies': typeof ApiPublicEnvoisPlanifiesRoute
   '/api/public/formations-rappels': typeof ApiPublicFormationsRappelsRoute
+  '/api/public/gmail-inbox': typeof ApiPublicGmailInboxRoute
   '/api/public/leads': typeof ApiPublicLeadsRoute
   '/api/public/lettres-mission-envois': typeof ApiPublicLettresMissionEnvoisRoute
   '/api/public/rappels-expiration': typeof ApiPublicRappelsExpirationRoute
@@ -748,6 +757,7 @@ export interface FileRouteTypes {
     | '/api/public/dossiers-bloques'
     | '/api/public/envois-planifies'
     | '/api/public/formations-rappels'
+    | '/api/public/gmail-inbox'
     | '/api/public/leads'
     | '/api/public/lettres-mission-envois'
     | '/api/public/rappels-expiration'
@@ -819,6 +829,7 @@ export interface FileRouteTypes {
     | '/api/public/dossiers-bloques'
     | '/api/public/envois-planifies'
     | '/api/public/formations-rappels'
+    | '/api/public/gmail-inbox'
     | '/api/public/leads'
     | '/api/public/lettres-mission-envois'
     | '/api/public/rappels-expiration'
@@ -892,6 +903,7 @@ export interface FileRouteTypes {
     | '/api/public/dossiers-bloques'
     | '/api/public/envois-planifies'
     | '/api/public/formations-rappels'
+    | '/api/public/gmail-inbox'
     | '/api/public/leads'
     | '/api/public/lettres-mission-envois'
     | '/api/public/rappels-expiration'
@@ -943,6 +955,7 @@ export interface RootRouteChildren {
   ApiPublicDossiersBloquesRoute: typeof ApiPublicDossiersBloquesRoute
   ApiPublicEnvoisPlanifiesRoute: typeof ApiPublicEnvoisPlanifiesRoute
   ApiPublicFormationsRappelsRoute: typeof ApiPublicFormationsRappelsRoute
+  ApiPublicGmailInboxRoute: typeof ApiPublicGmailInboxRoute
   ApiPublicLeadsRoute: typeof ApiPublicLeadsRoute
   ApiPublicLettresMissionEnvoisRoute: typeof ApiPublicLettresMissionEnvoisRoute
   ApiPublicRappelsExpirationRoute: typeof ApiPublicRappelsExpirationRoute
@@ -1125,6 +1138,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/leads'
       fullPath: '/api/public/leads'
       preLoaderRoute: typeof ApiPublicLeadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/gmail-inbox': {
+      id: '/api/public/gmail-inbox'
+      path: '/api/public/gmail-inbox'
+      fullPath: '/api/public/gmail-inbox'
+      preLoaderRoute: typeof ApiPublicGmailInboxRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/formations-rappels': {
@@ -1593,6 +1613,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicDossiersBloquesRoute: ApiPublicDossiersBloquesRoute,
   ApiPublicEnvoisPlanifiesRoute: ApiPublicEnvoisPlanifiesRoute,
   ApiPublicFormationsRappelsRoute: ApiPublicFormationsRappelsRoute,
+  ApiPublicGmailInboxRoute: ApiPublicGmailInboxRoute,
   ApiPublicLeadsRoute: ApiPublicLeadsRoute,
   ApiPublicLettresMissionEnvoisRoute: ApiPublicLettresMissionEnvoisRoute,
   ApiPublicRappelsExpirationRoute: ApiPublicRappelsExpirationRoute,
