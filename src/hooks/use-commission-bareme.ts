@@ -43,15 +43,17 @@ export function useCommissionBareme() {
       type_assurance?: string | null;
       compagnie_id?: string | null;
       prime_annuelle?: number | null;
+      prime_nette_annuelle?: number | null;
       economie_realisee?: number | null;
       economie_estimee?: number | null;
     }) => {
       const branche = brancheContrat(c);
       const { regle, source } = resoudreRegle(regles, branche, c.compagnie_id ?? null);
+      const primeNette = c.prime_nette_annuelle ?? null;
       const montant = calculerCommission(regle, {
-        prime: c.prime_annuelle ?? null,
-        // Prime pure mensuelle : base de la règle « un mois de cotisation ».
-        primeMensuelle: c.prime_annuelle != null ? Number(c.prime_annuelle) / 12 : null,
+        // Toute commission assise sur la prime utilise la prime nette, jamais la prime totale.
+        prime: primeNette,
+        primeMensuelle: primeNette != null ? Number(primeNette) / 12 : null,
         economie: c.economie_realisee ?? c.economie_estimee ?? null,
       });
       return { branche, regle, source, montant };
