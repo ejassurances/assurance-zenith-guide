@@ -104,17 +104,24 @@ export async function recalculerPrevisionsParAssure(
     if (ligne.prevu.mensuel == null) continue;
     const { data: existante } = await client
       .from("commission_previsions")
-      .select("id")
+      .select("id, confirme_le, reduction_courtage_pct")
       .eq("contrat_id", ligne.contrat_id)
       .maybeSingle();
+    // Un montant confirmé à la main (devoir de conseil) reste la référence :
+    // le recalcul ne l'écrase jamais.
+    if (existante && (existante as { confirme_le?: string | null }).confirme_le) continue;
+    // Une réduction de courtage négociée est conservée et réappliquée.
+    const reduction = Number((existante as { reduction_courtage_pct?: number | null } | null)?.reduction_courtage_pct ?? 0);
+    const facteur = reduction > 0 && reduction < 100 ? 1 - reduction / 100 : 1;
+    const arrondi = (n: number) => Math.round(n * 100) / 100;
     const valeurs = {
       dossier_id: dossierId,
       contrat_id: ligne.contrat_id,
       branche: dossier.type_assurance ?? null,
       compagnie_id: dossier.compagnie_id ?? null,
-      montant_mensuel_estime: ligne.prevu.mensuel,
+      montant_mensuel_estime: arrondi(ligne.prevu.mensuel * facteur),
       mois_restants_initial: ligne.prevu.mois,
-      montant_previsionnel_total: ligne.prevu.total,
+      montant_previsionnel_total: ligne.prevu.total == null ? null : arrondi(ligne.prevu.total * facteur),
       date_estimation: aujourdhui,
       periodicite: "mensuelle",
       statut: "estime",
