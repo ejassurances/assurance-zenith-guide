@@ -25,6 +25,7 @@ import { ProduitDocumentsLink } from "@/components/produit-documents-link";
 import { DossierPipeline } from "@/components/dossier-pipeline";
 import { DevoirConseilPanel } from "@/components/devoir-conseil-panel";
 import { confirmerEchelonnementPartenaire } from "@/lib/devoir-conseil.functions";
+import { listerDossiersLies } from "@/lib/dossiers-lies.functions";
 import { DevoirConseilRefusAnalysePanel } from "@/components/devoir-conseil-refus-analyse-panel";
 import { SouscriptionPanel } from "@/components/souscription-panel";
 import { CopilotePanel } from "@/components/copilote-panel";
@@ -1028,6 +1029,7 @@ function DossierSynthese({
 }) {
   return (
     <div className="space-y-6">
+      <DossiersLiesBandeau dossierId={dossierId} />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="crm-card p-5">
           <p className="crm-eyebrow">Statut du dossier</p>
@@ -1115,6 +1117,55 @@ function DossierSynthese({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Bandeau des dossiers liés (ex. assurance vie créée depuis les économies
+ * d'un dossier assurance emprunteur, ou l'inverse). N'affiche rien s'il n'y
+ * a aucun lien — pas de bandeau vide.
+ */
+function DossiersLiesBandeau({ dossierId }: { dossierId: string }) {
+  const lister = useServerFn(listerDossiersLies);
+  const [liens, setLiens] = useState<
+    {
+      lien_id: string;
+      motif: string | null;
+      dossier_id: string;
+      reference: string | null;
+      client_nom: string | null;
+      type_assurance: string | null;
+      statut: string | null;
+    }[]
+  >([]);
+
+  useEffect(() => {
+    void lister({ data: { dossier_id: dossierId } }).then(setLiens);
+  }, [dossierId, lister]);
+
+  if (liens.length === 0) return null;
+
+  return (
+    <div className="rounded-xl border border-[color:var(--crm-gold)]/40 bg-[color:var(--crm-gold)]/10 p-4">
+      <p className="crm-eyebrow">Dossier(s) lié(s)</p>
+      <ul className="mt-2 space-y-1.5">
+        {liens.map((l) => (
+          <li key={l.lien_id} className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="text-ink">
+              {labelForBranche(l.type_assurance ?? "")} — {l.reference}
+            </span>
+            {l.motif && <span className="text-xs text-ink-muted">({l.motif})</span>}
+            <Link
+              to="/espace/dossiers/$id"
+              params={{ id: l.dossier_id }}
+              className="text-xs font-medium text-ink underline"
+            >
+              Ouvrir →
+            </Link>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
