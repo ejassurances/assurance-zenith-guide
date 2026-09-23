@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as DevenirPrescripteurRouteImport } from './routes/devenir-prescripteur'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AssuranceVieProfilRouteImport } from './routes/assurance-vie-profil'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EspaceConfidentialiteRouteImport } from './routes/espace.confidentialite'
@@ -97,6 +98,11 @@ const DevenirPrescripteurRoute = DevenirPrescripteurRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssuranceVieProfilRoute = AssuranceVieProfilRouteImport.update({
+  id: '/assurance-vie-profil',
+  path: '/assurance-vie-profil',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -509,6 +515,7 @@ const AuthenticatedEspaceClientsIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/assurance-vie-profil': typeof AssuranceVieProfilRoute
   '/auth': typeof AuthRoute
   '/devenir-prescripteur': typeof DevenirPrescripteurRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -584,6 +591,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/assurance-vie-profil': typeof AssuranceVieProfilRoute
   '/auth': typeof AuthRoute
   '/devenir-prescripteur': typeof DevenirPrescripteurRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -660,6 +668,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/assurance-vie-profil': typeof AssuranceVieProfilRoute
   '/auth': typeof AuthRoute
   '/devenir-prescripteur': typeof DevenirPrescripteurRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -737,6 +746,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/assurance-vie-profil'
     | '/auth'
     | '/devenir-prescripteur'
     | '/reset-password'
@@ -812,6 +822,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/assurance-vie-profil'
     | '/auth'
     | '/devenir-prescripteur'
     | '/reset-password'
@@ -887,6 +898,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/assurance-vie-profil'
     | '/auth'
     | '/devenir-prescripteur'
     | '/reset-password'
@@ -964,6 +976,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AssuranceVieProfilRoute: typeof AssuranceVieProfilRoute
   AuthRoute: typeof AuthRoute
   DevenirPrescripteurRoute: typeof DevenirPrescripteurRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -1024,6 +1037,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assurance-vie-profil': {
+      id: '/assurance-vie-profil'
+      path: '/assurance-vie-profil'
+      fullPath: '/assurance-vie-profil'
+      preLoaderRoute: typeof AssuranceVieProfilRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -1639,6 +1659,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AssuranceVieProfilRoute: AssuranceVieProfilRoute,
   AuthRoute: AuthRoute,
   DevenirPrescripteurRoute: DevenirPrescripteurRoute,
   ResetPasswordRoute: ResetPasswordRoute,
