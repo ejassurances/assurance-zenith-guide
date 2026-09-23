@@ -372,8 +372,11 @@ export function DevoirConseilPanel({
   // Synchronise form.frais_courtage sur le montant calculé, pour que tous les
   // usages existants (sauvegarde, PDF, affichage) restent corrects sans
   // dupliquer la logique de calcul à chaque endroit.
+  // Quand le calcul n'est pas possible (branche hors emprunteur, aucune économie
+  // chiffrée), la saisie manuelle reste possible : on n'efface jamais le montant.
   useEffect(() => {
-    const calcule = fraisCourtageCalc ? String(fraisCourtageCalc.montant) : "";
+    if (!fraisCourtageCalc) return;
+    const calcule = String(fraisCourtageCalc.montant);
     setForm((f) => (f.frais_courtage === calcule ? f : { ...f, frais_courtage: calcule }));
   }, [fraisCourtageCalc]);
 
