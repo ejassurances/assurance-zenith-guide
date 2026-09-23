@@ -139,10 +139,13 @@ export async function recalculerPrevisionsParAssure(
   if (enregistrees > 0) {
     const { data: niveauDossier } = await client
       .from("commission_previsions")
-      .select("id")
+      .select("id, confirme_le")
       .eq("dossier_id", dossierId)
       .is("contrat_id", null);
-    for (const row of niveauDossier ?? []) {
+    for (const row of (niveauDossier ?? []) as { id: string; confirme_le: string | null }[]) {
+      // Une prévision confirmée à la main au niveau du dossier est conservée
+      // comme preuve : elle est seulement marquée reprise, jamais supprimée.
+      if (row.confirme_le) continue;
       await client.from("commission_previsions").delete().eq("id", row.id);
       reprise = true;
     }
