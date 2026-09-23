@@ -53,3 +53,29 @@ Après validation des migrations SQL de `supabase/migrations/`, vérifier qu'ell
 - Fonction de calcul de commission depuis une assiette explicite.
 - Migration de synchronisation du statut DDA depuis la lettre de mission.
 - `prime_nette_annuelle` conservée pour compatibilité, avec priorité donnée à l'assiette de commission explicite.
+
+## Décision produit (23/09/2026) — vue contrat : page dédiée, pas de popup
+Deux vues contrat façon Courtigo ont été construites en parallèle, sans le
+savoir, au même moment : une popup depuis `espace.contrats.index.tsx`
+(onglets Synthèse/Modifier/Assurés/Frais/Compléments/Fichiers) et une page
+dédiée à onglets sur `espace.contrats.$id.tsx` (Synthèse/Modifier/Assurés/
+Frais & Commissionnement/Échéances/Fichiers).
+
+Décision d'Erwan : **on garde la page dédiée, pas de popup, pas de
+cohabitation des deux** (raisons : contenu trop dense pour une popup —
+tableau d'échéances à 7-8 colonnes, dizaine de champs financiers — et
+cohérence avec les dossiers, déjà en page dédiée plutôt qu'en popup).
+
+La popup a été retirée de `espace.contrats.index.tsx` : le clic sur une
+ligne du tableau et le bouton « Ouvrir » naviguent maintenant directement
+vers `/espace/contrats/$id`. Les types, fonctions et imports qui ne
+servaient qu'à la popup (`ContratApercu`, `ClientApercu`, `MiniCard`,
+`Info`, `ongletLabel`, le client `supabase` direct dans ce fichier) ont
+été retirés avec elle — la liste reste inchangée pour le reste (KPI,
+filtres, tableau).
+
+Si un nouveau travail sur la fiche contrat est repris, c'est
+`espace.contrats.$id.tsx` la référence unique désormais — les champs
+fiscaux (prime HT/TTC, taxes, assiette commission) qu'on vient d'ajouter
+au schéma devraient y être affichés dans le bloc « Finances » de l'onglet
+Synthèse, pas dans une popup.
