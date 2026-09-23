@@ -17,6 +17,10 @@ const schema = z.object({
   tolerance_risque: z.string().max(200).optional(),
   origine_fonds: z.string().max(200).optional(),
   commentaire: z.string().max(2000).optional(),
+  /** Si fourni (lien envoyé depuis un dossier déjà créé, ex. suite au devoir
+   *  de conseil emprunteur) : le profil complète ce dossier existant plutôt
+   *  que d'en créer un nouveau, pour éviter tout doublon client/dossier. */
+  dossier_id: z.string().uuid().optional(),
 });
 
 const nb = (v?: string) => (v && v.trim() !== "" ? Number(v) : null);
@@ -36,6 +40,50 @@ export const creerProfilAssuranceVie = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => schema.parse(input))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const profil = {
+      profil_dda_vie: {
+        situation_familiale: data.situation_familiale ?? null,
+        situation_professionnelle: data.situation_professionnelle ?? null,
+        revenus_mensuels: nb(data.revenus_mensuels),
+        charges_mensuelles: nb(data.charges_mensuelles),
+        epargne_disponible: nb(data.epargne_disponible),
+        experience_placements: data.experience_placements ?? null,
+        objectif_principal: data.objectif_principal ?? null,
+        horizon_placement: data.horizon_placement ?? null,
+        tolerance_risque: data.tolerance_risque ?? null,
+        origine_fonds: data.origine_fonds ?? null,
+        commentaire: data.commentaire ?? null,
+      },
+    };
+
+    if (data.dossier_id) {
+      const { data: existant, error: errLire } = await supabaseAdmin
+        .from("dossiers")
+        .select("id, reference, client_id, recueil_besoins")
+        .eq("id", data.dossier_id)
+        .maybeSingle();
+      if (errLire || !existant) throw new Error("Dossier introuvable");
+
+      const { error: errMaj } = await supabaseAdmin
+        .from("dossiers")
+        .update({ recueil_besoins: { ...(existant.recueil_besoins as object), ...profil } })
+        .eq("id", data.dossier_id);
+      if (errMaj) throw new Error(errMaj.message);
+
+      const { data: client } = await supabaseAdmin
+        .from("clients")
+        .select("reference")
+        .eq("id", existant.client_id)
+        .maybeSingle();
+
+      return {
+        client_id: existant.client_id,
+        client_reference: client?.reference ?? "",
+        dossier_id: existant.id,
+        dossier_reference: existant.reference,
+      };
+    }
 
     const { data: client, error: errClient } = await supabaseAdmin
       .from("clients")
@@ -60,21 +108,7 @@ export const creerProfilAssuranceVie = createServerFn({ method: "POST" })
         client_phone: data.telephone ?? null,
         type_assurance: "epargne_retraite",
         statut: "nouveau",
-        recueil_besoins: {
-          profil_dda_vie: {
-            situation_familiale: data.situation_familiale ?? null,
-            situation_professionnelle: data.situation_professionnelle ?? null,
-            revenus_mensuels: nb(data.revenus_mensuels),
-            charges_mensuelles: nb(data.charges_mensuelles),
-            epargne_disponible: nb(data.epargne_disponible),
-            experience_placements: data.experience_placements ?? null,
-            objectif_principal: data.objectif_principal ?? null,
-            horizon_placement: data.horizon_placement ?? null,
-            tolerance_risque: data.tolerance_risque ?? null,
-            origine_fonds: data.origine_fonds ?? null,
-            commentaire: data.commentaire ?? null,
-          },
-        },
+        recueil_besoins: profil,
       })
       .select("id, reference")
       .single();

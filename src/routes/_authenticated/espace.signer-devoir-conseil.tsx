@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { SignaturePad } from "@/components/signature-pad";
 import { signerDevoirConseil, refuserDevoirConseil, pdfDevoirConseil } from "@/lib/devoir-conseil.functions";
+import { signalerInteretAssuranceVie, signalerNonInteretAssuranceVie } from "@/lib/interet-assurance-vie.functions";
 import { labelForBranche } from "@/lib/recueil-besoins-schemas";
 import { STATUT_OFFRE_LABEL, type StatutOffre } from "@/lib/devoir-conseil-modeles";
 import { COUVERTURE_LABEL, type Couverture } from "@/lib/garanties-grille";
@@ -60,6 +61,12 @@ function SignerDevoirConseil() {
     })();
   }, []);
 
+  const [afficherChoixVie, setAfficherChoixVie] = useState(false);
+  const [choixVieEnCours, setChoixVieEnCours] = useState(false);
+  const [choixVieFait, setChoixVieFait] = useState<"interesse" | "pas_interesse" | null>(null);
+  const interesseVie = useServerFn(signalerInteretAssuranceVie);
+  const nonInteresseVie = useServerFn(signalerNonInteretAssuranceVie);
+
   const submitSignature = async () => {
     if (!devoir || !accepte || !signature) return;
     if (echelonnementSouhaite && !echelonnementConfirme) {
@@ -72,10 +79,31 @@ function SignerDevoirConseil() {
       await signer({
         data: { devoir_id: devoir.id, signature_png: signature, echelonnement_demande: echelonnementSouhaite },
       });
-      navigate({ to: "/espace/mon-espace" });
+      if (devoir.type_assurance === "emprunteur") {
+        setAfficherChoixVie(true);
+        setSubmitting(false);
+      } else {
+        navigate({ to: "/espace/mon-espace" });
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur");
       setSubmitting(false);
+    }
+  };
+
+  const choisirVie = async (interesse: boolean) => {
+    if (!devoir) return;
+    setChoixVieEnCours(true);
+    try {
+      if (interesse) {
+        await interesseVie({ data: { devoir_id: devoir.id } });
+        setChoixVieFait("interesse");
+      } else {
+        await nonInteresseVie({ data: { devoir_id: devoir.id } });
+        setChoixVieFait("pas_interesse");
+      }
+    } finally {
+      setChoixVieEnCours(false);
     }
   };
 
@@ -107,6 +135,59 @@ function SignerDevoirConseil() {
 
   const c = devoir.contenu ?? {};
   const conseil = c.conseil ?? {};
+
+  if (afficherChoixVie) {
+    if (choixVieFait) {
+      return (
+        <div className="mx-auto max-w-xl p-8 text-center">
+          <p className="font-serif text-2xl font-medium text-ink">Merci !</p>
+          <p className="mt-3 text-sm text-ink-soft">
+            {choixVieFait === "interesse"
+              ? "Votre devoir de conseil est signé. Un conseiller vous recontactera prochainement pour organiser un rendez-vous téléphonique de mise en place de votre assurance vie. Vous allez également recevoir un mail pour renseigner votre profil épargne."
+              : "Votre devoir de conseil est signé. Merci pour votre confiance."}
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/espace/mon-espace" })}
+            className="mt-6 rounded-full bg-[#0A192F] px-5 py-2 text-sm font-medium text-white"
+          >
+            Retour à mon espace
+          </button>
+        </div>
+      );
+    }
+    return (
+      <div className="mx-auto max-w-xl space-y-6 p-8 text-center">
+        <p className="font-serif text-2xl font-medium text-ink">Votre devoir de conseil est signé.</p>
+        <div className="crm-card space-y-3 rounded-2xl p-6 text-left">
+          <p className="text-sm font-medium text-ink">Et vos économies ?</p>
+          <p className="text-sm text-ink-soft">
+            Nous vous proposons de placer les économies réalisées grâce à cette substitution sur
+            une assurance vie, sans frais sur les versements. Souhaitez-vous que nous vous
+            recontactions pour en discuter ?
+          </p>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <button
+            type="button"
+            disabled={choixVieEnCours}
+            onClick={() => void choisirVie(true)}
+            className="flex-1 rounded-full bg-[color:var(--crm-gold)] px-5 py-3 text-sm font-semibold text-[color:var(--crm-navy)] disabled:opacity-50"
+          >
+            Je suis intéressé(e) par l'assurance vie
+          </button>
+          <button
+            type="button"
+            disabled={choixVieEnCours}
+            onClick={() => void choisirVie(false)}
+            className="flex-1 rounded-full border border-line px-5 py-3 text-sm font-medium text-ink disabled:opacity-50"
+          >
+            Je ne suis pas intéressé(e)
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">

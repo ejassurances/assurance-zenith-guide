@@ -113,16 +113,18 @@ function ProfilAssuranceVie() {
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
+  const dossierId =
+    typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("dossier_id") : null;
 
   const envoyer = async () => {
-    if (!c.nom.trim() || !c.email.trim()) {
+    if (!dossierId && (!c.nom.trim() || !c.email.trim())) {
       setErreur("Le nom et l'email sont obligatoires.");
       return;
     }
     setEnvoi(true);
     setErreur(null);
     try {
-      await creer({ data: c });
+      await creer({ data: { ...c, dossier_id: dossierId ?? undefined } });
       setOk(true);
     } catch (e) {
       setErreur(e instanceof Error ? e.message : "Erreur lors de l'envoi.");
@@ -181,12 +183,16 @@ function ProfilAssuranceVie() {
 
       <div className="crm-card space-y-4 rounded-2xl p-6">
         <p className="crm-eyebrow">Vous</p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Champ label="Nom *" value={c.nom} onChange={set("nom")} />
-          <Champ label="Prénom" value={c.prenom} onChange={set("prenom")} />
-          <Champ label="Email *" type="email" value={c.email} onChange={set("email")} />
-          <Champ label="Téléphone" value={c.telephone} onChange={set("telephone")} />
-        </div>
+        {dossierId ? (
+          <p className="text-sm text-ink-soft">Vos coordonnées sont déjà connues de votre dossier.</p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Champ label="Nom *" value={c.nom} onChange={set("nom")} />
+            <Champ label="Prénom" value={c.prenom} onChange={set("prenom")} />
+            <Champ label="Email *" type="email" value={c.email} onChange={set("email")} />
+            <Champ label="Téléphone" value={c.telephone} onChange={set("telephone")} />
+          </div>
+        )}
         <ChampChoix
           label="Situation familiale"
           value={c.situation_familiale}

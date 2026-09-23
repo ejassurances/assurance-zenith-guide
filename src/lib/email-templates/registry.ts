@@ -510,7 +510,33 @@ function PrequalificationEmprunteurEmail(props: { prenom?: string; cabinetName?:
   return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
 }
 
+function InvitationProfilVieEmail(props: { prenom?: string; cabinetName?: string; lien?: string }) {
+  const nom = props.cabinetName || "EJ Partners Assurances";
+  const html =
+    "<p>Bonjour " +
+    (props.prenom || "") +
+    ",</p>" +
+    "<p>Suite a votre interet pour la mise en place d'une assurance vie avec les economies realisees sur votre assurance emprunteur, je vous propose de renseigner votre profil epargne avant notre rendez-vous telephonique :</p>" +
+    "<p><a href=\"" +
+    (props.lien || "") +
+    "\">Renseigner mon profil epargne</a></p>" +
+    "<p>Cela nous permettra de nous concentrer directement, lors de notre echange, sur la mise en place de votre contrat.</p>" +
+    "<p>Cordialement,<br/>Erwan Jaffrelot<br/>" +
+    nom +
+    "</p>";
+  const style = { fontFamily: "Arial, sans-serif", color: "#1a1a1a", fontSize: "15px", lineHeight: "1.6" };
+  return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
+}
+
 export const TEMPLATES: Record<string, TemplateEntry> = {
+  "invitation-profil-vie": {
+    component: InvitationProfilVieEmail,
+    subject: (data: Record<string, any>) =>
+      "Votre profil épargne — assurance vie — " + (data && data.reference ? data.reference : ""),
+    displayName: "Assurance vie - Invitation à renseigner le profil épargne",
+    previewData: { prenom: "Jean", reference: "EJ-2026-VIE-0001", lien: "https://example.com" },
+  },
+
   "prequalification-emprunteur": {
     component: PrequalificationEmprunteurEmail,
     subject: (data: Record<string, any>) =>
