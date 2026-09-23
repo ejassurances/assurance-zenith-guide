@@ -483,6 +483,21 @@ function DossierDetail() {
             )}
           </div>
         ) : parcoursActif && modeAffichage === "pret" ? (
+          <div className="space-y-6">
+          {canEdit && (
+            <ImportDocumentsEmprunteur
+              dossierId={id}
+              recueil={dossier.recueil_besoins}
+              onChanged={load}
+              client={{
+                id: dossier.client_id,
+                nom: dossier.client_nom,
+                email: dossier.client_email,
+                telephone: dossier.client_phone,
+                reference: dossier.reference,
+              }}
+            />
+          )}
           <RecueilDossierPanel
             dossierId={id}
             typeAssurance={dossier.type_assurance}
