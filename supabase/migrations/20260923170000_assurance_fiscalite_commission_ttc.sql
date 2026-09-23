@@ -1,5 +1,6 @@
 -- Référentiel fiscal et séparation TTC / HT / taxes / assiette de commission.
--- Aucune donnée existante n'est modifiée par cette migration.
+-- La migration ajoute la structure et initialise uniquement les nouvelles colonnes
+-- à partir de valeurs déjà présentes lorsqu'elles sont non ambiguës.
 
 create table if not exists public.taxes_assurances (
   id uuid primary key default gen_random_uuid(),
@@ -64,8 +65,7 @@ begin
   end if;
 
   if p_taux_taxe is null then
-    return query
-      select round(p_prime_ttc, 2), null::numeric, null::numeric;
+    return query select round(p_prime_ttc, 2), null::numeric, null::numeric;
     return;
   end if;
 
@@ -76,8 +76,9 @@ begin
 end;
 $$;
 
-create or replace function public.calculer_assiette_commission(
-  p_prime_ht numeric,
+-- Retourne le montant de commission calculé sur l'assiette HT/commissionnable.
+create or replace function public.calculer_commission_depuis_assiette(
+  p_assiette_commission numeric,
   p_taux_commission numeric
 )
 returns numeric
@@ -86,13 +87,13 @@ immutable
 set search_path = public
 as $$
   select case
-    when p_prime_ht is null or p_taux_commission is null then null
-    else round(p_prime_ht * p_taux_commission / 100, 2)
+    when p_assiette_commission is null or p_taux_commission is null then null
+    else round(p_assiette_commission * p_taux_commission / 100, 2)
   end;
 $$;
 
--- Pour l'assurance emprunteur dont le régime 9 % est explicitement confirmé,
--- cette fonction permet de dériver HT/taxes depuis le seul TTC du devis.
+-- Pour l'assurance emprunteur dont le régime 9 % est confirmé,
+-- dérive HT/taxes depuis le seul TTC du devis.
 create or replace function public.calculer_emprunteur_depuis_ttc(p_prime_ttc numeric)
 returns table (
   prime_ttc numeric,
@@ -106,15 +107,15 @@ as $$
   select * from public.calculer_montants_assurance_depuis_ttc(p_prime_ttc, 9, 0);
 $$;
 
--- Compatibilité avec le moteur historique : l'assiette explicite devient la
--- source prioritaire ; aucune prime existante n'est écrasée.
+-- Compatibilité avec le moteur historique : si une assiette explicite existe
+-- déjà, elle devient la source prioritaire sans écraser une valeur existante.
 update public.contrats
 set assiette_commission_annuelle = prime_nette_annuelle
 where assiette_commission_annuelle is null
   and prime_nette_annuelle is not null;
 
--- Si un contrat possède déjà une prime TTC explicite, on la conserve comme
--- source sans déduire arbitrairement une fiscalité inconnue.
+-- La prime annuelle existante est conservée comme source TTC historique lorsqu'il
+-- n'existe pas encore de champ source TTC. Aucune fiscalité n'est déduite ici.
 update public.contrats
 set prime_ttc_source_annuelle = prime_annuelle
 where prime_ttc_source_annuelle is null
