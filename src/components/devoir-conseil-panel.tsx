@@ -1099,23 +1099,35 @@ export function DevoirConseilPanel({
                 className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
               />
             </Field>
-            <Field label="Frais de courtage / distribution (€) — calculés automatiquement">
-              <div className="w-full rounded-md border border-line bg-muted/40 px-3 py-2 text-sm">
-                {fraisCourtageCalc ? (
-                  <>
-                    <span className="font-semibold">{eur(fraisCourtageCalc.montant)}</span>
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {fraisCourtageCalc.planchierApplique
-                        ? `(plancher 175 € × ${nbAssures} assuré${nbAssures > 1 ? "s" : ""} — 10 % de l'économie était inférieur au plancher)`
-                        : `(10 % de l'économie = ${eur(fraisCourtageCalc.base)}, dont ${eur(fraisCourtageCalc.partPartenaireDeduite)} déduits pour le partenaire)`}
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-xs text-muted-foreground">
-                    Calcul indisponible : l'économie brute doit être connue (échéancier renseigné plus bas).
+            <Field
+              label={
+                fraisCourtageCalc
+                  ? "Frais de courtage / distribution (€) — calculés automatiquement"
+                  : "Frais de courtage / distribution (€)"
+              }
+            >
+              {fraisCourtageCalc ? (
+                <div className="w-full rounded-md border border-line bg-muted/40 px-3 py-2 text-sm">
+                  <span className="font-semibold">{eur(fraisCourtageCalc.montant)}</span>
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    {fraisCourtageCalc.planchierApplique
+                      ? `(plancher 175 € × ${nbAssures} assuré${nbAssures > 1 ? "s" : ""} — 10 % de l'économie était inférieur au plancher)`
+                      : `(10 % de l'économie = ${eur(fraisCourtageCalc.base)}, dont ${eur(fraisCourtageCalc.partPartenaireDeduite)} déduits pour le partenaire)`}
                   </span>
-                )}
-              </div>
+                </div>
+              ) : (
+                <>
+                  <input
+                    type="number"
+                    value={form.frais_courtage}
+                    onChange={(e) => setForm({ ...form, frais_courtage: e.target.value })}
+                    className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm"
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Calcul automatique indisponible (aucune économie chiffrée) : saisissez le montant retenu.
+                  </p>
+                </>
+              )}
             </Field>
             <Field label="Frais d'adhésion (€)">
               <input
