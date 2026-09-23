@@ -27,6 +27,7 @@ type Contrat = {
   date_echeance: string | null;
   duree_mois: number | null;
   prime_annuelle: number | null;
+  prime_nette_annuelle: number | null;
   fractionnement: string;
   statut: string;
   notes: string | null;
@@ -93,7 +94,6 @@ function ContratDetail() {
   /** Correction tracée d'un contrat verrouillé : motif obligatoire. */
   const [correctionMotif, setCorrectionMotif] = useState<string | null>(null);
 
-
   async function load() {
     setLoading(true);
     const [contrat, echeances, users, roles] = await Promise.all([
@@ -131,7 +131,6 @@ function ContratDetail() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
-
 
   /** Économie figée : calculée quand un contrat emprunteur devient « signé ». */
   function economiePayload(force = false) {
@@ -177,6 +176,7 @@ function ContratDetail() {
           date_echeance: c.date_echeance,
           duree_mois: c.duree_mois,
           prime_annuelle: c.prime_annuelle,
+          prime_nette_annuelle: c.prime_nette_annuelle,
           fractionnement: c.fractionnement,
           statut: c.statut,
           notes: c.notes,
@@ -202,7 +202,6 @@ function ContratDetail() {
     const { error } = await supabase
       .from("contrats")
       .update({
-
         numero: c.numero,
         assureur: c.assureur,
         produit: c.produit,
@@ -210,6 +209,7 @@ function ContratDetail() {
         date_echeance: c.date_echeance,
         duree_mois: c.duree_mois,
         prime_annuelle: c.prime_annuelle,
+        prime_nette_annuelle: c.prime_nette_annuelle,
         fractionnement: c.fractionnement,
         statut: c.statut,
         notes: c.notes,
@@ -231,13 +231,11 @@ function ContratDetail() {
       .eq("id", c.id);
     setSaving(false);
     if (error) return setErr(error.message);
-    // Listes Brevo : le contrat vient de passer actif → synchro immédiate (best-effort).
     if (["actif", "contrat_actif", "contrat_valide"].includes(c.statut)) {
       void syncBrevo({ data: { client_id: c.client_id } }).catch((e) =>
         console.error("[brevo] synchro contact échouée", e),
       );
     }
-    // Reload to fetch newly computed échéances via trigger
     await load();
   }
 
@@ -269,12 +267,10 @@ function ContratDetail() {
     { prime: 0, cabinet: 0, mand: 0, presc: 0 },
   );
 
-  /** Contrat validé par la compagnie : plus aucune édition libre. */
   const verrouille = STATUTS_VERROUILLES.includes(c.statut);
   const enCorrection = verrouille && correctionMotif !== null;
   const editable = canEdit && (!verrouille || enCorrection);
   const sorti = ["resilie", "annule", "cloture"].includes(c.statut);
-
 
   return (
     <div className="space-y-6">
@@ -313,8 +309,9 @@ function ContratDetail() {
         )}
       </PageHeader>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Prime annuelle" value={formatEuro(c.prime_annuelle)} icon={IconFileText} accent />
+      <div className="grid gap-4 sm:grid-cols-4">
+        <StatCard label="Prime totale annuelle" value={formatEuro(c.prime_annuelle)} icon={IconFileText} accent />
+        <StatCard label="Prime nette annuelle" value={formatEuro(c.prime_nette_annuelle)} />
         <StatCard label="Commission cabinet (cumul)" value={formatEuro(totaux.cabinet)} />
         <StatCard label="Économie réalisée" value={c.economie_realisee !== null ? formatEuro(c.economie_realisee) : "—"} />
       </div>
@@ -379,6 +376,7 @@ function ContratDetail() {
         isEmprunteur={c.is_emprunteur}
         compagnieId={c.compagnie_id}
         primeAnnuelle={c.prime_annuelle}
+        primeNetteAnnuelle={c.prime_nette_annuelle}
         economieRealisee={c.economie_realisee}
       />
 
@@ -393,9 +391,6 @@ function ContratDetail() {
         />
       )}
 
-
-
-      {/* Bloc identité contrat */}
       <section className="crm-card grid gap-4 p-5 md:grid-cols-3">
         <F label="Type de contrat" wide>
           <label className="flex items-center gap-2 text-sm">
@@ -464,10 +459,8 @@ function ContratDetail() {
             <option value="annule">Annulé</option>
           </select>
         </F>
-
       </section>
 
-      {/* Conseil dans la durée */}
       <section className="crm-card grid gap-4 p-5 md:grid-cols-3">
         <div className="md:col-span-3">
           <h3 className="font-serif text-lg">Conseil dans la durée</h3>
@@ -495,7 +488,6 @@ function ContratDetail() {
         </F>
       </section>
 
-      {/* Bloc emprunteur */}
       {c.is_emprunteur && (
         <section className="crm-card grid gap-4 p-5 md:grid-cols-3">
           <div className="md:col-span-3">
@@ -596,14 +588,13 @@ function ContratDetail() {
         </section>
       )}
 
-      {/* Bloc commissionnement — interne : jamais visible côté client ni prescripteur. */}
       {canEdit && (
       <section className="crm-card grid gap-4 p-5 md:grid-cols-3">
         <div className="md:col-span-3">
           <h3 className="font-serif text-lg">Commissionnement</h3>
           <p className="text-xs text-ink-muted">
-            La part cabinet est calculée sur la prime. Les rétrocessions mandataire/prescripteur suivent les règles
-            configurées dans « Règles de commissionnement ».
+            La part cabinet calculée sur la prime utilise désormais la prime nette. La prime totale reste conservée
+            séparément pour le suivi du contrat. Les rétrocessions mandataire/prescripteur suivent les règles configurées.
           </p>
         </div>
         <F label="Commission cabinet (part de la prime, ex : 0.15 pour 15 %)">
@@ -631,8 +622,8 @@ function ContratDetail() {
         <F
           label={
             c.is_emprunteur
-              ? "Prime annuelle assureur (référence emprunteur — utilisée si le taux est absent)"
-              : "Prime annuelle"
+              ? "Prime totale annuelle assureur (référence emprunteur)"
+              : "Prime totale annuelle"
           }
         >
           <input
@@ -640,6 +631,16 @@ function ContratDetail() {
             step="0.01"
             value={c.prime_annuelle ?? ""}
             onChange={(e) => setC({ ...c, prime_annuelle: e.target.value ? Number(e.target.value) : null })}
+            readOnly={!editable}
+            className={inp}
+          />
+        </F>
+        <F label="Prime nette annuelle (assiette des commissions)">
+          <input
+            type="number"
+            step="0.01"
+            value={c.prime_nette_annuelle ?? ""}
+            onChange={(e) => setC({ ...c, prime_nette_annuelle: e.target.value ? Number(e.target.value) : null })}
             readOnly={!editable}
             className={inp}
           />
@@ -686,7 +687,6 @@ function ContratDetail() {
       </section>
       )}
 
-
       {editable && !verrouille && (
         <div className="flex justify-end">
           <button
@@ -699,7 +699,6 @@ function ContratDetail() {
         </div>
       )}
 
-      {/* Tableau des échéances */}
       <section className="space-y-3 rounded-lg border border-line bg-surface p-5">
         <div className="flex items-center justify-between">
           <div>
@@ -709,14 +708,13 @@ function ContratDetail() {
             <p className="text-xs text-ink-muted">
               {sorti
                 ? "Contrat sorti du portefeuille : les appels de cotisation et commissions déjà émis avant la résiliation sont conservés en l'état, sans recalcul."
-                : "Prime et commissions année par année. Recalculées automatiquement à chaque modification."}
+                : "Prime totale et commissions année par année. Les commissions sont calculées sur la prime nette lorsque la règle est assise sur la prime."}
             </p>
           </div>
           <div className="text-right text-xs text-ink-muted">
             {ech.length} année{ech.length > 1 ? "s" : ""} · Cabinet total : {formatEuro(totaux.cabinet)}
           </div>
         </div>
-
 
         {ech.length === 0 ? (
           <p className="text-sm text-ink-muted">
@@ -730,7 +728,7 @@ function ContratDetail() {
                   <th className="px-3 py-2 text-left">Année</th>
                   <th className="px-3 py-2 text-left">Période</th>
                   <th className="px-3 py-2 text-right">CRD début</th>
-                  <th className="px-3 py-2 text-right">Prime</th>
+                  <th className="px-3 py-2 text-right">Prime totale</th>
                   <th className="px-3 py-2 text-right">Cabinet</th>
                   {role === "admin" && <th className="px-3 py-2 text-right">Mandataire</th>}
                   {role === "admin" && <th className="px-3 py-2 text-right">Prescripteur</th>}
@@ -742,7 +740,7 @@ function ContratDetail() {
                   <tr key={e.id}>
                     <td className="px-3 py-2">{e.annee}</td>
                     <td className="px-3 py-2 text-xs text-ink-muted">
-                      {new Date(e.date_debut_periode).toLocaleDateString("fr-FR")} →{" "}
+                      {new Date(e.date_debut_periode).toLocaleDateString("fr-FR")} → {" "}
                       {new Date(e.date_fin_periode).toLocaleDateString("fr-FR")}
                     </td>
                     <td className="px-3 py-2 text-right">{formatEuro(e.capital_restant_du_debut)}</td>
