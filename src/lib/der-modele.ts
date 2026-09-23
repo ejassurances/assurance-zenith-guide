@@ -3,7 +3,10 @@ import { SITE } from "@/lib/site";
 /**
  * Modèle du DER (Document d'Entrée en Relation).
  *
- * Mentions légales fixes définies en code (texte validé, ne pas reformuler)
+ * Mentions légales fixes définies en code (texte validé, ne pas reformuler
+ * sans validation d'Erwan — la mention "remuneration" a été corrigée le
+ * 23/09/2026 : l'ancien texte n'annonçait aucun honoraire direct au client,
+ * incohérent avec les frais de courtage désormais facturés).
  * + zone dynamique calculée à partir des compagnies et produits actifs en base.
  */
 
@@ -15,7 +18,7 @@ export const DER_MENTIONS = {
   statut:
     "Le cabinet exerce en qualité de courtier indépendant, sans lien capitalistique avec les entreprises d'assurance dont il distribue les produits, et n'est tenu par aucune obligation contractuelle de travailler exclusivement avec une ou plusieurs d'entre elles.",
   remuneration:
-    "Le cabinet perçoit une rémunération sous forme de commissions versées par les entreprises d'assurance partenaires, incluse dans le montant de la prime ; aucun honoraire n'est facturé directement au client sauf mention contraire expresse.",
+    "Le cabinet perçoit une rémunération sous forme de commissions versées par les entreprises d'assurance partenaires, incluse dans le montant de la prime, et peut également percevoir des honoraires facturés directement au client sous forme de frais de courtage — notamment lors de la mise en place d'un contrat d'assurance vie ou d'épargne. Le montant de ces frais de courtage, lorsqu'ils s'appliquent, est précisé dans le devoir de conseil remis avant toute souscription.",
   reclamation:
     "Toute réclamation peut être adressée au cabinet par écrit ; à défaut de réponse satisfaisante sous deux mois, le client peut saisir La Médiation de l'Assurance, TSA 50110, 75441 Paris Cedex 09.",
   registre: "Le registre ORIAS est consultable sur www.orias.fr.",
