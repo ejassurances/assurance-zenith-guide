@@ -9,12 +9,14 @@ export function CommissionContratCard({
   isEmprunteur,
   compagnieId,
   primeAnnuelle,
+  primeNetteAnnuelle,
   economieRealisee,
 }: {
   dossierId: string | null;
   isEmprunteur: boolean;
   compagnieId: string | null;
   primeAnnuelle: number | null;
+  primeNetteAnnuelle: number | null;
   economieRealisee: number | null;
 }) {
   const { staff, loading, commissionContrat } = useCommissionBareme();
@@ -41,6 +43,7 @@ export function CommissionContratCard({
     type_assurance: typeAssurance,
     compagnie_id: compagnieId,
     prime_annuelle: primeAnnuelle,
+    prime_nette_annuelle: primeNetteAnnuelle,
     economie_realisee: economieRealisee,
     economie_estimee: economieDossier,
   });
@@ -56,6 +59,12 @@ export function CommissionContratCard({
             <span className="rounded-full bg-background px-2 py-0.5">{LIBELLE_SOURCE[source]}</span>
           </p>
           {regle.notes && <p className="mt-1 text-xs text-ink-muted">{regle.notes}</p>}
+          {regle.base_calcul === "prime" && (
+            <p className="mt-1 text-[11px] text-ink-muted">
+              Assiette : prime nette annuelle {primeNetteAnnuelle != null ? fmtEuros(primeNetteAnnuelle) : "non renseignée"}
+              {regle.assiette_mensuelle ? " (soit la prime nette mensuelle pour une règle mensuelle)" : ""}.
+            </p>
+          )}
         </div>
         <p className="font-serif text-2xl font-medium text-ink">{fmtEuros(montant)}</p>
       </div>
