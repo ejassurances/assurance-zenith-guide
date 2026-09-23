@@ -514,6 +514,7 @@ function DossierDetail() {
               reference: dossier.reference,
             }}
           />
+          </div>
         ) : parcoursActif && (modeAffichage === "engin" || modeAffichage === "usage") ? (
           <RecueilDossierPanel
             dossierId={id}
