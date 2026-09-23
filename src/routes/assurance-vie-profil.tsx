@@ -133,30 +133,54 @@ function ProfilAssuranceVie() {
 
   if (ok) {
     return (
-      <div className="mx-auto max-w-xl p-8 text-center">
-        <p className="font-serif text-2xl font-medium text-ink">Merci !</p>
-        <p className="mt-3 text-sm text-ink-soft">
-          Votre profil a bien été transmis. Un conseiller EJ Partners Assurances reviendra vers
-          vous prochainement.
-        </p>
+      <div className="crm-theme min-h-screen bg-[color:var(--crm-navy)]">
+        <div className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center px-6 text-center">
+          <img
+            src="/logo-ej-partners.png"
+            alt="EJ Partners Assurances"
+            className="size-16 rounded-lg object-cover ring-2 ring-[color:var(--crm-gold)]/40"
+          />
+          <p className="mt-8 font-serif text-3xl font-medium text-white">Merci !</p>
+          <p className="mt-4 text-sm leading-relaxed text-white/70">
+            Votre profil a bien été transmis. Un conseiller EJ Partners Assurances reviendra vers
+            vous prochainement pour organiser votre rendez-vous.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 p-6">
-      <div>
-        <h1 className="font-serif text-2xl font-medium text-ink">Votre profil épargne — assurance vie</h1>
-        <p className="mt-2 text-sm text-ink-muted">
-          Version de travail (brouillon) — ce questionnaire sera complété avant mise en production
-          pour respecter les exigences DDA (connaissance client, objectifs, horizon, tolérance au
-          risque). En le remplissant avant notre rendez-vous, celui-ci pourra se concentrer
-          directement sur la mise en place de votre contrat.
-        </p>
+    <div className="crm-theme min-h-screen bg-[#f7f5f0]">
+      <div className="bg-[color:var(--crm-navy)] px-6 pb-16 pt-10">
+        <div className="mx-auto max-w-2xl">
+          <img
+            src="/logo-ej-partners.png"
+            alt="EJ Partners Assurances"
+            className="size-12 rounded-lg object-cover ring-2 ring-[color:var(--crm-gold)]/40"
+          />
+          <p className="mt-6 text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--crm-gold)]">
+            EJ Partners Assurances
+          </p>
+          <h1 className="mt-2 font-serif text-3xl font-medium text-white sm:text-4xl">
+            Votre profil épargne
+          </h1>
+          <p className="mt-4 max-w-xl text-sm leading-relaxed text-white/70">
+            En le remplissant avant notre rendez-vous, celui-ci pourra se concentrer directement
+            sur la mise en place de votre contrat, plutôt que sur la découverte de votre situation.
+          </p>
+        </div>
       </div>
 
-      <div className="crm-card space-y-4 p-6">
-        <p className="text-sm font-semibold text-ink">Vous</p>
+      <div className="mx-auto -mt-8 max-w-2xl space-y-5 px-6 pb-16">
+        <div className="rounded-2xl border border-[color:var(--crm-gold)]/30 bg-white p-4 text-xs leading-relaxed text-ink-muted shadow-sm">
+          Version de travail (brouillon) — ce questionnaire sera complété avant mise en production
+          pour respecter les exigences réglementaires DDA (connaissance client, objectifs,
+          horizon, tolérance au risque).
+        </div>
+
+      <div className="crm-card space-y-4 rounded-2xl p-6">
+        <p className="crm-eyebrow">Vous</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <Champ label="Nom *" value={c.nom} onChange={set("nom")} />
           <Champ label="Prénom" value={c.prenom} onChange={set("prenom")} />
@@ -177,8 +201,8 @@ function ProfilAssuranceVie() {
         />
       </div>
 
-      <div className="crm-card space-y-4 p-6">
-        <p className="text-sm font-semibold text-ink">Votre situation financière</p>
+      <div className="crm-card space-y-4 rounded-2xl p-6">
+        <p className="crm-eyebrow">Votre situation financière</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <Champ label="Revenus mensuels du foyer (€, approximatif)" type="number" value={c.revenus_mensuels} onChange={set("revenus_mensuels")} />
           <Champ label="Charges mensuelles du foyer (€, approximatif)" type="number" value={c.charges_mensuelles} onChange={set("charges_mensuelles")} />
@@ -192,8 +216,8 @@ function ProfilAssuranceVie() {
         />
       </div>
 
-      <div className="crm-card space-y-4 p-6">
-        <p className="text-sm font-semibold text-ink">Votre profil d'investisseur</p>
+      <div className="crm-card space-y-4 rounded-2xl p-6">
+        <p className="crm-eyebrow">Votre profil d'investisseur</p>
         <ChampChoix
           label="Avez-vous déjà investi dans des produits financiers (assurance vie, bourse, immobilier locatif...) ?"
           value={c.experience_placements}
@@ -230,7 +254,7 @@ function ProfilAssuranceVie() {
         />
       </div>
 
-      <div className="crm-card space-y-3 p-6">
+      <div className="crm-card space-y-3 rounded-2xl p-6">
         <label className="text-xs font-medium text-ink-muted">
           Toute autre information que vous jugez utile (facultatif)
         </label>
@@ -247,7 +271,7 @@ function ProfilAssuranceVie() {
         type="button"
         onClick={() => void envoyer()}
         disabled={envoi}
-        className="w-full rounded-full bg-[#0A192F] px-5 py-3 text-sm font-medium text-white disabled:opacity-50"
+        className="w-full rounded-full bg-[color:var(--crm-gold)] px-5 py-3 text-sm font-semibold text-[color:var(--crm-navy)] shadow-sm transition hover:brightness-95 disabled:opacity-50"
       >
         {envoi ? "Envoi…" : "Envoyer mon profil"}
       </button>
