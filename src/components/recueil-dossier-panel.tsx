@@ -516,8 +516,18 @@ export function RecueilDossierPanel({
     });
     if (calcul.capital_restant_du === null || calcul.mois_restants === null) return;
     const capitalRestant = Math.round(calcul.capital_restant_du);
-    if (Number(values["capital_restant_du"]) === capitalRestant && Number(values["mois_restants"]) === calcul.mois_restants) return;
-    setValues((prev) => ({ ...prev, capital_restant_du: capitalRestant, mois_restants: calcul.mois_restants }));
+    // Le calcul ne complète que les champs VIDES : une valeur saisie par un
+    // humain (reprise du tableau d'amortissement) n'est jamais écrasée. Les
+    // écarts restent signalés par les contrôles de cohérence.
+    const vide = (cle: string) => {
+      const v = values[cle];
+      return v === null || v === undefined || v === "" || !Number.isFinite(Number(v)) || Number(v) <= 0;
+    };
+    const maj: Record<string, unknown> = {};
+    if (vide("capital_restant_du")) maj["capital_restant_du"] = capitalRestant;
+    if (vide("mois_restants")) maj["mois_restants"] = calcul.mois_restants;
+    if (Object.keys(maj).length === 0) return;
+    setValues((prev) => ({ ...prev, ...maj }));
   }, [branche?.value, canEdit, dateDocumentPret, dossierCreeLe, values]);
 
   if (!branche) return null;

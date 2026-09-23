@@ -61,7 +61,11 @@ async function rattacher(admin: Admin, email: string | null): Promise<Rattacheme
 
   const [clients, compagnies, fournisseurs, prescripteurs] = await Promise.all([
     admin.from("clients").select("id").eq("email", email).limit(3),
-    admin.from("compagnies").select("id").eq("email", email).limit(3),
+    admin
+      .from("compagnies")
+      .select("id")
+      .or(`contact_email.eq.${email},email_reclamations.eq.${email}`)
+      .limit(3),
     admin.from("fournisseurs").select("id").eq("email", email).limit(3),
     admin.from("prescripteurs").select("id").eq("email", email).limit(3),
   ]);
