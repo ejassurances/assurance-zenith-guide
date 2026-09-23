@@ -93,6 +93,10 @@ function ContratDetail() {
   const [err, setErr] = useState<string | null>(null);
   /** Correction tracée d'un contrat verrouillé : motif obligatoire. */
   const [correctionMotif, setCorrectionMotif] = useState<string | null>(null);
+  const [mode, setMode] = useState<
+    "synthese" | "modifier" | "assures" | "frais" | "echeances" | "fichiers" | "a_venir"
+  >("synthese");
+  const [ongletAVenir, setOngletAVenir] = useState<string>("");
 
   async function load() {
     setLoading(true);
@@ -309,88 +313,229 @@ function ContratDetail() {
         )}
       </PageHeader>
 
-      <div className="grid gap-4 sm:grid-cols-4">
-        <StatCard label="Prime totale annuelle" value={formatEuro(c.prime_annuelle)} icon={IconFileText} accent />
-        <StatCard label="Prime nette annuelle" value={formatEuro(c.prime_nette_annuelle)} />
-        <StatCard label="Commission cabinet (cumul)" value={formatEuro(totaux.cabinet)} />
-        <StatCard label="Économie réalisée" value={c.economie_realisee !== null ? formatEuro(c.economie_realisee) : "—"} />
+      <div className="flex flex-wrap gap-1 border-b border-line">
+        {(
+          [
+            { mode: "synthese", label: "Synthèse" },
+            { mode: "modifier", label: "Modifier" },
+            { mode: "assures", label: "Assurés" },
+            { mode: "frais", label: "Frais & Commissionnement" },
+            { mode: "echeances", label: "Échéances" },
+            { mode: "fichiers", label: "Fichiers" },
+          ] as const
+        ).map((t) => (
+          <button
+            key={t.mode}
+            onClick={() => setMode(t.mode)}
+            className={
+              "rounded-t-md px-3 py-2 text-sm font-medium " +
+              (mode === t.mode
+                ? "border-b-2 border-[color:var(--crm-gold)] text-ink"
+                : "text-ink-muted hover:text-ink")
+            }
+          >
+            {t.label}
+          </button>
+        ))}
+        {(
+          [
+            "Chargé d'affaire",
+            "Tâche(s)",
+            "Réaffectation client",
+            "Gestion avenant",
+            "Contrôle des pièces",
+            "Compléments",
+          ] as const
+        ).map((label) => (
+          <button
+            key={label}
+            onClick={() => {
+              setOngletAVenir(label);
+              setMode("a_venir");
+            }}
+            className={
+              "rounded-t-md px-3 py-2 text-sm font-medium " +
+              (mode === "a_venir" && ongletAVenir === label
+                ? "border-b-2 border-[color:var(--crm-gold)] text-ink"
+                : "text-ink-muted/60 hover:text-ink-muted")
+            }
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {err && <p className="rounded-md bg-red-50 p-3 text-sm text-red-800">{err}</p>}
 
-      {verrouille && (
-        <section className="crm-card space-y-3 p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h3 className="font-serif text-lg">Contrat validé par la compagnie</h3>
-              <p className="text-xs text-ink-muted">
-                Les données contractuelles sont verrouillées. Toute correction passe par une action explicite et
-                tracée (motif obligatoire, avant/après journalisé), réservée à un administrateur.
-              </p>
-            </div>
-            {role === "admin" && !enCorrection && (
-              <button
-                onClick={() => setCorrectionMotif("")}
-                className="rounded-full border border-line px-4 py-2 text-xs font-medium hover:bg-surface"
-              >
-                Corriger ce contrat (tracé)
-              </button>
-            )}
+      {mode === "a_venir" && (
+        <div className="crm-card p-6 text-sm text-ink-muted">
+          <p className="font-serif text-lg text-ink">{ongletAVenir}</p>
+          <p className="mt-2">Onglet pas encore construit — pas de donnée propre à afficher pour l'instant.</p>
+        </div>
+      )}
+
+      {mode === "synthese" && (
+        <div className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-4">
+            <StatCard label="Prime TTC actuelle" value={formatEuro(c.prime_annuelle)} icon={IconFileText} accent />
+            <StatCard label="Fractionnement" value={c.fractionnement} />
+            <StatCard
+              label="Date d'effet"
+              value={c.date_effet ? new Date(c.date_effet).toLocaleDateString("fr-FR") : "—"}
+            />
+            <StatCard label="Ancienneté" value={ancienneteLabel(c.date_effet)} />
           </div>
-          {enCorrection && (
-            <div className="space-y-2 rounded-lg border border-dashed border-line p-3">
-              <label className="block text-xs font-medium text-ink-muted">
-                Motif de la correction (obligatoire, 5 caractères minimum)
-              </label>
-              <input
-                value={correctionMotif ?? ""}
-                onChange={(e) => setCorrectionMotif(e.target.value)}
-                placeholder="Ex. : numéro de contrat erroné communiqué par la compagnie"
-                className={inp}
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={() => save()}
-                  disabled={saving || (correctionMotif ?? "").trim().length < 5}
-                  className="rounded-full bg-[#0A192F] px-4 py-2 text-xs font-medium text-white disabled:opacity-60"
-                >
-                  {saving ? "Enregistrement…" : "Valider la correction tracée"}
-                </button>
-                <button
-                  onClick={() => {
-                    setCorrectionMotif(null);
-                    void load();
-                  }}
-                  className="rounded-full border border-line px-4 py-2 text-xs hover:bg-surface"
-                >
-                  Annuler
-                </button>
+
+          {verrouille && (
+            <section className="crm-card space-y-3 p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-serif text-lg">Contrat validé par la compagnie</h3>
+                  <p className="text-xs text-ink-muted">
+                    Les données contractuelles sont verrouillées. Toute correction passe par une action explicite et
+                    tracée (motif obligatoire, avant/après journalisé), réservée à un administrateur.
+                  </p>
+                </div>
+                {role === "admin" && !enCorrection && (
+                  <button
+                    onClick={() => setCorrectionMotif("")}
+                    className="rounded-full border border-line px-4 py-2 text-xs font-medium hover:bg-surface"
+                  >
+                    Corriger ce contrat (tracé)
+                  </button>
+                )}
+              </div>
+              {enCorrection && (
+                <div className="space-y-2 rounded-lg border border-dashed border-line p-3">
+                  <label className="block text-xs font-medium text-ink-muted">
+                    Motif de la correction (obligatoire, 5 caractères minimum)
+                  </label>
+                  <input
+                    value={correctionMotif ?? ""}
+                    onChange={(e) => setCorrectionMotif(e.target.value)}
+                    placeholder="Ex. : numéro de contrat erroné communiqué par la compagnie"
+                    className={inp}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => save()}
+                      disabled={saving || (correctionMotif ?? "").trim().length < 5}
+                      className="rounded-full bg-[#0A192F] px-4 py-2 text-xs font-medium text-white disabled:opacity-60"
+                    >
+                      {saving ? "Enregistrement…" : "Valider la correction tracée"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setCorrectionMotif(null);
+                        void load();
+                      }}
+                      className="rounded-full border border-line px-4 py-2 text-xs hover:bg-surface"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <section className="crm-card space-y-3 p-5">
+              <p className="crm-eyebrow">Contrat</p>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-xs text-ink-muted">Compagnie</p>
+                  <p className="font-medium text-ink">{c.assureur}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-ink-muted">Produit</p>
+                  <p className="font-medium text-ink">{c.produit}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-ink-muted">Référence</p>
+                  <p className="font-medium text-ink">{c.numero ?? "Non renseignée"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-ink-muted">Statut</p>
+                  <p className="font-medium capitalize text-ink">{c.statut.replace(/_/g, " ")}</p>
+                </div>
+              </div>
+            </section>
+            <section className="crm-card space-y-3 p-5">
+              <p className="crm-eyebrow">Finances</p>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-xs text-ink-muted">Prime totale annuelle</p>
+                  <p className="font-medium text-ink">{formatEuro(c.prime_annuelle)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-ink-muted">Prime nette annuelle</p>
+                  <p className="font-medium text-ink">{formatEuro(c.prime_nette_annuelle)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-ink-muted">Commission cabinet (cumul)</p>
+                  <p className="font-medium text-ink">{formatEuro(totaux.cabinet)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-ink-muted">Fractionnement</p>
+                  <p className="font-medium text-ink">{c.fractionnement}</p>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <CommissionContratCard
+            dossierId={(c as unknown as { dossier_id: string | null }).dossier_id ?? null}
+            isEmprunteur={c.is_emprunteur}
+            compagnieId={c.compagnie_id}
+            primeAnnuelle={c.prime_annuelle}
+            primeNetteAnnuelle={c.prime_nette_annuelle}
+            economieRealisee={c.economie_realisee}
+          />
+        </div>
+      )}
+
+      {mode === "assures" && (
+        <section className="crm-card space-y-3 p-5">
+          <p className="crm-eyebrow">Assuré</p>
+          {client ? (
+            <div className="grid gap-3 sm:grid-cols-2 text-sm">
+              <div>
+                <p className="text-xs text-ink-muted">Nom</p>
+                <p className="font-medium text-ink">
+                  {client.prenom ? client.prenom + " " : ""}
+                  {client.nom}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-ink-muted">Référence client</p>
+                <p className="font-medium text-ink">{client.reference}</p>
+              </div>
+              <div>
+                <p className="text-xs text-ink-muted">Date de naissance</p>
+                <p className="font-medium text-ink">
+                  {client.date_naissance ? new Date(client.date_naissance).toLocaleDateString("fr-FR") : "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-ink-muted">Fumeur</p>
+                <p className="font-medium text-ink">
+                  {client.fumeur === null ? "—" : client.fumeur ? "Oui" : "Non"}
+                </p>
               </div>
             </div>
+          ) : (
+            <p className="text-sm text-ink-muted">Aucun client rattaché.</p>
           )}
+          <p className="text-xs text-ink-muted">
+            Cet onglet reste à construire pour les contrats à plusieurs assurés — un seul assuré (le client
+            titulaire) est affiché pour l'instant.
+          </p>
         </section>
       )}
 
-      <CommissionContratCard
-        dossierId={(c as unknown as { dossier_id: string | null }).dossier_id ?? null}
-        isEmprunteur={c.is_emprunteur}
-        compagnieId={c.compagnie_id}
-        primeAnnuelle={c.prime_annuelle}
-        primeNetteAnnuelle={c.prime_nette_annuelle}
-        economieRealisee={c.economie_realisee}
-      />
-
-      {user && (
-        <ContratDocumentsPanel
-          contratId={c.id}
-          clientId={c.client_id}
-          userId={user.id}
-          canEdit={canEdit}
-          produitId={c.produit_id}
-          compagnieId={c.compagnie_id}
-        />
-      )}
-
+      {mode === "modifier" && (
+        <div className="space-y-6">
       <section className="crm-card grid gap-4 p-5 md:grid-cols-3">
         <F label="Type de contrat" wide>
           <label className="flex items-center gap-2 text-sm">
@@ -488,6 +633,22 @@ function ContratDetail() {
         </F>
       </section>
 
+      {editable && !verrouille && (
+        <div className="flex justify-end">
+          <button
+            onClick={() => save()}
+            disabled={saving}
+            className="rounded-full bg-[#0A192F] px-5 py-2 text-sm font-medium text-white disabled:opacity-60"
+          >
+            {saving ? "Enregistrement…" : "Enregistrer et recalculer"}
+          </button>
+        </div>
+      )}
+        </div>
+      )}
+
+      {mode === "frais" && (
+        <div className="space-y-6">
       {c.is_emprunteur && (
         <section className="crm-card grid gap-4 p-5 md:grid-cols-3">
           <div className="md:col-span-3">
@@ -698,7 +859,10 @@ function ContratDetail() {
           </button>
         </div>
       )}
+        </div>
+      )}
 
+      {mode === "echeances" && (
       <section className="space-y-3 rounded-lg border border-line bg-surface p-5">
         <div className="flex items-center justify-between">
           <div>
@@ -768,6 +932,18 @@ function ContratDetail() {
           </div>
         )}
       </section>
+      )}
+
+      {mode === "fichiers" && user && (
+        <ContratDocumentsPanel
+          contratId={c.id}
+          clientId={c.client_id}
+          userId={user.id}
+          canEdit={canEdit}
+          produitId={c.produit_id}
+          compagnieId={c.compagnie_id}
+        />
+      )}
     </div>
   );
 }
@@ -781,6 +957,29 @@ function F({ label, wide, children }: { label: string; wide?: boolean; children:
       {children}
     </div>
   );
+}
+
+/** Ancienneté (ou délai avant effet) sous forme "X an(s), Y mois, Z jour(s)", sur le modèle Courtigo. */
+function ancienneteLabel(dateEffet: string | null): string {
+  if (!dateEffet) return "—";
+  const effet = new Date(dateEffet);
+  const maintenant = new Date();
+  const passe = effet <= maintenant;
+  const [debut, fin] = passe ? [effet, maintenant] : [maintenant, effet];
+
+  let annees = fin.getFullYear() - debut.getFullYear();
+  let mois = fin.getMonth() - debut.getMonth();
+  let jours = fin.getDate() - debut.getDate();
+  if (jours < 0) {
+    mois -= 1;
+    jours += new Date(fin.getFullYear(), fin.getMonth(), 0).getDate();
+  }
+  if (mois < 0) {
+    annees -= 1;
+    mois += 12;
+  }
+  const duree = `${annees} an(s), ${mois} mois, ${jours} jour(s)`;
+  return passe ? duree : `Prend effet dans ${duree}`;
 }
 
 function formatEuro(n: number | null | undefined) {
