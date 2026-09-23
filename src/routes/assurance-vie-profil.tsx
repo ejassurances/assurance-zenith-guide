@@ -280,6 +280,8 @@ function ProfilAssuranceVie() {
           EJ Partners Assurances
         </Link>
       </p>
+      </div>
     </div>
+
   );
 }
