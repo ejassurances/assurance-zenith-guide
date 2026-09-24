@@ -12,6 +12,7 @@ import {
   mesPiecesKyc,
   deposerPieceKyc,
 } from "@/lib/mandataire-espace.functions";
+import { mesPrecomptes, validerPrecompte, deposerFacturePrecompte } from "@/lib/precomptes.functions";
 
 export const Route = createFileRoute("/_authenticated/espace/mon-espace-mandataire")({
   component: MonEspaceMandataire,
@@ -33,6 +34,14 @@ function MonEspaceMandataire() {
   const chargerFormations = useServerFn(mesFormations);
   const chargerKyc = useServerFn(mesPiecesKyc);
   const deposerKyc = useServerFn(deposerPieceKyc);
+  const chargerPrecomptes = useServerFn(mesPrecomptes);
+  const validerUnPrecompte = useServerFn(validerPrecompte);
+  const deposerUneFacture = useServerFn(deposerFacturePrecompte);
+
+  const [precomptes, setPrecomptes] = useState<Awaited<ReturnType<typeof mesPrecomptes>>>([]);
+  const [precompteEnCours, setPrecompteEnCours] = useState<string | null>(null);
+  const [factureFilePar, setFactureFilePar] = useState<Record<string, File | null>>({});
+  const [numeroFacturePar, setNumeroFacturePar] = useState<Record<string, string>>({});
 
   const [pieces, setPieces] = useState<Awaited<ReturnType<typeof mesPiecesKyc>>>([]);
   const [totaux, setTotaux] = useState<{ annee: number; heures: number }[]>([]);
@@ -40,10 +49,11 @@ function MonEspaceMandataire() {
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
-    const [k, f] = await Promise.all([chargerKyc(), chargerFormations()]);
+    const [k, f, p] = await Promise.all([chargerKyc(), chargerFormations(), chargerPrecomptes()]);
     setPieces(k);
     setTotaux(f.totauxParAnnee);
     setLignesFormation(f.lignes);
+    setPrecomptes(p);
     setLoading(false);
   };
 
@@ -140,6 +150,43 @@ function MonEspaceMandataire() {
     return <p className="text-sm text-ink-muted">Accès réservé aux mandataires.</p>;
   }
 
+  const valider = async (id: string) => {
+    setPrecompteEnCours(id);
+    try {
+      await validerUnPrecompte({ data: { precompte_id: id } });
+      await load();
+    } finally {
+      setPrecompteEnCours(null);
+    }
+  };
+
+  const deposerFacture = async (id: string) => {
+    const file = factureFilePar[id];
+    if (!file || !user) return;
+    setPrecompteEnCours(id);
+    try {
+      const path = `precomptes/${user.id}/${id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      const up = await supabase.storage.from("conformite-documents").upload(path, file, { upsert: false });
+      if (up.error) throw new Error(up.error.message);
+      await deposerUneFacture({
+        data: { precompte_id: id, storage_path: path, numero: numeroFacturePar[id] || undefined },
+      });
+      await load();
+    } finally {
+      setPrecompteEnCours(null);
+    }
+  };
+
+  const LABEL_STATUT: Record<string, string> = {
+    brouillon: "Brouillon",
+    envoye: "Envoyé — à valider",
+    valide_mandataire: "Validé — facture attendue",
+    facture_recue: "Facture reçue — en attente du cabinet",
+    facture_validee: "Facture validée — virement à venir",
+    virement_effectue: "Virement effectué",
+    conteste: "Contesté",
+  };
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -153,6 +200,72 @@ function MonEspaceMandataire() {
         <p className="text-sm text-ink-muted">Chargement…</p>
       ) : (
         <>
+          <section className="crm-card space-y-4 p-6">
+            <p className="crm-eyebrow">Mes rétrocessions</p>
+            {precomptes.length === 0 ? (
+              <p className="text-sm text-ink-muted">Aucun précompte pour l'instant.</p>
+            ) : (
+              <div className="space-y-4">
+                {precomptes.map((p) => (
+                  <div key={p.id} className="rounded-lg border border-line p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-medium text-ink">
+                          {new Date(p.periode_debut).toLocaleDateString("fr-FR")} —{" "}
+                          {new Date(p.periode_fin).toLocaleDateString("fr-FR")}
+                        </p>
+                        <p className="text-xs text-ink-muted">{LABEL_STATUT[p.statut] ?? p.statut}</p>
+                      </div>
+                      <p className="font-serif text-lg font-medium text-ink">
+                        {Number(p.montant_total).toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
+                      </p>
+                    </div>
+
+                    {p.statut === "envoye" && (
+                      <button
+                        type="button"
+                        onClick={() => void valider(p.id)}
+                        disabled={precompteEnCours === p.id}
+                        className="mt-3 rounded-full bg-[#0A192F] px-4 py-2 text-xs font-medium text-white disabled:opacity-60"
+                      >
+                        {precompteEnCours === p.id ? "Validation…" : "Valider ce précompte"}
+                      </button>
+                    )}
+
+                    {p.statut === "valide_mandataire" && (
+                      <div className="mt-3 space-y-2 border-t border-line pt-3">
+                        <p className="text-xs text-ink-muted">
+                          Déposez votre facture correspondant à ce montant pour finaliser.
+                        </p>
+                        <input
+                          placeholder="Numéro de facture (facultatif)"
+                          value={numeroFacturePar[p.id] ?? ""}
+                          onChange={(e) => setNumeroFacturePar((s) => ({ ...s, [p.id]: e.target.value }))}
+                          className="w-full rounded-lg border border-line bg-background px-3 py-2 text-sm"
+                        />
+                        <input
+                          type="file"
+                          onChange={(e) =>
+                            setFactureFilePar((s) => ({ ...s, [p.id]: e.target.files?.[0] ?? null }))
+                          }
+                          className="w-full text-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => void deposerFacture(p.id)}
+                          disabled={precompteEnCours === p.id || !factureFilePar[p.id]}
+                          className="rounded-full bg-[#0A192F] px-4 py-2 text-xs font-medium text-white disabled:opacity-60"
+                        >
+                          {precompteEnCours === p.id ? "Envoi…" : "Déposer ma facture"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
           <section className="crm-card space-y-4 p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>

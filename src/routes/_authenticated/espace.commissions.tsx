@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { IconCoins } from "@tabler/icons-react";
 import { ExportFecCard } from "@/components/export-fec-card";
+import { PrecompteLancerCard } from "@/components/precompte-lancer-card";
 
 export const Route = createFileRoute("/_authenticated/espace/commissions")({
   component: CommissionsPage,
@@ -185,6 +186,7 @@ function CommissionsPage() {
       </div>
 
       {role === "admin" && <ExportFecCard exercices={exercices} />}
+      {role === "admin" && <PrecompteLancerCard />}
 
       {role === "admin" && aComptabiliser > 0 && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 crm-card p-4">
