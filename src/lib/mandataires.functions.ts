@@ -12,6 +12,7 @@ const creerSchema = z.object({
   prenom: z.string().trim().max(200).optional(),
   email: z.string().trim().email().max(255),
   taux_commission: z.number().min(0).max(1).optional(),
+  zone_non_concurrence: z.string().trim().max(300).optional(),
 });
 
 /**
@@ -74,6 +75,7 @@ export const creerMandataire = createServerFn({ method: "POST" })
       {
         user_id: userId,
         taux_commission: data.taux_commission ?? null,
+        zone_non_concurrence: data.zone_non_concurrence ?? null,
       } as never,
       { onConflict: "user_id" },
     );

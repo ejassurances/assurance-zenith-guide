@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { PageHeader } from "@/components/page-header";
 import { IconUsersGroup } from "@tabler/icons-react";
 import { creerMandataire } from "@/lib/mandataires.functions";
+import { creerContratMandataire } from "@/lib/mandataire-contrat.functions";
 
 export const Route = createFileRoute("/_authenticated/espace/utilisateurs")({
   component: UsersPage,
@@ -33,8 +34,31 @@ function UsersPage() {
   const [prenom, setPrenom] = useState("");
   const [email, setEmail] = useState("");
   const [tauxCommission, setTauxCommission] = useState("");
+  const [zoneNonConcurrence, setZoneNonConcurrence] = useState("");
   const [creation, setCreation] = useState(false);
   const [creationMsg, setCreationMsg] = useState<string | null>(null);
+  const envoyerContrat = useServerFn(creerContratMandataire);
+  const [contratEnCours, setContratEnCours] = useState<string | null>(null);
+  const [contratMsg, setContratMsg] = useState<Record<string, string>>({});
+
+  const envoyerLeContrat = async (userId: string) => {
+    setContratEnCours(userId);
+    try {
+      const res = await envoyerContrat({ data: { mandataire_id: userId } });
+      setContratMsg((s) => ({
+        ...s,
+        [userId]: res.ok
+          ? res.email_sent
+            ? `Contrat ${res.reference} envoyé.`
+            : `Contrat ${res.reference} créé, mail non envoyé.`
+          : res.error,
+      }));
+    } catch (e) {
+      setContratMsg((s) => ({ ...s, [userId]: e instanceof Error ? e.message : "Erreur." }));
+    } finally {
+      setContratEnCours(null);
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -83,6 +107,7 @@ function UsersPage() {
           prenom: prenom.trim() || undefined,
           email: email.trim(),
           taux_commission: tauxCommission ? Number(tauxCommission) : undefined,
+          zone_non_concurrence: zoneNonConcurrence.trim() || undefined,
         },
       });
       if (!res.ok) {
@@ -98,6 +123,7 @@ function UsersPage() {
       setPrenom("");
       setEmail("");
       setTauxCommission("");
+      setZoneNonConcurrence("");
       await load();
     } catch (e) {
       setCreationMsg(e instanceof Error ? e.message : "Erreur lors de la création.");
@@ -174,6 +200,17 @@ function UsersPage() {
                 className="mt-1 w-full rounded-lg border border-line bg-background px-3 py-2 text-sm"
               />
             </div>
+            <div>
+              <label className="text-xs font-medium text-ink-muted">
+                Zone de référence (non-concurrence, 30 km autour)
+              </label>
+              <input
+                value={zoneNonConcurrence}
+                onChange={(e) => setZoneNonConcurrence(e.target.value)}
+                placeholder="Ex. commune ou adresse d'exercice habituel"
+                className="mt-1 w-full rounded-lg border border-line bg-background px-3 py-2 text-sm"
+              />
+            </div>
           </div>
           {creationMsg && <p className="text-sm text-ink">{creationMsg}</p>}
           <button
@@ -198,6 +235,7 @@ function UsersPage() {
                 <th className="px-4 py-3">Nom</th>
                 <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Rôle</th>
+                <th className="px-4 py-3">Contrat mandataire</th>
               </tr>
             </thead>
             <tbody>
@@ -221,6 +259,21 @@ function UsersPage() {
                         <option value="prescripteur">Prescripteur</option>
                         <option value="client">Client</option>
                       </select>
+                    </td>
+                    <td className="px-4 py-3">
+                      {current === "mandataire" && (
+                        <div className="space-y-1">
+                          <button
+                            type="button"
+                            onClick={() => void envoyerLeContrat(p.id)}
+                            disabled={contratEnCours === p.id}
+                            className="rounded-full border border-line px-3 py-1 text-xs font-medium hover:bg-surface disabled:opacity-60"
+                          >
+                            {contratEnCours === p.id ? "Envoi…" : "Envoyer le contrat"}
+                          </button>
+                          {contratMsg[p.id] && <p className="text-xs text-ink-muted">{contratMsg[p.id]}</p>}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );

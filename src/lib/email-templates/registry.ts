@@ -528,7 +528,34 @@ function InvitationProfilVieEmail(props: { prenom?: string; cabinetName?: string
   return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
 }
 
+function InvitationSignatureContratMandataireEmail(props: { prenom?: string; cabinetName?: string; lien?: string }) {
+  const nom = props.cabinetName || "EJ Partners Assurances";
+  const html =
+    "<p>Bonjour " +
+    (props.prenom || "") +
+    ",</p>" +
+    "<p>Votre contrat de mandataire avec " +
+    nom +
+    " est pret a etre signe. Vous pouvez le consulter et le signer directement en ligne :</p>" +
+    "<p><a href=\"" +
+    (props.lien || "") +
+    "\">Consulter et signer mon contrat</a></p>" +
+    "<p>Cordialement,<br/>Erwan Jaffrelot<br/>" +
+    nom +
+    "</p>";
+  const style = { fontFamily: "Arial, sans-serif", color: "#1a1a1a", fontSize: "15px", lineHeight: "1.6" };
+  return React.createElement("div", { style: style, dangerouslySetInnerHTML: { __html: html } });
+}
+
 export const TEMPLATES: Record<string, TemplateEntry> = {
+  "invitation-signature-contrat-mandataire": {
+    component: InvitationSignatureContratMandataireEmail,
+    subject: (data: Record<string, any>) =>
+      "Votre contrat mandataire à signer — " + (data && data.reference ? data.reference : ""),
+    displayName: "Mandataire - Invitation à signer le contrat interne",
+    previewData: { prenom: "Jean", reference: "CM-2026-0001", lien: "https://example.com" },
+  },
+
   "invitation-profil-vie": {
     component: InvitationProfilVieEmail,
     subject: (data: Record<string, any>) =>
