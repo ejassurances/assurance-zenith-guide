@@ -1,11 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { assurerChemin, assurerDossier, deposerFichier, nomDrive, renommerDrive, urlDossierDrive } from "@/lib/google-drive.server";
+import { assurerChemin, assurerDossier, deposerFichier, nomDrive, renommerDrive, urlDossierDrive, listerEnfantsDrive } from "@/lib/google-drive.server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Client = SupabaseClient<any, any, any>;
 
 /** Racines de l'arborescence documentaire du cabinet. */
-export const DRIVE_RACINE_CLIENTS = "01_CLIENTS";
+export const DRIVE_PARENT_CLIENTS = "11n0qKaLzMdK95g7AKpjT46TwFC6_vS5P";
+export const DRIVE_RACINE_CLIENTS = DRIVE_PARENT_CLIENTS;
 export const DRIVE_REGISTRE_DDA = ["02_RESPONSABLE_CONFORMITE_ET_FINANCES", "01_Registre_DDA_et_ACPR"];
 
 /** Les 6 sous-dossiers standard d'une fiche client. */
@@ -24,12 +25,23 @@ function normaliser(valeur: string | null | undefined) {
   return (valeur ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\w\-]+/g, "_")
-    .replace(/_+/g, "_")
-    .replace(/^_|_$/g, "");
+    .replace(/[^\w\-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-/** CLI-AAAA-XXXX_[NOM]_[Prénom] (nomenclature officielle du cabinet) */
+function nomClientAttendu(client: { reference?: string | null; nom: string; prenom?: string | null }) {
+  const reference = (client.reference ?? "").trim().toUpperCase();
+  const prenom = normaliser(client.prenom);
+  const nom = normaliser(client.nom).toUpperCase();
+  return [reference, [prenom, nom].filter(Boolean).join(" ")].filter(Boolean).join(" - ");
+}
+
+/**
+ * Nomenclature officielle des nouveaux dossiers clients Drive :
+ * CL-AAAA-NNNN - Prenom NOM.
+ * Les références historiques sont conservées telles quelles.
+ */
 export function nomDossierClient(client: {
   id: string;
   reference?: string | null;
@@ -37,20 +49,32 @@ export function nomDossierClient(client: {
   prenom?: string | null;
   created_at?: string | null;
 }) {
-  const reference = (client.reference ?? "").trim().toUpperCase();
-  let identifiant: string;
-  if (/^CLI-\d{4}-\d{4}$/.test(reference)) {
-    identifiant = reference;
-  } else {
-    const annee = new Date(client.created_at ?? Date.now()).getFullYear();
-    identifiant = `CLI-${annee}-${normaliser(reference) || client.id.slice(0, 8).toUpperCase()}`;
-  }
-  const parties = [identifiant, normaliser(client.nom).toUpperCase()];
-  const prenom = normaliser(client.prenom);
-  if (prenom) parties.push(prenom);
-  return parties.filter(Boolean).join("_");
+  return nomClientAttendu(client);
 }
 
+/**
+ * Essaie de retrouver un dossier historique dans le parent Drive à partir du
+ * nom/prénom avant de créer un nouveau dossier. Cela évite de dupliquer les
+ * clients déjà présents dans Drive mais pas encore rattachés au CRM.
+ */
+async function retrouverDossierClientHistorique(
+  nom: string,
+  prenom?: string | null,
+): Promise<string | null> {
+  const enfants = await listerEnfantsDrive(DRIVE_PARENT_CLIENTS);
+  const cibleNom = normaliser(nom).toLowerCase();
+  const ciblePrenom = normaliser(prenom).toLowerCase();
+  if (!cibleNom) return null;
+
+  const correspondants = enfants.filter((element) => {
+    if (element.mimeType !== "application/vnd.google-apps.folder") return false;
+    const actuel = normaliser(element.name).toLowerCase();
+    if (!actuel.includes(cibleNom)) return false;
+    return !ciblePrenom || actuel.includes(ciblePrenom);
+  });
+
+  return correspondants.length === 1 ? correspondants[0].id : null;
+}
 
 /**
  * Crée (ou retrouve) l'arborescence Drive du client et mémorise
@@ -69,15 +93,26 @@ export async function assurerArborescenceClient(
 
   let folderId: string | null = (client as any).drive_folder_id ?? null;
   const nomAttendu = nomDossierClient(client as any);
-  if (!folderId) {
-    const racine = await assurerDossier(DRIVE_RACINE_CLIENTS);
-    folderId = await assurerDossier(nomAttendu, racine);
-  } else {
-    // Nomenclature officielle : le dossier suit toujours la référence CLI-AAAA-XXXX.
-    const nomActuel = await nomDrive(folderId);
-    if (nomActuel && nomActuel !== nomAttendu) await renommerDrive(folderId, nomAttendu);
-  }
 
+  if (!folderId) {
+    // 1. Priorité à un dossier historique déjà présent dans le Drive.
+    folderId = await retrouverDossierClientHistorique(client.nom, client.prenom);
+
+    // 2. Sinon création dans le dossier parent officiel.
+    if (!folderId) {
+      folderId = await assurerDossier(nomAttendu, DRIVE_PARENT_CLIENTS);
+    }
+  } else {
+    // Ne renomme jamais automatiquement un dossier historique déjà rattaché.
+    // Le nouveau nommage s'applique uniquement aux dossiers créés selon la
+    // nouvelle nomenclature et aux dossiers dont le nom correspond déjà à
+    // l'ancienne nomenclature du CRM.
+    const nomActuel = await nomDrive(folderId);
+    const estNouvelleNomenclature = /^CL-\d{4}-\d{4} - .+$/i.test(nomActuel ?? "");
+    if (estNouvelleNomenclature && nomActuel !== nomAttendu) {
+      await renommerDrive(folderId, nomAttendu);
+    }
+  }
 
   for (const sous of DRIVE_SOUS_DOSSIERS) {
     await assurerDossier(sous, folderId);
