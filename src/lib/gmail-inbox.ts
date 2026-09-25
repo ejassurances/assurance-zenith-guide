@@ -6,14 +6,16 @@
  * (b) dans quel état de classement il doit aller.
  *
  * Trois états de classement, posés EN PLUS du libellé de direction existant :
- *  - 01_Brouillon_IA_A_Relire : un brouillon a été préparé, jamais envoyé ;
- *  - 02_Alerte_Humain_A_Traiter : doute, sujet sensible ou rattachement incertain ;
- *  - 03_Archives_Traitees : rien à répondre, ou une réponse existe déjà.
+ *  - 📥 01_Brouillon_IA_A_Relire : un brouillon a été préparé, jamais envoyé ;
+ *  - ⚠️ 02_Alerte_Humain_A_Traiter : doute, sujet sensible ou rattachement incertain ;
+ *  - 📦 03_Archives_Traitees : rien à répondre, ou une réponse existe déjà.
+ *
+ * Noms OFFICIELS, recopiés à l'identique depuis Gmail (emoji compris).
  */
 
-export const LABEL_BROUILLON = "01_Brouillon_IA_A_Relire";
-export const LABEL_ALERTE = "02_Alerte_Humain_A_Traiter";
-export const LABEL_ARCHIVE_TRAITEE = "03_Archives_Traitees";
+export const LABEL_BROUILLON = "📥 01_Brouillon_IA_A_Relire";
+export const LABEL_ALERTE = "⚠️ 02_Alerte_Humain_A_Traiter";
+export const LABEL_ARCHIVE_TRAITEE = "📦 03_Archives_Traitees";
 
 /** Les trois états de classement du nouveau traitement d'inbox. */
 export const LABELS_TRIAGE_INBOX = [LABEL_BROUILLON, LABEL_ALERTE, LABEL_ARCHIVE_TRAITEE] as const;
@@ -47,24 +49,15 @@ export function delaiEcoule(recuLe: Date, maintenant: Date = new Date()): boolea
 }
 
 export interface EntreeClassement {
-  /** Une réponse du cabinet existe déjà dans le fil Gmail. */
   reponseDejaEnvoyee: boolean;
-  /** Une réponse est attendue (message compréhensible et qui appelle une suite). */
   reponseNecessaire: boolean;
-  /** Le rattachement à une fiche CRM est certain (client, prospect, partenaire, contrat, dossier). */
   rattachementCertain: boolean;
-  /** Sujet sensible ou réglementé : toujours en validation humaine. */
   sensible?: boolean;
-  /** Message compréhensible par l'analyse. */
   comprehensible?: boolean;
-  /** Niveau de confiance de l'analyse, entre 0 et 1. */
   confiance?: number | null;
 }
 
-/**
- * Décision de classement. L'ordre des règles est volontaire : une réponse déjà
- * envoyée ferme le dossier, puis le doute l'emporte toujours sur l'automatisme.
- */
+/** Décision de classement. */
 export function classerEmail(e: EntreeClassement): ClassementEmail {
   if (e.reponseDejaEnvoyee) {
     return {
@@ -78,25 +71,13 @@ export function classerEmail(e: EntreeClassement): ClassementEmail {
   const confiance = e.confiance ?? 0;
 
   if (!comprehensible) {
-    return {
-      decision: "alerte_humain",
-      label: LABEL_ALERTE,
-      motif: "Message incompréhensible : traitement humain requis.",
-    };
+    return { decision: "alerte_humain", label: LABEL_ALERTE, motif: "Message incompréhensible : traitement humain requis." };
   }
   if (e.sensible) {
-    return {
-      decision: "alerte_humain",
-      label: LABEL_ALERTE,
-      motif: "Sujet sensible ou réglementé : traitement humain requis.",
-    };
+    return { decision: "alerte_humain", label: LABEL_ALERTE, motif: "Sujet sensible ou réglementé : traitement humain requis." };
   }
   if (!e.rattachementCertain) {
-    return {
-      decision: "alerte_humain",
-      label: LABEL_ALERTE,
-      motif: "Rattachement à une fiche CRM incertain : traitement humain requis.",
-    };
+    return { decision: "alerte_humain", label: LABEL_ALERTE, motif: "Rattachement à une fiche CRM incertain : traitement humain requis." };
   }
   if (confiance < CONFIANCE_MINIMALE) {
     return {
@@ -106,11 +87,7 @@ export function classerEmail(e: EntreeClassement): ClassementEmail {
     };
   }
   if (!e.reponseNecessaire) {
-    return {
-      decision: "archive_sans_reponse",
-      label: LABEL_ARCHIVE_TRAITEE,
-      motif: "Aucune réponse nécessaire.",
-    };
+    return { decision: "archive_sans_reponse", label: LABEL_ARCHIVE_TRAITEE, motif: "Aucune réponse nécessaire." };
   }
   return {
     decision: "brouillon_a_relire",
@@ -119,12 +96,10 @@ export function classerEmail(e: EntreeClassement): ClassementEmail {
   };
 }
 
-/** Lien Gmail direct vers un message (interface du cabinet). */
 export function lienGmailMessage(messageId: string): string {
   return `https://mail.google.com/mail/u/0/#all/${messageId}`;
 }
 
-/** Lien Gmail direct vers un brouillon. */
 export function lienGmailBrouillon(draftId: string): string {
   return `https://mail.google.com/mail/u/0/#drafts?compose=${draftId}`;
 }
