@@ -62,6 +62,51 @@ export type Database = {
           },
         ]
       }
+      assurance_regles_fiscales: {
+        Row: {
+          actif: boolean
+          code: string
+          contribution_fixe: number
+          created_at: string
+          date_debut: string
+          date_fin: string | null
+          id: string
+          libelle: string
+          notes: string | null
+          taux: number | null
+          unite_contribution: string
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          code: string
+          contribution_fixe?: number
+          created_at?: string
+          date_debut: string
+          date_fin?: string | null
+          id?: string
+          libelle: string
+          notes?: string | null
+          taux?: number | null
+          unite_contribution?: string
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          code?: string
+          contribution_fixe?: number
+          created_at?: string
+          date_debut?: string
+          date_fin?: string | null
+          id?: string
+          libelle?: string
+          notes?: string | null
+          taux?: number | null
+          unite_contribution?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -1842,17 +1887,20 @@ export type Database = {
       contrats: {
         Row: {
           assiette: string | null
+          assiette_commission_annuelle: number | null
           assureur: string
           capital_initial: number | null
           client_id: string
           co_emprunteur: Json | null
           commission_cabinet_taux: number | null
           compagnie_id: string | null
+          contribution_attentat_annuelle: number
           created_at: string
           created_by: string | null
           date_echeance: string | null
           date_effet: string | null
           dernier_suivi_le: string | null
+          devis_source_id: string | null
           dossier_id: string | null
           duree_mois: number | null
           economie_base: Json | null
@@ -1862,6 +1910,8 @@ export type Database = {
           economie_realisee: number | null
           economie_taux_delegue: number | null
           economie_taux_groupe: number | null
+          fiscalite_calculee_le: string | null
+          fiscalite_detail: Json | null
           fractionnement: string
           id: string
           import_externe: boolean
@@ -1872,30 +1922,39 @@ export type Database = {
           numero: string | null
           prescripteur_id: string | null
           prime_annuelle: number | null
+          prime_ht_annuelle: number | null
+          prime_nette_annuelle: number | null
+          prime_ttc_annuelle: number | null
           prochain_suivi_le: string | null
           produit: string
           produit_id: string | null
           projet_id: string | null
           quotite: number | null
           recommandation_personnalisee: boolean
+          regime_fiscal: string
+          source_prime_ttc: string | null
           statut: string
           taux_assurance_annuel: number | null
           taux_pret: number | null
+          taxes_annuelles: number | null
           updated_at: string
         }
         Insert: {
           assiette?: string | null
+          assiette_commission_annuelle?: number | null
           assureur: string
           capital_initial?: number | null
           client_id: string
           co_emprunteur?: Json | null
           commission_cabinet_taux?: number | null
           compagnie_id?: string | null
+          contribution_attentat_annuelle?: number
           created_at?: string
           created_by?: string | null
           date_echeance?: string | null
           date_effet?: string | null
           dernier_suivi_le?: string | null
+          devis_source_id?: string | null
           dossier_id?: string | null
           duree_mois?: number | null
           economie_base?: Json | null
@@ -1905,6 +1964,8 @@ export type Database = {
           economie_realisee?: number | null
           economie_taux_delegue?: number | null
           economie_taux_groupe?: number | null
+          fiscalite_calculee_le?: string | null
+          fiscalite_detail?: Json | null
           fractionnement?: string
           id?: string
           import_externe?: boolean
@@ -1915,30 +1976,39 @@ export type Database = {
           numero?: string | null
           prescripteur_id?: string | null
           prime_annuelle?: number | null
+          prime_ht_annuelle?: number | null
+          prime_nette_annuelle?: number | null
+          prime_ttc_annuelle?: number | null
           prochain_suivi_le?: string | null
           produit: string
           produit_id?: string | null
           projet_id?: string | null
           quotite?: number | null
           recommandation_personnalisee?: boolean
+          regime_fiscal?: string
+          source_prime_ttc?: string | null
           statut?: string
           taux_assurance_annuel?: number | null
           taux_pret?: number | null
+          taxes_annuelles?: number | null
           updated_at?: string
         }
         Update: {
           assiette?: string | null
+          assiette_commission_annuelle?: number | null
           assureur?: string
           capital_initial?: number | null
           client_id?: string
           co_emprunteur?: Json | null
           commission_cabinet_taux?: number | null
           compagnie_id?: string | null
+          contribution_attentat_annuelle?: number
           created_at?: string
           created_by?: string | null
           date_echeance?: string | null
           date_effet?: string | null
           dernier_suivi_le?: string | null
+          devis_source_id?: string | null
           dossier_id?: string | null
           duree_mois?: number | null
           economie_base?: Json | null
@@ -1948,6 +2018,8 @@ export type Database = {
           economie_realisee?: number | null
           economie_taux_delegue?: number | null
           economie_taux_groupe?: number | null
+          fiscalite_calculee_le?: string | null
+          fiscalite_detail?: Json | null
           fractionnement?: string
           id?: string
           import_externe?: boolean
@@ -1958,15 +2030,21 @@ export type Database = {
           numero?: string | null
           prescripteur_id?: string | null
           prime_annuelle?: number | null
+          prime_ht_annuelle?: number | null
+          prime_nette_annuelle?: number | null
+          prime_ttc_annuelle?: number | null
           prochain_suivi_le?: string | null
           produit?: string
           produit_id?: string | null
           projet_id?: string | null
           quotite?: number | null
           recommandation_personnalisee?: boolean
+          regime_fiscal?: string
+          source_prime_ttc?: string | null
           statut?: string
           taux_assurance_annuel?: number | null
           taux_pret?: number | null
+          taxes_annuelles?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -1982,6 +2060,13 @@ export type Database = {
             columns: ["compagnie_id"]
             isOneToOne: false
             referencedRelation: "compagnies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contrats_devis_source_id_fkey"
+            columns: ["devis_source_id"]
+            isOneToOne: false
+            referencedRelation: "dossier_devis"
             referencedColumns: ["id"]
           },
           {
@@ -2704,79 +2789,109 @@ export type Database = {
       dossier_devis: {
         Row: {
           archive_le: string | null
+          assiette_commission_annuelle: number | null
           assure_personne_id: string | null
           assure_rang: number | null
           assureur_porteur: string | null
           commission_base: string
           commission_source: string
           compagnie_id: string | null
+          contribution_attentat_annuelle: number
           cotisation_max: number | null
           cotisation_mensuelle: number | null
           cotisation_min: number | null
           created_at: string
           document_id: string | null
           dossier_id: string
+          est_retenu: boolean
+          fiscalite_calculee_le: string | null
+          fiscalite_detail: Json | null
           formule_id: string | null
           garanties_resume: string | null
           id: string
           montant_total_saisi: number | null
+          prime_ht_annuelle: number | null
+          prime_ttc_annuelle: number | null
           produit_id: string | null
           quotite_pct: number | null
+          regime_fiscal: string
           saisi_par: string | null
           source: string
+          source_prime_ttc: string | null
           taux_commission: number | null
+          taxes_annuelles: number | null
           type_cotisation: string | null
           updated_at: string
         }
         Insert: {
           archive_le?: string | null
+          assiette_commission_annuelle?: number | null
           assure_personne_id?: string | null
           assure_rang?: number | null
           assureur_porteur?: string | null
           commission_base?: string
           commission_source?: string
           compagnie_id?: string | null
+          contribution_attentat_annuelle?: number
           cotisation_max?: number | null
           cotisation_mensuelle?: number | null
           cotisation_min?: number | null
           created_at?: string
           document_id?: string | null
           dossier_id: string
+          est_retenu?: boolean
+          fiscalite_calculee_le?: string | null
+          fiscalite_detail?: Json | null
           formule_id?: string | null
           garanties_resume?: string | null
           id?: string
           montant_total_saisi?: number | null
+          prime_ht_annuelle?: number | null
+          prime_ttc_annuelle?: number | null
           produit_id?: string | null
           quotite_pct?: number | null
+          regime_fiscal?: string
           saisi_par?: string | null
           source?: string
+          source_prime_ttc?: string | null
           taux_commission?: number | null
+          taxes_annuelles?: number | null
           type_cotisation?: string | null
           updated_at?: string
         }
         Update: {
           archive_le?: string | null
+          assiette_commission_annuelle?: number | null
           assure_personne_id?: string | null
           assure_rang?: number | null
           assureur_porteur?: string | null
           commission_base?: string
           commission_source?: string
           compagnie_id?: string | null
+          contribution_attentat_annuelle?: number
           cotisation_max?: number | null
           cotisation_mensuelle?: number | null
           cotisation_min?: number | null
           created_at?: string
           document_id?: string | null
           dossier_id?: string
+          est_retenu?: boolean
+          fiscalite_calculee_le?: string | null
+          fiscalite_detail?: Json | null
           formule_id?: string | null
           garanties_resume?: string | null
           id?: string
           montant_total_saisi?: number | null
+          prime_ht_annuelle?: number | null
+          prime_ttc_annuelle?: number | null
           produit_id?: string | null
           quotite_pct?: number | null
+          regime_fiscal?: string
           saisi_par?: string | null
           source?: string
+          source_prime_ttc?: string | null
           taux_commission?: number | null
+          taxes_annuelles?: number | null
           type_cotisation?: string | null
           updated_at?: string
         }
@@ -4057,6 +4172,123 @@ export type Database = {
           },
         ]
       }
+      mandataires_formations: {
+        Row: {
+          annee: number
+          created_at: string
+          date_session: string | null
+          declare_par: string | null
+          heures: number
+          id: string
+          intitule: string
+          justificatif_storage_path: string | null
+          organisme: string | null
+          user_id: string
+        }
+        Insert: {
+          annee: number
+          created_at?: string
+          date_session?: string | null
+          declare_par?: string | null
+          heures: number
+          id?: string
+          intitule: string
+          justificatif_storage_path?: string | null
+          organisme?: string | null
+          user_id: string
+        }
+        Update: {
+          annee?: number
+          created_at?: string
+          date_session?: string | null
+          declare_par?: string | null
+          heures?: number
+          id?: string
+          intitule?: string
+          justificatif_storage_path?: string | null
+          organisme?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mandataires_kyc_documents: {
+        Row: {
+          created_at: string
+          date_emission: string | null
+          date_expiration: string | null
+          id: string
+          nom: string
+          notes: string | null
+          statut: string
+          storage_path: string
+          type: string
+          updated_at: string
+          uploaded_by: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_emission?: string | null
+          date_expiration?: string | null
+          id?: string
+          nom: string
+          notes?: string | null
+          statut?: string
+          storage_path: string
+          type: string
+          updated_at?: string
+          uploaded_by?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_emission?: string | null
+          date_expiration?: string | null
+          id?: string
+          nom?: string
+          notes?: string | null
+          statut?: string
+          storage_path?: string
+          type?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mandataires_profils: {
+        Row: {
+          created_at: string
+          equipe_activee: boolean
+          equipe_activee_le: string | null
+          equipe_activee_par: string | null
+          manager_id: string | null
+          taux_commission: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          equipe_activee?: boolean
+          equipe_activee_le?: string | null
+          equipe_activee_par?: string | null
+          manager_id?: string | null
+          taux_commission?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          equipe_activee?: boolean
+          equipe_activee_le?: string | null
+          equipe_activee_par?: string | null
+          manager_id?: string | null
+          taux_commission?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           auteur_id: string
@@ -4315,6 +4547,118 @@ export type Database = {
             referencedColumns: ["numero"]
           },
         ]
+      }
+      precompte_lignes: {
+        Row: {
+          commission_id: string
+          contrat_id: string | null
+          created_at: string
+          id: string
+          montant: number
+          precompte_id: string
+        }
+        Insert: {
+          commission_id: string
+          contrat_id?: string | null
+          created_at?: string
+          id?: string
+          montant: number
+          precompte_id: string
+        }
+        Update: {
+          commission_id?: string
+          contrat_id?: string | null
+          created_at?: string
+          id?: string
+          montant?: number
+          precompte_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "precompte_lignes_commission_id_fkey"
+            columns: ["commission_id"]
+            isOneToOne: true
+            referencedRelation: "commissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "precompte_lignes_contrat_id_fkey"
+            columns: ["contrat_id"]
+            isOneToOne: false
+            referencedRelation: "contrats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "precompte_lignes_precompte_id_fkey"
+            columns: ["precompte_id"]
+            isOneToOne: false
+            referencedRelation: "precomptes_mandataires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      precomptes_mandataires: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          envoye_le: string | null
+          facture_numero: string | null
+          facture_recue_le: string | null
+          facture_storage_path: string | null
+          facture_validee_le: string | null
+          facture_validee_par: string | null
+          id: string
+          mandataire_id: string
+          montant_total: number
+          notes: string | null
+          periode_debut: string
+          periode_fin: string
+          statut: string
+          valide_le: string | null
+          virement_effectue_le: string | null
+          virement_effectue_par: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          envoye_le?: string | null
+          facture_numero?: string | null
+          facture_recue_le?: string | null
+          facture_storage_path?: string | null
+          facture_validee_le?: string | null
+          facture_validee_par?: string | null
+          id?: string
+          mandataire_id: string
+          montant_total?: number
+          notes?: string | null
+          periode_debut: string
+          periode_fin: string
+          statut?: string
+          valide_le?: string | null
+          virement_effectue_le?: string | null
+          virement_effectue_par?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          envoye_le?: string | null
+          facture_numero?: string | null
+          facture_recue_le?: string | null
+          facture_storage_path?: string | null
+          facture_validee_le?: string | null
+          facture_validee_par?: string | null
+          id?: string
+          mandataire_id?: string
+          montant_total?: number
+          notes?: string | null
+          periode_debut?: string
+          periode_fin?: string
+          statut?: string
+          valide_le?: string | null
+          virement_effectue_le?: string | null
+          virement_effectue_par?: string | null
+        }
+        Relationships: []
       }
       prescripteurs: {
         Row: {
@@ -5772,6 +6116,14 @@ export type Database = {
     }
     Functions: {
       branche_contrat: { Args: { _contrat_id: string }; Returns: string }
+      calculer_fiscalite_prime_ttc: {
+        Args: {
+          p_contribution_attentat?: number
+          p_prime_ttc: number
+          p_regime: string
+        }
+        Returns: Json
+      }
       calculer_risque_lcbft: {
         Args: { _client_id: string }
         Returns: {
@@ -5829,6 +6181,7 @@ export type Database = {
           total_economies: number
         }[]
       }
+      est_manager_actif_de: { Args: { _membre_id: string }; Returns: boolean }
       generer_reference: {
         Args: { _annee: number; _prefixe: string }
         Returns: string

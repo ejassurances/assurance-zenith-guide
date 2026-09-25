@@ -10,9 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as FamillesModernesProfilRouteImport } from './routes/familles-modernes-profil'
 import { Route as DevenirPrescripteurRouteImport } from './routes/devenir-prescripteur'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AssuranceVieProfilRouteImport } from './routes/assurance-vie-profil'
+import { Route as AssuranceVieInformationRouteImport } from './routes/assurance-vie-information'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EspaceConfidentialiteRouteImport } from './routes/espace.confidentialite'
@@ -53,12 +55,14 @@ import { Route as AuthenticatedEspaceSignerSouscriptionRouteImport } from './rou
 import { Route as AuthenticatedEspaceSignerLettreMissionRouteImport } from './routes/_authenticated/espace.signer-lettre-mission'
 import { Route as AuthenticatedEspaceSignerDevoirConseilRouteImport } from './routes/_authenticated/espace.signer-devoir-conseil'
 import { Route as AuthenticatedEspaceSignerDerRouteImport } from './routes/_authenticated/espace.signer-der'
+import { Route as AuthenticatedEspaceSignerContratMandataireRouteImport } from './routes/_authenticated/espace.signer-contrat-mandataire'
 import { Route as AuthenticatedEspaceRelationClientRouteImport } from './routes/_authenticated/espace.relation-client'
 import { Route as AuthenticatedEspacePrescripteursRouteImport } from './routes/_authenticated/espace.prescripteurs'
 import { Route as AuthenticatedEspacePrequalificationRouteImport } from './routes/_authenticated/espace.prequalification'
 import { Route as AuthenticatedEspacePilotageRouteImport } from './routes/_authenticated/espace.pilotage'
 import { Route as AuthenticatedEspaceParametresRouteImport } from './routes/_authenticated/espace.parametres'
 import { Route as AuthenticatedEspaceNeolianeRouteImport } from './routes/_authenticated/espace.neoliane'
+import { Route as AuthenticatedEspaceMonEspaceMandataireRouteImport } from './routes/_authenticated/espace.mon-espace-mandataire'
 import { Route as AuthenticatedEspaceMonEspaceRouteImport } from './routes/_authenticated/espace.mon-espace'
 import { Route as AuthenticatedEspaceMesRecommandationsRouteImport } from './routes/_authenticated/espace.mes-recommandations'
 import { Route as AuthenticatedEspaceGrillesGarantiesRouteImport } from './routes/_authenticated/espace.grilles-garanties'
@@ -90,6 +94,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FamillesModernesProfilRoute = FamillesModernesProfilRouteImport.update({
+  id: '/familles-modernes-profil',
+  path: '/familles-modernes-profil',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DevenirPrescripteurRoute = DevenirPrescripteurRouteImport.update({
   id: '/devenir-prescripteur',
   path: '/devenir-prescripteur',
@@ -103,6 +112,11 @@ const AuthRoute = AuthRouteImport.update({
 const AssuranceVieProfilRoute = AssuranceVieProfilRouteImport.update({
   id: '/assurance-vie-profil',
   path: '/assurance-vie-profil',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssuranceVieInformationRoute = AssuranceVieInformationRouteImport.update({
+  id: '/assurance-vie-information',
+  path: '/assurance-vie-information',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -329,6 +343,12 @@ const AuthenticatedEspaceSignerDerRoute =
     path: '/signer-der',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const AuthenticatedEspaceSignerContratMandataireRoute =
+  AuthenticatedEspaceSignerContratMandataireRouteImport.update({
+    id: '/signer-contrat-mandataire',
+    path: '/signer-contrat-mandataire',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
 const AuthenticatedEspaceRelationClientRoute =
   AuthenticatedEspaceRelationClientRouteImport.update({
     id: '/relation-client',
@@ -363,6 +383,12 @@ const AuthenticatedEspaceNeolianeRoute =
   AuthenticatedEspaceNeolianeRouteImport.update({
     id: '/neoliane',
     path: '/neoliane',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
+const AuthenticatedEspaceMonEspaceMandataireRoute =
+  AuthenticatedEspaceMonEspaceMandataireRouteImport.update({
+    id: '/mon-espace-mandataire',
+    path: '/mon-espace-mandataire',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
 const AuthenticatedEspaceMonEspaceRoute =
@@ -515,9 +541,11 @@ const AuthenticatedEspaceClientsIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/assurance-vie-information': typeof AssuranceVieInformationRoute
   '/assurance-vie-profil': typeof AssuranceVieProfilRoute
   '/auth': typeof AuthRoute
   '/devenir-prescripteur': typeof DevenirPrescripteurRoute
+  '/familles-modernes-profil': typeof FamillesModernesProfilRoute
   '/reset-password': typeof ResetPasswordRoute
   '/espace': typeof AuthenticatedEspaceRouteWithChildren
   '/espace/cgu': typeof EspaceCguRoute
@@ -533,12 +561,14 @@ export interface FileRoutesByFullPath {
   '/espace/grilles-garanties': typeof AuthenticatedEspaceGrillesGarantiesRoute
   '/espace/mes-recommandations': typeof AuthenticatedEspaceMesRecommandationsRoute
   '/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
+  '/espace/mon-espace-mandataire': typeof AuthenticatedEspaceMonEspaceMandataireRoute
   '/espace/neoliane': typeof AuthenticatedEspaceNeolianeRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/espace/pilotage': typeof AuthenticatedEspacePilotageRoute
   '/espace/prequalification': typeof AuthenticatedEspacePrequalificationRoute
   '/espace/prescripteurs': typeof AuthenticatedEspacePrescripteursRoute
   '/espace/relation-client': typeof AuthenticatedEspaceRelationClientRoute
+  '/espace/signer-contrat-mandataire': typeof AuthenticatedEspaceSignerContratMandataireRoute
   '/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
   '/espace/signer-devoir-conseil': typeof AuthenticatedEspaceSignerDevoirConseilRoute
   '/espace/signer-lettre-mission': typeof AuthenticatedEspaceSignerLettreMissionRoute
@@ -591,9 +621,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/assurance-vie-information': typeof AssuranceVieInformationRoute
   '/assurance-vie-profil': typeof AssuranceVieProfilRoute
   '/auth': typeof AuthRoute
   '/devenir-prescripteur': typeof DevenirPrescripteurRoute
+  '/familles-modernes-profil': typeof FamillesModernesProfilRoute
   '/reset-password': typeof ResetPasswordRoute
   '/espace/cgu': typeof EspaceCguRoute
   '/espace/confidentialite': typeof EspaceConfidentialiteRoute
@@ -608,12 +640,14 @@ export interface FileRoutesByTo {
   '/espace/grilles-garanties': typeof AuthenticatedEspaceGrillesGarantiesRoute
   '/espace/mes-recommandations': typeof AuthenticatedEspaceMesRecommandationsRoute
   '/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
+  '/espace/mon-espace-mandataire': typeof AuthenticatedEspaceMonEspaceMandataireRoute
   '/espace/neoliane': typeof AuthenticatedEspaceNeolianeRoute
   '/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/espace/pilotage': typeof AuthenticatedEspacePilotageRoute
   '/espace/prequalification': typeof AuthenticatedEspacePrequalificationRoute
   '/espace/prescripteurs': typeof AuthenticatedEspacePrescripteursRoute
   '/espace/relation-client': typeof AuthenticatedEspaceRelationClientRoute
+  '/espace/signer-contrat-mandataire': typeof AuthenticatedEspaceSignerContratMandataireRoute
   '/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
   '/espace/signer-devoir-conseil': typeof AuthenticatedEspaceSignerDevoirConseilRoute
   '/espace/signer-lettre-mission': typeof AuthenticatedEspaceSignerLettreMissionRoute
@@ -668,9 +702,11 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/assurance-vie-information': typeof AssuranceVieInformationRoute
   '/assurance-vie-profil': typeof AssuranceVieProfilRoute
   '/auth': typeof AuthRoute
   '/devenir-prescripteur': typeof DevenirPrescripteurRoute
+  '/familles-modernes-profil': typeof FamillesModernesProfilRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/espace': typeof AuthenticatedEspaceRouteWithChildren
   '/espace/cgu': typeof EspaceCguRoute
@@ -686,12 +722,14 @@ export interface FileRoutesById {
   '/_authenticated/espace/grilles-garanties': typeof AuthenticatedEspaceGrillesGarantiesRoute
   '/_authenticated/espace/mes-recommandations': typeof AuthenticatedEspaceMesRecommandationsRoute
   '/_authenticated/espace/mon-espace': typeof AuthenticatedEspaceMonEspaceRoute
+  '/_authenticated/espace/mon-espace-mandataire': typeof AuthenticatedEspaceMonEspaceMandataireRoute
   '/_authenticated/espace/neoliane': typeof AuthenticatedEspaceNeolianeRoute
   '/_authenticated/espace/parametres': typeof AuthenticatedEspaceParametresRoute
   '/_authenticated/espace/pilotage': typeof AuthenticatedEspacePilotageRoute
   '/_authenticated/espace/prequalification': typeof AuthenticatedEspacePrequalificationRoute
   '/_authenticated/espace/prescripteurs': typeof AuthenticatedEspacePrescripteursRoute
   '/_authenticated/espace/relation-client': typeof AuthenticatedEspaceRelationClientRoute
+  '/_authenticated/espace/signer-contrat-mandataire': typeof AuthenticatedEspaceSignerContratMandataireRoute
   '/_authenticated/espace/signer-der': typeof AuthenticatedEspaceSignerDerRoute
   '/_authenticated/espace/signer-devoir-conseil': typeof AuthenticatedEspaceSignerDevoirConseilRoute
   '/_authenticated/espace/signer-lettre-mission': typeof AuthenticatedEspaceSignerLettreMissionRoute
@@ -746,9 +784,11 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/assurance-vie-information'
     | '/assurance-vie-profil'
     | '/auth'
     | '/devenir-prescripteur'
+    | '/familles-modernes-profil'
     | '/reset-password'
     | '/espace'
     | '/espace/cgu'
@@ -764,12 +804,14 @@ export interface FileRouteTypes {
     | '/espace/grilles-garanties'
     | '/espace/mes-recommandations'
     | '/espace/mon-espace'
+    | '/espace/mon-espace-mandataire'
     | '/espace/neoliane'
     | '/espace/parametres'
     | '/espace/pilotage'
     | '/espace/prequalification'
     | '/espace/prescripteurs'
     | '/espace/relation-client'
+    | '/espace/signer-contrat-mandataire'
     | '/espace/signer-der'
     | '/espace/signer-devoir-conseil'
     | '/espace/signer-lettre-mission'
@@ -822,9 +864,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/assurance-vie-information'
     | '/assurance-vie-profil'
     | '/auth'
     | '/devenir-prescripteur'
+    | '/familles-modernes-profil'
     | '/reset-password'
     | '/espace/cgu'
     | '/espace/confidentialite'
@@ -839,12 +883,14 @@ export interface FileRouteTypes {
     | '/espace/grilles-garanties'
     | '/espace/mes-recommandations'
     | '/espace/mon-espace'
+    | '/espace/mon-espace-mandataire'
     | '/espace/neoliane'
     | '/espace/parametres'
     | '/espace/pilotage'
     | '/espace/prequalification'
     | '/espace/prescripteurs'
     | '/espace/relation-client'
+    | '/espace/signer-contrat-mandataire'
     | '/espace/signer-der'
     | '/espace/signer-devoir-conseil'
     | '/espace/signer-lettre-mission'
@@ -898,9 +944,11 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/assurance-vie-information'
     | '/assurance-vie-profil'
     | '/auth'
     | '/devenir-prescripteur'
+    | '/familles-modernes-profil'
     | '/reset-password'
     | '/_authenticated/espace'
     | '/espace/cgu'
@@ -916,12 +964,14 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/grilles-garanties'
     | '/_authenticated/espace/mes-recommandations'
     | '/_authenticated/espace/mon-espace'
+    | '/_authenticated/espace/mon-espace-mandataire'
     | '/_authenticated/espace/neoliane'
     | '/_authenticated/espace/parametres'
     | '/_authenticated/espace/pilotage'
     | '/_authenticated/espace/prequalification'
     | '/_authenticated/espace/prescripteurs'
     | '/_authenticated/espace/relation-client'
+    | '/_authenticated/espace/signer-contrat-mandataire'
     | '/_authenticated/espace/signer-der'
     | '/_authenticated/espace/signer-devoir-conseil'
     | '/_authenticated/espace/signer-lettre-mission'
@@ -976,9 +1026,11 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AssuranceVieInformationRoute: typeof AssuranceVieInformationRoute
   AssuranceVieProfilRoute: typeof AssuranceVieProfilRoute
   AuthRoute: typeof AuthRoute
   DevenirPrescripteurRoute: typeof DevenirPrescripteurRoute
+  FamillesModernesProfilRoute: typeof FamillesModernesProfilRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   EspaceCguRoute: typeof EspaceCguRoute
   EspaceConfidentialiteRoute: typeof EspaceConfidentialiteRoute
@@ -1025,6 +1077,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/familles-modernes-profil': {
+      id: '/familles-modernes-profil'
+      path: '/familles-modernes-profil'
+      fullPath: '/familles-modernes-profil'
+      preLoaderRoute: typeof FamillesModernesProfilRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/devenir-prescripteur': {
       id: '/devenir-prescripteur'
       path: '/devenir-prescripteur'
@@ -1044,6 +1103,13 @@ declare module '@tanstack/react-router' {
       path: '/assurance-vie-profil'
       fullPath: '/assurance-vie-profil'
       preLoaderRoute: typeof AssuranceVieProfilRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assurance-vie-information': {
+      id: '/assurance-vie-information'
+      path: '/assurance-vie-information'
+      fullPath: '/assurance-vie-information'
+      preLoaderRoute: typeof AssuranceVieInformationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -1326,6 +1392,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceSignerDerRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/signer-contrat-mandataire': {
+      id: '/_authenticated/espace/signer-contrat-mandataire'
+      path: '/signer-contrat-mandataire'
+      fullPath: '/espace/signer-contrat-mandataire'
+      preLoaderRoute: typeof AuthenticatedEspaceSignerContratMandataireRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
     '/_authenticated/espace/relation-client': {
       id: '/_authenticated/espace/relation-client'
       path: '/relation-client'
@@ -1366,6 +1439,13 @@ declare module '@tanstack/react-router' {
       path: '/neoliane'
       fullPath: '/espace/neoliane'
       preLoaderRoute: typeof AuthenticatedEspaceNeolianeRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
+    '/_authenticated/espace/mon-espace-mandataire': {
+      id: '/_authenticated/espace/mon-espace-mandataire'
+      path: '/mon-espace-mandataire'
+      fullPath: '/espace/mon-espace-mandataire'
+      preLoaderRoute: typeof AuthenticatedEspaceMonEspaceMandataireRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
     '/_authenticated/espace/mon-espace': {
@@ -1572,12 +1652,14 @@ interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceGrillesGarantiesRoute: typeof AuthenticatedEspaceGrillesGarantiesRoute
   AuthenticatedEspaceMesRecommandationsRoute: typeof AuthenticatedEspaceMesRecommandationsRoute
   AuthenticatedEspaceMonEspaceRoute: typeof AuthenticatedEspaceMonEspaceRoute
+  AuthenticatedEspaceMonEspaceMandataireRoute: typeof AuthenticatedEspaceMonEspaceMandataireRoute
   AuthenticatedEspaceNeolianeRoute: typeof AuthenticatedEspaceNeolianeRoute
   AuthenticatedEspaceParametresRoute: typeof AuthenticatedEspaceParametresRoute
   AuthenticatedEspacePilotageRoute: typeof AuthenticatedEspacePilotageRoute
   AuthenticatedEspacePrequalificationRoute: typeof AuthenticatedEspacePrequalificationRoute
   AuthenticatedEspacePrescripteursRoute: typeof AuthenticatedEspacePrescripteursRoute
   AuthenticatedEspaceRelationClientRoute: typeof AuthenticatedEspaceRelationClientRoute
+  AuthenticatedEspaceSignerContratMandataireRoute: typeof AuthenticatedEspaceSignerContratMandataireRoute
   AuthenticatedEspaceSignerDerRoute: typeof AuthenticatedEspaceSignerDerRoute
   AuthenticatedEspaceSignerDevoirConseilRoute: typeof AuthenticatedEspaceSignerDevoirConseilRoute
   AuthenticatedEspaceSignerLettreMissionRoute: typeof AuthenticatedEspaceSignerLettreMissionRoute
@@ -1611,6 +1693,8 @@ const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
   AuthenticatedEspaceMesRecommandationsRoute:
     AuthenticatedEspaceMesRecommandationsRoute,
   AuthenticatedEspaceMonEspaceRoute: AuthenticatedEspaceMonEspaceRoute,
+  AuthenticatedEspaceMonEspaceMandataireRoute:
+    AuthenticatedEspaceMonEspaceMandataireRoute,
   AuthenticatedEspaceNeolianeRoute: AuthenticatedEspaceNeolianeRoute,
   AuthenticatedEspaceParametresRoute: AuthenticatedEspaceParametresRoute,
   AuthenticatedEspacePilotageRoute: AuthenticatedEspacePilotageRoute,
@@ -1619,6 +1703,8 @@ const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
   AuthenticatedEspacePrescripteursRoute: AuthenticatedEspacePrescripteursRoute,
   AuthenticatedEspaceRelationClientRoute:
     AuthenticatedEspaceRelationClientRoute,
+  AuthenticatedEspaceSignerContratMandataireRoute:
+    AuthenticatedEspaceSignerContratMandataireRoute,
   AuthenticatedEspaceSignerDerRoute: AuthenticatedEspaceSignerDerRoute,
   AuthenticatedEspaceSignerDevoirConseilRoute:
     AuthenticatedEspaceSignerDevoirConseilRoute,
@@ -1659,9 +1745,11 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AssuranceVieInformationRoute: AssuranceVieInformationRoute,
   AssuranceVieProfilRoute: AssuranceVieProfilRoute,
   AuthRoute: AuthRoute,
   DevenirPrescripteurRoute: DevenirPrescripteurRoute,
+  FamillesModernesProfilRoute: FamillesModernesProfilRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   EspaceCguRoute: EspaceCguRoute,
   EspaceConfidentialiteRoute: EspaceConfidentialiteRoute,
