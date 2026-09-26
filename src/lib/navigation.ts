@@ -168,6 +168,7 @@ export const NAV_DOMAINS: NavDomain[] = [
         items: [
           { label: "Commissions", to: "/espace/commissions", roles: STAFF },
           { label: "Comptabilité", to: "/espace/comptabilite", roles: STAFF },
+          { label: "Diagnostic contrats & finance", to: "/espace/diagnostic", roles: STAFF },
           { label: "Fournisseurs", to: "/espace/fournisseurs", roles: STAFF },
           { label: "Bordereaux — import", soon: true, roles: STAFF },
           { label: "Rapprochement & écarts", soon: true, roles: STAFF },

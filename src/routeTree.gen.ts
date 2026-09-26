@@ -68,6 +68,7 @@ import { Route as AuthenticatedEspaceMesRecommandationsRouteImport } from './rou
 import { Route as AuthenticatedEspaceGrillesGarantiesRouteImport } from './routes/_authenticated/espace.grilles-garanties'
 import { Route as AuthenticatedEspaceGmailControleRouteImport } from './routes/_authenticated/espace.gmail-controle'
 import { Route as AuthenticatedEspaceFournisseursRouteImport } from './routes/_authenticated/espace.fournisseurs'
+import { Route as AuthenticatedEspaceDiagnosticRouteImport } from './routes/_authenticated/espace.diagnostic'
 import { Route as AuthenticatedEspaceDerModeleRouteImport } from './routes/_authenticated/espace.der-modele'
 import { Route as AuthenticatedEspaceConformiteRouteImport } from './routes/_authenticated/espace.conformite'
 import { Route as AuthenticatedEspaceComptabiliteRouteImport } from './routes/_authenticated/espace.comptabilite'
@@ -421,6 +422,12 @@ const AuthenticatedEspaceFournisseursRoute =
     path: '/fournisseurs',
     getParentRoute: () => AuthenticatedEspaceRoute,
   } as any)
+const AuthenticatedEspaceDiagnosticRoute =
+  AuthenticatedEspaceDiagnosticRouteImport.update({
+    id: '/diagnostic',
+    path: '/diagnostic',
+    getParentRoute: () => AuthenticatedEspaceRoute,
+  } as any)
 const AuthenticatedEspaceDerModeleRoute =
   AuthenticatedEspaceDerModeleRouteImport.update({
     id: '/der-modele',
@@ -556,6 +563,7 @@ export interface FileRoutesByFullPath {
   '/espace/comptabilite': typeof AuthenticatedEspaceComptabiliteRoute
   '/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
+  '/espace/diagnostic': typeof AuthenticatedEspaceDiagnosticRoute
   '/espace/fournisseurs': typeof AuthenticatedEspaceFournisseursRoute
   '/espace/gmail-controle': typeof AuthenticatedEspaceGmailControleRoute
   '/espace/grilles-garanties': typeof AuthenticatedEspaceGrillesGarantiesRoute
@@ -635,6 +643,7 @@ export interface FileRoutesByTo {
   '/espace/comptabilite': typeof AuthenticatedEspaceComptabiliteRoute
   '/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
+  '/espace/diagnostic': typeof AuthenticatedEspaceDiagnosticRoute
   '/espace/fournisseurs': typeof AuthenticatedEspaceFournisseursRoute
   '/espace/gmail-controle': typeof AuthenticatedEspaceGmailControleRoute
   '/espace/grilles-garanties': typeof AuthenticatedEspaceGrillesGarantiesRoute
@@ -717,6 +726,7 @@ export interface FileRoutesById {
   '/_authenticated/espace/comptabilite': typeof AuthenticatedEspaceComptabiliteRoute
   '/_authenticated/espace/conformite': typeof AuthenticatedEspaceConformiteRoute
   '/_authenticated/espace/der-modele': typeof AuthenticatedEspaceDerModeleRoute
+  '/_authenticated/espace/diagnostic': typeof AuthenticatedEspaceDiagnosticRoute
   '/_authenticated/espace/fournisseurs': typeof AuthenticatedEspaceFournisseursRoute
   '/_authenticated/espace/gmail-controle': typeof AuthenticatedEspaceGmailControleRoute
   '/_authenticated/espace/grilles-garanties': typeof AuthenticatedEspaceGrillesGarantiesRoute
@@ -799,6 +809,7 @@ export interface FileRouteTypes {
     | '/espace/comptabilite'
     | '/espace/conformite'
     | '/espace/der-modele'
+    | '/espace/diagnostic'
     | '/espace/fournisseurs'
     | '/espace/gmail-controle'
     | '/espace/grilles-garanties'
@@ -878,6 +889,7 @@ export interface FileRouteTypes {
     | '/espace/comptabilite'
     | '/espace/conformite'
     | '/espace/der-modele'
+    | '/espace/diagnostic'
     | '/espace/fournisseurs'
     | '/espace/gmail-controle'
     | '/espace/grilles-garanties'
@@ -959,6 +971,7 @@ export interface FileRouteTypes {
     | '/_authenticated/espace/comptabilite'
     | '/_authenticated/espace/conformite'
     | '/_authenticated/espace/der-modele'
+    | '/_authenticated/espace/diagnostic'
     | '/_authenticated/espace/fournisseurs'
     | '/_authenticated/espace/gmail-controle'
     | '/_authenticated/espace/grilles-garanties'
@@ -1483,6 +1496,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEspaceFournisseursRouteImport
       parentRoute: typeof AuthenticatedEspaceRoute
     }
+    '/_authenticated/espace/diagnostic': {
+      id: '/_authenticated/espace/diagnostic'
+      path: '/diagnostic'
+      fullPath: '/espace/diagnostic'
+      preLoaderRoute: typeof AuthenticatedEspaceDiagnosticRouteImport
+      parentRoute: typeof AuthenticatedEspaceRoute
+    }
     '/_authenticated/espace/der-modele': {
       id: '/_authenticated/espace/der-modele'
       path: '/der-modele'
@@ -1647,6 +1667,7 @@ interface AuthenticatedEspaceRouteChildren {
   AuthenticatedEspaceComptabiliteRoute: typeof AuthenticatedEspaceComptabiliteRoute
   AuthenticatedEspaceConformiteRoute: typeof AuthenticatedEspaceConformiteRoute
   AuthenticatedEspaceDerModeleRoute: typeof AuthenticatedEspaceDerModeleRoute
+  AuthenticatedEspaceDiagnosticRoute: typeof AuthenticatedEspaceDiagnosticRoute
   AuthenticatedEspaceFournisseursRoute: typeof AuthenticatedEspaceFournisseursRoute
   AuthenticatedEspaceGmailControleRoute: typeof AuthenticatedEspaceGmailControleRoute
   AuthenticatedEspaceGrillesGarantiesRoute: typeof AuthenticatedEspaceGrillesGarantiesRoute
@@ -1686,6 +1707,7 @@ const AuthenticatedEspaceRouteChildren: AuthenticatedEspaceRouteChildren = {
   AuthenticatedEspaceComptabiliteRoute: AuthenticatedEspaceComptabiliteRoute,
   AuthenticatedEspaceConformiteRoute: AuthenticatedEspaceConformiteRoute,
   AuthenticatedEspaceDerModeleRoute: AuthenticatedEspaceDerModeleRoute,
+  AuthenticatedEspaceDiagnosticRoute: AuthenticatedEspaceDiagnosticRoute,
   AuthenticatedEspaceFournisseursRoute: AuthenticatedEspaceFournisseursRoute,
   AuthenticatedEspaceGmailControleRoute: AuthenticatedEspaceGmailControleRoute,
   AuthenticatedEspaceGrillesGarantiesRoute:
