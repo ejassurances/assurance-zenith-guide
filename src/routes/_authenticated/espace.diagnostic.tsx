@@ -21,8 +21,8 @@ export const Route = createFileRoute("/_authenticated/espace/diagnostic")({
 });
 
 const VERDICT: Record<VerdictContrat, { dot: string; label: string; cls: string }> = {
-  ok: { dot: "🟢", label: "Complet & raccordé", cls: "bg-emerald-50 text-emerald-700" },
-  finance_absente: { dot: "🟡", label: "Finance non générée", cls: "bg-amber-50 text-amber-800" },
+  ok: { dot: "🟢", label: "Complet & encaissé", cls: "bg-emerald-50 text-emerald-700" },
+  finance_absente: { dot: "🟡", label: "En attente d'encaissement", cls: "bg-amber-50 text-amber-800" },
   incomplet: { dot: "🔴", label: "Données incomplètes", cls: "bg-red-50 text-red-700" },
 };
 
@@ -86,8 +86,8 @@ function DiagnosticPage() {
       {k && (
         <>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Kpi label="Contrats OK" value={`${k.ok}/${k.total}`} hint="Complets & raccordés à la compta" />
-            <Kpi label="Finance non générée" value={k.finance_absente} hint="Données OK mais 0 commission" alert={k.finance_absente > 0} />
+            <Kpi label="Contrats OK" value={`${k.ok}/${k.total}`} hint="Complets & commissions encaissées" />
+            <Kpi label="En attente d'encaissement" value={k.finance_absente} hint="Données OK, encaissement à traiter (normal)" />
             <Kpi label="Contrats incomplets" value={k.incomplet} hint="Prime / n° / assiette manquants" alert={k.incomplet > 0} />
             <Kpi label="Écritures déséquilibrées" value={k.ecritures_desequilibrees} hint="Contrôle partie double" alert={k.ecritures_desequilibrees > 0} />
             <Kpi label="Commissions comptabilisées" value={`${k.commissions_comptabilisees}/${k.commissions_total}`} />
@@ -139,7 +139,8 @@ function DiagnosticPage() {
 
           <p className="text-[11px] text-ink-muted">
             « Compta » = commissions rattachées à une écriture comptable. « Devis OK » = un devis retenu et documenté
-            est rattaché au dossier. Diagnostic en lecture seule — aucune donnée n'est modifiée.
+            est rattaché au dossier. 🟡 « En attente d'encaissement » est normal tant que la compagnie n'a pas versé /
+            le bordereau n'a pas été traité — ce n'est pas une anomalie. Diagnostic en lecture seule — aucune donnée n'est modifiée.
           </p>
         </>
       )}
